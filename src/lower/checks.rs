@@ -1,0 +1,975 @@
+use super::*;
+
+/// Walk an SExpression collecting every `@entity.<field>` reference into
+/// `referenced_fields` (with the originating event name) and every
+/// `["set", "@entity.<field>", ...]` setter call into `set_fields`.
+pub(crate) fn collect_entity_field_refs(
+    expr: &SExpression,
+    referenced_fields: &mut HashMap<String, String>,
+    set_fields: &mut HashSet<String>,
+    transition_event: &str,
+) {
+    match expr {
+        SExpression::String(s) if s.starts_with("@entity.") => {
+            let path = &s[8..];
+            let field = path.split('.').next().unwrap_or("");
+            let field = field.split('[').next().unwrap_or(field);
+            if !field.is_empty()
+                && field != "id"
+                && field != "createdAt"
+                && field != "updatedAt"
+            {
+                referenced_fields
+                    .entry(field.to_string())
+                    .or_insert_with(|| transition_event.to_string());
+            }
+        }
+        SExpression::Array(arr) => {
+            if arr.len() >= 2 {
+                if let (SExpression::String(op), SExpression::String(target)) = (&arr[0], &arr[1]) {
+                    if op == "set" && target.starts_with("@entity.") {
+                        let setter_path = &target[8..];
+                        let setter_field = setter_path.split('.').next().unwrap_or("");
+                        let setter_field = setter_field.split('[').next().unwrap_or(setter_field);
+                        if !setter_field.is_empty() {
+                            set_fields.insert(setter_field.to_string());
+                        }
+                    }
+                }
+            }
+            for item in arr {
+                collect_entity_field_refs(item, referenced_fields, set_fields, transition_event);
+            }
+        }
+        SExpression::Object(obj) => {
+            for value in obj.values() {
+                collect_entity_field_refs(value, referenced_fields, set_fields, transition_event);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// Per the explicit-binding rule, every `@entity.X` referenced in a trait's
+/// transitions/guards/ticks must be backed by some explicit
+/// `(set @entity.X <value>)`. Returns the first violation as a
+/// `LowerError::EntityFieldNeverSet` so the lolo CLI surfaces it at parse
+/// time. Skipped by the caller when the trait has no `linkedEntity`.
+/// `@intrinsic` fields are EXEMPT — they are machinery the trait/runtime owns
+/// and may be read without a local setter.
+pub(crate) fn check_entity_fields_have_setters(
+    t: &Trait,
+    intrinsic_fields: &HashSet<String>,
+) -> Result<(), LowerError> {
+    let mut referenced_fields: HashMap<String, String> = HashMap::new();
+    let mut set_fields: HashSet<String> = HashSet::new();
+
+    for state in &t.states {
+        for tr in &state.transitions {
+            let event = tr.event.as_str();
+            if let Some(guard) = &tr.guard {
+                collect_entity_field_refs(guard, &mut referenced_fields, &mut set_fields, event);
+            }
+            for effect in &tr.effects {
+                collect_entity_field_refs(effect, &mut referenced_fields, &mut set_fields, event);
+            }
+        }
+    }
+    for tick in &t.ticks {
+        if let Some(guard) = &tick.guard {
+            collect_entity_field_refs(guard, &mut referenced_fields, &mut set_fields, "TICK");
+        }
+        for effect in &tick.effects {
+            collect_entity_field_refs(effect, &mut referenced_fields, &mut set_fields, "TICK");
+        }
+    }
+
+    // Sort referenced fields for deterministic error ordering (BTreeMap-like).
+    let mut entries: Vec<(&String, &String)> = referenced_fields.iter().collect();
+    entries.sort_by(|a, b| a.0.cmp(b.0));
+    for (field, first_event) in entries {
+        if !set_fields.contains(field) && !intrinsic_fields.contains(field) {
+            return Err(LowerError::EntityFieldNeverSet {
+                trait_name: t.name.clone(),
+                field: field.clone(),
+                first_event: first_event.clone(),
+            });
+        }
+    }
+    Ok(())
+}
+
+/// L1.4 check: for every `(set @entity.X <value>)` in this trait,
+/// verify the value's resolved type is assignable to the linked
+/// entity's declared field type for X.
+///
+/// Resolution sources covered at parse time (mirrors the L2 F3 binding
+/// resolver but with parser AST access only):
+/// - **Literal** → primitive type from the SExpression node.
+/// - **`@payload.<F>`** → type from the trait's `listens { EVENT { F : T } }`
+///   block where EVENT matches the enclosing transition's event.
+/// - **`@config.<F>`** → type from the trait's `config { F : T }` block.
+/// - **`@entity.<F>`** → type from the linked entity's declared fields.
+///
+/// SExpression operator calls (`["op", ...]`) defer to L2 — that branch
+/// needs canonical-operators metadata + F2's `returnSemantics` lattice
+/// which the lolo crate doesn't currently embed. The L2 ORB_BINDING_*
+/// suite catches the operator case post-resolve.
+pub(crate) fn check_set_value_types(
+    t: &Trait,
+    entities: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+) -> Result<(), LowerError> {
+    let Some(linked) = &t.linked_entity else {
+        return Ok(());
+    };
+    let Some(entity_fields) = entities.get(linked) else {
+        return Ok(());
+    };
+
+    // Build per-listened-event payload schema lookup. Keyed by the LOCAL
+    // event name (the trigger for cross-orbital listens, the bare event
+    // for local listens). When a transition fires on event E, `@payload.X`
+    // resolves against the matching listen entry's payload.
+    let mut listen_payloads: HashMap<&str, &[EventField]> = HashMap::new();
+    for listen in &t.listens {
+        // Cross-orbital listens use `Source.EVENT -> TRIGGER` form; the
+        // bare event name on the bus side is the TRIGGER (or the bare
+        // event for local listens). The payload AST field carries the
+        // declared local-shape schema — only populated for local
+        // listens, not cross-orbital ones.
+        let key = listen.triggers.as_deref().unwrap_or(&listen.event);
+        if !listen.payload.is_empty() {
+            listen_payloads.insert(key, listen.payload.as_slice());
+        }
+    }
+
+    // Per-config-field type lookup.
+    let config_fields: HashMap<&str, &TypeExpr> = t
+        .config
+        .iter()
+        .map(|cf| (cf.name.as_str(), &cf.type_expr))
+        .collect();
+
+    // Per-entity-field type lookup on the linked entity.
+    let entity_field_types: HashMap<&str, &TypeExpr> = entity_fields
+        .iter()
+        .map(|(name, ty, _required)| (name.as_str(), ty))
+        .collect();
+
+    for state in &t.states {
+        for tr in &state.transitions {
+            for effect in &tr.effects {
+                check_set_in_expr(
+                    effect,
+                    &tr.event,
+                    t,
+                    &entity_field_types,
+                    &listen_payloads,
+                    &config_fields,
+                )?;
+            }
+        }
+    }
+    for tick in &t.ticks {
+        for effect in &tick.effects {
+            check_set_in_expr(
+                effect,
+                "TICK",
+                t,
+                &entity_field_types,
+                &listen_payloads,
+                &config_fields,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+/// Recursively search for `["set", "@entity.X", <value>]` SExpressions
+/// and validate each one. Descends into nested arrays and objects so
+/// `(set ...)` calls inside `(if cond ...)` / `(do ...)` / nested
+/// render-ui patterns are caught.
+fn check_set_in_expr(
+    expr: &SExpression,
+    event: &str,
+    t: &Trait,
+    entity_fields: &HashMap<&str, &TypeExpr>,
+    listen_payloads: &HashMap<&str, &[EventField]>,
+    config_fields: &HashMap<&str, &TypeExpr>,
+) -> Result<(), LowerError> {
+    if let SExpression::Array(arr) = expr {
+        if arr.len() >= 3 {
+            if let (SExpression::String(op), SExpression::String(target)) =
+                (&arr[0], &arr[1])
+            {
+                if op == "set" && target.starts_with("@entity.") {
+                    let path = &target[8..];
+                    let field = path.split('.').next().unwrap_or("").split('[').next().unwrap_or("");
+                    if !field.is_empty() {
+                        if let Some(declared) = entity_fields.get(field) {
+                            check_one_set_value(
+                                t,
+                                field,
+                                declared,
+                                &arr[2],
+                                event,
+                                listen_payloads,
+                                config_fields,
+                                entity_fields,
+                            )?;
+                        }
+                    }
+                }
+            }
+        }
+        for item in arr {
+            check_set_in_expr(item, event, t, entity_fields, listen_payloads, config_fields)?;
+        }
+    } else if let SExpression::Object(obj) = expr {
+        for value in obj.values() {
+            check_set_in_expr(value, event, t, entity_fields, listen_payloads, config_fields)?;
+        }
+    }
+    Ok(())
+}
+
+/// Resolve the value's type from its SExpression form and compare against
+/// the declared entity field type. Returns the first mismatch as a
+/// `LowerError::SetValueTypeMismatch`. Bindings whose source isn't
+/// declared in the trait (cross-orbital, unknown event, etc.) skip
+/// silently — those defer to L2's F3 binding resolver.
+fn check_one_set_value(
+    t: &Trait,
+    field: &str,
+    declared: &TypeExpr,
+    value: &SExpression,
+    event: &str,
+    listen_payloads: &HashMap<&str, &[EventField]>,
+    config_fields: &HashMap<&str, &TypeExpr>,
+    entity_fields: &HashMap<&str, &TypeExpr>,
+) -> Result<(), LowerError> {
+    let declared_str = type_expr_to_compat_str(declared);
+
+    // Resolve value's type. Returns (actual_type_str, value_source).
+    // None when the value is a binding/operator we don't handle at L1
+    // (defer to L2).
+    let resolved = match value {
+        SExpression::Number(_) => Some(("number".to_string(), "literal".to_string())),
+        SExpression::Bool(_) => Some(("boolean".to_string(), "literal".to_string())),
+        SExpression::Object(_) => Some(("object".to_string(), "literal".to_string())),
+        SExpression::Array(_) => {
+            // Could be an array literal OR an SExpression operator call.
+            // Defer to L2 — distinguishing them at parse time without
+            // canonical-operators metadata is brittle.
+            None
+        }
+        SExpression::Null => None,
+        SExpression::String(s) => {
+            if let Some(rest) = s.strip_prefix("@payload.") {
+                resolve_top_segment(rest).and_then(|f| {
+                    let payload = listen_payloads.get(event)?;
+                    let declared_payload_field = payload.iter().find(|pf| pf.name == f)?;
+                    Some((
+                        type_expr_to_compat_str(&declared_payload_field.type_expr),
+                        format!("@payload.{}", f),
+                    ))
+                })
+            } else if let Some(rest) = s.strip_prefix("@config.") {
+                resolve_top_segment(rest).and_then(|f| {
+                    config_fields
+                        .get(f.as_str())
+                        .map(|ty| (type_expr_to_compat_str(ty), format!("@config.{}", f)))
+                })
+            } else if let Some(rest) = s.strip_prefix("@entity.") {
+                resolve_top_segment(rest).and_then(|f| {
+                    entity_fields
+                        .get(f.as_str())
+                        .map(|ty| (type_expr_to_compat_str(ty), format!("@entity.{}", f)))
+                })
+            } else if s.starts_with('@') {
+                // Other sigils (@row.X, @item.X inside fn-form lambdas,
+                // etc.) defer to L2.
+                None
+            } else {
+                Some(("string".to_string(), "literal".to_string()))
+            }
+        }
+    };
+
+    let Some((actual_str, value_source)) = resolved else {
+        return Ok(());
+    };
+
+    if !primitive_type_compatible(&declared_str, &actual_str) {
+        return Err(LowerError::SetValueTypeMismatch {
+            orbital: t.name.clone(), // diagnostic context: trait carries its parent orbital name in error path
+            trait_name: t.name.clone(),
+            field: field.to_string(),
+            expected_type: declared_str,
+            actual_type: actual_str,
+            value_source,
+        });
+    }
+    Ok(())
+}
+
+/// Extract the top segment of a binding path, returning `None` when the
+/// path goes deeper than one segment. Nested paths like
+/// `@payload.row.title` need recursion into the row's entity definition
+/// to resolve the sub-field's type — that's L2's job (F3 binding
+/// resolver). Returning `None` here makes L1 silently defer those cases
+/// rather than emit false positives.
+///
+/// Also returns `None` for empty / malformed inputs, and strips array
+/// indexers (`field[0]` → `field`).
+pub(crate) fn resolve_top_segment(path: &str) -> Option<String> {
+    // Reject nested-field paths — e.g. "row.title" must defer to L2.
+    let trimmed = path.trim_end_matches('.');
+    if trimmed.contains('.') {
+        return None;
+    }
+    let field = trimmed.split('[').next().unwrap_or("");
+    if field.is_empty() {
+        None
+    } else {
+        Some(field.to_string())
+    }
+}
+
+/// L1 cross-orbital integrity check.
+///
+/// Walks the lowered orbitals (post-`lower_orbital`, pre-validate) and
+/// rejects any `listens` entry whose declared source trait/event isn't
+/// emitted by the named source trait. The IR's `ListenSource` enum carries
+/// the typed source descriptor (trait-only or orbital+trait), so this pass
+/// uses enum variants and `String` equality only — no string parsing, no
+/// pattern matching on event names.
+///
+/// Companion to the Phase-2 validator pass (`orbital-compiler` /
+/// `validation/cross_orbital.rs`), which reruns this check post-resolve
+/// so `use`-imported behaviors are covered.
+pub(crate) fn check_listens_integrity(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
+    // Index every (orbital, trait) → declared emit event names. Bare-event
+    // listens (no source) are local-only and are not checked here — they
+    // resolve against the trait's own state-machine transitions, which the
+    // type-resolver already enforces.
+    //
+    // Reference-trait sources are also tracked here (by name only) so the
+    // integrity check can defer those to the compiler's post-inline
+    // validator (`cross_orbital::validate_listens_integrity`). At the
+    // lolo lower stage, reference traits like
+    // `trait CartItemAddItem = Modal.traits.ModalRecordModal -> ...`
+    // haven't been resolved yet — their emits live in the imported atom
+    // and aren't visible in this AST. Skipping the check for references
+    // avoids false-positive "source not declared" failures and lets the
+    // post-inline pass do the real check once references are materialized.
+    let mut trait_emits: HashMap<(String, String), HashSet<String>> = HashMap::new();
+    let mut reference_traits: HashSet<(String, String)> = HashSet::new();
+    for orbital in orbitals {
+        for trait_ref in &orbital.traits {
+            match trait_ref {
+                TraitReference::Inline(td) => {
+                    let entry = trait_emits
+                        .entry((orbital.name.clone(), td.name.clone()))
+                        .or_default();
+                    if let Some(emits) = &td.emits {
+                        for emit in emits {
+                            entry.insert(emit.event.clone());
+                        }
+                    }
+                }
+                TraitReference::Reference { name, reference, .. } => {
+                    let trait_name = name
+                        .clone()
+                        .or_else(|| {
+                            reference
+                                .as_deref()
+                                .and_then(|r| r.rsplit('.').next().map(str::to_owned))
+                        });
+                    if let Some(n) = trait_name {
+                        reference_traits.insert((orbital.name.clone(), n));
+                    }
+                }
+            }
+        }
+    }
+
+    for orbital in orbitals {
+        for trait_ref in &orbital.traits {
+            let TraitReference::Inline(td) = trait_ref else {
+                continue;
+            };
+            let Some(listens) = &td.listens else {
+                continue;
+            };
+            for listen in listens {
+                let (source_orbital, source_trait) = match &listen.source {
+                    Some(ListenSource::Trait { trait_name }) => {
+                        (orbital.name.clone(), trait_name.clone())
+                    }
+                    Some(ListenSource::Orbital {
+                        orbital: o,
+                        trait_name,
+                    }) => (o.clone(), trait_name.clone()),
+                    Some(ListenSource::Any) | None => continue,
+                };
+                // Defer to the compiler's post-inline validator when the
+                // source trait is a reference — its emits aren't
+                // visible at this stage.
+                if reference_traits.contains(&(source_orbital.clone(), source_trait.clone())) {
+                    continue;
+                }
+                let resolved = trait_emits
+                    .get(&(source_orbital.clone(), source_trait.clone()))
+                    .map(|events| events.contains(&listen.event))
+                    .unwrap_or(false);
+                if !resolved {
+                    return Err(LowerError::ListenSourceUnresolved {
+                        origin_orbital: orbital.name.clone(),
+                        origin_trait: td.name.clone(),
+                        source_orbital,
+                        source_trait,
+                        event: listen.event.clone(),
+                    });
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Recursively collect literal button-action strings from a single effect.
+/// Only descends into `render-ui` S-expressions; other effect forms are
+/// ignored because they don't render clickable UI.
+fn collect_render_ui_button_actions(effect: &SExpression, actions: &mut HashSet<String>) {
+    let pattern = match effect {
+        SExpression::Array(arr) if arr.len() >= 3 => {
+            if let SExpression::String(op) = &arr[0] {
+                if op == "render-ui" {
+                    // The pattern is the 3rd argument (index 2).
+                    &arr[2]
+                } else {
+                    return;
+                }
+            } else {
+                return;
+            }
+        }
+        _ => return,
+    };
+    collect_button_actions_recursive(pattern, actions);
+}
+
+/// Recursively walk an S-expression tree and collect literal string values
+/// for keys that the patterns registry marks as event-name carriers.
+///
+/// "Event-name carrier" is a source-tagged contract: a prop counts when
+/// its registry entry has `kind` in `{event, event-ref, event-listen,
+/// callback}` (top-level prop holds the event-name string), or when
+/// it's the `eventField` of a `kind: "event-list"` entry (inner
+/// descriptor key). See `patterns_meta::event_prop_names` for the
+/// derivation. No hardcoded prop list, no name heuristics — every
+/// recognised name comes from a `kind` mark that pattern-sync wrote
+/// because a component author typed the prop as `EventEmit<P>` /
+/// `EventKey` / a function (callback) / an event-list descriptor.
+fn collect_button_actions_recursive(expr: &SExpression, actions: &mut HashSet<String>) {
+    match expr {
+        SExpression::Array(arr) => {
+            for item in arr {
+                collect_button_actions_recursive(item, actions);
+            }
+        }
+        SExpression::Object(obj) => {
+            let event_keys = event_prop_names();
+            for (key, value) in obj {
+                if event_keys.contains(key) {
+                    match value {
+                        SExpression::String(s) => {
+                            actions.insert(s.clone());
+                        }
+                        // Some legacy event props accept an array of
+                        // strings (every element is an event name). The
+                        // registry doesn't distinguish this shape from a
+                        // single string; harvest all string elements.
+                        SExpression::Array(arr) => {
+                            for item in arr {
+                                if let SExpression::String(s) = item {
+                                    actions.insert(s.clone());
+                                }
+                            }
+                        }
+                        _ => {}
+                    }
+                }
+                collect_button_actions_recursive(value, actions);
+            }
+        }
+        _ => {}
+    }
+}
+
+/// L1 check: for every button action rendered by trait A, if some sibling
+/// inline trait B in the same orbital has a transition on that event but
+/// B does NOT declare `listens { A event -> ... }`, fail fast.
+///
+/// Reference traits are skipped as targets (their transitions aren't
+/// visible at the lolo lower stage — they're materialised later by the
+/// inline phase). This avoids false positives on reference-style molecules
+/// like `std-cart` and `std-list`; the compiler's post-inline validator
+/// (`cross_orbital.rs`) handles those.
+pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
+    // Index (orbital, trait) -> transition events.
+    let mut trait_transitions: HashMap<(String, String), HashSet<String>> = HashMap::new();
+    // Track reference-trait names so we can skip them as targets.
+    let mut reference_traits: HashSet<(String, String)> = HashSet::new();
+
+    for orbital in orbitals {
+        for trait_ref in &orbital.traits {
+            match trait_ref {
+                TraitReference::Inline(td) => {
+                    let entry = trait_transitions
+                        .entry((orbital.name.clone(), td.name.clone()))
+                        .or_default();
+                    for trans in &td.state_machine.transitions {
+                        entry.insert(trans.event.clone());
+                    }
+                }
+                TraitReference::Reference { name, reference, .. } => {
+                    let trait_name = name
+                        .clone()
+                        .or_else(|| {
+                            reference
+                                .as_deref()
+                                .and_then(|r| r.rsplit('.').next().map(str::to_owned))
+                        });
+                    if let Some(n) = trait_name {
+                        reference_traits.insert((orbital.name.clone(), n));
+                    }
+                }
+            }
+        }
+    }
+
+    // Index (orbital, trait) -> (source_orbital, source_trait, event) listens.
+    let mut trait_listens: HashMap<(String, String), HashSet<(String, String, String)>> =
+        HashMap::new();
+    for orbital in orbitals {
+        for trait_ref in &orbital.traits {
+            let TraitReference::Inline(td) = trait_ref else { continue };
+            let entry = trait_listens
+                .entry((orbital.name.clone(), td.name.clone()))
+                .or_default();
+            if let Some(listens) = &td.listens {
+                for listen in listens {
+                    let (source_orbital, source_trait) = match &listen.source {
+                        Some(ListenSource::Trait { trait_name }) => {
+                            (orbital.name.clone(), trait_name.clone())
+                        }
+                        Some(ListenSource::Orbital {
+                            orbital: o,
+                            trait_name,
+                        }) => (o.clone(), trait_name.clone()),
+                        Some(ListenSource::Any) | None => continue,
+                    };
+                    entry.insert((source_orbital, source_trait, listen.event.clone()));
+                }
+            }
+        }
+    }
+
+    // Scan each inline trait for button actions in render-ui effects.
+    for orbital in orbitals {
+        for trait_ref in &orbital.traits {
+            let TraitReference::Inline(td) = trait_ref else { continue };
+            let source_trait = &td.name;
+            let source_key = (orbital.name.clone(), source_trait.clone());
+
+            let mut actions: HashSet<String> = HashSet::new();
+            for trans in &td.state_machine.transitions {
+                if let Some(effects) = &trans.effects {
+                    for effect in effects {
+                        collect_render_ui_button_actions(effect, &mut actions);
+                    }
+                }
+            }
+
+            for action in actions {
+                // Self-targeting: this trait handles the action itself.
+                if let Some(events) = trait_transitions.get(&source_key) {
+                    if events.contains(&action) {
+                        continue;
+                    }
+                }
+
+                // Find sibling inline traits in the same orbital with a
+                // transition on this action.
+                let mut found_target = false;
+                for ((t_orbital, t_trait), events) in &trait_transitions {
+                    if t_orbital != &orbital.name || t_trait == source_trait {
+                        continue;
+                    }
+                    // Skip reference traits — their transitions aren't visible
+                    // at this stage.
+                    if reference_traits.contains(&(t_orbital.clone(), t_trait.clone())) {
+                        continue;
+                    }
+                    if events.contains(&action) {
+                        found_target = true;
+                        let target_key = (t_orbital.clone(), t_trait.clone());
+                        let has_listen = trait_listens
+                            .get(&target_key)
+                            .map(|listens| {
+                                listens.contains(&(orbital.name.clone(), source_trait.clone(), action.clone()))
+                            })
+                            .unwrap_or(false);
+                        if !has_listen {
+                            return Err(LowerError::ButtonTransitionUnreachable {
+                                orbital: orbital.name.clone(),
+                                source_trait: source_trait.clone(),
+                                action: action.clone(),
+                                target_trait: t_trait.clone(),
+                            });
+                        }
+                    }
+                }
+
+                // If no inline target exists, the action may target a
+                // reference trait (deferred to L2) or an external listener.
+                // Don't error — either case is valid.
+                let _ = found_target;
+            }
+        }
+    }
+
+    Ok(())
+}
+
+/// L1.2 check: every `(navigate "<path>")` effect references a route
+/// declared on some orbital's `pages[].path` in this file. Catches typos
+/// and dangling links at parse time before they show up as silent
+/// client-side router no-ops at runtime.
+///
+/// Path matching uses canonicalisation: dynamic placeholders on either
+/// side reduce to `<seg>`, so a route declared `/projects/:id` matches a
+/// navigate call `/projects/@payload.id` without authors having to thread
+/// the literal `:id` through their effect strings. Static segments must
+/// match verbatim.
+///
+/// Reference / Object page forms (`Alias.pages.X`, `{ ref: ... }`) are
+/// skipped — those are imported from std behaviors and resolved by the
+/// inline phase. The L2 validator's `cross_orbital.rs` picks up post-
+/// inline reachability for those.
+pub(crate) fn check_navigate_targets(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
+    let mut canonical_pages: HashSet<String> = HashSet::new();
+    for orbital in orbitals {
+        if let Some(pages) = &orbital.pages {
+            for page_ref in pages {
+                if let PageRef::Inline(p) = page_ref {
+                    canonical_pages.insert(canonicalise_route(&p.path));
+                }
+                // Object / Reference forms: deferred to post-inline L2.
+                // The path override on a PageRefObject is also intentionally
+                // skipped here — the imported page's full path tree only
+                // resolves after `uses` substitution.
+            }
+        }
+    }
+
+    for orbital in orbitals {
+        for trait_ref in &orbital.traits {
+            let TraitReference::Inline(td) = trait_ref else { continue };
+            for trans in &td.state_machine.transitions {
+                if let Some(effects) = &trans.effects {
+                    for effect in effects {
+                        check_navigate_recursive(
+                            effect,
+                            &canonical_pages,
+                            &orbital.name,
+                            &td.name,
+                        )?;
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Recursively walk an SExpression and validate every `["navigate", path]`
+/// call site. Descends into `(if ...)`, `(do ...)`, and similar control-
+/// flow operators that wrap effects.
+fn check_navigate_recursive(
+    expr: &SExpression,
+    canonical_pages: &HashSet<String>,
+    orbital_name: &str,
+    trait_name: &str,
+) -> Result<(), LowerError> {
+    match expr {
+        SExpression::Array(arr) => {
+            // Direct `["navigate", "<path>", ...]` call?
+            if let Some(SExpression::String(op)) = arr.first() {
+                if op == "navigate" {
+                    if let Some(SExpression::String(path)) = arr.get(1) {
+                        let canonical = canonicalise_route(path);
+                        if !canonical_pages.contains(&canonical) {
+                            return Err(LowerError::NavigateTargetUnreachable {
+                                orbital: orbital_name.to_string(),
+                                trait_name: trait_name.to_string(),
+                                path: path.clone(),
+                            });
+                        }
+                    }
+                }
+            }
+            // Always recurse — `navigate` may appear inside `(if cond
+            // (navigate ...) (navigate ...))` or `(do (set ...)
+            // (navigate ...))`.
+            for item in arr {
+                check_navigate_recursive(item, canonical_pages, orbital_name, trait_name)?;
+            }
+        }
+        SExpression::Object(obj) => {
+            for value in obj.values() {
+                check_navigate_recursive(value, canonical_pages, orbital_name, trait_name)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Reduce a route string to its canonical structural form. Dynamic
+/// segments — `:id` (page-side placeholder) and `@payload.X` /
+/// `@entity.X` / any segment containing `@` (navigate-side
+/// interpolation) — collapse to `<seg>`. Trailing slash normalised.
+///
+/// Examples:
+/// - `/projects/:id`              → `/projects/<seg>`
+/// - `/projects/@payload.id`      → `/projects/<seg>`
+/// - `/projects/:id/preview`      → `/projects/<seg>/preview`
+/// - `/`                           → `<empty>`
+/// - `/contacts/`                 → `/contacts`
+pub(crate) fn canonicalise_route(path: &str) -> String {
+    let trimmed = path.trim_end_matches('/');
+    if trimmed.is_empty() {
+        return "<root>".to_string();
+    }
+    trimmed
+        .split('/')
+        .map(|seg| {
+            if seg.starts_with(':') || seg.contains('@') {
+                "<seg>".to_string()
+            } else {
+                seg.to_string()
+            }
+        })
+        .collect::<Vec<_>>()
+        .join("/")
+}
+
+/// L1.3 check: every `(emit EVT { ... })` literal payload conforms to
+/// the declared `emits { EVT { ... } }` block on the same trait.
+///
+/// Three classes of mismatch caught at parse time (parse-time mirror of
+/// L2's `EmitPayloadMissingRequired` / `EmitPayloadExtraField` /
+/// `EmitPayloadFieldTypeMismatch` validators in
+/// `orbital-compiler/src/phases/validation/emit_payload.rs`):
+///
+/// 1. Missing required field: declared with `!` but absent from the
+///    literal payload.
+/// 2. Extra field: present in the literal but not declared on the
+///    event's payload schema.
+/// 3. Primitive type mismatch: literal value's primitive type
+///    (string / number / boolean / object / array) doesn't match the
+///    declared `field_type`.
+///
+/// Bindings (`@payload.X`, `@entity.X`, etc.) skip the type-compare —
+/// those resolve at L2 via the F3 binding resolver. This pass only
+/// catches literal-vs-declared mismatches that don't need cross-IR
+/// resolution.
+///
+/// Emits with no literal payload object (e.g. `(emit DONE)` / `(emit
+/// DONE @some.binding)`) skip the extra-field and type-mismatch
+/// branches but still get the missing-required check.
+pub(crate) fn check_emit_payload_literals(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
+    for orbital in orbitals {
+        for trait_ref in &orbital.traits {
+            let TraitReference::Inline(td) = trait_ref else { continue };
+
+            // Build event -> payload schema lookup once per trait.
+            let emit_schemas: HashMap<&str, &[PayloadField]> = td
+                .emits
+                .as_deref()
+                .unwrap_or(&[])
+                .iter()
+                .map(|e| (e.event.as_str(), e.payload_schema.as_deref().unwrap_or(&[])))
+                .collect();
+
+            if emit_schemas.is_empty() {
+                continue;
+            }
+
+            // Walk every transition's effects + every tick's effects.
+            let trait_emits_walk =
+                |effects: &[SExpression]| -> Result<(), LowerError> {
+                    for effect in effects {
+                        check_emit_literal_recursive(
+                            effect,
+                            &emit_schemas,
+                            &orbital.name,
+                            &td.name,
+                        )?;
+                    }
+                    Ok(())
+                };
+
+            for trans in &td.state_machine.transitions {
+                if let Some(effects) = &trans.effects {
+                    trait_emits_walk(effects)?;
+                }
+            }
+            if let Some(ticks) = &td.ticks {
+                for tick in ticks {
+                    trait_emits_walk(&tick.effects)?;
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Recursively walk an SExpression and validate every `["emit", event,
+/// payload]` call site against the trait's emit schemas. Descends into
+/// nested arrays so emits inside `(if cond ...)` / `(do ...)` are
+/// caught.
+fn check_emit_literal_recursive(
+    expr: &SExpression,
+    emit_schemas: &HashMap<&str, &[PayloadField]>,
+    orbital_name: &str,
+    trait_name: &str,
+) -> Result<(), LowerError> {
+    match expr {
+        SExpression::Array(arr) => {
+            // Direct `["emit", "<event>", <payload>]`?
+            if let Some(SExpression::String(op)) = arr.first() {
+                if op == "emit" {
+                    if let Some(SExpression::String(event)) = arr.get(1) {
+                        if let Some(&schema) = emit_schemas.get(event.as_str()) {
+                            check_one_emit_literal(
+                                event,
+                                arr.get(2),
+                                schema,
+                                orbital_name,
+                                trait_name,
+                            )?;
+                        }
+                        // Unknown event names handled by the L2 validator's
+                        // EffectEmitUndeclaredEvent — not duplicating that
+                        // class at L1 in this commit.
+                    }
+                }
+            }
+            for item in arr {
+                check_emit_literal_recursive(item, emit_schemas, orbital_name, trait_name)?;
+            }
+        }
+        SExpression::Object(obj) => {
+            for value in obj.values() {
+                check_emit_literal_recursive(value, emit_schemas, orbital_name, trait_name)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
+/// Validate a single `(emit EVT payload)` against the declared payload
+/// schema. Errors fast on the first mismatch — sequential parse-time
+/// reporting matches the rest of `lower.rs`'s style.
+fn check_one_emit_literal(
+    event: &str,
+    payload: Option<&SExpression>,
+    schema: &[PayloadField],
+    orbital_name: &str,
+    trait_name: &str,
+) -> Result<(), LowerError> {
+    let payload_obj = match payload {
+        Some(SExpression::Object(o)) => Some(o),
+        _ => None,
+    };
+
+    // Missing required fields.
+    for field in schema.iter().filter(|f| f.required.unwrap_or(false)) {
+        let present = payload_obj
+            .map(|obj| obj.contains_key(&field.name))
+            .unwrap_or(false);
+        if !present {
+            return Err(LowerError::EmitPayloadMissingRequired {
+                orbital: orbital_name.to_string(),
+                trait_name: trait_name.to_string(),
+                event: event.to_string(),
+                field: field.name.clone(),
+                expected_type: field.field_type.clone(),
+            });
+        }
+    }
+
+    // Extra fields + primitive type mismatches — only when the emit
+    // carries a literal payload object. Bindings or omitted payloads
+    // skip these checks.
+    let Some(obj) = payload_obj else {
+        return Ok(());
+    };
+    let declared: HashMap<&str, &str> = schema
+        .iter()
+        .map(|f| (f.name.as_str(), f.field_type.as_str()))
+        .collect();
+    for (key, value) in obj.iter() {
+        match declared.get(key.as_str()) {
+            None => {
+                return Err(LowerError::EmitPayloadExtraField {
+                    orbital: orbital_name.to_string(),
+                    trait_name: trait_name.to_string(),
+                    event: event.to_string(),
+                    field: key.clone(),
+                });
+            }
+            Some(expected) => {
+                if let Some(actual) = primitive_type_of_emit_value(value) {
+                    if !emit_primitive_compatible(expected, actual) {
+                        return Err(LowerError::EmitPayloadFieldTypeMismatch {
+                            orbital: orbital_name.to_string(),
+                            trait_name: trait_name.to_string(),
+                            event: event.to_string(),
+                            field: key.clone(),
+                            declared: expected.to_string(),
+                            actual: actual.to_string(),
+                        });
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Primitive type of a literal emit-payload value. `None` for bindings
+/// (`@payload.X`, `@entity.X`, etc.) and other compound expressions
+/// whose type comes from the F3 binding resolver at L2 — those are
+/// outside L1's scope and reported separately.
+fn primitive_type_of_emit_value(value: &SExpression) -> Option<&'static str> {
+    match value {
+        SExpression::Number(_) => Some("number"),
+        SExpression::Bool(_) => Some("boolean"),
+        SExpression::String(s) => {
+            if s.starts_with('@') || s.contains('@') {
+                None
+            } else {
+                Some("string")
+            }
+        }
+        SExpression::Null => None,
+        SExpression::Object(_) => Some("object"),
+        SExpression::Array(_) => Some("array"),
+    }
+}
