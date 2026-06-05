@@ -17,7 +17,7 @@ use std::collections::HashSet;
 use std::sync::OnceLock;
 
 const PATTERNS_JSON: &str =
-    include_str!("../../../../packages/almadar-patterns/src/patterns-registry.json");
+    include_str!("../../../packages/almadar-patterns/src/patterns-registry.json");
 
 /// Set of object-key names that, per the registry, identify a string
 /// value as a bus event-name reference. Two sources contribute:
