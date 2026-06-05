@@ -1,0 +1,69 @@
+{
+  "name": "NotifyOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "name": "Toast",
+        "persistence": "runtime"
+      },
+      "name": "NotifyOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Toast",
+          "name": "Notifier",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INFO",
+                "name": "Info"
+              },
+              {
+                "key": "WARN",
+                "name": "Warn"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "notify",
+                    "Saved"
+                  ]
+                ],
+                "event": "INFO",
+                "from": "idle",
+                "to": "idle"
+              },
+              {
+                "effects": [
+                  [
+                    "notify",
+                    "Cancelled",
+                    "info"
+                  ]
+                ],
+                "event": "WARN",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

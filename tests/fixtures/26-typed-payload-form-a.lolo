@@ -1,0 +1,31 @@
+;; Phase 10 fixture — bare-name alias lookup (replaces the legacy
+;; `EVENT scope :: TypeName` form A). The orbital-scope `type X = Event T`
+;; alias is the single source of truth; trait emits reference it by name.
+;; The lowerer flattens the alias's payload into the .orb's payload array.
+
+type UserData = Entity {
+  id : string!
+  name : string
+  email : string
+}
+
+type USER_LOADED = Event UserData [external]
+
+orbital UserNotifierOrbital {
+  entity Account [persistent: accounts] {
+    id : string!
+    userId : string
+  }
+
+  trait UserLoadedNotifier -> Account [interaction, collection] {
+    state idle {
+      INIT -> idle
+        (fetch Account)
+    }
+    emits {
+      USER_LOADED
+    }
+  }
+
+  page "/accounts" -> UserLoadedNotifier
+}

@@ -1,0 +1,117 @@
+{
+  "name": "ConfirmOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "pendingId",
+            "type": "string"
+          }
+        ],
+        "name": "ConfirmAction",
+        "persistence": "runtime"
+      },
+      "name": "ConfirmOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "ConfirmAction",
+          "name": "ConfirmActionConfirmation",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "REQUEST",
+                "name": "Request"
+              },
+              {
+                "key": "CONFIRM",
+                "name": "Confirm"
+              },
+              {
+                "key": "CANCEL",
+                "name": "Cancel"
+              },
+              {
+                "key": "CLOSE",
+                "name": "Close"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              },
+              {
+                "name": "confirming"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@pendingId",
+                    "@payload.id"
+                  ],
+                  [
+                    "render-ui",
+                    "modal",
+                    {
+                      "message": "Are you sure?",
+                      "type": "alert"
+                    }
+                  ]
+                ],
+                "event": "REQUEST",
+                "from": "idle",
+                "to": "confirming"
+              },
+              {
+                "effects": [
+                  [
+                    "render-ui",
+                    "modal",
+                    null
+                  ]
+                ],
+                "event": "CONFIRM",
+                "from": "confirming",
+                "to": "idle"
+              },
+              {
+                "effects": [
+                  [
+                    "render-ui",
+                    "modal",
+                    null
+                  ]
+                ],
+                "event": "CANCEL",
+                "from": "confirming",
+                "to": "idle"
+              },
+              {
+                "effects": [
+                  [
+                    "render-ui",
+                    "modal",
+                    null
+                  ]
+                ],
+                "event": "CLOSE",
+                "from": "confirming",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

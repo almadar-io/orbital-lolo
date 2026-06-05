@@ -1,0 +1,118 @@
+{
+  "name": "BrowseItemOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "description",
+            "type": "string"
+          }
+        ],
+        "name": "BrowseItem",
+        "persistence": "runtime"
+      },
+      "name": "BrowseItemOrbital",
+      "pages": [
+        {
+          "name": "Browseitems",
+          "path": "/browseitems",
+          "traits": [
+            {
+              "ref": "BrowseItemBrowse"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "category": "interaction",
+          "emits": [
+            {
+              "event": "BrowseItemLoaded",
+              "payloadSchema": [
+                {
+                  "name": "id",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "name",
+                  "type": "string"
+                },
+                {
+                  "name": "description",
+                  "type": "string"
+                }
+              ],
+              "scope": "internal"
+            }
+          ],
+          "linkedEntity": "BrowseItem",
+          "name": "BrowseItemBrowse",
+          "scope": "collection",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              },
+              {
+                "key": "BrowseItemLoaded",
+                "name": "BrowseItem loaded",
+                "payloadSchema": [
+                  {
+                    "name": "id",
+                    "required": true,
+                    "type": "string"
+                  },
+                  {
+                    "name": "name",
+                    "type": "string"
+                  },
+                  {
+                    "name": "description",
+                    "type": "string"
+                  }
+                ]
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "browsing"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "fetch",
+                    "BrowseItem",
+                    {
+                      "emit": {
+                        "success": "BrowseItemLoaded"
+                      }
+                    }
+                  ]
+                ],
+                "event": "INIT",
+                "from": "browsing",
+                "to": "browsing"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

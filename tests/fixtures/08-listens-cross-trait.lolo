@@ -1,0 +1,29 @@
+orbital NotificationOrbital {
+  entity Notification [runtime] {
+    id : string!
+    message : string
+  }
+  trait OrderProcessing -> Notification [interaction, instance] {
+    state pending {
+      SHIP -> shipped
+        (emit ORDER_SHIPPED { orderId: @id })
+    }
+    state shipped {}
+    emits {
+      ORDER_SHIPPED -> external { orderId: string }
+    }
+  }
+  trait NotificationHandler -> Notification [interaction] {
+    state idle {
+      SHOW -> active
+        (set @message ?message)
+    }
+    state active {
+      DISMISS -> idle
+    }
+    listens {
+      OrderProcessing.ORDER_SHIPPED -> SHOW
+        with { message: ?orderId }
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "name": "ErrorReporterOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "name": "ErrorReport",
+        "persistence": "runtime"
+      },
+      "name": "ErrorReporterOrbital",
+      "pages": [
+        {
+          "name": "Errors",
+          "path": "/errors",
+          "traits": [
+            {
+              "ref": "ErrorReporter"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "category": "interaction",
+          "emits": [
+            {
+              "event": "ReportFailed",
+              "payloadSchema": [
+                {
+                  "name": "message",
+                  "type": "string"
+                },
+                {
+                  "name": "code",
+                  "type": "number"
+                }
+              ],
+              "scope": "external"
+            }
+          ],
+          "linkedEntity": "ErrorReport",
+          "name": "ErrorReporter",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "FAIL",
+                "name": "Fail"
+              },
+              {
+                "key": "ReportFailed",
+                "name": "Report failed",
+                "payloadSchema": [
+                  {
+                    "name": "message",
+                    "type": "string"
+                  },
+                  {
+                    "name": "code",
+                    "type": "number"
+                  }
+                ]
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "emit",
+                    "ReportFailed"
+                  ]
+                ],
+                "event": "FAIL",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

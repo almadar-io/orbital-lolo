@@ -1,0 +1,10 @@
+orbital ShoppingApp {
+  entity Cart [runtime] {
+    id : string!
+  }
+  (behavior/compose {
+    appName: "ShoppingApp",
+    orbitals: [],
+    layoutStrategy: "auto"
+  })
+}

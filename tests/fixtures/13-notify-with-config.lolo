@@ -1,0 +1,13 @@
+orbital NotifyOrbital {
+  entity Toast [runtime] {
+    id : string!
+  }
+  trait Notifier -> Toast [interaction] {
+    state idle {
+      INFO -> idle
+        (notify "Saved")
+      WARN -> idle
+        (notify "Cancelled" "info")
+    }
+  }
+}

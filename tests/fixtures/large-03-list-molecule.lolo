@@ -1,0 +1,214 @@
+app std-list "1.0.0"
+"std-list as a Function"
+;;
+;; Daisy-chain composition showcase: no `on EVENT { ... }` trait-ref overrides.
+;; Modal + Confirmation trait refs are configured via `config: { ... }` at the
+;; call site. Side effects (persist) live in a sibling coordinator trait
+;; (`ListItemPersistor`) that listens for the modal/confirmation trait emits.
+;;
+;; Mirrors std-cart's structure. std-list omits the read-only VIEW path that the
+;; old version had — form-section's mode set only supports "create" | "edit",
+;; and a dedicated detail-view pattern is tracked separately (std-detail).
+
+orbital ListItemOrbital {
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Modal        from "std/behaviors/std-modal"
+
+  entity ListItem [persistent: listitems] {
+    id          : string!
+    name        : string! @description "The text displayed for this list item." @synonyms "label, text, display"
+    description : string @description "A brief explanation of the list item's content." @synonyms "text, details, notes, explanation"
+    status      : "active" | "inactive" | "pending" @description "Current operational state of the item." @synonyms "state, condition, flag" = "active"
+    createdAt   : string
+    pendingId   : string @description "Identifier for a related, pending item." @synonyms "reference, relatedId, linkId" = ""
+  }
+
+  type ListItemLoaded     = Event { data : [ListItem] }              "Fired when the ListItem collection finishes loading; payload.data holds the list"
+  type ListItemLoadFailed = Event { error : string, code : string } "Fired when the ListItem collection fails to load"
+
+  trait ListItemBrowse -> @rebindable ListItem [interaction, collection] {
+    initial: loading
+    state loading {
+      INIT -> loading
+        (fetch ListItem { emit: { success: "ListItemLoaded", failure: "ListItemLoadFailed" } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Loading list…" }] })
+      ListItemLoaded -> browsing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", className: "max-w-5xl mx-auto w-full", children: [{ type: "stack", direction: "horizontal", gap: "md", justify: "between", children: [{ type: "stack", direction: "horizontal", gap: "md", children: [{ type: "icon", name: "list" }, { type: "typography", content: "ListItems", variant: "h2" }] }, { type: "button", label: "Create", action: "CREATE", variant: "primary", icon: "plus" }] }, { type: "divider" }, { type: "data-grid", entity: @payload.data, itemActions: [{ label: "Edit", event: "EDIT", variant: "ghost" }, { label: "Delete", event: "DELETE", variant: "danger" }], fields: [{ name: "name", label: "Name", variant: "h4", icon: "list" }, { name: "description", label: "Description", variant: "caption" }, { name: "status", label: "Status", variant: "badge" }] }] })
+      ListItemLoadFailed -> error
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "icon", name: "alert-triangle", color: "destructive" }, { type: "typography", variant: "h3", content: "Failed to load list" }, { type: "typography", variant: "body", color: "muted", content: "@payload.error" }, { type: "button", label: "Retry", action: "INIT", variant: "primary", icon: "rotate-ccw" }] })
+    }
+    state browsing {
+      INIT -> loading
+        (fetch ListItem { emit: { success: "ListItemLoaded", failure: "ListItemLoadFailed" } })
+        (render-ui main { type: "spinner" })
+    }
+    state error {
+      INIT -> loading
+        (fetch ListItem { emit: { success: "ListItemLoaded", failure: "ListItemLoadFailed" } })
+        (render-ui main { type: "spinner" })
+    }
+    emits {
+      CREATE
+        @description "Signals a new item has been successfully created."
+        @synonyms "added, new, added, insert"
+        @tier "essential"
+      ;; row carries the public display contract (no internal pendingId)
+      ;; so EDIT/DELETE agree with other browse emitters app-wide.
+      EDIT { id : string!, row : { id : string!, name : string!, description : string, status : string, createdAt : string } }
+      DELETE { id : string!, row : { id : string!, name : string!, description : string, status : string, createdAt : string } }
+      ListItemLoaded
+        @description "Signals a list item has been successfully loaded."
+        @synonyms "loaded, fetched, retrieved"
+        @tier "essential"
+      ListItemLoadFailed
+        @description "Indicates a failure to load a list item."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+    }
+    listens {
+      ListItemLoadFailed { error : string!, code : string }
+        @description "Indicates a failure to load a list item."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+      ListItemPersistor.ITEM_CREATED -> INIT
+      ListItemPersistor.ITEM_UPDATED -> INIT
+      ListItemPersistor.ITEM_DELETED -> INIT
+    }
+  }
+
+  ;; Create modal: configured via `config`, no effects overrides.
+  ;; SAVE is renamed to LIST_ITEM_CREATED so the Persistor coordinator
+  ;; distinguishes Create-SAVE from Edit-SAVE without source-scoped listens.
+  trait ListItemCreate = Modal.traits.ModalRecordModal -> ListItem {
+    config: {
+      icon:  "plus-circle",
+      title: "Create ListItem",
+      fields: ["name", "description", "status"],
+      mode:  "create"
+    }
+    events {
+      OPEN: CREATE
+      SAVE: LIST_ITEM_CREATED
+    }
+    listens {
+      ListItemBrowse.CREATE -> CREATE
+      CREATE { id : string, row : ListItem }
+        @description "Indicates a new item has been created."
+        @synonyms "add, new, insert"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been successfully saved."
+        @synonyms "persist, store, commit"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates failure to load a record for a modal."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+    }
+  }
+
+  ;; Edit modal: configured via `config`, no effects overrides.
+  ;; SAVE is renamed to LIST_ITEM_UPDATED so the Persistor coordinator
+  ;; distinguishes Edit-SAVE from Create-SAVE.
+  trait ListItemEdit = Modal.traits.ModalRecordModal -> ListItem {
+    config: {
+      icon:  "edit",
+      title: "Edit ListItem",
+      fields: ["name", "description", "status"],
+      mode:  "edit"
+    }
+    events {
+      OPEN: EDIT
+      SAVE: LIST_ITEM_UPDATED
+    }
+    listens {
+      ListItemBrowse.EDIT -> EDIT
+      EDIT { id : string, row : ListItem }
+        @description "Indicates a request to modify an existing item."
+        @synonyms "modify, update, change"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted successfully."
+        @synonyms "persist, store, commit, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+    }
+  }
+
+  ;; Delete-confirm: configured via `config`, no effects overrides.
+  trait ListItemDelete = Confirmation.traits.ConfirmActionConfirmation -> ListItem {
+    config: {
+      icon:         "alert-triangle",
+      title:        "Delete ListItem",
+      alertMessage: "This action cannot be undone.",
+      confirmLabel: "Delete"
+    }
+    events {
+      REQUEST: DELETE
+      CONFIRM: CONFIRM_DELETE
+    }
+    listens {
+      ListItemBrowse.DELETE -> DELETE
+      DELETE { id : string, row : ListItem }
+        @description "Indicates a record has been removed from the list."
+        @synonyms "remove, discard, clear"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load data for an action."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+    }
+  }
+
+  ;; Coordinator trait: owns the persist side-effects triggered by the
+  ;; Modal/Confirmation trait refs' emits. Replaces the old per-ref
+  ;; `on SAVE { (persist ...) }` override pattern.
+  trait ListItemPersistor -> ListItem [lifecycle, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_CREATE -> idle
+        (persist create ListItem @payload.data { emit: { success: "ITEM_CREATED" } })
+      DO_UPDATE -> idle
+        (persist update ListItem @payload.data { emit: { success: "ITEM_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete ListItem @payload.id { emit: { success: "ITEM_DELETED" } })
+    }
+    emits {
+      ITEM_CREATED -> external { id : string! }
+        @description "Signals a new item has been added to the list."
+        @synonyms "added, new, appended"
+        @tier "essential"
+      ITEM_UPDATED -> external { id : string! }
+        @description "Signals a change in an item's data."
+        @synonyms "modified, changed, refreshed"
+        @tier "customization"
+      ITEM_DELETED -> external { id : string! }
+        @description "Signals that a list item has been removed."
+        @synonyms "removed, discarded, purged"
+        @tier "essential"
+    }
+    listens {
+      DO_CREATE { data : ListItem! }
+        @description "Indicates a request to create a new item."
+        @synonyms "add, new, insert"
+        @tier "essential"
+      DO_UPDATE { data : ListItem! }
+        @description "Indicates a data item has been modified."
+        @synonyms "modified, changed, refreshed"
+        @tier "essential"
+      DO_DELETE { id   : string!   }
+        @description "Indicates a request to remove an item from the list."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      ListItemCreate.LIST_ITEM_CREATED -> DO_CREATE
+      ListItemEdit.LIST_ITEM_UPDATED -> DO_UPDATE
+      ListItemDelete.CONFIRM_DELETE    -> DO_DELETE
+    }
+  }
+
+  page "/listitems" as ListItemPage -> ListItemBrowse, ListItemCreate, ListItemEdit, ListItemDelete, ListItemPersistor
+}

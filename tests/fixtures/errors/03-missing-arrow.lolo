@@ -1,0 +1,8 @@
+orbital Foo {
+  entity Bar { id : string! }
+  trait T -> Bar [interaction] {
+    state s {
+      EVT s
+    }
+  }
+}

@@ -1,0 +1,92 @@
+{
+  "name": "CartOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "name": "items",
+            "type": "array"
+          },
+          {
+            "name": "itemCount",
+            "type": "number"
+          },
+          {
+            "name": "total",
+            "type": "number"
+          }
+        ],
+        "name": "Cart",
+        "persistence": "runtime"
+      },
+      "name": "CartOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Cart",
+          "name": "CartActions",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "ADD_ITEM",
+                "name": "Add Item"
+              },
+              {
+                "key": "REMOVE_ITEM",
+                "name": "Remove Item"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "empty"
+              },
+              {
+                "name": "hasItems"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@items",
+                    [
+                      "array/append",
+                      "@items",
+                      "@payload.item"
+                    ]
+                  ]
+                ],
+                "event": "ADD_ITEM",
+                "from": "empty",
+                "to": "hasItems"
+              },
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@items",
+                    []
+                  ]
+                ],
+                "event": "REMOVE_ITEM",
+                "from": "hasItems",
+                "to": "empty"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

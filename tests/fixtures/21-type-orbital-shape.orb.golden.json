@@ -1,0 +1,55 @@
+{
+  "name": "ItemOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "name": "MyItem",
+        "persistence": "runtime"
+      },
+      "name": "ItemOrbital",
+      "pages": [
+        {
+          "name": "Items",
+          "path": "/items",
+          "traits": [
+            {
+              "ref": "MyItemBrowse"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "effects": {
+            "INIT": [
+              [
+                "ref",
+                "MyItem"
+              ]
+            ]
+          },
+          "linkedEntity": "MyItem",
+          "name": "MyItemBrowse",
+          "ref": "Browse.traits.BrowseItemBrowse"
+        }
+      ],
+      "uses": [
+        {
+          "as": "Browse",
+          "from": "std/behaviors/std-browse"
+        }
+      ]
+    }
+  ]
+}

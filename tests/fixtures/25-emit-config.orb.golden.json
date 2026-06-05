@@ -1,0 +1,176 @@
+{
+  "name": "PatientOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "patients",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string"
+          }
+        ],
+        "name": "Patient",
+        "persistence": "persistent"
+      },
+      "name": "PatientOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Patient",
+          "name": "PatientLoader",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "LOAD",
+                "name": "Load"
+              },
+              {
+                "key": "SAVE",
+                "name": "Save"
+              },
+              {
+                "key": "MARK_DONE",
+                "name": "Mark Done"
+              },
+              {
+                "key": "SEND_EMAIL",
+                "name": "Send Email"
+              },
+              {
+                "key": "SUBSCRIBE",
+                "name": "Subscribe"
+              },
+              {
+                "key": "WATCH_PUSH",
+                "name": "Watch Push"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              },
+              {
+                "name": "loading"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "fetch",
+                    "Patient",
+                    {
+                      "emit": {
+                        "failure": "PATIENT_LOAD_FAILED",
+                        "success": "PATIENT_LOADED"
+                      },
+                      "id": "@payload.id"
+                    }
+                  ]
+                ],
+                "event": "LOAD",
+                "from": "idle",
+                "to": "idle"
+              },
+              {
+                "effects": [
+                  [
+                    "persist",
+                    "update",
+                    "Patient",
+                    "@entity",
+                    {
+                      "emit": {
+                        "failure": "PATIENT_SAVE_FAILED",
+                        "success": "PATIENT_SAVED"
+                      }
+                    }
+                  ]
+                ],
+                "event": "SAVE",
+                "from": "loading",
+                "to": "loading"
+              },
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@entity.status",
+                    "done",
+                    {
+                      "emit": {
+                        "success": "STATUS_CHANGED"
+                      }
+                    }
+                  ]
+                ],
+                "event": "MARK_DONE",
+                "from": "loading",
+                "to": "loading"
+              },
+              {
+                "effects": [
+                  [
+                    "call-service",
+                    "notify",
+                    "sendEmail",
+                    "@payload",
+                    {
+                      "emit": {
+                        "failure": "EMAIL_FAILED",
+                        "success": "EMAIL_SENT"
+                      }
+                    }
+                  ]
+                ],
+                "event": "SEND_EMAIL",
+                "from": "loading",
+                "to": "loading"
+              },
+              {
+                "effects": [
+                  [
+                    "ref",
+                    "Patient",
+                    {
+                      "emit": {
+                        "on_change": "PATIENT_UPDATED"
+                      },
+                      "id": "@entity.id"
+                    }
+                  ]
+                ],
+                "event": "SUBSCRIBE",
+                "from": "loading",
+                "to": "loading"
+              },
+              {
+                "effects": [
+                  [
+                    "os/watch-http",
+                    "wss://push",
+                    {
+                      "emit": {
+                        "on_message": "PUSH_RECEIVED"
+                      }
+                    }
+                  ]
+                ],
+                "event": "WATCH_PUSH",
+                "from": "loading",
+                "to": "loading"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

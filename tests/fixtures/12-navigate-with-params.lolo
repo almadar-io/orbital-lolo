@@ -1,0 +1,15 @@
+orbital RouterOrbital {
+  entity Page [runtime] {
+    id : string!
+  }
+  trait Router -> Page [interaction] {
+    state idle {
+      GO_HOME -> idle
+        (navigate "/home")
+      GO_DETAIL -> idle
+        (navigate "/order/:id" { id: ?id })
+    }
+  }
+  page "/home" -> Router
+  page "/order/:id" -> Router
+}

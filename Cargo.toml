@@ -1,0 +1,17 @@
+[package]
+name = "orbital-lolo"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Lexer, parser, and lowering for the .lolo surface language to OrbitalSchema (.orb JSON)"
+
+[dependencies]
+orbital-core = { path = "../orbital-core" }
+serde.workspace = true
+serde_json.workspace = true
+thiserror.workspace = true
+
+[dev-dependencies]
+pretty_assertions.workspace = true
+orbital-compiler = { path = "../orbital-compiler" }
+serde_json.workspace = true

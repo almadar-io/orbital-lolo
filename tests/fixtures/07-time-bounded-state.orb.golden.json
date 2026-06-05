@@ -1,0 +1,66 @@
+{
+  "name": "ConfirmingOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "name": "Order",
+        "persistence": "runtime"
+      },
+      "name": "ConfirmingOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Order",
+          "name": "ConfirmFlow",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "CONFIRM",
+                "name": "Confirm"
+              },
+              {
+                "key": "TIMEOUT",
+                "name": "Timeout"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "confirming"
+              },
+              {
+                "name": "confirmed"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@id",
+                    "x"
+                  ]
+                ],
+                "event": "CONFIRM",
+                "from": "confirming",
+                "to": "confirmed"
+              },
+              {
+                "event": "TIMEOUT",
+                "from": "confirming",
+                "to": "confirming"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,107 @@
+{
+  "name": "OrderOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "orders",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "total",
+            "type": "number"
+          }
+        ],
+        "name": "Order",
+        "persistence": "persistent"
+      },
+      "name": "OrderOrbital",
+      "pages": [
+        {
+          "name": "Orders",
+          "path": "/orders",
+          "traits": [
+            {
+              "ref": "OrderShipper"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "category": "interaction",
+          "emits": [
+            {
+              "event": "OrderShipped",
+              "payloadSchema": [
+                {
+                  "name": "id",
+                  "required": true,
+                  "type": "string"
+                },
+                {
+                  "name": "total",
+                  "type": "number"
+                }
+              ],
+              "scope": "external"
+            }
+          ],
+          "linkedEntity": "Order",
+          "name": "OrderShipper",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "SHIP",
+                "name": "Ship"
+              },
+              {
+                "key": "OrderShipped",
+                "name": "Order shipped",
+                "payloadSchema": [
+                  {
+                    "name": "id",
+                    "required": true,
+                    "type": "string"
+                  },
+                  {
+                    "name": "total",
+                    "type": "number"
+                  }
+                ]
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "pending"
+              },
+              {
+                "name": "shipped"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "persist",
+                    "update",
+                    "Order",
+                    "@payload.data"
+                  ]
+                ],
+                "event": "SHIP",
+                "from": "pending",
+                "to": "shipped"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

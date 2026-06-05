@@ -1,0 +1,77 @@
+{
+  "name": "AuditableOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "records",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "createdAt",
+            "type": "string"
+          },
+          {
+            "name": "createdBy",
+            "type": "string"
+          },
+          {
+            "name": "note",
+            "type": "string"
+          }
+        ],
+        "name": "Record",
+        "persistence": "persistent"
+      },
+      "name": "AuditableOrbital",
+      "pages": [
+        {
+          "name": "Records",
+          "path": "/records",
+          "traits": [
+            {
+              "ref": "RecordBrowse"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Record",
+          "name": "RecordBrowse",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "ref",
+                    "Record"
+                  ]
+                ],
+                "event": "INIT",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

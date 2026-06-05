@@ -1,0 +1,119 @@
+{
+  "name": "OrderOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "orders",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string"
+          }
+        ],
+        "name": "Order",
+        "persistence": "persistent"
+      },
+      "name": "OrderOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Order",
+          "name": "OrderLifecycle",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "CONFIRM",
+                "name": "Confirm"
+              },
+              {
+                "key": "CANCEL",
+                "name": "Cancel"
+              },
+              {
+                "key": "SHIP",
+                "name": "Ship"
+              },
+              {
+                "key": "DELIVER",
+                "name": "Deliver"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "pending"
+              },
+              {
+                "name": "confirmed"
+              },
+              {
+                "name": "shipped"
+              },
+              {
+                "name": "delivered"
+              },
+              {
+                "name": "cancelled"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@status",
+                    "confirmed"
+                  ]
+                ],
+                "event": "CONFIRM",
+                "from": "pending",
+                "to": "confirmed"
+              },
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@status",
+                    "cancelled"
+                  ]
+                ],
+                "event": "CANCEL",
+                "from": "pending",
+                "to": "cancelled"
+              },
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@status",
+                    "shipped"
+                  ]
+                ],
+                "event": "SHIP",
+                "from": "confirmed",
+                "to": "shipped"
+              },
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@status",
+                    "delivered"
+                  ]
+                ],
+                "event": "DELIVER",
+                "from": "shipped",
+                "to": "delivered"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

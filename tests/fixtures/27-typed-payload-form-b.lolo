@@ -1,0 +1,27 @@
+;; Stage 2 fixture — Form B typed emit payload. `name :: Type` inside the field
+;; list expands to nested PayloadField entries (`location.lat`, `location.lng`, ...).
+
+type Location = Entity {
+  lat : number!
+  lng : number!
+  address : string
+}
+
+orbital MapPickerOrbital {
+  entity Place [persistent: places] {
+    id : string!
+    name : string
+  }
+
+  trait MapPicker -> Place [interaction, instance] {
+    state idle {
+      INIT -> idle
+        (fetch Place)
+    }
+    emits {
+      PLACE_SELECTED -> external { placeId : string!, location :: Location, timestamp : string }
+    }
+  }
+
+  page "/places" -> MapPicker
+}

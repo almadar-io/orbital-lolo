@@ -1,0 +1,22 @@
+;; Negative: the entity body is missing a field declared in its `::` type.
+;; Resolver returns TypeError::AnnotationMismatch naming the missing field.
+
+type Required = Entity {
+  id : string!
+  name : string!
+  email : string!
+}
+
+orbital BadBody {
+  entity Contact :: Required [persistent: contacts] {
+    id : string!
+    name : string!
+  }
+  trait ContactTrait -> Contact [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Contact)
+    }
+  }
+  page "/contacts" -> ContactTrait
+}

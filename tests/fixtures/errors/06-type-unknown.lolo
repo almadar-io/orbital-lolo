@@ -1,0 +1,22 @@
+;; Negative: `::` annotation references a type that was never declared.
+;; Resolver returns TypeError::UnknownType with a suggestion (levenshtein
+;; on registered names) in its message.
+
+type Auditable = Entity {
+  id : string!
+  createdAt : string
+}
+
+orbital BadOrbital {
+  entity Record :: Auditible [persistent: records] {
+    id : string!
+    createdAt : string
+  }
+  trait RecordTrait -> Record [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Record)
+    }
+  }
+  page "/records" -> RecordTrait
+}

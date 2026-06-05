@@ -1,0 +1,143 @@
+{
+  "name": "ItemOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "items",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          }
+        ],
+        "name": "Item",
+        "persistence": "persistent"
+      },
+      "name": "ItemOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Item",
+          "name": "ItemSearch",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "placeholder": "Search...",
+                      "type": "search-input"
+                    }
+                  ]
+                ],
+                "event": "INIT",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        },
+        {
+          "category": "interaction",
+          "linkedEntity": "Item",
+          "name": "ItemBrowse",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "browsing"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "ref",
+                    "Item"
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "entity": "Item",
+                      "type": "data-grid"
+                    }
+                  ]
+                ],
+                "event": "INIT",
+                "from": "browsing",
+                "to": "browsing"
+              }
+            ]
+          }
+        },
+        {
+          "category": "interaction",
+          "linkedEntity": "Item",
+          "name": "ItemLayout",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "composing"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "children": [
+                        "@trait.ItemSearch",
+                        "@trait.ItemBrowse"
+                      ],
+                      "direction": "vertical",
+                      "gap": "md",
+                      "type": "stack"
+                    }
+                  ]
+                ],
+                "event": "INIT",
+                "from": "composing",
+                "to": "composing"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+;; Stage 1 fixture — `type X = Entity ...` shape declaration at file level,
+;; applied via `::` to a concrete entity. In Stage 1 the type is parsed into
+;; the AST and stripped at lower-time (no checking yet); Stage 2 turns on the
+;; resolver that validates body conforms to the shape.
+
+type Auditable = Entity {
+  id : string!
+  createdAt : string
+  createdBy : string
+}
+
+orbital AuditableOrbital {
+  entity Record :: Auditable [persistent: records] {
+    id : string!
+    createdAt : string
+    createdBy : string
+    note : string
+  }
+  trait RecordBrowse -> Record [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Record)
+    }
+  }
+  page "/records" -> RecordBrowse
+}

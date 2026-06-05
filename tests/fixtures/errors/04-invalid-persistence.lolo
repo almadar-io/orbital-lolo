@@ -1,0 +1,5 @@
+orbital Foo {
+  entity Bar [bogus_persistence] {
+    id : string!
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "AgentOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "name": "AgentTask",
+        "persistence": "runtime"
+      },
+      "name": "AgentOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "AgentTask",
+          "name": "AgentRunner",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "RUN",
+                "name": "Run"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "call-service",
+                    "openai",
+                    "chat",
+                    {
+                      "prompt": "@payload.prompt"
+                    }
+                  ]
+                ],
+                "event": "RUN",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "name": "OrderEmitOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "orders",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "total",
+            "type": "number"
+          }
+        ],
+        "name": "OrderEmit",
+        "persistence": "persistent"
+      },
+      "name": "OrderEmitOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "emits": [
+            {
+              "event": "ORDER_SHIPPED",
+              "payloadSchema": [
+                {
+                  "name": "orderId",
+                  "type": "string"
+                },
+                {
+                  "name": "total",
+                  "type": "int"
+                }
+              ],
+              "scope": "external"
+            }
+          ],
+          "linkedEntity": "OrderEmit",
+          "name": "OrderEmitter",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "SHIP",
+                "name": "Ship"
+              },
+              {
+                "key": "ORDER_SHIPPED",
+                "name": "Order Shipped"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "emit",
+                    "ORDER_SHIPPED",
+                    {
+                      "orderId": "@id",
+                      "total": "@total"
+                    }
+                  ]
+                ],
+                "event": "SHIP",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

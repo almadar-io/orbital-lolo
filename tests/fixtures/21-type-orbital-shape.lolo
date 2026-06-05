@@ -1,0 +1,29 @@
+;; Stage 1 fixture — `type X T = Orbital { entity: T; traits: ...; page: ... }`
+;; parameterized orbital shape, applied via `::` at the orbital header. Type
+;; applications inside trait-type / page-type slots are pre-resolved (Stage 1
+;; parser does not substitute inside type-expr positions; Stage 2 will).
+
+type MyItemBrowsable = Trait Browse.traits.BrowseItemBrowse -> MyItem
+type MyItemListPage = Page -> MyItemBrowsable
+type MyItemListOrbital = Orbital {
+  entity: MyItem
+  traits: MyItemBrowsable
+  page: MyItemListPage
+}
+
+orbital ItemOrbital :: MyItemListOrbital {
+  uses Browse from "std/behaviors/std-browse"
+
+  entity MyItem [runtime] {
+    id : string!
+    name : string
+  }
+
+  trait MyItemBrowse :: MyItemBrowsable = Browse.traits.BrowseItemBrowse -> MyItem {
+    on INIT {
+      (ref MyItem)
+    }
+  }
+
+  page "/items" :: MyItemListPage -> MyItemBrowse
+}

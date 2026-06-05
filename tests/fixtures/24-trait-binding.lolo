@@ -1,0 +1,36 @@
+orbital ItemOrbital {
+  entity Item [persistent: items] {
+    id : string!
+    title : string
+  }
+
+  trait ItemSearch -> Item [interaction] {
+    state idle {
+      INIT -> idle
+        (render-ui main { type: "search-input", placeholder: "Search..." })
+    }
+  }
+
+  trait ItemBrowse -> Item [interaction] {
+    state browsing {
+      INIT -> browsing
+        (ref Item)
+        (render-ui main { type: "data-grid", entity: "Item" })
+    }
+  }
+
+  trait ItemLayout -> Item [interaction] {
+    state composing {
+      INIT -> composing
+        (render-ui main {
+          type: "stack",
+          direction: "vertical",
+          gap: "md",
+          children: [
+            "@trait.ItemSearch",
+            "@trait.ItemBrowse"
+          ]
+        })
+    }
+  }
+}

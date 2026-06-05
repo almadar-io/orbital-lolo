@@ -1,0 +1,72 @@
+{
+  "name": "TaskOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "tasks",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          }
+        ],
+        "name": "Task",
+        "persistence": "persistent"
+      },
+      "name": "TaskOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Task",
+          "name": "TaskList",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "listing"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "ref",
+                    "Task"
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "columns": [
+                        {
+                          "label": "Title",
+                          "name": "title"
+                        }
+                      ],
+                      "entity": "Task",
+                      "type": "data-grid"
+                    }
+                  ]
+                ],
+                "event": "INIT",
+                "from": "listing",
+                "to": "listing"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

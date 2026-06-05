@@ -1,0 +1,23 @@
+;; Negative: composing mismatched kinds (Entity & Trait). The resolver rejects
+;; at composition-flatten time with TypeError::KindMismatch.
+
+type Foo = Entity {
+  id : string!
+}
+
+type Bar = Trait -> Foo
+
+type Mixed = Foo & Bar
+
+orbital Broken {
+  entity Rec :: Mixed [persistent: recs] {
+    id : string!
+  }
+  trait RecTrait -> Rec [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Rec)
+    }
+  }
+  page "/recs" -> RecTrait
+}

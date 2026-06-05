@@ -1,0 +1,94 @@
+{
+  "name": "UserOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "users",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          }
+        ],
+        "name": "User",
+        "persistence": "persistent"
+      },
+      "name": "UserOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "User",
+          "name": "UserCrud",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "CREATE",
+                "name": "Create"
+              },
+              {
+                "key": "UPDATE",
+                "name": "Update"
+              },
+              {
+                "key": "DELETE",
+                "name": "Delete"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "listing"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "persist",
+                    "create",
+                    "User",
+                    "@payload.data"
+                  ]
+                ],
+                "event": "CREATE",
+                "from": "listing",
+                "to": "listing"
+              },
+              {
+                "effects": [
+                  [
+                    "persist",
+                    "update",
+                    "User",
+                    "@payload.data"
+                  ]
+                ],
+                "event": "UPDATE",
+                "from": "listing",
+                "to": "listing"
+              },
+              {
+                "effects": [
+                  [
+                    "persist",
+                    "delete",
+                    "User",
+                    "@payload.id"
+                  ]
+                ],
+                "event": "DELETE",
+                "from": "listing",
+                "to": "listing"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

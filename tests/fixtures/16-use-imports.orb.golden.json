@@ -1,0 +1,143 @@
+{
+  "name": "InventoryItemOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "pendingId",
+            "type": "string"
+          }
+        ],
+        "name": "InventoryItem",
+        "persistence": "persistent"
+      },
+      "name": "InventoryItemOrbital",
+      "pages": [
+        {
+          "path": "/inventory",
+          "ref": "Modal.pages.ModalRecordModalPage",
+          "traits": [
+            {
+              "ref": "InventoryItemBrowse"
+            },
+            {
+              "ref": "InventoryItemAdd"
+            },
+            {
+              "ref": "InventoryItemDelete"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "effects": {
+            "INIT": [
+              [
+                "ref",
+                "InventoryItem"
+              ],
+              [
+                "render-ui",
+                "main",
+                {
+                  "entity": "InventoryItem",
+                  "type": "data-grid"
+                }
+              ]
+            ]
+          },
+          "linkedEntity": "InventoryItem",
+          "name": "InventoryItemBrowse",
+          "ref": "Browse.traits.BrowseItemBrowse"
+        },
+        {
+          "effects": {
+            "ADD_ITEM": [
+              [
+                "fetch",
+                "InventoryItem"
+              ],
+              [
+                "render-ui",
+                "modal",
+                {
+                  "entity": "InventoryItem",
+                  "mode": "create",
+                  "type": "form-section"
+                }
+              ]
+            ],
+            "SAVE": [
+              [
+                "persist",
+                "create",
+                "InventoryItem",
+                "@payload.data"
+              ],
+              [
+                "render-ui",
+                "modal",
+                null
+              ],
+              [
+                "emit",
+                "ITEM_CREATED"
+              ]
+            ]
+          },
+          "emitsScope": "external",
+          "events": {
+            "OPEN": "ADD_ITEM"
+          },
+          "linkedEntity": "InventoryItem",
+          "name": "InventoryItemAdd",
+          "ref": "Modal.traits.ModalRecordModal"
+        },
+        {
+          "effects": {
+            "CONFIRM_REMOVE": [
+              [
+                "persist",
+                "delete",
+                "InventoryItem",
+                "@entity.pendingId"
+              ]
+            ]
+          },
+          "events": {
+            "CONFIRM": "CONFIRM_REMOVE",
+            "REQUEST": "REQUEST_REMOVE"
+          },
+          "linkedEntity": "InventoryItem",
+          "name": "InventoryItemDelete",
+          "ref": "Confirmation.traits.ConfirmActionConfirmation"
+        }
+      ],
+      "uses": [
+        {
+          "as": "Browse",
+          "from": "std/behaviors/std-browse"
+        },
+        {
+          "as": "Modal",
+          "from": "std/behaviors/std-modal"
+        },
+        {
+          "as": "Confirmation",
+          "from": "std/behaviors/std-confirmation"
+        }
+      ]
+    }
+  ]
+}

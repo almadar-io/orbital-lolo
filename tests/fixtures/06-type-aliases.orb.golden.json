@@ -1,0 +1,63 @@
+{
+  "name": "StatusOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string",
+            "values": [
+              "active",
+              "inactive",
+              "pending"
+            ]
+          }
+        ],
+        "name": "StatusItem",
+        "persistence": "runtime"
+      },
+      "name": "StatusOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "StatusItem",
+          "name": "StatusActions",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "ACTIVATE",
+                "name": "Activate"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@status",
+                    "active"
+                  ]
+                ],
+                "event": "ACTIVATE",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

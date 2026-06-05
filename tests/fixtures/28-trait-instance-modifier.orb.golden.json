@@ -1,0 +1,112 @@
+{
+  "name": "TaskOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "tasks",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          },
+          {
+            "name": "status",
+            "type": "string"
+          }
+        ],
+        "name": "Task",
+        "persistence": "persistent"
+      },
+      "name": "TaskOrbital",
+      "pages": [
+        {
+          "name": "Tasks",
+          "path": "/tasks",
+          "traits": [
+            {
+              "ref": "TaskBrowse"
+            },
+            {
+              "ref": "TaskEdit"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Task",
+          "name": "TaskBrowse",
+          "scope": "collection",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "browsing"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "fetch",
+                    "Task"
+                  ]
+                ],
+                "event": "INIT",
+                "from": "browsing",
+                "to": "browsing"
+              }
+            ]
+          }
+        },
+        {
+          "category": "interaction",
+          "linkedEntity": "Task",
+          "name": "TaskEdit",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "SAVE",
+                "name": "Save"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "editing"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "persist",
+                    "update",
+                    "Task",
+                    "@entity"
+                  ]
+                ],
+                "event": "SAVE",
+                "from": "editing",
+                "to": "editing"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

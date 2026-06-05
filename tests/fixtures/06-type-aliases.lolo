@@ -1,0 +1,13 @@
+type Status = active | inactive | pending
+orbital StatusOrbital {
+  entity StatusItem [runtime] {
+    id : string!
+    status : Status
+  }
+  trait StatusActions -> StatusItem [interaction] {
+    state idle {
+      ACTIVATE -> idle
+        (set @status "active")
+    }
+  }
+}

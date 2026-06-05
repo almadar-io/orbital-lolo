@@ -1,0 +1,72 @@
+{
+  "name": "ProductOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "products",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "name": "Product",
+        "persistence": "persistent"
+      },
+      "name": "ProductOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Product",
+          "name": "ProductFetch",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "LOAD",
+                "name": "Load"
+              },
+              {
+                "key": "LOAD_ALL",
+                "name": "Load All"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "fetch",
+                    "Product",
+                    {
+                      "id": "@payload.id"
+                    }
+                  ]
+                ],
+                "event": "LOAD",
+                "from": "idle",
+                "to": "idle"
+              },
+              {
+                "effects": [
+                  [
+                    "fetch",
+                    "Product"
+                  ]
+                ],
+                "event": "LOAD_ALL",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

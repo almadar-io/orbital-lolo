@@ -1,0 +1,1830 @@
+app std-generic-app "1.0.0"
+"Generic fallback app: 8 reusable orbital factories (Contact, Item, Activity, Task, CalendarEvent, Widget, FeedPost, Note) under shared AppShell chrome. Picked by orbital-agent when no domain-specific organism is a confident match — agent maps prompt nouns to orbitals and supplies entity/title overrides via standard factory params."
+
+orbital ContactOrbital {
+  uses AppShell     from "std/behaviors/std-app-layout"
+  uses Modal        from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Search       from "std/behaviors/std-search"
+  uses Filter       from "std/behaviors/std-filter"
+  uses Browse       from "std/behaviors/std-browse"
+
+  entity Contact [persistent: contacts] {
+    id : string!
+    name : string! @description "The identifier or label for the contact." @synonyms "label, identifier, designation"
+    email : string @description "The electronic mail address for contact." @synonyms "email address, mail, contact email" = ""
+    phone : string @description "The phone number associated with the entity." @synonyms "telephone, number, contact number" = ""
+    company : string @description "The organization or business associated with the contact." @synonyms "organization, employer, business" = ""
+    role : string @description "The function or position of this entity within a relationship." @synonyms "function, position, relationship, type" = ""
+    notes : string @description "Free-form text providing additional information." @synonyms "comments, remarks, details, information" = ""
+    pendingId : string @description "A unique identifier awaiting confirmation or processing." @synonyms "tempId, provisionalId, draftId" = ""
+  }
+
+  trait ContactAppLayout = AppShell.traits.AppLayout {
+    config: {
+      contentTrait: "@trait.ContactCatalog",
+      appName: "App",
+      navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
+      searchEvent: "CONTACT_SEARCH",
+      notifications: [],
+      notificationClickEvent: "CONTACT_NOTIFICATIONS_OPEN"
+    }
+    events {
+      SEARCH: CONTACT_SEARCH
+      NOTIFY_CLICK: CONTACT_NOTIFICATIONS_OPEN
+    }
+  }
+
+  trait ContactCatalog [interaction, instance] {
+    initial: composing
+    state composing {
+      INIT -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", children: [
+          { type: "stack", direction: "horizontal", gap: "md", justify: "between", align: "center", children: [
+            { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [
+              { type: "icon", name: "users" },
+              { type: "typography", content: "Contacts", variant: "h2" }
+            ]},
+            { type: "button", label: "New Contact", action: "CREATE", variant: "primary", icon: "plus" }
+          ]},
+          { type: "divider" },
+          { type: "stack", direction: "horizontal", gap: "md", align: "center", children: [
+            "@trait.ContactSearch",
+            "@trait.ContactFilter"
+          ]},
+          { type: "divider" },
+          "@trait.ContactBrowseList"
+        ]})
+      CONTACT_SEARCH -> composing
+      CONTACT_NOTIFICATIONS_OPEN -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-8", children: [
+          { type: "icon", name: "bell" },
+          { type: "typography", variant: "h3", content: "No notifications" },
+          { type: "button", label: "Back", action: "INIT", variant: "ghost" }
+        ]})
+    }
+    emits {
+      CREATE -> external { source : string }
+        @description "Signals the creation of a new record."
+        @synonyms "new, add, initialize, generate"
+        @tier "essential"
+    }
+    listens {
+      ContactAppLayout.CONTACT_SEARCH -> CONTACT_SEARCH
+      ContactAppLayout.CONTACT_NOTIFICATIONS_OPEN -> CONTACT_NOTIFICATIONS_OPEN
+      CONTACT_SEARCH { value : string }
+        @description "Triggers a search for contacts."
+        @synonyms "find, query, lookup, search"
+        @tier "essential"
+      CONTACT_NOTIFICATIONS_OPEN { id : string }
+        @description "Indicates new contact notifications are available."
+        @synonyms "alerts, updates, reminders, news"
+        @tier "customization"
+    }
+  }
+
+  trait ContactSearch = Search.traits.SearchResultSearch {
+    config: { placeholder: "Search contacts…", event: "CONTACT_SEARCH" }
+  }
+
+  trait ContactFilter = Filter.traits.FilterTargetFilter {
+    config: {
+      filters: [{ field: "company", label: "Company", filterType: "select", options: [] }],
+      event: "CONTACT_FILTER"
+    }
+  }
+
+  trait ContactBrowseList = Browse.traits.BrowseItemBrowse -> Contact {
+    config: {
+      fields: [
+        { name: "name",    variant: "h3",      icon: "user" },
+        { name: "email",   variant: "body" },
+        { name: "phone",   variant: "caption" },
+        { name: "company", variant: "badge" },
+        { name: "role",    variant: "caption" }
+      ],
+      itemActions: [
+        { label: "View",   event: "VIEW",   variant: "ghost" },
+        { label: "Edit",   event: "EDIT",   variant: "ghost" },
+        { label: "Delete", event: "DELETE", variant: "danger" }
+      ],
+      cols: 1,
+      gap: "sm"
+    }
+    listens {
+      ContactSearch.SEARCH              -> REFETCH_QUERY
+      ContactFilter.FILTER              -> REFETCH_FILTER
+      ContactPersistor.CONTACT_CREATED  -> INIT
+      ContactPersistor.CONTACT_UPDATED  -> INIT
+      ContactPersistor.CONTACT_DELETED  -> INIT
+    }
+  }
+
+  trait ContactCreate = Modal.traits.ModalRecordModal -> Contact {
+    config: { icon: "plus-circle", title: "New Contact", mode: "create", fields: ["name", "email", "phone", "company", "role", "notes"] }
+    events { OPEN: CREATE }
+    listens {
+      ContactCatalog.CREATE -> CREATE
+      CREATE { id : string, row : Contact }
+        @description "A new record is being created."
+        @synonyms "new, add, initialize, generate"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data persistence or storage has been successfully completed."
+        @synonyms "persist, store, commit, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data fetch failure"
+        @tier "internal"
+    }
+  }
+
+  trait ContactEdit = Modal.traits.ModalRecordModal -> Contact {
+    config: { icon: "edit", title: "Edit Contact", mode: "edit", fields: ["name", "email", "phone", "company", "role", "notes"] }
+    events { OPEN: EDIT }
+    listens {
+      ContactBrowseList.EDIT -> EDIT
+      EDIT { id : string, row : Contact }
+        @description "Indicates a record is being modified."
+        @synonyms "update, change, modify"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data persistence triggered by user action."
+        @synonyms "persist, store, commit, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data retrieval failure"
+        @tier "internal"
+    }
+  }
+
+  trait ContactView = Modal.traits.ModalRecordModal -> Contact {
+    config: { icon: "eye", title: "View Contact", mode: "edit", fields: ["name", "email", "phone", "company", "role", "notes"] }
+    events { OPEN: VIEW }
+    listens {
+      ContactBrowseList.VIEW -> VIEW
+      VIEW { id : string, row : Contact }
+        @description "Indicates a record has been displayed or is visible."
+        @synonyms "display, show, present"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "A record has been persisted or updated."
+        @synonyms "persist, update, store, commit"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data retrieval failure"
+        @tier "internal"
+    }
+  }
+
+  trait ContactDelete = Confirmation.traits.ConfirmActionConfirmation -> Contact {
+    config: { icon: "alert-triangle", title: "Delete Contact", alertMessage: "This action cannot be undone.", confirmLabel: "Delete" }
+    events { REQUEST: DELETE, CONFIRM: CONFIRM_DELETE }
+    listens {
+      ContactBrowseList.DELETE -> DELETE
+      DELETE { id : string, row : Contact }
+        @description "Indicates a record has been removed."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load requested data."
+        @synonyms "error, failure, failed, problem"
+        @tier "internal"
+    }
+  }
+
+  trait ContactPersistor -> Contact [lifecycle, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_CREATE -> idle
+        (persist create Contact @payload.data { emit: { success: "CONTACT_CREATED" } })
+      DO_UPDATE -> idle
+        (persist update Contact @payload.data { emit: { success: "CONTACT_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete Contact @payload.id { emit: { success: "CONTACT_DELETED" } })
+    }
+    emits {
+      CONTACT_CREATED -> external { id : string }
+        @description "Signals the creation of a new contact record."
+        @synonyms "new contact, add contact, contact added"
+        @tier "essential"
+      CONTACT_UPDATED -> external { id : string }
+        @description "Signals that a contact's details have been modified."
+        @synonyms "modified, changed, refreshed"
+        @tier "essential"
+      CONTACT_DELETED -> external { id : string }
+        @description "Signals a contact record has been removed."
+        @synonyms "removed, purged, archived"
+        @tier "essential"
+    }
+    listens {
+      DO_CREATE { data : object! }
+        @description "Initiates the creation of a new record."
+        @synonyms "new, add, generate, initiate"
+        @tier "essential"
+      DO_UPDATE { data : object! }
+        @description "Indicates data has been modified and needs to be refreshed."
+        @synonyms "refresh, reload, update, sync"
+        @tier "essential"
+      DO_DELETE { id : string }
+        @description "Initiates the removal of a record."
+        @synonyms "remove, discard, purge"
+        @tier "essential"
+      ContactCreate.SAVE          -> DO_CREATE
+      ContactEdit.SAVE            -> DO_UPDATE
+      ContactDelete.CONFIRM_DELETE -> DO_DELETE
+    }
+  }
+
+  page "/contacts" as ContactsPage -> ContactAppLayout, ContactCatalog, ContactSearch, ContactFilter, ContactBrowseList, ContactCreate, ContactEdit, ContactView, ContactDelete, ContactPersistor
+}
+
+orbital ItemOrbital {
+  uses AppShell     from "std/behaviors/std-app-layout"
+  uses Modal        from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Search       from "std/behaviors/std-search"
+  uses Filter       from "std/behaviors/std-filter"
+  uses Browse       from "std/behaviors/std-browse"
+  uses Approval     from "std/behaviors/std-approval-gate"
+  uses Erasure      from "std/behaviors/std-data-erasure"
+  uses ModQueue     from "std/behaviors/std-mod-queue"
+  uses Audit        from "std/behaviors/std-audit-capture"
+
+  entity Item [persistent: items] {
+    id : string!
+    name : string! @description "The identifier or label for the contact." @synonyms "label, identifier, designation"
+    description : string @description "A textual explanation or summary of the item." @synonyms "summary, details, explanation, about" = ""
+    sku : string @description "Unique identifier for a product or item." @synonyms "product code, item number, part number" = ""
+    price : number @description "The monetary cost associated with the item." @synonyms "cost, amount, value, rate" = 0
+    quantity : number @description "The number of items or units." @synonyms "count, amount, number, size" = 0
+    category : string @description "Classification or type of the item." @synonyms "type, kind, classification" = ""
+    pendingId : string @description "A unique identifier awaiting final assignment or processing." @synonyms "tempId, provisionalId, draftId" = ""
+    status : "active" | "pending" | "approved" @description "Approval/workflow state of the item." @synonyms "state, stage, condition, review status" = "active"
+  }
+
+  trait ItemAppLayout = AppShell.traits.AppLayout {
+    config: {
+      contentTrait: "@trait.ItemCatalog",
+      appName: "App",
+      navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
+      searchEvent: "ITEM_SEARCH",
+      topBarActions: [{ label: "Approvals", event: "OPEN_APPROVALS", variant: "ghost", icon: "shield-check" }],
+      notifications: [],
+      notificationClickEvent: "ITEM_NOTIFICATIONS_OPEN"
+    }
+    events {
+      SEARCH: ITEM_SEARCH
+      NOTIFY_CLICK: ITEM_NOTIFICATIONS_OPEN
+    }
+  }
+
+  trait ItemCatalog [interaction, instance] {
+    initial: composing
+    state composing {
+      INIT -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", children: [
+          { type: "stack", direction: "horizontal", gap: "md", justify: "between", align: "center", children: [
+            { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [
+              { type: "icon", name: "package" },
+              { type: "typography", content: "Items", variant: "h2" }
+            ]},
+            { type: "button", label: "New Item", action: "CREATE", variant: "primary", icon: "plus" }
+          ]},
+          { type: "divider" },
+          { type: "stack", direction: "horizontal", gap: "md", align: "center", children: [
+            "@trait.ItemSearch",
+            "@trait.ItemFilter"
+          ]},
+          "@trait.ItemBrowseList"
+        ]})
+      ITEM_SEARCH -> composing
+      ITEM_NOTIFICATIONS_OPEN -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-8", children: [
+          { type: "icon", name: "bell" },
+          { type: "typography", variant: "h3", content: "No notifications" },
+          { type: "button", label: "Back", action: "INIT", variant: "ghost" }
+        ]})
+    }
+    emits {
+      CREATE -> external { source : string }
+        @description "Signals the creation of a new record."
+        @synonyms "new, add, generate, initialize"
+        @tier "essential"
+    }
+    listens {
+      ItemAppLayout.ITEM_SEARCH -> ITEM_SEARCH
+      ItemAppLayout.ITEM_NOTIFICATIONS_OPEN -> ITEM_NOTIFICATIONS_OPEN
+      ITEM_SEARCH { value : string }
+        @description "A search query for items has been submitted."
+        @synonyms "query, find, lookup, browse"
+        @tier "essential"
+      ITEM_NOTIFICATIONS_OPEN { id : string }
+        @description "Indicates new notifications are available for items."
+        @synonyms "alerts, notification, updates, new"
+        @tier "customization"
+    }
+  }
+
+  trait ItemSearch = Search.traits.SearchResultSearch {
+    config: { placeholder: "Search items…", event: "ITEM_SEARCH" }
+  }
+
+  trait ItemFilter = Filter.traits.FilterTargetFilter {
+    config: {
+      filters: [{ field: "category", label: "Category", filterType: "select", options: [] }],
+      event: "ITEM_FILTER"
+    }
+  }
+
+  trait ItemBrowseList = Browse.traits.BrowseItemBrowse -> Item {
+    config: {
+      fields: [
+        { name: "name",        variant: "h3",      icon: "package" },
+        { name: "description", variant: "body" },
+        { name: "sku",         variant: "caption" },
+        { name: "price",       variant: "badge",   format: "currency" },
+        { name: "quantity",    variant: "badge" },
+        { name: "category",    variant: "caption" },
+        { name: "status",      variant: "badge" }
+      ],
+      itemActions: [
+        { label: "View",   event: "VIEW",   variant: "ghost" },
+        { label: "Edit",   event: "EDIT",   variant: "ghost" },
+        { label: "Delete", event: "DELETE", variant: "danger" }
+      ],
+      cols: 2,
+      gap: "sm"
+    }
+    listens {
+      ItemSearch.SEARCH        -> REFETCH_QUERY
+      ItemFilter.FILTER        -> REFETCH_FILTER
+      ItemPersistor.ITEM_CREATED -> INIT
+      ItemPersistor.ITEM_UPDATED -> INIT
+      ItemPersistor.ITEM_DELETED -> INIT
+    }
+  }
+
+  trait ItemCreate = Modal.traits.ModalRecordModal -> Item {
+    config: { icon: "plus-circle", title: "New Item", mode: "create", fields: ["name", "description", "sku", "price", "quantity", "category"] }
+    events { OPEN: CREATE }
+    listens {
+      ItemCatalog.CREATE -> CREATE
+      CREATE { id : string, row : Item }
+        @description "A new record is being created."
+        @synonyms "add, new, initialize, generate"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, update, commit"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data fetch failure"
+        @tier "internal"
+    }
+  }
+
+  trait ItemEdit = Modal.traits.ModalRecordModal -> Item {
+    config: { icon: "edit", title: "Edit Item", mode: "edit", fields: ["name", "description", "sku", "price", "quantity", "category"] }
+    events { OPEN: EDIT }
+    listens {
+      ItemBrowseList.EDIT -> EDIT
+      EDIT { id : string, row : Item }
+        @description "Indicates a record is being modified."
+        @synonyms "update, change, modify"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, update, synchronize"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates failure to load a record into a modal window."
+        @synonyms "load error, failed load, data fetch failure"
+        @tier "internal"
+    }
+  }
+
+  trait ItemView = Modal.traits.ModalRecordModal -> Item {
+    config: { icon: "eye", title: "View Item", mode: "edit", fields: ["name", "description", "sku", "price", "quantity", "category"] }
+    events { OPEN: VIEW }
+    listens {
+      ItemBrowseList.VIEW -> VIEW
+      VIEW { id : string, row : Item }
+        @description "Indicates a record has been displayed or is visible."
+        @synonyms "display, show, present"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, update, synchronize"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data retrieval failure"
+        @tier "internal"
+    }
+  }
+
+  trait ItemDelete = Confirmation.traits.ConfirmActionConfirmation -> Item {
+    config: { icon: "alert-triangle", title: "Delete Item", alertMessage: "This action cannot be undone.", confirmLabel: "Delete" }
+    events { REQUEST: DELETE, CONFIRM: CONFIRM_DELETE }
+    listens {
+      ItemBrowseList.DELETE -> DELETE
+      DELETE { id : string, row : Item }
+        @description "Indicates a record has been removed."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure during data loading for an action."
+        @synonyms "error, failure, failed, problem"
+        @tier "internal"
+    }
+  }
+
+  trait ItemPersistor -> Item [lifecycle, instance] {
+    config {
+      requireApproval : boolean = false
+        @label "Require approval before new items go live"
+        @description "When on, a new item is held as a pending approval request until an approver grants it; only then is the item created. Off by default."
+        @synonyms "gate, sign-off, review before create, approval required, hold for review"
+        @tier "policy"
+    }
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_CREATE -> idle when (not @config.requireApproval)
+        (persist create Item @payload.data { emit: { success: "ITEM_CREATED" } })
+      DO_CREATE -> idle when @config.requireApproval
+        (persist create ApprovalRequest { gatedEvent: "ITEM_CREATE", status: "pending", payload: @payload.data })
+      DO_UPDATE -> idle
+        (persist update Item @payload.data { emit: { success: "ITEM_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete Item @payload.id { emit: { success: "ITEM_DELETED" } })
+      GRANTED -> idle
+        (persist create Item @payload.payload { emit: { success: "ITEM_CREATED" } })
+    }
+    emits {
+      ITEM_CREATED -> external { id : string }
+        @description "Signals a new item has been created."
+        @synonyms "added, new, added, instantiate"
+        @tier "essential"
+      ITEM_UPDATED -> external { id : string }
+        @description "Signals that an item's data has been modified and persisted."
+        @synonyms "modified, changed, refreshed, updated"
+        @tier "essential"
+      ITEM_DELETED -> external { id : string }
+        @description "Signals that an item has been removed."
+        @synonyms "removed, purged, discarded"
+        @tier "essential"
+    }
+    listens {
+      DO_CREATE { data : object! }
+        @description "Initiates the creation of a new record."
+        @synonyms "new, add, generate, initialize"
+        @tier "essential"
+      DO_UPDATE { data : object! }
+        @description "Signals that data has been modified and should be refreshed."
+        @synonyms "refresh, changed, modified, updated"
+        @tier "essential"
+      DO_DELETE { id : string }
+        @description "Initiates the removal of a record."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      GRANTED { requestId : string, payload : object }
+        @description "An approver granted a held item request; replay the create from the carried payload."
+        @synonyms "approved, granted, authorized"
+        @tier "essential"
+      ItemCreate.SAVE         -> DO_CREATE
+      ItemEdit.SAVE           -> DO_UPDATE
+      ItemDelete.CONFIRM_DELETE -> DO_DELETE
+      ItemApproval.ApprovalGranted -> GRANTED
+    }
+  }
+
+  ;; Governance policies. The review queues render into the `modal` overlay and
+  ;; are SUMMONED via OPEN (never seize `main`): the layout's "Approvals" top-bar
+  ;; action emits OPEN_APPROVALS, which the approval trait's OPEN listens for
+  ;; (co-located key-match). The studio questionnaire toggles enabled (@tier "policy").
+  trait ItemApproval = Approval.traits.ApprovalGateReview {
+    config: { enabled: true }
+    events { OPEN: OPEN_APPROVALS }
+  }
+  trait ItemErasure = Erasure.traits.ErasureWorkflow {
+    config: { enabled: false, targetEntity: "Item" }
+  }
+  trait ItemModeration = ModQueue.traits.ModQueueItemReview {
+    config: { enabled: false }
+  }
+
+  ;; Audit trail — a dotted-source listen subscribes the audit interceptor to the
+  ;; persistor's real ITEM_UPDATED mutation (a plain sentinel rename would be
+  ;; source:None and never subscribe). Persists an AuditEntry per change; renders
+  ;; nothing, so it is safe to mount on the page.
+  trait ItemAudit = Audit.traits.AuditCaptureListener {
+    config: { enabled: true, captureEntity: "Item", captureBeforeAfter: true }
+    listens { ItemPersistor.ITEM_UPDATED -> EntityMutated }
+  }
+
+  page "/items" as ItemsPage -> ItemAppLayout, ItemCatalog, ItemSearch, ItemFilter, ItemBrowseList, ItemCreate, ItemEdit, ItemView, ItemDelete, ItemPersistor, ItemApproval, ItemAudit
+}
+
+orbital ActivityOrbital {
+  uses AppShell     from "std/behaviors/std-app-layout"
+  uses Modal        from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Browse       from "std/behaviors/std-browse"
+
+  entity Activity [persistent: activities] {
+    id : string!
+    title : string! @description "The descriptive name or heading for the item." @synonyms "label, heading, name"
+    type : string @description "Specifies the kind or category of the item." @synonyms "kind, category, class, itemType" = ""
+    actor : string @description "The individual or system performing an action." @synonyms "performer, agent, initiator, user" = ""
+    timestamp : string @description "Date and time of the record's creation or last modification." @synonyms "date, time, created, modified, last updated" = ""
+    status : string @description "Current state or condition of the item." @synonyms "state, condition, progress" = ""
+    notes : string @description "Free-form text containing additional information." @synonyms "comments, remarks, details, text" = ""
+  }
+
+  trait ActivityAppLayout = AppShell.traits.AppLayout {
+    config: {
+      contentTrait: "@trait.ActivityCatalog",
+      appName: "App",
+      navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
+      searchEvent: "ACTIVITY_SEARCH",
+      notifications: [],
+      notificationClickEvent: "ACTIVITY_NOTIFICATIONS_OPEN"
+    }
+    events {
+      SEARCH: ACTIVITY_SEARCH
+      NOTIFY_CLICK: ACTIVITY_NOTIFICATIONS_OPEN
+    }
+  }
+
+  trait ActivityCatalog [interaction, instance] {
+    initial: composing
+    state composing {
+      INIT -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", children: [
+          { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [
+            { type: "icon", name: "activity" },
+            { type: "typography", content: "Activities", variant: "h2" }
+          ]},
+          { type: "divider" },
+          "@trait.ActivityBrowseList"
+        ]})
+      ACTIVITY_SEARCH -> composing
+      ACTIVITY_NOTIFICATIONS_OPEN -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-8", children: [
+          { type: "icon", name: "bell" },
+          { type: "typography", variant: "h3", content: "No notifications" },
+          { type: "button", label: "Back", action: "INIT", variant: "ghost" }
+        ]})
+    }
+    listens {
+      ActivityAppLayout.ACTIVITY_SEARCH -> ACTIVITY_SEARCH
+      ActivityAppLayout.ACTIVITY_NOTIFICATIONS_OPEN -> ACTIVITY_NOTIFICATIONS_OPEN
+      ACTIVITY_SEARCH { value : string }
+        @description "Triggers a search operation for activity records."
+        @synonyms "find, query, lookup, browse"
+        @tier "essential"
+      ACTIVITY_NOTIFICATIONS_OPEN { id : string }
+        @description "Indicates new activity notifications are available."
+        @synonyms "notify, alert, update, new"
+        @tier "customization"
+    }
+  }
+
+  trait ActivityBrowseList = Browse.traits.BrowseItemBrowse -> Activity {
+    config: {
+      fields: [
+        { name: "title",     variant: "h4",      icon: "activity" },
+        { name: "type",      variant: "badge" },
+        { name: "actor",     variant: "caption" },
+        { name: "timestamp", variant: "caption", format: "date" },
+        { name: "status",    variant: "badge" }
+      ],
+      itemActions: [
+        { label: "View",   event: "VIEW",   variant: "ghost" },
+        { label: "Edit",   event: "EDIT",   variant: "ghost" },
+        { label: "Delete", event: "DELETE", variant: "danger" }
+      ],
+      cols: 1,
+      gap: "sm"
+    }
+    listens {
+      ActivityPersistor.ACTIVITY_CREATED -> INIT
+      ActivityPersistor.ACTIVITY_UPDATED -> INIT
+      ActivityPersistor.ACTIVITY_DELETED -> INIT
+    }
+  }
+
+  trait ActivityView = Modal.traits.ModalRecordModal -> Activity {
+    config: { icon: "eye", title: "View Activity", mode: "edit", fields: ["title", "type", "actor", "timestamp", "status", "notes"] }
+    events { OPEN: VIEW }
+    listens {
+      ActivityBrowseList.VIEW -> VIEW
+      VIEW { id : string, row : Activity }
+        @description "Indicates a record has been displayed or is visible."
+        @synonyms "display, show, present, render"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data persistence triggered by user action."
+        @synonyms "persist, store, commit"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data error"
+        @tier "internal"
+    }
+  }
+
+  trait ActivityEdit = Modal.traits.ModalRecordModal -> Activity {
+    config: { icon: "edit", title: "Edit Activity", mode: "edit", fields: ["title", "type", "actor", "timestamp", "status", "notes"] }
+    events { OPEN: EDIT }
+    listens {
+      ActivityBrowseList.EDIT -> EDIT
+      EDIT { id : string, row : Activity }
+        @description "Indicates a record is being modified."
+        @synonyms "modify, change, update"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, update, synchronize"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data error"
+        @tier "internal"
+    }
+  }
+
+  trait ActivityDelete = Confirmation.traits.ConfirmActionConfirmation -> Activity {
+    config: { icon: "alert-triangle", title: "Delete Activity", alertMessage: "This action cannot be undone.", confirmLabel: "Delete" }
+    events { REQUEST: DELETE, CONFIRM: CONFIRM_DELETE }
+    listens {
+      ActivityBrowseList.DELETE -> DELETE
+      DELETE { id : string, row : Activity }
+        @description "Indicates a record has been removed."
+        @synonyms "remove, discard, purge"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load requested data."
+        @synonyms "error, failure, failed, problem"
+        @tier "internal"
+    }
+  }
+
+  trait ActivityPersistor -> Activity [lifecycle, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_UPDATE -> idle
+        (persist update Activity @payload.data { emit: { success: "ACTIVITY_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete Activity @payload.id { emit: { success: "ACTIVITY_DELETED" } })
+    }
+    emits {
+      ACTIVITY_CREATED -> external { id : string }
+        @description "Signals a new activity has been created."
+        @synonyms "new, added, generated"
+        @tier "essential"
+      ACTIVITY_UPDATED -> external { id : string }
+        @description "Signals that an activity has been modified and saved."
+        @synonyms "modified, changed, updated, refreshed"
+        @tier "essential"
+      ACTIVITY_DELETED -> external { id : string }
+        @description "Signals that an activity record has been removed."
+        @synonyms "removed, purged, discarded"
+        @tier "essential"
+    }
+    listens {
+      DO_UPDATE { data : object! }
+        @description "Indicates data has been modified and should be synchronized."
+        @synonyms "refresh, sync, change, modify"
+        @tier "essential"
+      DO_DELETE { id : string }
+        @description "Initiates the removal of a record."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      ActivityEdit.SAVE             -> DO_UPDATE
+      ActivityDelete.CONFIRM_DELETE -> DO_DELETE
+    }
+  }
+
+  page "/activities" as ActivitiesPage -> ActivityAppLayout, ActivityCatalog, ActivityBrowseList, ActivityView, ActivityEdit, ActivityDelete, ActivityPersistor
+}
+
+orbital TaskOrbital {
+  uses AppShell     from "std/behaviors/std-app-layout"
+  uses Modal        from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Selection    from "std/behaviors/std-selection"
+  uses Browse       from "std/behaviors/std-browse"
+
+  entity Task [persistent: tasks] {
+    id : string!
+    title : string! @description "A short, user-facing name for the item." @synonyms "label, heading, subject"
+    description : string @description "A textual explanation or summary of the item." @synonyms "summary, details, explanation, about" = ""
+    assignee : string @description "The person or system responsible for a task or item." @synonyms "owner, responsible, assignedTo" = ""
+    dueDate : string @description "The date and time when something is expected to be completed." @synonyms "deadline, completionDate, targetDate" = ""
+    priority : "low" | "medium" | "high" @description "Indicates the level of importance or urgency." @synonyms "level, importance, urgency" = "medium"
+    status : "todo" | "doing" | "done" @description "Current progress or state of the item." @synonyms "state, progress, stage" = "todo"
+    pendingId : string @description "A unique identifier awaiting final assignment or processing." @synonyms "tempId, provisionalId, draftId" = ""
+  }
+
+  trait TaskAppLayout = AppShell.traits.AppLayout {
+    config: {
+      contentTrait: "@trait.TaskCatalog",
+      appName: "App",
+      navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
+      searchEvent: "TASK_SEARCH",
+      notifications: [],
+      notificationClickEvent: "TASK_NOTIFICATIONS_OPEN"
+    }
+    events {
+      SEARCH: TASK_SEARCH
+      NOTIFY_CLICK: TASK_NOTIFICATIONS_OPEN
+    }
+  }
+
+  trait TaskCatalog [interaction, instance] {
+    initial: composing
+    state composing {
+      INIT -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", children: [
+          { type: "stack", direction: "horizontal", gap: "md", justify: "between", align: "center", children: [
+            { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [
+              { type: "icon", name: "check-square" },
+              { type: "typography", content: "Tasks", variant: "h2" }
+            ]},
+            { type: "button", label: "New Task", action: "CREATE", variant: "primary", icon: "plus" }
+          ]},
+          { type: "divider" },
+          "@trait.TaskSelection",
+          { type: "divider" },
+          "@trait.TaskBrowseList"
+        ]})
+      TASK_SEARCH -> composing
+      TASK_NOTIFICATIONS_OPEN -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-8", children: [
+          { type: "icon", name: "bell" },
+          { type: "typography", variant: "h3", content: "No notifications" },
+          { type: "button", label: "Back", action: "INIT", variant: "ghost" }
+        ]})
+    }
+    emits {
+      CREATE -> external { source : string }
+        @description "Indicates a new record has been created."
+        @synonyms "new, add, generate, instantiate"
+        @tier "essential"
+    }
+    listens {
+      TaskAppLayout.TASK_SEARCH -> TASK_SEARCH
+      TaskAppLayout.TASK_NOTIFICATIONS_OPEN -> TASK_NOTIFICATIONS_OPEN
+      TASK_SEARCH { value : string }
+        @description "Triggers a search operation for tasks."
+        @synonyms "find, query, lookup, search"
+        @tier "essential"
+      TASK_NOTIFICATIONS_OPEN { id : string }
+        @description "Indicates new task notifications are available."
+        @synonyms "alert, notify, update, reminder"
+        @tier "customization"
+    }
+  }
+
+  trait TaskSelection = Selection.traits.SelectableItemSelection {
+    config: {
+      title: "Filter by status",
+      options: [
+        { label: "To Do",  value: "todo" },
+        { label: "Doing",  value: "doing" },
+        { label: "Done",   value: "done" }
+      ],
+      event: "TASK_STATUS_SELECT"
+    }
+  }
+
+  trait TaskBrowseList = Browse.traits.BrowseItemBrowse -> Task {
+    config: {
+      fields: [
+        { name: "title",       variant: "h4",      icon: "check-square" },
+        { name: "description", variant: "body" },
+        { name: "assignee",    variant: "caption" },
+        { name: "dueDate",     variant: "caption", format: "date" },
+        { name: "priority",    variant: "badge" },
+        { name: "status",      variant: "badge" }
+      ],
+      itemActions: [
+        { label: "View",   event: "VIEW",   variant: "ghost" },
+        { label: "Edit",   event: "EDIT",   variant: "ghost" },
+        { label: "Delete", event: "DELETE", variant: "danger" }
+      ],
+      cols: 1,
+      gap: "sm"
+    }
+    listens {
+      TaskPersistor.TASK_CREATED -> INIT
+      TaskPersistor.TASK_UPDATED -> INIT
+      TaskPersistor.TASK_DELETED -> INIT
+    }
+  }
+
+  trait TaskCreate = Modal.traits.ModalRecordModal -> Task {
+    config: { icon: "plus-circle", title: "New Task", mode: "create", fields: ["title", "description", "assignee", "dueDate", "priority", "status"] }
+    events { OPEN: CREATE }
+    listens {
+      TaskCatalog.CREATE -> CREATE
+      CREATE { id : string, row : Task }
+        @description "A new record is being created."
+        @synonyms "add, new, initialize, generate"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data persistence triggered by user action."
+        @synonyms "persist, store, update, commit"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data retrieval failure"
+        @tier "internal"
+    }
+  }
+
+  trait TaskEdit = Modal.traits.ModalRecordModal -> Task {
+    config: { icon: "edit", title: "Edit Task", mode: "edit", fields: ["title", "description", "assignee", "dueDate", "priority", "status"] }
+    events { OPEN: EDIT }
+    listens {
+      TaskBrowseList.EDIT -> EDIT
+      EDIT { id : string, row : Task }
+        @description "Indicates a record is being modified."
+        @synonyms "update, change, modify"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data changes have been persisted."
+        @synonyms "persist, store, commit, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates that loading a record failed."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+    }
+  }
+
+  trait TaskView = Modal.traits.ModalRecordModal -> Task {
+    config: { icon: "eye", title: "View Task", mode: "edit", fields: ["title", "description", "assignee", "dueDate", "priority", "status"] }
+    events { OPEN: VIEW }
+    listens {
+      TaskBrowseList.VIEW -> VIEW
+      VIEW { id : string, row : Task }
+        @description "Indicates a record or item is being displayed."
+        @synonyms "display, show, present, render"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data persistence triggered by user action."
+        @synonyms "persist, store, commit, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record for display."
+        @synonyms "error, failed, problem, unsuccessful"
+        @tier "internal"
+    }
+  }
+
+  trait TaskDelete = Confirmation.traits.ConfirmActionConfirmation -> Task {
+    config: { icon: "alert-triangle", title: "Delete Task", alertMessage: "This action cannot be undone.", confirmLabel: "Delete" }
+    events { REQUEST: DELETE, CONFIRM: CONFIRM_DELETE }
+    listens {
+      TaskBrowseList.DELETE -> DELETE
+      DELETE { id : string, row : Task }
+        @description "Indicates a record is being removed."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load requested data."
+        @synonyms "error, failure, failed, problem"
+        @tier "internal"
+    }
+  }
+
+  trait TaskPersistor -> Task [lifecycle, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_CREATE -> idle
+        (persist create Task @payload.data { emit: { success: "TASK_CREATED" } })
+      DO_UPDATE -> idle
+        (persist update Task @payload.data { emit: { success: "TASK_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete Task @payload.id { emit: { success: "TASK_DELETED" } })
+    }
+    emits {
+      TASK_CREATED -> external { id : string }
+        @description "A new task has been created."
+        @synonyms "new task, task added, task initiation"
+        @tier "essential"
+      TASK_UPDATED -> external { id : string }
+        @description "Signals a task has been modified."
+        @synonyms "modified, changed, altered"
+        @tier "essential"
+      TASK_DELETED -> external { id : string }
+        @description "Signals that a task has been removed."
+        @synonyms "removed, purged, archived"
+        @tier "essential"
+    }
+    listens {
+      DO_CREATE { data : object! }
+        @description "Initiates the creation of a new record."
+        @synonyms "new, add, generate, initiate"
+        @tier "essential"
+      DO_UPDATE { data : object! }
+        @description "Indicates data has been modified and should be refreshed."
+        @synonyms "refresh, reload, update, sync"
+        @tier "essential"
+      DO_DELETE { id : string }
+        @description "Initiates the removal of a record."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      TaskCreate.SAVE         -> DO_CREATE
+      TaskEdit.SAVE           -> DO_UPDATE
+      TaskDelete.CONFIRM_DELETE -> DO_DELETE
+    }
+  }
+
+  page "/tasks" as TasksPage -> TaskAppLayout, TaskCatalog, TaskSelection, TaskBrowseList, TaskCreate, TaskEdit, TaskView, TaskDelete, TaskPersistor
+}
+
+orbital CalendarOrbital {
+  uses AppShell     from "std/behaviors/std-app-layout"
+  uses Modal        from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Calendar     from "std/behaviors/std-calendar"
+  uses Browse       from "std/behaviors/std-browse"
+
+  entity ScheduledEvent [persistent: scheduledevents] {
+    id : string!
+    title : string! @description "The descriptive name or heading for the item." @synonyms "label, heading, name"
+    startTime : string! @description "The date and time when an event or activity begins." @synonyms "start, beginTime, eventStart"
+    endTime : string @description "The date and time when an event concludes." @synonyms "end date, finish time, completion time" = ""
+    location : string @description "Physical or digital address of the contact." @synonyms "address, place, whereabouts" = ""
+    attendees : string @description "List of individuals participating in an event or interaction." @synonyms "participants, guests, members" = ""
+    description : string @description "A textual explanation or summary of the item." @synonyms "summary, details, explanation, about" = ""
+    pendingId : string @description "A unique identifier awaiting confirmation or processing." @synonyms "tempId, provisionalId, draftId" = ""
+  }
+
+  trait CalendarAppLayout = AppShell.traits.AppLayout {
+    config: {
+      contentTrait: "@trait.CalendarCatalog",
+      appName: "App",
+      navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
+      searchEvent: "CAL_SEARCH",
+      notifications: [],
+      notificationClickEvent: "CAL_NOTIFICATIONS_OPEN"
+    }
+    events {
+      SEARCH: CAL_SEARCH
+      NOTIFY_CLICK: CAL_NOTIFICATIONS_OPEN
+    }
+  }
+
+  trait CalendarCatalog [interaction, instance] {
+    initial: composing
+    state composing {
+      INIT -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", children: [
+          { type: "stack", direction: "horizontal", gap: "md", justify: "between", align: "center", children: [
+            { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [
+              { type: "icon", name: "calendar" },
+              { type: "typography", content: "Calendar", variant: "h2" }
+            ]},
+            { type: "button", label: "New Event", action: "CREATE", variant: "primary", icon: "plus" }
+          ]},
+          { type: "divider" },
+          "@trait.CalendarView",
+          { type: "divider" },
+          "@trait.CalendarBrowseList"
+        ]})
+      CAL_SEARCH -> composing
+      CAL_NOTIFICATIONS_OPEN -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-8", children: [
+          { type: "icon", name: "bell" },
+          { type: "typography", variant: "h3", content: "No notifications" },
+          { type: "button", label: "Back", action: "INIT", variant: "ghost" }
+        ]})
+    }
+    emits {
+      CREATE -> external { source : string }
+        @description "Signals a new record has been created."
+        @synonyms "new, add, initialize, generate"
+        @tier "essential"
+    }
+    listens {
+      CalendarAppLayout.CAL_SEARCH -> CAL_SEARCH
+      CalendarAppLayout.CAL_NOTIFICATIONS_OPEN -> CAL_NOTIFICATIONS_OPEN
+      CAL_SEARCH { value : string }
+        @description "Triggers a search operation for calendar entries."
+        @synonyms "find, query, lookup, browse"
+        @tier "essential"
+      CAL_NOTIFICATIONS_OPEN { id : string }
+        @description "Indicates new calendar notifications are available."
+        @synonyms "alert, notify, reminder"
+        @tier "essential"
+    }
+  }
+
+  trait CalendarView = Calendar.traits.CalendarEventCalendar {
+    config: {
+      title: "Schedule",
+      dateField: "startTime",
+      labelField: "title"
+    }
+    listens {
+      CalendarBrowseList.BrowseItemLoaded -> ITEMS_LOADED
+    }
+  }
+
+  trait CalendarBrowseList = Browse.traits.BrowseItemBrowse -> ScheduledEvent {
+    config: {
+      fields: [
+        { name: "title",     variant: "h4",      icon: "calendar" },
+        { name: "startTime", variant: "caption", format: "date" },
+        { name: "endTime",   variant: "caption", format: "date" },
+        { name: "location",  variant: "body" },
+        { name: "attendees", variant: "caption" }
+      ],
+      itemActions: [
+        { label: "View",   event: "VIEW",   variant: "ghost" },
+        { label: "Edit",   event: "EDIT",   variant: "ghost" },
+        { label: "Delete", event: "DELETE", variant: "danger" }
+      ],
+      cols: 1,
+      gap: "sm"
+    }
+    listens {
+      CalendarPersistor.CAL_CREATED -> INIT
+      CalendarPersistor.CAL_UPDATED -> INIT
+      CalendarPersistor.CAL_DELETED -> INIT
+    }
+  }
+
+  trait CalendarCreate = Modal.traits.ModalRecordModal -> ScheduledEvent {
+    config: { icon: "plus-circle", title: "New Event", mode: "create", fields: ["title", "startTime", "endTime", "location", "attendees", "description"] }
+    events { OPEN: CREATE }
+    listens {
+      CalendarCatalog.CREATE -> CREATE
+      CREATE { id : string, row : ScheduledEvent }
+        @description "A new record is being created."
+        @synonyms "new, add, insert, generate"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data persistence triggered by user action."
+        @synonyms "persist, store, commit, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data fetch failed"
+        @tier "internal"
+    }
+  }
+
+  trait CalendarEdit = Modal.traits.ModalRecordModal -> ScheduledEvent {
+    config: { icon: "edit", title: "Edit Event", mode: "edit", fields: ["title", "startTime", "endTime", "location", "attendees", "description"] }
+    events { OPEN: EDIT }
+    listens {
+      CalendarBrowseList.EDIT -> EDIT
+      EDIT { id : string, row : ScheduledEvent }
+        @description "Indicates a record is being modified."
+        @synonyms "update, change, modify"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data persistence or synchronization has completed."
+        @synonyms "persist, store, update, synchronize"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data fetch failure"
+        @tier "internal"
+    }
+  }
+
+  trait CalendarDelete = Confirmation.traits.ConfirmActionConfirmation -> ScheduledEvent {
+    config: { icon: "alert-triangle", title: "Delete Event", alertMessage: "This action cannot be undone.", confirmLabel: "Delete" }
+    events { REQUEST: DELETE, CONFIRM: CONFIRM_DELETE }
+    listens {
+      CalendarBrowseList.DELETE -> DELETE
+      DELETE { id : string, row : ScheduledEvent }
+        @description "Indicates a record has been removed."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load requested data."
+        @synonyms "error, failed, problem, unsuccessful"
+        @tier "internal"
+    }
+  }
+
+  trait CalendarPersistor -> CalendarEvent [lifecycle, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_CREATE -> idle
+        (persist create ScheduledEvent @payload.data { emit: { success: "CAL_CREATED" } })
+      DO_UPDATE -> idle
+        (persist update ScheduledEvent @payload.data { emit: { success: "CAL_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete ScheduledEvent @payload.id { emit: { success: "CAL_DELETED" } })
+    }
+    emits {
+      CAL_CREATED -> external { id : string }
+        @description "A new calendar entry has been created."
+        @synonyms "new, added, scheduled"
+        @tier "essential"
+      CAL_UPDATED -> external { id : string }
+        @description "Signals a change or update to calendar data."
+        @synonyms "modified, changed, refreshed"
+        @tier "essential"
+      CAL_DELETED -> external { id : string }
+        @description "Signals that a calendar item has been removed."
+        @synonyms "removed, purged, discarded"
+        @tier "essential"
+    }
+    listens {
+      DO_CREATE { data : object! }
+        @description "Initiates the creation of a new record."
+        @synonyms "new, add, generate, initiate"
+        @tier "essential"
+      DO_UPDATE { data : object! }
+        @description "Indicates a record has been modified and changes are pending."
+        @synonyms "modified, changed, altered, updated"
+        @tier "customization"
+      DO_DELETE { id : string }
+        @description "Initiates the removal of a record."
+        @synonyms "remove, discard, purge"
+        @tier "essential"
+      CalendarCreate.SAVE         -> DO_CREATE
+      CalendarEdit.SAVE           -> DO_UPDATE
+      CalendarDelete.CONFIRM_DELETE -> DO_DELETE
+    }
+  }
+
+  page "/calendar" as CalendarPage -> CalendarAppLayout, CalendarCatalog, CalendarView, CalendarBrowseList, CalendarCreate, CalendarEdit, CalendarDelete, CalendarPersistor
+}
+
+orbital WidgetOrbital {
+  uses AppShell     from "std/behaviors/std-app-layout"
+  uses Modal        from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Browse       from "std/behaviors/std-browse"
+  uses Stats        from "std/behaviors/std-stats"
+  uses Graphs       from "std/behaviors/std-graphs"
+
+  entity Widget [persistent: widgets] {
+    id : string!
+    title : string! @description "The descriptive name or heading for the item." @synonyms "label, heading, name"
+    type : string @description "Specifies the kind or category of the data." @synonyms "kind, category, class, record type" = "metric"
+    dataSource : string @description "The origin or system providing the data." @synonyms "source, origin, provider" = ""
+    value : number @description "Numerical data representing a specific value." @synonyms "amount, quantity, count, score" = 0
+    label : string @description "A short, user-facing text identifying the item." @synonyms "title, heading, display name" = ""
+    refreshInterval : number @description "Time between data updates, typically in seconds." @synonyms "interval, update frequency, refresh rate" = 0
+  }
+
+  trait WidgetAppLayout = AppShell.traits.AppLayout {
+    config: {
+      contentTrait: "@trait.WidgetCatalog",
+      appName: "App",
+      navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
+      searchEvent: "WIDGET_SEARCH",
+      notifications: [],
+      notificationClickEvent: "WIDGET_NOTIFICATIONS_OPEN"
+    }
+    events {
+      SEARCH: WIDGET_SEARCH
+      NOTIFY_CLICK: WIDGET_NOTIFICATIONS_OPEN
+    }
+  }
+
+  trait WidgetCatalog [interaction, instance] {
+    initial: composing
+    state composing {
+      INIT -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", children: [
+          { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [
+            { type: "icon", name: "layout-dashboard" },
+            { type: "typography", content: "Dashboard", variant: "h2" }
+          ]},
+          { type: "divider" },
+          "@trait.WidgetStats",
+          "@trait.WidgetGraphs",
+          { type: "divider" },
+          "@trait.WidgetBrowseList"
+        ]})
+      WIDGET_SEARCH -> composing
+      WIDGET_NOTIFICATIONS_OPEN -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-8", children: [
+          { type: "icon", name: "bell" },
+          { type: "typography", variant: "h3", content: "No notifications" },
+          { type: "button", label: "Back", action: "INIT", variant: "ghost" }
+        ]})
+    }
+    listens {
+      WidgetAppLayout.WIDGET_SEARCH -> WIDGET_SEARCH
+      WidgetAppLayout.WIDGET_NOTIFICATIONS_OPEN -> WIDGET_NOTIFICATIONS_OPEN
+      WIDGET_SEARCH { value : string }
+        @description "Triggers a search for widgets based on a query."
+        @synonyms "find, query, lookup, browse"
+        @tier "essential"
+      WIDGET_NOTIFICATIONS_OPEN { id : string }
+        @description "Indicates new notifications are available for widgets."
+        @synonyms "notify, alert, update, message"
+        @tier "customization"
+    }
+  }
+
+  trait WidgetStats = Stats.traits.StatsItemStats {
+    config: {
+      title: "Key Metrics",
+      metrics: [
+        { aggregation: "count", label: "Widgets", icon: "layout-dashboard", variant: "primary", format: "number" },
+        { aggregation: "sum",   label: "Total Value", field: "value", icon: "trending-up", variant: "success", format: "number" }
+      ]
+    }
+    listens {
+      WidgetBrowseList.BrowseItemLoaded -> ITEMS_LOADED
+    }
+  }
+
+  trait WidgetGraphs = Graphs.traits.GraphItemGraph {
+    config: {
+      title: "Widgets by type",
+      subtitle: "Distribution",
+      chartType: "pie",
+      categoryField: "type",
+      aggregation: "count",
+      height: 240,
+      showLegend: true
+    }
+    listens {
+      WidgetBrowseList.BrowseItemLoaded -> ITEMS_LOADED
+    }
+  }
+
+  trait WidgetBrowseList = Browse.traits.BrowseItemBrowse -> Widget {
+    config: {
+      fields: [
+        { name: "title",      variant: "h4",      icon: "layout-dashboard" },
+        { name: "type",       variant: "badge" },
+        { name: "label",      variant: "caption" },
+        { name: "value",      variant: "badge",   format: "number" },
+        { name: "dataSource", variant: "caption" }
+      ],
+      itemActions: [
+        { label: "View",   event: "VIEW",   variant: "ghost" },
+        { label: "Edit",   event: "EDIT",   variant: "ghost" },
+        { label: "Delete", event: "DELETE", variant: "danger" }
+      ],
+      cols: 2,
+      gap: "sm"
+    }
+    listens {
+      WidgetPersistor.WIDGET_CREATED -> INIT
+      WidgetPersistor.WIDGET_UPDATED -> INIT
+      WidgetPersistor.WIDGET_DELETED -> INIT
+    }
+  }
+
+  trait WidgetView = Modal.traits.ModalRecordModal -> Widget {
+    config: { icon: "eye", title: "View Widget", mode: "edit", fields: ["title", "type", "label", "value", "dataSource", "refreshInterval"] }
+    events { OPEN: VIEW }
+    listens {
+      WidgetBrowseList.VIEW -> VIEW
+      VIEW { id : string, row : Widget }
+        @description "Indicates a record or item is being displayed."
+        @synonyms "display, show, present, render"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, update, synchronize"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, loading problem"
+        @tier "internal"
+    }
+  }
+
+  trait WidgetEdit = Modal.traits.ModalRecordModal -> Widget {
+    config: { icon: "edit", title: "Edit Widget", mode: "edit", fields: ["title", "type", "label", "value", "dataSource", "refreshInterval"] }
+    events { OPEN: EDIT }
+    listens {
+      WidgetBrowseList.EDIT -> EDIT
+      EDIT { id : string, row : Widget }
+        @description "Indicates a record is being modified."
+        @synonyms "modify, change, update"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, update, synchronize"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, data error"
+        @tier "internal"
+    }
+  }
+
+  trait WidgetDelete = Confirmation.traits.ConfirmActionConfirmation -> Widget {
+    config: { icon: "alert-triangle", title: "Delete Widget", alertMessage: "This action cannot be undone.", confirmLabel: "Delete" }
+    events { REQUEST: DELETE, CONFIRM: CONFIRM_DELETE }
+    listens {
+      WidgetBrowseList.DELETE -> DELETE
+      DELETE { id : string, row : Widget }
+        @description "Indicates a record has been removed."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load an action or related data."
+        @synonyms "error, failure, failed, problem"
+        @tier "internal"
+    }
+  }
+
+  trait WidgetPersistor -> Widget [lifecycle, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_UPDATE -> idle
+        (persist update Widget @payload.data { emit: { success: "WIDGET_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete Widget @payload.id { emit: { success: "WIDGET_DELETED" } })
+    }
+    emits {
+      WIDGET_CREATED -> external { id : string }
+        @description "A new widget has been generated or added."
+        @synonyms "new, added, generated, created"
+        @tier "essential"
+      WIDGET_UPDATED -> external { id : string }
+        @description "Signals a widget's data or appearance has been modified."
+        @synonyms "refresh, change, update"
+        @tier "customization"
+      WIDGET_DELETED -> external { id : string }
+        @description "Signals a widget has been removed."
+        @synonyms "removed, discarded, purged"
+        @tier "customization"
+    }
+    listens {
+      DO_UPDATE { data : object! }
+        @description "Indicates data has been modified and needs to be refreshed."
+        @synonyms "refresh, reload, update, sync"
+        @tier "essential"
+      DO_DELETE { id : string }
+        @description "Initiates the removal of a record."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      WidgetEdit.SAVE             -> DO_UPDATE
+      WidgetDelete.CONFIRM_DELETE -> DO_DELETE
+    }
+  }
+
+  page "/widgets" as WidgetsPage -> WidgetAppLayout, WidgetCatalog, WidgetStats, WidgetGraphs, WidgetBrowseList, WidgetView, WidgetEdit, WidgetDelete, WidgetPersistor
+}
+
+orbital FeedOrbital {
+  uses AppShell   from "std/behaviors/std-app-layout"
+  uses Modal      from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Pagination from "std/behaviors/std-pagination"
+  uses Browse     from "std/behaviors/std-browse"
+
+  entity FeedPost [persistent: feedposts] {
+    id : string!
+    title : string! @description "The descriptive name or heading for the item." @synonyms "label, heading, name"
+    body : string @description "The main content or text of a message or note." @synonyms "content, text, message, details" = ""
+    author : string @description "The individual or system creating the content." @synonyms "creator, originator, contributor" = ""
+    postedAt : string @description "The date and time when the item was originally published." @synonyms "published date, creation date, posted date" = ""
+    tags : string @description "Keywords or labels associated with the entity." @synonyms "keywords, labels, categories, tags" = ""
+    pendingId : string @description "A unique identifier awaiting final assignment or processing." @synonyms "tempId, provisionalId, draftId" = ""
+  }
+
+  trait FeedAppLayout = AppShell.traits.AppLayout {
+    config: {
+      contentTrait: "@trait.FeedCatalog",
+      appName: "App",
+      navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
+      searchEvent: "FEED_SEARCH",
+      notifications: [],
+      notificationClickEvent: "FEED_NOTIFICATIONS_OPEN"
+    }
+    events {
+      SEARCH: FEED_SEARCH
+      NOTIFY_CLICK: FEED_NOTIFICATIONS_OPEN
+    }
+  }
+
+  trait FeedCatalog [interaction, instance] {
+    initial: composing
+    state composing {
+      INIT -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", children: [
+          { type: "stack", direction: "horizontal", gap: "md", justify: "between", align: "center", children: [
+            { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [
+              { type: "icon", name: "rss" },
+              { type: "typography", content: "Feed", variant: "h2" }
+            ]},
+            { type: "button", label: "New Post", action: "CREATE", variant: "primary", icon: "plus" }
+          ]},
+          { type: "divider" },
+          "@trait.FeedBrowseList",
+          "@trait.FeedPagination"
+        ]})
+      FEED_SEARCH -> composing
+      FEED_NOTIFICATIONS_OPEN -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-8", children: [
+          { type: "icon", name: "bell" },
+          { type: "typography", variant: "h3", content: "No notifications" },
+          { type: "button", label: "Back", action: "INIT", variant: "ghost" }
+        ]})
+    }
+    emits {
+      CREATE -> external { source : string }
+        @description "Signals the creation of a new record."
+        @synonyms "new, add, generate, initialize"
+        @tier "essential"
+    }
+    listens {
+      FeedAppLayout.FEED_SEARCH -> FEED_SEARCH
+      FeedAppLayout.FEED_NOTIFICATIONS_OPEN -> FEED_NOTIFICATIONS_OPEN
+      FEED_SEARCH { value : string }
+        @description "Triggers a search operation within a feed."
+        @synonyms "query, find, lookup"
+        @tier "essential"
+      FEED_NOTIFICATIONS_OPEN { id : string }
+        @description "Indicates new feed notifications are available."
+        @synonyms "notify, alert, update, message"
+        @tier "customization"
+    }
+  }
+
+  trait FeedPagination = Pagination.traits.PagedItemPagination {
+    config: {
+      pageSize: 10
+    }
+    listens {
+      FeedBrowseList.BrowseItemLoaded -> ITEMS_LOADED
+    }
+  }
+
+  trait FeedBrowseList = Browse.traits.BrowseItemBrowse -> FeedPost {
+    config: {
+      fields: [
+        { name: "title",    variant: "h3",      icon: "rss" },
+        { name: "body",     variant: "body" },
+        { name: "author",   variant: "caption" },
+        { name: "postedAt", variant: "caption", format: "date" },
+        { name: "tags",     variant: "badge" }
+      ],
+      itemActions: [
+        { label: "View",   event: "VIEW",   variant: "ghost" },
+        { label: "Edit",   event: "EDIT",   variant: "ghost" },
+        { label: "Delete", event: "DELETE", variant: "danger" }
+      ],
+      cols: 1,
+      gap: "sm"
+    }
+    listens {
+      FeedPersistor.FEED_CREATED -> INIT
+      FeedPersistor.FEED_UPDATED -> INIT
+      FeedPersistor.FEED_DELETED -> INIT
+    }
+  }
+
+  trait FeedCreate = Modal.traits.ModalRecordModal -> FeedPost {
+    config: { icon: "plus-circle", title: "New Post", mode: "create", fields: ["title", "body", "author", "postedAt", "tags"] }
+    events { OPEN: CREATE }
+    listens {
+      FeedCatalog.CREATE -> CREATE
+      CREATE { id : string, row : FeedPost }
+        @description "A new record is being created."
+        @synonyms "add, new, initiate, generate"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, synchronize, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failed load, record load failure"
+        @tier "internal"
+    }
+  }
+
+  trait FeedEdit = Modal.traits.ModalRecordModal -> FeedPost {
+    config: { icon: "edit", title: "Edit Post", mode: "edit", fields: ["title", "body", "author", "postedAt", "tags"] }
+    events { OPEN: EDIT }
+    listens {
+      FeedBrowseList.EDIT -> EDIT
+      EDIT { id : string, row : FeedPost }
+        @description "Indicates a record is being modified."
+        @synonyms "update, change, modify"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, update, synchronize"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates failure to load a record into a modal window."
+        @synonyms "load error, failed load, data error"
+        @tier "internal"
+    }
+  }
+
+  trait FeedDelete = Confirmation.traits.ConfirmActionConfirmation -> FeedPost {
+    config: { icon: "alert-triangle", title: "Delete Post", alertMessage: "This action cannot be undone.", confirmLabel: "Delete" }
+    events { REQUEST: DELETE, CONFIRM: CONFIRM_DELETE }
+    listens {
+      FeedBrowseList.DELETE -> DELETE
+      DELETE { id : string, row : FeedPost }
+        @description "Indicates a record is being removed."
+        @synonyms "remove, erase, discard"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load requested data."
+        @synonyms "error, failure, failed, problem"
+        @tier "internal"
+    }
+  }
+
+  trait FeedPersistor -> FeedPost [lifecycle, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_CREATE -> idle
+        (persist create FeedPost @payload.data { emit: { success: "FEED_CREATED" } })
+      DO_UPDATE -> idle
+        (persist update FeedPost @payload.data { emit: { success: "FEED_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete FeedPost @payload.id { emit: { success: "FEED_DELETED" } })
+    }
+    emits {
+      FEED_CREATED -> external { id : string }
+        @description "A new feed item has been created."
+        @synonyms "posted, published, added"
+        @tier "essential"
+      FEED_UPDATED -> external { id : string }
+        @description "Signals that the feed data has been refreshed or modified."
+        @synonyms "refresh, update, new, changed"
+        @tier "customization"
+      FEED_DELETED -> external { id : string }
+        @description "Signals a feed item has been removed."
+        @synonyms "removed, purged, archived"
+        @tier "customization"
+    }
+    listens {
+      DO_CREATE { data : object! }
+        @description "Initiates the creation of a new record."
+        @synonyms "new, add, generate, initialize"
+        @tier "essential"
+      DO_UPDATE { data : object! }
+        @description "Indicates data has been modified and requires synchronization."
+        @synonyms "refresh, sync, changed, modified"
+        @tier "essential"
+      DO_DELETE { id : string }
+        @description "Initiates the removal of a record."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      FeedCreate.SAVE         -> DO_CREATE
+      FeedEdit.SAVE           -> DO_UPDATE
+      FeedDelete.CONFIRM_DELETE -> DO_DELETE
+    }
+  }
+
+  page "/feed" as FeedPage -> FeedAppLayout, FeedCatalog, FeedPagination, FeedBrowseList, FeedCreate, FeedEdit, FeedDelete, FeedPersistor
+}
+
+orbital NoteOrbital {
+  uses AppShell     from "std/behaviors/std-app-layout"
+  uses Modal        from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+  uses Search       from "std/behaviors/std-search"
+  uses Browse       from "std/behaviors/std-browse"
+
+  entity Note [persistent: notes] {
+    id : string!
+    title : string! @description "The descriptive name or heading for the item." @synonyms "label, heading, name"
+    body : string @description "The main content or text of a message or note." @synonyms "content, text, message, details" = ""
+    tags : string @description "Keywords or labels associated with the entity." @synonyms "keywords, labels, categories, markers" = ""
+    createdAt : string = ""
+    updatedAt : string = ""
+    pendingId : string @description "A unique identifier awaiting final assignment or processing." @synonyms "tempId, provisionalId, draftId" = ""
+  }
+
+  trait NoteAppLayout = AppShell.traits.AppLayout {
+    config: {
+      contentTrait: "@trait.NoteCatalog",
+      appName: "App",
+      navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
+      searchEvent: "NOTE_SEARCH",
+      notifications: [],
+      notificationClickEvent: "NOTE_NOTIFICATIONS_OPEN"
+    }
+    events {
+      SEARCH: NOTE_SEARCH
+      NOTIFY_CLICK: NOTE_NOTIFICATIONS_OPEN
+    }
+  }
+
+  trait NoteCatalog [interaction, instance] {
+    initial: composing
+    state composing {
+      INIT -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "lg", children: [
+          { type: "stack", direction: "horizontal", gap: "md", justify: "between", align: "center", children: [
+            { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [
+              { type: "icon", name: "file-text" },
+              { type: "typography", content: "Notes", variant: "h2" }
+            ]},
+            { type: "button", label: "New Note", action: "CREATE", variant: "primary", icon: "plus" }
+          ]},
+          { type: "divider" },
+          "@trait.NoteSearch",
+          { type: "divider" },
+          "@trait.NoteBrowseList"
+        ]})
+      NOTE_SEARCH -> composing
+      NOTE_NOTIFICATIONS_OPEN -> composing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-8", children: [
+          { type: "icon", name: "bell" },
+          { type: "typography", variant: "h3", content: "No notifications" },
+          { type: "button", label: "Back", action: "INIT", variant: "ghost" }
+        ]})
+    }
+    emits {
+      CREATE -> external { source : string }
+        @description "Signals the creation of a new record."
+        @synonyms "new, add, generate, initialize"
+        @tier "essential"
+    }
+    listens {
+      NoteAppLayout.NOTE_SEARCH -> NOTE_SEARCH
+      NoteAppLayout.NOTE_NOTIFICATIONS_OPEN -> NOTE_NOTIFICATIONS_OPEN
+      NOTE_SEARCH { value : string }
+        @description "Triggers a search operation for notes."
+        @synonyms "find, query, lookup"
+        @tier "essential"
+      NOTE_NOTIFICATIONS_OPEN { id : string }
+        @description "Indicates new notifications are available for notes."
+        @synonyms "new, alert, update, notify"
+        @tier "customization"
+    }
+  }
+
+  trait NoteSearch = Search.traits.SearchResultSearch {
+    config: { placeholder: "Search notes…", event: "NOTE_SEARCH" }
+  }
+
+  trait NoteBrowseList = Browse.traits.BrowseItemBrowse -> Note {
+    config: {
+      fields: [
+        { name: "title",     variant: "h4",      icon: "file-text" },
+        { name: "body",      variant: "body" },
+        { name: "tags",      variant: "badge" },
+        { name: "updatedAt", variant: "caption", format: "date" }
+      ],
+      itemActions: [
+        { label: "View",   event: "VIEW",   variant: "ghost" },
+        { label: "Edit",   event: "EDIT",   variant: "ghost" },
+        { label: "Delete", event: "DELETE", variant: "danger" }
+      ],
+      cols: 1,
+      gap: "sm"
+    }
+    listens {
+      NoteSearch.SEARCH         -> REFETCH_QUERY
+      NotePersistor.NOTE_CREATED -> INIT
+      NotePersistor.NOTE_UPDATED -> INIT
+      NotePersistor.NOTE_DELETED -> INIT
+    }
+  }
+
+  trait NoteCreate = Modal.traits.ModalRecordModal -> Note {
+    config: { icon: "plus-circle", title: "New Note", mode: "create", fields: ["title", "body", "tags", "createdAt", "updatedAt"] }
+    events { OPEN: CREATE }
+    listens {
+      NoteCatalog.CREATE -> CREATE
+      CREATE { id : string, row : Note }
+        @description "A new record is being created."
+        @synonyms "new, add, insert, generate"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Indicates data persistence or storage has been completed."
+        @synonyms "persist, store, commit, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load a record into a modal window."
+        @synonyms "load error, failure, problem, unsuccessful"
+        @tier "internal"
+    }
+  }
+
+  trait NoteEdit = Modal.traits.ModalRecordModal -> Note {
+    config: { icon: "edit", title: "Edit Note", mode: "edit", fields: ["title", "body", "tags", "createdAt", "updatedAt"] }
+    events { OPEN: EDIT }
+    listens {
+      NoteBrowseList.EDIT -> EDIT
+      EDIT { id : string, row : Note }
+        @description "Indicates a record is being modified."
+        @synonyms "update, change, modify"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data persistence triggered by user action."
+        @synonyms "persist, store, commit, update"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates failure to load a record into a modal window."
+        @synonyms "load error, failure, problem"
+        @tier "internal"
+    }
+  }
+
+  trait NoteView = Modal.traits.ModalRecordModal -> Note {
+    config: { icon: "eye", title: "View Note", mode: "edit", fields: ["title", "body", "tags", "createdAt", "updatedAt"] }
+    events { OPEN: VIEW }
+    listens {
+      NoteBrowseList.VIEW -> VIEW
+      VIEW { id : string, row : Note }
+        @description "Indicates a record has been displayed or is visible."
+        @synonyms "display, show, present, render"
+        @tier "essential"
+      SAVE { data : object! }
+        @description "Data has been persisted or synchronized."
+        @synonyms "persist, store, update, synchronize"
+        @tier "essential"
+      ModalRecordLoadFailed { error : string, code : string }
+        @description "Indicates failure to load a record into a modal window."
+        @synonyms "load error, failed load, loading problem"
+        @tier "internal"
+    }
+  }
+
+  trait NoteDelete = Confirmation.traits.ConfirmActionConfirmation -> Note {
+    config: { icon: "alert-triangle", title: "Delete Note", alertMessage: "This action cannot be undone.", confirmLabel: "Delete" }
+    events { REQUEST: DELETE, CONFIRM: CONFIRM_DELETE }
+    listens {
+      NoteBrowseList.DELETE -> DELETE
+      DELETE { id : string, row : Note }
+        @description "Indicates a record has been removed."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      ConfirmActionLoadFailed { error : string, code : string }
+        @description "Indicates a failure to load requested data."
+        @synonyms "error, failure, failed, problem"
+        @tier "internal"
+    }
+  }
+
+  trait NotePersistor -> Note [lifecycle, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_CREATE -> idle
+        (persist create Note @payload.data { emit: { success: "NOTE_CREATED" } })
+      DO_UPDATE -> idle
+        (persist update Note @payload.data { emit: { success: "NOTE_UPDATED" } })
+      DO_DELETE -> idle
+        (persist delete Note @payload.id { emit: { success: "NOTE_DELETED" } })
+    }
+    emits {
+      NOTE_CREATED -> external { id : string }
+        @description "A new note has been created."
+        @synonyms "new, added, recorded"
+        @tier "essential"
+      NOTE_UPDATED -> external { id : string }
+        @description "Signals that a note has been modified and saved."
+        @synonyms "modified, changed, updated"
+        @tier "essential"
+      NOTE_DELETED -> external { id : string }
+        @description "Signals a note has been removed."
+        @synonyms "removed, purged, discarded"
+        @tier "essential"
+    }
+    listens {
+      DO_CREATE { data : object! }
+        @description "Initiates the creation of a new record."
+        @synonyms "new, add, generate, initiate"
+        @tier "essential"
+      DO_UPDATE { data : object! }
+        @description "Indicates a record has been modified and changes are pending."
+        @synonyms "modified, changed, altered, updated"
+        @tier "customization"
+      DO_DELETE { id : string }
+        @description "Initiates the removal of a record."
+        @synonyms "remove, discard, erase"
+        @tier "essential"
+      NoteCreate.SAVE         -> DO_CREATE
+      NoteEdit.SAVE           -> DO_UPDATE
+      NoteDelete.CONFIRM_DELETE -> DO_DELETE
+    }
+  }
+
+  page "/notes" as NotesPage -> NoteAppLayout, NoteCatalog, NoteSearch, NoteBrowseList, NoteCreate, NoteEdit, NoteView, NoteDelete, NotePersistor
+}

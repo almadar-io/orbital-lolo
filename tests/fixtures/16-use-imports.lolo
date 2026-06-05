@@ -1,0 +1,46 @@
+orbital InventoryItemOrbital {
+  uses Browse from "std/behaviors/std-browse"
+  uses Modal from "std/behaviors/std-modal"
+  uses Confirmation from "std/behaviors/std-confirmation"
+
+  entity InventoryItem [persistent] {
+    id : string!
+    name : string
+    pendingId : string
+  }
+
+  trait InventoryItemBrowse = Browse.traits.BrowseItemBrowse -> InventoryItem {
+    on INIT {
+      (ref InventoryItem)
+      (render-ui main { type: "data-grid", entity: "InventoryItem" })
+    }
+  }
+
+  trait InventoryItemAdd = Modal.traits.ModalRecordModal -> InventoryItem {
+    events {
+      OPEN: ADD_ITEM
+    }
+    on ADD_ITEM {
+      (fetch InventoryItem)
+      (render-ui modal { type: "form-section", entity: "InventoryItem", mode: "create" })
+    }
+    on SAVE {
+      (persist create InventoryItem @payload.data)
+      (render-ui modal null)
+      (emit ITEM_CREATED)
+    }
+    emitsScope external
+  }
+
+  trait InventoryItemDelete = Confirmation.traits.ConfirmActionConfirmation -> InventoryItem {
+    events {
+      REQUEST: REQUEST_REMOVE
+      CONFIRM: CONFIRM_REMOVE
+    }
+    on CONFIRM_REMOVE {
+      (persist delete InventoryItem @entity.pendingId)
+    }
+  }
+
+  page "/inventory" = Modal.pages.ModalRecordModalPage -> InventoryItemBrowse, InventoryItemAdd, InventoryItemDelete
+}

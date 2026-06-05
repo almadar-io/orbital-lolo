@@ -1,0 +1,138 @@
+{
+  "name": "NotificationOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "message",
+            "type": "string"
+          }
+        ],
+        "name": "Notification",
+        "persistence": "runtime"
+      },
+      "name": "NotificationOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "emits": [
+            {
+              "event": "ORDER_SHIPPED",
+              "payloadSchema": [
+                {
+                  "name": "orderId",
+                  "type": "string"
+                }
+              ],
+              "scope": "external"
+            }
+          ],
+          "linkedEntity": "Notification",
+          "name": "OrderProcessing",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "SHIP",
+                "name": "Ship"
+              },
+              {
+                "key": "ORDER_SHIPPED",
+                "name": "Order Shipped"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "pending"
+              },
+              {
+                "name": "shipped"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "emit",
+                    "ORDER_SHIPPED",
+                    {
+                      "orderId": "@id"
+                    }
+                  ]
+                ],
+                "event": "SHIP",
+                "from": "pending",
+                "to": "shipped"
+              }
+            ]
+          }
+        },
+        {
+          "category": "interaction",
+          "linkedEntity": "Notification",
+          "listens": [
+            {
+              "event": "ORDER_SHIPPED",
+              "payloadMapping": {
+                "message": "@payload.orderId"
+              },
+              "source": {
+                "kind": "trait",
+                "trait": "OrderProcessing"
+              },
+              "triggers": "SHOW"
+            }
+          ],
+          "name": "NotificationHandler",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "SHOW",
+                "name": "Show"
+              },
+              {
+                "key": "DISMISS",
+                "name": "Dismiss"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              },
+              {
+                "name": "active"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@message",
+                    "@payload.message"
+                  ]
+                ],
+                "event": "SHOW",
+                "from": "idle",
+                "to": "active"
+              },
+              {
+                "event": "DISMISS",
+                "from": "active",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

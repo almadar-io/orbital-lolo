@@ -1,0 +1,231 @@
+app std-trade-order "1.0.0"
+"std-trade-order — trade-order lifecycle (pending → working → filled) with position limits, VaR ceilings, and pre-trade risk-check knobs."
+
+type FieldSpec = { name : string!, label : string, variant : string, icon : string, format : string, key : string, header : string }
+type ItemAction = { label : string!, event : string!, variant : string, icon : string }
+
+orbital TradeOrderOrbital {
+  entity TradeOrder [persistent: trade_orders] {
+    id          : string!
+    instrument  : string! @description "Identifies the underlying asset or security." @synonyms "ticker, symbol, asset, security"
+    side        : "buy" | "sell" @description "Indicates whether the order is to buy or sell." @synonyms "direction, type" = "buy"
+    orderType   : "market" | "limit" | "stop" | "stop-limit" | "trailing" @description "Specifies the type of order being placed." @synonyms "order kind, order mode, order specification" = "market"
+    quantity    : number @description "The number of units being traded." @synonyms "size, amount, volume" = 0
+    price       : number @description "The monetary value associated with the order." @synonyms "cost, value, amount" = 0
+    limitPrice  : number @description "The maximum price acceptable for the order." @synonyms "maxPrice, upperLimit, ceiling" = 0
+    stopPrice   : number @description "The price at which an order becomes triggered." @synonyms "triggerPrice, stopLoss, stopLimit" = 0
+    status      : "pending" | "working" | "filled" | "partially-filled" | "cancelled" | "rejected" @description "Current stage of the process." @synonyms "state, condition, phase" = "pending"
+    venue       : string @description "The exchange or market where the order is placed." @synonyms "market, exchange, location" = ""
+    filledAt    : string @description "Timestamp indicating when the order was filled." @synonyms "completionTime, executionTime, fillDate" = ""
+    createdAt   : string = ""
+  }
+
+  type TradeOrderLoaded        = Event { data : [TradeOrder] }              "Fired when the trade order collection finishes loading"
+  type TradeOrderLoadFailed    = Event { error : string, code : string }    "Fired when the trade order collection fails to load"
+  type TradeOrderUpdated       = Event { row : TradeOrder }                 "Fired after a trade order row's status persists"
+  type TradeOrderUpdateFailed  = Event { error : string, code : string }    "Fired when a trade order row's status update fails to persist"
+
+  trait TradeOrderManage -> @rebindable TradeOrder [interaction, collection] {
+    config {
+      title : string = "Trade Orders"
+        @label "Section title"
+        @description "Heading shown above the trade order blotter"
+        @tier "presentation"
+      fields : [FieldSpec] = [
+        { name: "instrument", label: "Instrument", variant: "caption" },
+        { name: "side",       label: "Side",       variant: "badge"   },
+        { name: "orderType",  label: "Type",       variant: "badge"   },
+        { name: "quantity",   label: "Qty",        variant: "caption" },
+        { name: "price",      label: "Price",      variant: "caption" },
+        { name: "status",     label: "Status",     variant: "badge"   },
+        { name: "venue",      label: "Venue",      variant: "caption" }
+      ]
+        @label "Columns to show"
+        @description "Each column maps to one field on the Trade Order entity"
+        @tier "presentation"
+      itemActions : [ItemAction] = [
+        { label: "Open",   event: "OPEN_ORDER", variant: "primary", icon: "arrow-right" },
+        { label: "Cancel", event: "CANCEL",     variant: "danger",  icon: "x" }
+      ]
+        @label "Row actions"
+        @description "Buttons users can click on each trade order row"
+        @tier "presentation"
+      orderType : "market" | "limit" | "stop" | "stop-limit" | "trailing" = "market"
+        @label "Default order type"
+        @tier "domain"
+        @synonyms "order kind"
+      executionVenuePolicy : "best-execution" | "primary-only" | "dark-pool-preferred" | "lit-only" = "best-execution"
+        @label "Execution venue policy"
+        @description "Routing strategy across listed venues + dark pools."
+        @tier "domain"
+        @synonyms "smart order routing, SOR"
+      positionLimitUSD : number = 1000000
+        @label "Position limit (USD)"
+        @description "Maximum notional position per instrument before block."
+        @tier "domain"
+        @synonyms "size limit, max position"
+      dailyVarLimitUSD : number = 250000
+        @label "Daily VaR limit (USD)"
+        @description "Maximum daily value-at-risk before new orders block."
+        @tier "domain"
+        @synonyms "risk limit, daily loss limit"
+      washTradePreventionMinutes : number = 30
+        @label "Wash-trade prevention (min)"
+        @description "Minimum minutes between offsetting trades on the same instrument."
+        @tier "domain"
+        @synonyms "self-cross prevention"
+      priceCollarsBps : number = 500
+        @label "Price collars (bps)"
+        @description "Maximum bps deviation from reference price before order rejected."
+        @tier "domain"
+        @synonyms "price band, fat-finger guard"
+      partialFillsAllowed : boolean = true
+        @label "Allow partial fills"
+        @description "When false, only fill-or-kill is accepted."
+        @tier "domain"
+      clientSideRiskCheck : "soft" | "hard" | "off" = "hard"
+        @label "Pre-trade risk check"
+        @description "soft = warn-and-allow; hard = block; off = skip."
+        @tier "domain"
+    }
+    initial: loading
+    state loading {
+      INIT -> loading
+        (fetch TradeOrder { emit: { success: "TradeOrderLoaded", failure: "TradeOrderLoadFailed" } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Loading orders…" }] })
+      TradeOrderLoaded -> browsing
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", children: [{ type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [{ type: "icon", name: "trending-up" }, { type: "typography", content: "@config.title", variant: "h3" }] }, { type: "simple-grid", cols: 4, children: [{ type: "stat-display", label: "Total orders", value: "@payload.data.length", icon: "list" }, { type: "stat-display", label: "Working", value: "0", icon: "clock" }, { type: "stat-display", label: "Filled today", value: "0", icon: "check-circle" }, { type: "stat-display", label: "Rejected", value: "0", icon: "alert-triangle" }] }, { type: "divider" }, { type: "data-grid", entity: "@payload.data", fields: "@config.fields", cols: 1, gap: "sm", itemActions: "@config.itemActions" }] })
+      TradeOrderLoadFailed -> error
+        (render-ui main { type: "alert", variant: "error", message: "@payload.error" })
+    }
+    state browsing {
+      OPEN_ORDER -> viewing_single
+        (set @entity.id @payload.row.id)
+        (set @entity.instrument @payload.row.instrument)
+        (set @entity.side @payload.row.side)
+        (set @entity.orderType @payload.row.orderType)
+        (set @entity.quantity @payload.row.quantity)
+        (set @entity.price @payload.row.price)
+        (set @entity.limitPrice @payload.row.limitPrice)
+        (set @entity.stopPrice @payload.row.stopPrice)
+        (set @entity.status @payload.row.status)
+        (set @entity.venue @payload.row.venue)
+        (set @entity.filledAt @payload.row.filledAt)
+        (set @entity.createdAt @payload.row.createdAt)
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", children: [{ type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [{ type: "button", label: "Back", variant: "ghost", action: "CLOSE_VIEW" }, { type: "icon", name: "trending-up" }, { type: "typography", content: "@entity.instrument", variant: "h3" }, { type: "badge", label: "@entity.side", variant: "primary" }, { type: "badge", label: "@entity.status", variant: "default" }] }, { type: "divider" }, { type: "stack", direction: "vertical", gap: "sm", children: [{ type: "stack", direction: "horizontal", gap: "md", children: [{ type: "typography", variant: "caption", color: "muted", content: "Order type" }, { type: "typography", variant: "body", content: "@entity.orderType" }] }, { type: "stack", direction: "horizontal", gap: "md", children: [{ type: "typography", variant: "caption", color: "muted", content: "Venue" }, { type: "typography", variant: "body", content: "@entity.venue" }] }] }, { type: "divider" }, { type: "simple-grid", cols: 4, children: [{ type: "stat-display", label: "Quantity", value: "@entity.quantity", icon: "hash" }, { type: "stat-display", label: "Price", value: "@entity.price", icon: "dollar-sign" }, { type: "stat-display", label: "Limit", value: "@entity.limitPrice", icon: "dollar-sign" }, { type: "stat-display", label: "Stop", value: "@entity.stopPrice", icon: "dollar-sign" }] }, { type: "stack", direction: "horizontal", gap: "sm", align: "center", children: [{ type: "button", label: "Submit", variant: "primary", action: "OPEN_ORDER", actionPayload: { id: "@entity.id", row: "@entity" } }, { type: "button", label: "Fill", variant: "primary", action: "FILL", actionPayload: { id: "@entity.id" } }, { type: "button", label: "Cancel", variant: "danger", action: "CANCEL", actionPayload: { id: "@entity.id" } }] }] })
+      CANCEL -> loading
+        (set @entity.id @payload.id)
+        (set @entity.status "cancelled")
+        (persist update TradeOrder @entity { emit: { success: "TradeOrderUpdated", failure: "TradeOrderUpdateFailed" } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Cancelling order…" }] })
+      TradeOrderUpdated -> loading
+        (fetch TradeOrder { emit: { success: "TradeOrderLoaded", failure: "TradeOrderLoadFailed" } })
+      TradeOrderUpdateFailed -> browsing
+        (render-ui main { type: "alert", variant: "error", message: "@payload.error" })
+      SET_STATUS -> loading
+        (set @entity.id @payload.entityId)
+        (set @entity.status @payload.newStatus)
+        (persist update TradeOrder @entity { emit: { success: "TradeOrderUpdated", failure: "TradeOrderUpdateFailed" } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Updating order status…" }] })
+    }
+    state viewing_single {
+      CLOSE_VIEW -> loading
+        (fetch TradeOrder { emit: { success: "TradeOrderLoaded", failure: "TradeOrderLoadFailed" } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Loading orders…" }] })
+      OPEN_ORDER -> loading
+        (set @entity.id @payload.id)
+        (set @entity.status "working")
+        (persist update TradeOrder @entity { emit: { success: "TradeOrderUpdated", failure: "TradeOrderUpdateFailed" } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Submitting order…" }] })
+      FILL -> loading
+        (set @entity.id @payload.id)
+        (set @entity.status "filled")
+        (set @entity.filledAt "now")
+        (persist update TradeOrder @entity { emit: { success: "TradeOrderUpdated", failure: "TradeOrderUpdateFailed" } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Filling order…" }] })
+      CANCEL -> loading
+        (set @entity.id @payload.id)
+        (set @entity.status "cancelled")
+        (persist update TradeOrder @entity { emit: { success: "TradeOrderUpdated", failure: "TradeOrderUpdateFailed" } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Cancelling order…" }] })
+    }
+    state error {
+      INIT -> loading
+        (fetch TradeOrder { emit: { success: "TradeOrderLoaded", failure: "TradeOrderLoadFailed" } })
+        (render-ui main { type: "spinner", size: "sm" })
+    }
+    emits {
+      OPEN_ORDER { id : string!, row : TradeOrder }
+        @description "Signals the order view is now visible."
+        @synonyms "show, display, reveal"
+        @tier "essential"
+      CLOSE_VIEW { }
+        @description "Signals the view is being closed or dismissed."
+        @synonyms "dismiss, hide, close"
+        @tier "customization"
+      FILL       { id : string! }
+        @description "Indicates a trade order has been successfully filled."
+        @synonyms "completed, executed, finalized"
+        @tier "essential"
+      CANCEL     { id : string! }
+        @description "Signals that the order has been cancelled."
+        @synonyms "revoke, delete, remove"
+        @tier "essential"
+      TradeOrderLoaded       { data : [TradeOrder] }
+        @description "Signals successful loading of trade order data."
+        @synonyms "loaded, retrieved, fetched"
+        @tier "essential"
+      TradeOrderLoadFailed   { error : string, code : string }
+        @description "Indicates that loading trade order data has failed."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+      TradeOrderUpdated      { row : TradeOrder }
+        @description "Signals a change in the trade order's details."
+        @synonyms "modified, changed, refreshed"
+        @tier "customization"
+      TradeOrderUpdateFailed { error : string, code : string }
+        @description "Indicates a failure to update the trade order."
+        @synonyms "error, rejected, failed update"
+        @tier "internal"
+    }
+    listens {
+      OPEN_ORDER { id : string!, row : TradeOrder }
+        @description "A trade order is being displayed or accessed."
+        @synonyms "display, view, access, show"
+        @tier "essential"
+      CLOSE_VIEW { }
+        @description "The view is being closed or navigated away from."
+        @synonyms "dismiss, hide, unload"
+        @tier "customization"
+      FILL       { id : string! }
+        @description "Indicates a trade order has been successfully filled."
+        @synonyms "completed, executed, finalized"
+        @tier "essential"
+      CANCEL     { id : string! }
+        @description "Order cancellation request received."
+        @synonyms "revoke, delete, remove"
+        @tier "essential"
+      SET_STATUS { entityId : string!, newStatus : string! }
+        @description "Indicates a change in the order's lifecycle state."
+        @synonyms "update, change, modify, transition"
+        @tier "essential"
+      TradeOrderLoaded       { data : [TradeOrder] }
+        @description "Indicates a trade order has been successfully retrieved."
+        @synonyms "loaded, retrieved, fetched"
+        @tier "essential"
+      TradeOrderLoadFailed   { error : string, code : string }
+        @description "Indicates a failure to load trade order data."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+      TradeOrderUpdated      { row : TradeOrder }
+        @description "Indicates a change in trade order details."
+        @synonyms "modified, changed, revised"
+        @tier "customization"
+      TradeOrderUpdateFailed { error : string, code : string }
+        @description "Indicates a failure to update the trade order."
+        @synonyms "error, rejected, failed update"
+        @tier "internal"
+    }
+  }
+  page "/orders" as TradeOrderManagePage -> TradeOrderManage
+}

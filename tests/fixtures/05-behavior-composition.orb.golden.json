@@ -1,0 +1,55 @@
+{
+  "name": "ShoppingApp",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "name": "Cart",
+        "persistence": "runtime"
+      },
+      "name": "ShoppingApp",
+      "traits": [
+        {
+          "linkedEntity": "Cart",
+          "name": "__Composition",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "init"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "behavior/compose",
+                    {
+                      "appName": "ShoppingApp",
+                      "layoutStrategy": "auto",
+                      "orbitals": []
+                    }
+                  ]
+                ],
+                "event": "INIT",
+                "from": "init",
+                "to": "init"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

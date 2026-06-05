@@ -1,0 +1,15 @@
+orbital OrderEmitOrbital {
+  entity OrderEmit [persistent: orders] {
+    id : string!
+    total : int
+  }
+  trait OrderEmitter -> OrderEmit [interaction] {
+    state idle {
+      SHIP -> idle
+        (emit ORDER_SHIPPED { orderId: @id, total: @total })
+    }
+    emits {
+      ORDER_SHIPPED -> external { orderId: string, total: int }
+    }
+  }
+}

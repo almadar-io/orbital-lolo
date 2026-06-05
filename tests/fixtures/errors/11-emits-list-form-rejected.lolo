@@ -1,0 +1,14 @@
+;; Phase 10 — `emits: [Name1, Name2]` array form is removed; the parser
+;; now expects `emits {}` block. This fixture must fail to parse.
+
+orbital O {
+  entity E [runtime] { id : string! }
+  type ELoaded = Event E
+  trait T -> E [interaction, collection] {
+    state s {
+      INIT -> s
+        (fetch E)
+    }
+    emits: [ELoaded]
+  }
+}

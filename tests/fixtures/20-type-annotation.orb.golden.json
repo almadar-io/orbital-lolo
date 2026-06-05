@@ -1,0 +1,73 @@
+{
+  "name": "PatientOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "patients",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "type": "string"
+          },
+          {
+            "name": "phone",
+            "type": "string"
+          }
+        ],
+        "name": "Patient",
+        "persistence": "persistent"
+      },
+      "name": "PatientOrbital",
+      "pages": [
+        {
+          "name": "Patients",
+          "path": "/patients",
+          "traits": [
+            {
+              "ref": "PatientView"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Patient",
+          "name": "PatientView",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "ref",
+                    "Patient"
+                  ]
+                ],
+                "event": "INIT",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,6 @@
+orbital Foo {
+  entity Bar {
+    id : string!
+    name : string = "unterminated
+  }
+}

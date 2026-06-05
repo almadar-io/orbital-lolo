@@ -1,0 +1,25 @@
+;; Negative: two type aliases form a composition cycle via field references.
+;; Resolver's DFS cycle-check returns TypeError::CircularType with the chain.
+
+type Foo = Entity {
+  id : string!
+  other : Bar
+}
+
+type Bar = Entity {
+  id : string!
+  back : Foo
+}
+
+orbital Dummy {
+  entity Rec [runtime] {
+    id : string!
+  }
+  trait RecTrait -> Rec [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Rec)
+    }
+  }
+  page "/recs" -> RecTrait
+}

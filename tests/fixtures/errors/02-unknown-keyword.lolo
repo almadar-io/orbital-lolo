@@ -1,0 +1,5 @@
+orbital Foo {
+  splarble Bar {
+    id : string!
+  }
+}

@@ -1,0 +1,30 @@
+;; Negative: two composed entities declare the same field with different
+;; types. The resolver's merge_entity_composition surfaces
+;; TypeError::CompositionConflict.
+
+type LeftShape = Entity {
+  id : string!
+  status : string
+}
+
+type RightShape = Entity {
+  name : string
+  status : number
+}
+
+type Merged = LeftShape & RightShape
+
+orbital Conflicted {
+  entity Rec :: Merged [persistent: recs] {
+    id : string!
+    name : string
+    status : string
+  }
+  trait RecTrait -> Rec [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Rec)
+    }
+  }
+  page "/recs" -> RecTrait
+}

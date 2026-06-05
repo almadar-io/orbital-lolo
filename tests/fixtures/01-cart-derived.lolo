@@ -1,0 +1,18 @@
+orbital CartOrbital {
+  entity Cart [runtime] {
+    id : string!
+    items : [string]
+    itemCount : int = derived (array/length @items)
+    total : int = derived (array/sum @items)
+  }
+  trait CartActions -> Cart [interaction] {
+    state empty {
+      ADD_ITEM -> hasItems
+        (set @items (array/append @items ?item))
+    }
+    state hasItems {
+      REMOVE_ITEM -> empty
+        (set @items [])
+    }
+  }
+}

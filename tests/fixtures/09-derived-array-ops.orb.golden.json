@@ -1,0 +1,73 @@
+{
+  "name": "InventoryOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "items": {
+              "type": "string"
+            },
+            "name": "items",
+            "type": "array"
+          },
+          {
+            "name": "itemCount",
+            "type": "number"
+          },
+          {
+            "name": "isEmpty",
+            "type": "boolean"
+          }
+        ],
+        "name": "Inventory",
+        "persistence": "runtime"
+      },
+      "name": "InventoryOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Inventory",
+          "name": "InventoryActions",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "ADD",
+                "name": "Add"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@items",
+                    [
+                      "array/append",
+                      "@items",
+                      "@payload.item"
+                    ]
+                  ]
+                ],
+                "event": "ADD",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

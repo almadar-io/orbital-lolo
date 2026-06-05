@@ -1,0 +1,24 @@
+;; Phase 10 — cross-trait listens require `Source.EVENT -> Trigger`
+;; (dot-separated). The legacy space-separated `Source EVENT -> Trigger`
+;; form is removed and must fail to parse.
+
+orbital O {
+  entity E [runtime] { id : string! }
+  trait Source -> E [interaction] {
+    state s {
+      FIRE -> s
+        (emit FIRED)
+    }
+    emits {
+      FIRED
+    }
+  }
+  trait Listener -> E [interaction] {
+    state idle {
+      RECV -> idle
+    }
+    listens {
+      Source FIRED -> RECV
+    }
+  }
+}

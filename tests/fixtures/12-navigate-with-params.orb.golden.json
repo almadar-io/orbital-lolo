@@ -1,0 +1,91 @@
+{
+  "name": "RouterOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "name": "Page",
+        "persistence": "runtime"
+      },
+      "name": "RouterOrbital",
+      "pages": [
+        {
+          "name": "Home",
+          "path": "/home",
+          "traits": [
+            {
+              "ref": "Router"
+            }
+          ]
+        },
+        {
+          "name": "OrderId",
+          "path": "/order/:id",
+          "traits": [
+            {
+              "ref": "Router"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "category": "interaction",
+          "linkedEntity": "Page",
+          "name": "Router",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "GO_HOME",
+                "name": "Go Home"
+              },
+              {
+                "key": "GO_DETAIL",
+                "name": "Go Detail"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "navigate",
+                    "/home"
+                  ]
+                ],
+                "event": "GO_HOME",
+                "from": "idle",
+                "to": "idle"
+              },
+              {
+                "effects": [
+                  [
+                    "navigate",
+                    "/order/:id",
+                    {
+                      "id": "@payload.id"
+                    }
+                  ]
+                ],
+                "event": "GO_DETAIL",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+;; Phase 10 — the `EVENT [scope] :: TypeName` emit form is removed. Authors
+;; must use bare name (alias lookup) or inline `{ fields }`. This fixture
+;; must fail to parse.
+
+type UserData = Entity {
+  id : string!
+  name : string
+}
+
+orbital O {
+  entity Account [runtime] { id : string! }
+  trait T -> Account [interaction] {
+    state s {
+      LOAD -> s
+        (fetch Account)
+    }
+    emits {
+      USER_LOADED -> external :: UserData
+    }
+  }
+}

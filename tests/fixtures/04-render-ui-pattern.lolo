@@ -1,0 +1,13 @@
+orbital TaskOrbital {
+  entity Task [persistent: tasks] {
+    id : string!
+    title : string
+  }
+  trait TaskList -> Task [interaction] {
+    state listing {
+      INIT -> listing
+        (ref Task)
+        (render-ui main { type: "data-grid", entity: "Task", columns: [{ name: "title", label: "Title" }] })
+    }
+  }
+}

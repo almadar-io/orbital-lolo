@@ -1,0 +1,30 @@
+;; Stage 1 fixture — composition via `&`. `Timestamped & Entity { ... }` composes
+;; two Entity shapes; field sets merge at resolution time (Stage 2). Stage 1
+;; just parses the Composition(Vec<TypeBody>) AST node cleanly.
+
+type Timestamped = Entity {
+  id : string!
+  createdAt : string
+}
+
+type Auditable = Timestamped & Entity {
+  createdBy : string
+  updatedBy : string
+}
+
+orbital AuditOrbital {
+  entity Rec :: Auditable [persistent: recs] {
+    id : string!
+    createdAt : string
+    createdBy : string
+    updatedBy : string
+    note : string
+  }
+  trait RecBrowse -> Rec [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Rec)
+    }
+  }
+  page "/recs" -> RecBrowse
+}
