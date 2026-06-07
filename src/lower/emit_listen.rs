@@ -60,7 +60,26 @@ pub(crate) fn lower_emit(
     let mut fields: Vec<PayloadField> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
     for f in &e.payload {
-        if let TypeExpr::Named(type_name) = &f.type_expr {
+        // Anonymous struct (inline `{ … }` or a `type X = { … }` alias, NOT an
+        // entity): keep it as ONE field carrying the nested shape so codegen
+        // emits a strict inline object type instead of widening to
+        // `EventPayload`. Entity references fall through to the dotted-flatten
+        // below (rows expose bindable `@payload.rec.field` paths).
+        if let Some(props) = struct_payload_properties(&f.type_expr, aliases) {
+            if !seen.insert(f.name.clone()) {
+                return Err(LowerError::PayloadFieldCollision {
+                    event: e.event.clone(),
+                    field: f.name.clone(),
+                });
+            }
+            fields.push(PayloadField {
+                name: f.name.clone(),
+                field_type: "object".to_string(),
+                required: if f.required { Some(true) } else { None },
+                description: None,
+                properties: Some(props),
+            });
+        } else if let TypeExpr::Named(type_name) = &f.type_expr {
             let nested = resolve_payload_type(type_name, aliases, entities_by_name)?;
             for nf in nested {
                 let prefixed = format!("{}.{}", f.name, nf.name);
@@ -75,6 +94,7 @@ pub(crate) fn lower_emit(
                     field_type: nf.field_type,
                     required: nf.required,
                     description: None,
+                    properties: None,
                 });
             }
         } else {
@@ -89,6 +109,7 @@ pub(crate) fn lower_emit(
                 field_type: type_expr_to_string(&f.type_expr),
                 required: if f.required { Some(true) } else { None },
                 description: None,
+                properties: None,
             });
         }
     }
@@ -136,6 +157,7 @@ pub(crate) fn type_expr_to_payload_fields(
                     field_type: type_expr_to_string(ftype),
                     required: if *freq { Some(true) } else { None },
                     description: None,
+                    properties: None,
                 });
             }
             Ok(flat)
@@ -150,9 +172,57 @@ pub(crate) fn type_expr_to_payload_fields(
                 field_type: type_expr_to_string(other),
                 required: None,
                 description: None,
+                properties: None,
             }])
         }
     }
+}
+
+/// If `te` is an anonymous struct — an inline `{ … }` object or a
+/// `type X = { … }` struct alias (NOT an entity reference) — return its fields
+/// as nested `PayloadField`s so codegen can emit a strict inline object type.
+/// Returns `None` for entities, primitives, arrays, etc. (those keep the
+/// existing flat / dotted-flatten handling). Recurses for nested structs.
+pub(crate) fn struct_payload_properties(
+    te: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Option<Vec<PayloadField>> {
+    let items: &Vec<(String, TypeExpr, bool)> = match te {
+        TypeExpr::Object(items) => items,
+        TypeExpr::Named(n) => match aliases.get(n) {
+            Some(TypeAliasResolved::Type(TypeExpr::Object(items))) => items,
+            _ => return None,
+        },
+        _ => return None,
+    };
+    let mut props = Vec::with_capacity(items.len());
+    for (name, ty, req) in items {
+        // An array-of-struct field (`[StructAlias]` / `[{ … }]`) carries the
+        // ELEMENT shape: `field_type` is `[object]` (signals array) and
+        // `properties` holds the element's fields — the resolve phase wraps it
+        // in `OirType::Array(Struct{…})` so codegen emits a strict `{ … }[]`
+        // instead of a dangling named reference. A direct struct field is
+        // `object` + `properties`; everything else stays a flat type string.
+        let array_elem = match ty {
+            TypeExpr::Array(inner) => struct_payload_properties(inner, aliases),
+            _ => None,
+        };
+        let (field_type, properties) = if let Some(elem) = array_elem {
+            ("[object]".to_string(), Some(elem))
+        } else if let Some(nested) = struct_payload_properties(ty, aliases) {
+            ("object".to_string(), Some(nested))
+        } else {
+            (type_expr_to_string(ty), None)
+        };
+        props.push(PayloadField {
+            name: name.clone(),
+            field_type,
+            required: if *req { Some(true) } else { None },
+            description: None,
+            properties,
+        });
+    }
+    Some(props)
 }
 
 /// Resolve a named type referenced from an emit payload into a flat
@@ -174,6 +244,7 @@ fn resolve_payload_type(
                 field_type: type_expr_to_string(t),
                 required: if *req { Some(true) } else { None },
                 description: None,
+                properties: None,
             })
             .collect());
     }

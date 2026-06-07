@@ -48,7 +48,17 @@
               },
               {
                 "key": "ORDER_SHIPPED",
-                "name": "Order Shipped"
+                "name": "Order Shipped",
+                "payloadSchema": [
+                  {
+                    "name": "orderId",
+                    "type": "string"
+                  },
+                  {
+                    "name": "total",
+                    "type": "int"
+                  }
+                ]
               }
             ],
             "states": [

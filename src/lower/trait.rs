@@ -211,6 +211,7 @@ pub(crate) fn lower_trait(
                     field_type: type_expr_to_string(&f.type_expr),
                     required: if f.required { Some(true) } else { None },
                     description: None,
+                    properties: None,
                 })
                 .collect()
         } else {
@@ -245,6 +246,26 @@ pub(crate) fn lower_trait(
         }
     }
 
+    // Lower the emits once up front so the `stateMachine.events[]` builder can
+    // source an event's payload from its outbound `emits { }` declaration when
+    // nothing else supplies one. Reused below for the trait's `emits` array —
+    // one lowering, one source of truth (event payload === emit payload).
+    let lowered_emits: Vec<EmitDefinition> = t
+        .emits
+        .iter()
+        .map(|e| lower_emit(e, aliases, entities, event_aliases))
+        .collect::<Result<Vec<_>, _>>()?;
+    let mut emit_payloads: HashMap<String, Vec<PayloadField>> = HashMap::new();
+    for def in &lowered_emits {
+        if let Some(p) = &def.payload_schema {
+            if !p.is_empty() {
+                emit_payloads
+                    .entry(def.event.clone())
+                    .or_insert_with(|| p.clone());
+            }
+        }
+    }
+
     let events: Option<Vec<EventDefinition>> = if event_keys.is_empty() {
         None
     } else {
@@ -261,6 +282,13 @@ pub(crate) fn lower_trait(
                     // Without (2) the render-ui validator can't resolve
                     // `@payload.*` bindings on events that are only typed at
                     // orbital scope, even though the author declared the shape.
+                    //   3. Outbound `emits { K -> external { … } }` payload —
+                    //      last-resort source for an emit-only event (e.g. a
+                    //      render-ui callback like `onDayClick: DAY_CLICK`) that
+                    //      no listen/alias typed. Placed last so events already
+                    //      typed via listen/alias are untouched; the validator
+                    //      enforces emit↔event payload parity, so this only fills
+                    //      holes, never contradicts.
                     let payload = if let Some(fields) = listen_payloads.remove(&k) {
                         Some(fields)
                     } else if let Some(resolved) = event_aliases.get(&k) {
@@ -270,6 +298,8 @@ pub(crate) fn lower_trait(
                             aliases,
                             entities,
                         )?)
+                    } else if let Some(fields) = emit_payloads.remove(&k) {
+                        Some(fields)
                     } else {
                         None
                     };
@@ -301,17 +331,12 @@ pub(crate) fn lower_trait(
         None => None,
     };
 
-    // Single pass over the unified `emits { ... }` block. Each entry is
-    // either a bare name (alias lookup against `event_aliases`) or has an
-    // inline payload. `lower_emit` decides per entry.
-    let emits = if t.emits.is_empty() {
+    // Reuse the emits lowered up front (see the `stateMachine.events[]`
+    // payload-precedence block above). `lower_emit` already ran per entry.
+    let emits = if lowered_emits.is_empty() {
         None
     } else {
-        let mut lowered: Vec<EmitDefinition> = Vec::with_capacity(t.emits.len());
-        for e in &t.emits {
-            lowered.push(lower_emit(e, aliases, entities, event_aliases)?);
-        }
-        Some(lowered)
+        Some(lowered_emits)
     };
     // Split listens into cross-orbital (keep on the trait's `listens` array)
     // and local incoming payload declarations (already attached above to

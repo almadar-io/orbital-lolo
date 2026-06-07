@@ -75,7 +75,32 @@
               },
               {
                 "key": "PLACE_SELECTED",
-                "name": "Place Selected"
+                "name": "Place Selected",
+                "payloadSchema": [
+                  {
+                    "name": "placeId",
+                    "required": true,
+                    "type": "string"
+                  },
+                  {
+                    "name": "location.lat",
+                    "required": true,
+                    "type": "number"
+                  },
+                  {
+                    "name": "location.lng",
+                    "required": true,
+                    "type": "number"
+                  },
+                  {
+                    "name": "location.address",
+                    "type": "string"
+                  },
+                  {
+                    "name": "timestamp",
+                    "type": "string"
+                  }
+                ]
               }
             ],
             "states": [
