@@ -12,6 +12,14 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::Primitive(name) => name.clone(),
         TypeExpr::Named(name) => name.clone(),
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_config_string(inner)),
+        // `Map K V` → round-trippable `Map<K,V>` config-string (the key is a
+        // comma-free atom, so resolve splits on the first comma). Parsed back
+        // by `parse_payload_field_type` into `OirType::Map`.
+        TypeExpr::Map(key, value) => format!(
+            "Map<{},{}>",
+            type_expr_to_config_string(key),
+            type_expr_to_config_string(value)
+        ),
         TypeExpr::Optional(inner) => type_expr_to_config_string(inner),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Union(_) => "string".to_string(),
@@ -59,6 +67,8 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
         TypeExpr::Named(n) => n.clone(), // entity / struct reference
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Array(_) => "array".to_string(),
+        // A map is a record/object at the bus-payload level.
+        TypeExpr::Map(_, _) => "object".to_string(),
         TypeExpr::Object(_) => "object".to_string(),
         TypeExpr::Union(members) => {
             // String-literal unions reduce to "string" (matches lowering's
@@ -137,6 +147,11 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::Primitive(s) | TypeExpr::Named(s) => s.clone(),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_string(inner)),
+        TypeExpr::Map(key, value) => format!(
+            "Map<{},{}>",
+            type_expr_to_string(key),
+            type_expr_to_string(value)
+        ),
         TypeExpr::Object(_) => "object".to_string(),
         TypeExpr::Union(_) => "string".to_string(),
         TypeExpr::Optional(inner) => type_expr_to_string(inner),

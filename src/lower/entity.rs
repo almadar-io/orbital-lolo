@@ -139,6 +139,32 @@ pub(crate) fn lower_type_expr(
             };
             (FieldType::Array, None, Some(Box::new(item)), None, None)
         }
+        // `Map K V` — carry the VALUE's resolved shape in the `items` carrier
+        // (resolving named-alias values to their struct, exactly like array
+        // elements). `resolve_config_field_shape` disambiguates map-vs-array by
+        // the `Map<…>` field-type string and inlines this value shape into
+        // `OirType::Map { key, value }`. The `FieldType::Object` tag keeps an
+        // entity-level map (rare) as a plain object.
+        TypeExpr::Map(_key, value) => {
+            let (v_ft, v_values, v_items, v_props, _v_rel) =
+                lower_type_expr(value, aliases, entity_names);
+            let value_field = FieldDefinition {
+                name: None,
+                field_type: v_ft,
+                required: None,
+                primary_key: None,
+                unique: None,
+                default: None,
+                values: v_values,
+                relation: None,
+                items: v_items,
+                properties: v_props,
+                intrinsic: None,
+                description: None,
+                synonyms: None,
+            };
+            (FieldType::Object, None, Some(Box::new(value_field)), None, None)
+        }
         TypeExpr::Object(fields) => {
             let mut props = HashMap::new();
             for (k, v, req) in fields {

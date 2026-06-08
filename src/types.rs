@@ -360,6 +360,9 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::Named(s) => format!("named:{s}"),
         TypeExpr::StringLiteral(s) => format!("lit:{s:?}"),
         TypeExpr::Array(inner) => format!("[{}]", format_type_expr(inner)),
+        TypeExpr::Map(key, value) => {
+            format!("map:{}:{}", format_type_expr(key), format_type_expr(value))
+        }
         TypeExpr::Object(fields) => {
             let mut parts: Vec<String> = fields
                 .iter()
@@ -533,6 +536,10 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
             }
         }
         TypeExpr::Array(inner) | TypeExpr::Optional(inner) => visit_expr_refs(inner, out),
+        TypeExpr::Map(key, value) => {
+            visit_expr_refs(key, out);
+            visit_expr_refs(value, out);
+        }
         TypeExpr::Union(parts) => {
             for p in parts {
                 visit_expr_refs(p, out);

@@ -287,6 +287,13 @@ impl Formatter {
                 self.fmt_type_expr(inner);
                 self.output.push(']');
             }
+            TypeExpr::Map(key, value) => {
+                // Surface syntax: `Map K V` (juxtaposition).
+                self.output.push_str("Map ");
+                self.fmt_type_expr(key);
+                self.output.push(' ');
+                self.fmt_type_expr(value);
+            }
             TypeExpr::Object(fields) => {
                 self.output.push_str("{ ");
                 for (i, (name, fty, req)) in fields.iter().enumerate() {

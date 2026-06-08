@@ -266,6 +266,12 @@ pub enum TypeExpr {
     StringLiteral(String),
     /// `[T]` array type.
     Array(Box<TypeExpr>),
+    /// `Map K V` dynamic-key map type — a uniform-value dictionary with
+    /// arbitrary keys (e.g. `Map string SimulationParameter`). Reserved
+    /// built-in binary constructor applied by juxtaposition, mirroring
+    /// Haskell's `Map k v`. Lowers to `Record<K, V>` in codegen. Distinct from
+    /// the fixed-key `Object` struct: keys aren't known at author time.
+    Map(Box<TypeExpr>, Box<TypeExpr>),
     /// `{ k: T, ... }` / `{ k: T! }` inline object type. Each entry is
     /// `(field_name, type, required)`; the optional `!` marker tracks
     /// whether the field is required so the lowerer can emit the matching

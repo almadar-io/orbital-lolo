@@ -381,6 +381,9 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         TypeExpr::Slot => Some("slot"),
         TypeExpr::Pattern => Some("pattern"),
         TypeExpr::Array(inner) => type_expr_config_only_type(inner),
+        TypeExpr::Map(key, value) => {
+            type_expr_config_only_type(key).or_else(|| type_expr_config_only_type(value))
+        }
         TypeExpr::Optional(inner) => type_expr_config_only_type(inner),
         TypeExpr::Union(parts) => parts.iter().find_map(type_expr_config_only_type),
         TypeExpr::Object(fields) => fields.iter().find_map(|(_, ty, _)| type_expr_config_only_type(ty)),

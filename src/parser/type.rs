@@ -390,6 +390,15 @@ impl Parser {
             return Ok(TypeExpr::Object(fields));
         }
         let name = self.expect_ident()?;
+        // `Map K V` — reserved built-in dynamic-key map constructor, applied by
+        // juxtaposition (Haskell `Map k v` style): parse the key type-atom then
+        // the value type-atom. Lowers to `Record<K, V>`. Reserved like the
+        // config-only keywords below; no user type may be named `Map`.
+        if name == "Map" {
+            let key = self.parse_type_atom()?;
+            let value = self.parse_type_atom()?;
+            return Ok(TypeExpr::Map(Box::new(key), Box::new(value)));
+        }
         // `trait` keyword as a type — value is a `@trait.X` reference. Allowed
         // only inside config { ... } blocks; entity field validation rejects it.
         if name == "trait" {
