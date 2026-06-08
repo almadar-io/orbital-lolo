@@ -28,6 +28,7 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
+        TypeExpr::SExpr => "SExpr".to_string(),
     }
 }
 
@@ -92,6 +93,8 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
+        // SExpr is a structured value at the bus-payload level.
+        TypeExpr::SExpr => "object".to_string(),
     }
 }
 
@@ -160,6 +163,7 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
+        TypeExpr::SExpr => "SExpr".to_string(),
     }
 }
 

@@ -338,6 +338,9 @@ impl Formatter {
             TypeExpr::Pattern => {
                 self.output.push_str("pattern");
             }
+            TypeExpr::SExpr => {
+                self.output.push_str("SExpr");
+            }
         }
     }
 

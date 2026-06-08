@@ -71,6 +71,9 @@ pub(crate) fn lower_type_expr(
         TypeExpr::Trait => (FieldType::Trait, None, None, None, None),
         TypeExpr::Slot => (FieldType::Slot, None, None, None, None),
         TypeExpr::Pattern => (FieldType::Pattern, None, None, None, None),
+        // Config-only brand (gated by `config_only_type` in parser/mod.rs); in
+        // an entity context it falls back to an opaque object value.
+        TypeExpr::SExpr => (FieldType::Object, None, None, None, None),
         TypeExpr::Named(name) => {
             if let Some(alias) = aliases.get(name) {
                 match alias {

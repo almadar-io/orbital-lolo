@@ -380,6 +380,7 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         TypeExpr::Trait => Some("trait"),
         TypeExpr::Slot => Some("slot"),
         TypeExpr::Pattern => Some("pattern"),
+        TypeExpr::SExpr => Some("SExpr"),
         TypeExpr::Array(inner) => type_expr_config_only_type(inner),
         TypeExpr::Map(key, value) => {
             type_expr_config_only_type(key).or_else(|| type_expr_config_only_type(value))

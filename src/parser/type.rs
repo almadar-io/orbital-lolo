@@ -414,6 +414,12 @@ impl Parser {
         if name == "pattern" {
             return Ok(TypeExpr::Pattern);
         }
+        // `SExpr` keyword as a type — value is a compiled s-expression (the
+        // `@almadar/core` `SExpr` brand). Allowed only inside config { ... }
+        // blocks. Emits the recursive `SExpr` TS type.
+        if name == "SExpr" {
+            return Ok(TypeExpr::SExpr);
+        }
         let base = if is_primitive_type(&name) {
             TypeExpr::Primitive(name)
         } else {

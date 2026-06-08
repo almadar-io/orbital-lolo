@@ -293,6 +293,12 @@ pub enum TypeExpr {
     Slot,
     /// `pattern` — value is a pattern type name. Validated against `PATTERN_TYPES`.
     Pattern,
+    /// `SExpr` — value is a compiled s-expression (the `SExpr` brand from
+    /// `@almadar/core`). Used for config fields that hold an s-expression
+    /// (e.g. a `conditionalFields` visibility condition). Emits the recursive
+    /// `SExpr` TypeScript type (inlined as a local alias in codegen, like
+    /// `TraitFieldRef`). Allowed only in `config { ... }` blocks.
+    SExpr,
 }
 
 /// `trait Name [:: TypeAnnotation] -> Entity [category] { ... }` or

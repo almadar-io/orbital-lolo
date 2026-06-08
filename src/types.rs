@@ -385,6 +385,7 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
+        TypeExpr::SExpr => "SExpr".to_string(),
     }
 }
 
@@ -553,7 +554,7 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         TypeExpr::RelationMany(n) | TypeExpr::RelationManyNonEmpty(n) => {
             out.insert(n.clone());
         }
-        TypeExpr::Primitive(_) | TypeExpr::StringLiteral(_) | TypeExpr::Trait | TypeExpr::Slot | TypeExpr::Pattern => {}
+        TypeExpr::Primitive(_) | TypeExpr::StringLiteral(_) | TypeExpr::Trait | TypeExpr::Slot | TypeExpr::Pattern | TypeExpr::SExpr => {}
     }
 }
 
