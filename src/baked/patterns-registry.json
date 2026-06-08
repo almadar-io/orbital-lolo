@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-07T18:38:16.149Z",
+  "exportedAt": "2026-06-08T19:05:53.459Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -47,7 +47,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -60,6 +85,10 @@
             "string"
           ],
           "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ],
           "default": "asc"
         },
         "searchValue": {
@@ -244,6 +273,10 @@
               "placement": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "row",
+                  "bulk"
                 ]
               },
               "icon": {
@@ -254,6 +287,13 @@
               "variant": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "default",
+                  "primary",
+                  "secondary",
+                  "ghost",
+                  "danger"
                 ]
               },
               "onClick": {
@@ -269,7 +309,8 @@
         },
         "emptyIcon": {
           "types": [
-            "icon"
+            "icon",
+            "string"
           ],
           "description": "emptyIcon prop"
         },
@@ -485,7 +526,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -497,7 +563,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -584,6 +654,12 @@
               "placement": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "row",
+                  "bulk",
+                  "card",
+                  "footer"
                 ]
               },
               "action": {
@@ -831,7 +907,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state",
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ],
           "default": null
         },
         "sortBy": {
@@ -844,7 +945,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -899,7 +1004,15 @@
           "types": [
             "number"
           ],
-          "description": "Maximum number of columns"
+          "description": "Maximum number of columns",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
         },
         "gap": {
           "types": [
@@ -1054,11 +1167,22 @@
               "placement": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "card",
+                  "footer",
+                  "row"
                 ]
               },
               "variant": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "primary",
+                  "secondary",
+                  "ghost",
+                  "danger"
                 ]
               }
             },
@@ -1132,7 +1256,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -1144,7 +1293,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -1800,7 +1953,11 @@
           "types": [
             "string"
           ],
-          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'."
+          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'.",
+          "enumValues": [
+            "create",
+            "edit"
+          ]
         },
         "fields": {
           "types": [
@@ -2049,7 +2206,42 @@
             "object"
           ],
           "description": "Relation data props",
-          "freeform": true,
+          "mapValue": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "value": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "disabled": {
+                  "types": [
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          },
           "default": {}
         },
         "relationsLoading": {
@@ -2057,7 +2249,11 @@
             "object"
           ],
           "description": "Loading state for relation data: { fieldName: boolean }",
-          "freeform": true,
+          "mapValue": {
+            "types": [
+              "boolean"
+            ]
+          },
           "default": {}
         },
         "conditionalFields": {
@@ -2065,7 +2261,12 @@
             "object",
             "boolean"
           ],
-          "description": "Inspection form extensions"
+          "description": "Inspection form extensions",
+          "mapValue": {
+            "types": [
+              "sexpr"
+            ]
+          }
         },
         "hiddenCalculations": {
           "types": [
@@ -2085,9 +2286,8 @@
               },
               "expression": {
                 "types": [
-                  "object"
-                ],
-                "freeform": true
+                  "sexpr"
+                ]
               },
               "triggerFields": {
                 "types": [
@@ -2120,9 +2320,8 @@
             "properties": {
               "condition": {
                 "types": [
-                  "object"
-                ],
-                "freeform": true
+                  "sexpr"
+                ]
               },
               "violation": {
                 "types": [
@@ -2232,9 +2431,8 @@
               },
               "condition": {
                 "types": [
-                  "object"
-                ],
-                "freeform": true
+                  "sexpr"
+                ]
               },
               "fields": {
                 "types": [
@@ -2420,14 +2618,18 @@
                   },
                   "value": {
                     "types": [
-                      "unknown"
+                      "object"
                     ]
                   },
                   "formValues": {
                     "types": [
                       "object"
                     ],
-                    "freeform": true
+                    "mapValue": {
+                      "types": [
+                        "object"
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -2532,7 +2734,11 @@
           "types": [
             "string"
           ],
-          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'."
+          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'.",
+          "enumValues": [
+            "create",
+            "edit"
+          ]
         },
         "fields": {
           "types": [
@@ -2781,7 +2987,42 @@
             "object"
           ],
           "description": "Relation data props",
-          "freeform": true,
+          "mapValue": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "value": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "disabled": {
+                  "types": [
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          },
           "default": {}
         },
         "relationsLoading": {
@@ -2789,7 +3030,11 @@
             "object"
           ],
           "description": "Loading state for relation data: { fieldName: boolean }",
-          "freeform": true,
+          "mapValue": {
+            "types": [
+              "boolean"
+            ]
+          },
           "default": {}
         },
         "conditionalFields": {
@@ -2797,7 +3042,12 @@
             "object",
             "boolean"
           ],
-          "description": "Inspection form extensions"
+          "description": "Inspection form extensions",
+          "mapValue": {
+            "types": [
+              "sexpr"
+            ]
+          }
         },
         "hiddenCalculations": {
           "types": [
@@ -2817,9 +3067,8 @@
               },
               "expression": {
                 "types": [
-                  "object"
-                ],
-                "freeform": true
+                  "sexpr"
+                ]
               },
               "triggerFields": {
                 "types": [
@@ -2852,9 +3101,8 @@
             "properties": {
               "condition": {
                 "types": [
-                  "object"
-                ],
-                "freeform": true
+                  "sexpr"
+                ]
               },
               "violation": {
                 "types": [
@@ -2964,9 +3212,8 @@
               },
               "condition": {
                 "types": [
-                  "object"
-                ],
-                "freeform": true
+                  "sexpr"
+                ]
               },
               "fields": {
                 "types": [
@@ -3152,14 +3399,18 @@
                   },
                   "value": {
                     "types": [
-                      "unknown"
+                      "object"
                     ]
                   },
                   "formValues": {
                     "types": [
                       "object"
                     ],
-                    "freeform": true
+                    "mapValue": {
+                      "types": [
+                        "object"
+                      ]
+                    }
                   }
                 },
                 "required": [
@@ -4462,6 +4713,12 @@
                   "mode": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "search_or_create",
+                      "create_multiple",
+                      "select_one",
+                      "update"
                     ]
                   },
                   "parentField": {
@@ -5096,52 +5353,6 @@
         }
       }
     },
-    "stats": {
-      "type": "stats",
-      "category": "dashboard",
-      "tier": "atoms",
-      "family": "marketing",
-      "description": "Key metrics and statistics",
-      "suggestedFor": [
-        "dashboards",
-        "overview pages"
-      ],
-      "typicalSize": "small",
-      "propsSchema": {
-        "value": {
-          "types": [
-            "string"
-          ],
-          "description": "The stat value to display prominently",
-          "required": true
-        },
-        "label": {
-          "types": [
-            "string"
-          ],
-          "description": "Label describing the value",
-          "required": true
-        },
-        "size": {
-          "types": [
-            "string"
-          ],
-          "description": "Size of the value text",
-          "enumValues": [
-            "sm",
-            "md",
-            "lg"
-          ],
-          "default": "md"
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional class names"
-        }
-      }
-    },
     "modal": {
       "type": "modal",
       "category": "container",
@@ -5323,6 +5534,13 @@
             "string"
           ],
           "description": "Width (CSS value or preset size)",
+          "enumValues": [
+            "sm",
+            "md",
+            "lg",
+            "xl",
+            "full"
+          ],
           "default": "md"
         },
         "showCloseButton": {
@@ -5564,7 +5782,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -5576,7 +5819,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -5871,7 +6118,7 @@
         },
         "as": {
           "types": [
-            "object"
+            "component"
           ],
           "description": "HTML element to render as"
         },
@@ -5931,35 +6178,53 @@
             "object"
           ],
           "description": "Number of columns (can be responsive object)",
+          "enumValues": [
+            "none"
+          ],
           "properties": {
             "base": {
               "types": [
                 "number",
                 "string"
+              ],
+              "enumValues": [
+                "none"
               ]
             },
             "sm": {
               "types": [
                 "number",
                 "string"
+              ],
+              "enumValues": [
+                "none"
               ]
             },
             "md": {
               "types": [
                 "number",
                 "string"
+              ],
+              "enumValues": [
+                "none"
               ]
             },
             "lg": {
               "types": [
                 "number",
                 "string"
+              ],
+              "enumValues": [
+                "none"
               ]
             },
             "xl": {
               "types": [
                 "number",
                 "string"
+              ],
+              "enumValues": [
+                "none"
               ]
             }
           },
@@ -6075,7 +6340,7 @@
         },
         "as": {
           "types": [
-            "object"
+            "component"
           ],
           "description": "HTML element to render as"
         }
@@ -6158,7 +6423,7 @@
         },
         "as": {
           "types": [
-            "object"
+            "component"
           ],
           "description": "HTML element to render as"
         }
@@ -6565,9 +6830,10 @@
         },
         "icon": {
           "types": [
-            "icon"
+            "icon",
+            "string"
           ],
-          "description": "Icon to display when no image or initials"
+          "description": "Icon to display when no image or initials. Accepts a Lucide component directly, or a canonical kebab-case icon name string (resolved via `resolveIcon`) so trait/factory authors can pass an icon by name."
         },
         "size": {
           "types": [
@@ -6647,9 +6913,10 @@
       "propsSchema": {
         "icon": {
           "types": [
-            "icon"
+            "icon",
+            "string"
           ],
-          "description": "Lucide icon component (preferred for type-safe usage)"
+          "description": "Lucide icon component (preferred for type-safe usage), OR a canonical kebab-case icon name string — a string is treated exactly like `name` so trait/factory authors can pass an icon by name through the `icon` prop."
         },
         "name": {
           "types": [
@@ -7034,9 +7301,10 @@
         },
         "icon": {
           "types": [
-            "icon"
+            "icon",
+            "string"
           ],
-          "description": "Lucide icon component for left side (convenience prop)"
+          "description": "Lucide icon component for left side (convenience prop), or a canonical kebab-case icon name string (resolved via `resolveIcon`)."
         },
         "clearable": {
           "types": [
@@ -8003,7 +8271,7 @@
         },
         "as": {
           "types": [
-            "object"
+            "component"
           ],
           "description": "HTML element to render as"
         }
@@ -8034,13 +8302,29 @@
           "types": [
             "number"
           ],
-          "description": "Maximum number of columns"
+          "description": "Maximum number of columns",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
         },
         "cols": {
           "types": [
             "number"
           ],
-          "description": "Exact number of columns (disables auto-fit)"
+          "description": "Exact number of columns (disables auto-fit)",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
         },
         "gap": {
           "types": [
@@ -8299,10 +8583,9 @@
       "propsSchema": {
         "condition": {
           "types": [
-            "object"
+            "sexpr"
           ],
-          "description": "The S-expression condition to evaluate",
-          "freeform": true
+          "description": "The S-expression condition to evaluate"
         },
         "context": {
           "types": [
@@ -8473,7 +8756,8 @@
               "name": "e",
               "type": "object"
             }
-          ]
+          ],
+          "nonEmittable": true
         },
         "className": {
           "types": [
@@ -8605,7 +8889,7 @@
         },
         "as": {
           "types": [
-            "object"
+            "component"
           ],
           "description": "HTML element to render as"
         },
@@ -8620,7 +8904,8 @@
               "name": "e",
               "type": "object"
             }
-          ]
+          ],
+          "nonEmittable": true
         },
         "onKeyDown": {
           "types": [
@@ -8633,7 +8918,8 @@
               "name": "e",
               "type": "object"
             }
-          ]
+          ],
+          "nonEmittable": true
         },
         "role": {
           "types": [
@@ -8841,6 +9127,14 @@
             "number"
           ],
           "description": "Heading level (1-6) - alternative to variant for headings",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
           "default": 2
         },
         "color": {
@@ -8920,7 +9214,7 @@
         },
         "as": {
           "types": [
-            "string"
+            "component"
           ],
           "description": "Custom HTML element"
         },
@@ -9274,7 +9568,7 @@
         },
         "as": {
           "types": [
-            "object"
+            "component"
           ],
           "description": "HTML element to render as"
         }
@@ -9401,6 +9695,14 @@
             "string"
           ],
           "description": "Button position",
+          "enumValues": [
+            "bottom-right",
+            "bottom-left",
+            "bottom-center",
+            "top-right",
+            "top-left",
+            "top-center"
+          ],
           "default": "bottom-right"
         },
         "className": {
@@ -10789,7 +11091,7 @@
         },
         "as": {
           "types": [
-            "object"
+            "component"
           ],
           "description": "HTML element to render as"
         },
@@ -11253,7 +11555,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -12977,7 +13304,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -12989,7 +13341,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -13100,6 +13456,13 @@
             "number"
           ],
           "description": "Column count",
+          "numericEnumValues": [
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
           "default": 3
         },
         "selectable": {
@@ -14318,7 +14681,8 @@
               "name": "errorInfo",
               "type": "object"
             }
-          ]
+          ],
+          "nonEmittable": true
         }
       }
     },
@@ -14496,7 +14860,7 @@
             "object"
           ],
           "description": "GAP-80: line-level error/warning highlights for editable mode. Map of 1-based line number → severity. The overlay paints a colored background on each line: error = red, warning = yellow. Pass undefined (default) to disable. The consumer is responsible for computing the path → line map from the schema + validation results.",
-          "freeform": true
+          "nonAuthorable": true
         }
       }
     },
@@ -14576,7 +14940,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -14588,7 +14977,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -14726,14 +15119,14 @@
             "object"
           ],
           "description": "Full schema — extracts first trait's state machine",
-          "freeform": true
+          "nonAuthorable": true
         },
         "trait": {
           "types": [
             "object"
           ],
           "description": "Or pass a single trait directly",
-          "freeform": true
+          "nonAuthorable": true
         },
         "traitIndex": {
           "types": [
@@ -14828,9 +15221,8 @@
           "types": [
             "object"
           ],
-          "description": "layoutData prop",
-          "required": true,
-          "freeform": true
+          "description": "Pre-computed visualizer layout. Optional: when absent the view renders nothing (an author wires real layout via config; the generic factory can't synthesize a `DomLayoutData`).",
+          "nonAuthorable": true
         },
         "renderStateNode": {
           "types": [
@@ -15241,6 +15633,9 @@
             "string"
           ],
           "description": "Override the viewport-driven day window. `'auto'` (default) tracks `window.innerWidth` — 1 day on mobile, 3 on tablet, 7 on laptop+. Pass an explicit number to force a fixed window (useful for print layouts or screenshot tests).",
+          "enumValues": [
+            "auto"
+          ],
           "default": "auto"
         }
       }
@@ -15964,7 +16359,11 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -16027,7 +16426,11 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -16097,7 +16500,15 @@
           "types": [
             "number"
           ],
-          "description": "Number of columns (uses auto-fit if omitted)"
+          "description": "Number of columns (uses auto-fit if omitted)",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ]
         },
         "gap": {
           "types": [
@@ -17723,7 +18134,8 @@
               "name": "files",
               "type": "array"
             }
-          ]
+          ],
+          "nonEmittable": true
         },
         "className": {
           "types": [
@@ -18653,6 +19065,11 @@
             "number"
           ],
           "description": "Heading level (1, 2, or 3)",
+          "numericEnumValues": [
+            1,
+            2,
+            3
+          ],
           "default": 2
         },
         "className": {
@@ -19091,6 +19508,12 @@
             "number"
           ],
           "description": "Number of grid columns",
+          "numericEnumValues": [
+            2,
+            3,
+            4,
+            6
+          ],
           "default": 3
         },
         "gap": {
@@ -19853,6 +20276,12 @@
             "number"
           ],
           "description": "columns prop",
+          "numericEnumValues": [
+            2,
+            3,
+            4,
+            6
+          ],
           "default": 3
         },
         "className": {
@@ -19860,47 +20289,6 @@
             "string"
           ],
           "description": "className prop"
-        }
-      }
-    },
-    "step-item": {
-      "type": "step-item",
-      "category": "component",
-      "tier": "molecules",
-      "family": "marketing",
-      "description": "StepItem component",
-      "suggestedFor": [
-        "step",
-        "item",
-        "step item"
-      ],
-      "typicalSize": "medium",
-      "propsSchema": {
-        "number": {
-          "types": [
-            "number"
-          ],
-          "description": "number prop"
-        },
-        "title": {
-          "types": [
-            "string"
-          ],
-          "description": "title prop",
-          "required": true
-        },
-        "description": {
-          "types": [
-            "string"
-          ],
-          "description": "description prop",
-          "required": true
-        },
-        "icon": {
-          "types": [
-            "string"
-          ],
-          "description": "icon prop"
         }
       }
     },
@@ -20123,7 +20511,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -20135,7 +20548,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -20275,7 +20692,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -20287,7 +20729,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -20336,6 +20782,12 @@
             "number"
           ],
           "description": "columns prop",
+          "numericEnumValues": [
+            2,
+            3,
+            4,
+            6
+          ],
           "default": 3
         },
         "heading": {
@@ -20530,7 +20982,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -20542,7 +21019,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -20698,7 +21179,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -20710,7 +21216,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -20870,7 +21380,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -20882,7 +21417,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -20931,6 +21470,11 @@
             "number"
           ],
           "description": "columns prop",
+          "numericEnumValues": [
+            2,
+            3,
+            4
+          ],
           "default": 3
         },
         "heading": {
@@ -21013,7 +21557,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -21025,7 +21594,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -21074,6 +21647,12 @@
             "number"
           ],
           "description": "columns prop",
+          "numericEnumValues": [
+            2,
+            3,
+            4,
+            6
+          ],
           "default": 3
         }
       }
@@ -21155,7 +21734,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -21167,7 +21771,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -21325,7 +21933,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -21337,7 +21970,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -21497,6 +22134,12 @@
             "number"
           ],
           "description": "featureColumns prop",
+          "numericEnumValues": [
+            2,
+            3,
+            4,
+            6
+          ],
           "default": 3
         }
       }
@@ -22171,7 +22814,11 @@
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "node"
+                ]
+              }
             }
           },
           "propertyRequired": [
@@ -22629,7 +23276,12 @@
             "object"
           ],
           "description": "Selected value per row, keyed by rowId",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "number",
+              "string"
+            ]
+          }
         },
         "onChange": {
           "types": [
@@ -22770,7 +23422,8 @@
               "name": "error",
               "type": "object"
             }
-          ]
+          ],
+          "nonEmittable": true
         },
         "facingMode": {
           "types": [
@@ -23367,7 +24020,13 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "mapValue": {
+                  "types": [
+                    "string",
+                    "number",
+                    "boolean"
+                  ]
+                }
               },
               "children": {
                 "types": [
@@ -23699,8 +24358,8 @@
           "types": [
             "object"
           ],
-          "description": "constraint prop",
-          "required": true,
+          "description": "Selection constraint. Optional — defaults to single-select (the generic factory can't author a discriminated-union value; an author overrides it).",
+          "nonAuthorable": true,
           "properties": {
             "type": {
               "types": [
@@ -23715,7 +24374,10 @@
           },
           "propertyRequired": [
             "type"
-          ]
+          ],
+          "default": {
+            "type": "single"
+          }
         },
         "selected": {
           "types": [
@@ -24201,6 +24863,12 @@
             "string"
           ],
           "description": "Size variant",
+          "enumValues": [
+            "sm",
+            "md",
+            "lg",
+            "xl"
+          ],
           "default": "md"
         },
         "shape": {
@@ -24208,6 +24876,11 @@
             "string"
           ],
           "description": "Shape variant",
+          "enumValues": [
+            "circle",
+            "rounded",
+            "square"
+          ],
           "default": "circle"
         },
         "variant": {
@@ -24215,6 +24888,11 @@
             "string"
           ],
           "description": "Visual variant",
+          "enumValues": [
+            "primary",
+            "secondary",
+            "ghost"
+          ],
           "default": "secondary"
         },
         "onPress": {
@@ -24985,7 +25663,27 @@
             "object"
           ],
           "description": "Custom state styles to extend/override defaults",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "icon": {
+                "types": [
+                  "string"
+                ]
+              },
+              "bgClass": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "icon",
+              "bgClass"
+            ]
+          }
         },
         "className": {
           "types": [
@@ -26767,7 +27465,156 @@
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "linkedEntity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "states": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "name": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "isInitial": {
+                          "types": [
+                            "boolean"
+                          ]
+                        },
+                        "isTerminal": {
+                          "types": [
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ]
+                    }
+                  },
+                  "transitions": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "from": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "to": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "event": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "guard": {
+                          "types": [
+                            "unknown"
+                          ]
+                        },
+                        "effects": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "object"
+                            ],
+                            "properties": {
+                              "type": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "args": {
+                                "types": [
+                                  "array"
+                                ],
+                                "items": {
+                                  "types": [
+                                    "unknown"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "args"
+                            ]
+                          }
+                        },
+                        "index": {
+                          "types": [
+                            "number"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "event",
+                        "effects",
+                        "index"
+                      ]
+                    }
+                  },
+                  "emittedEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "listenedEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "linkedEntity",
+                  "states",
+                  "transitions",
+                  "emittedEvents",
+                  "listenedEvents"
+                ]
+              }
             },
             "externalLinks": {
               "types": [
@@ -26988,7 +27835,156 @@
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "linkedEntity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "states": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "name": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "isInitial": {
+                          "types": [
+                            "boolean"
+                          ]
+                        },
+                        "isTerminal": {
+                          "types": [
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ]
+                    }
+                  },
+                  "transitions": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "from": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "to": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "event": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "guard": {
+                          "types": [
+                            "unknown"
+                          ]
+                        },
+                        "effects": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "object"
+                            ],
+                            "properties": {
+                              "type": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "args": {
+                                "types": [
+                                  "array"
+                                ],
+                                "items": {
+                                  "types": [
+                                    "unknown"
+                                  ]
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "args"
+                            ]
+                          }
+                        },
+                        "index": {
+                          "types": [
+                            "number"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "event",
+                        "effects",
+                        "index"
+                      ]
+                    }
+                  },
+                  "emittedEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "listenedEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "linkedEntity",
+                  "states",
+                  "transitions",
+                  "emittedEvents",
+                  "listenedEvents"
+                ]
+              }
             },
             "externalLinks": {
               "types": [
@@ -27088,6 +28084,11 @@
               "variant": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "primary",
+                  "secondary",
+                  "ghost"
                 ]
               }
             },
@@ -27812,7 +28813,8 @@
               "name": "frame",
               "type": "number"
             }
-          ]
+          ],
+          "nonEmittable": true
         },
         "onTick": {
           "types": [
@@ -27884,7 +28886,12 @@
           "types": [
             "string"
           ],
-          "description": "Position of the HUD"
+          "description": "Position of the HUD",
+          "enumValues": [
+            "top",
+            "bottom",
+            "corners"
+          ]
         },
         "stats": {
           "types": [
@@ -28072,6 +29079,11 @@
               "variant": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "primary",
+                  "secondary",
+                  "ghost"
                 ]
               },
               "disabled": {
@@ -28128,6 +29140,11 @@
               "variant": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "primary",
+                  "secondary",
+                  "ghost"
                 ]
               },
               "disabled": {
@@ -28189,6 +29206,11 @@
                   "variant": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "primary",
+                      "secondary",
+                      "ghost"
                     ]
                   },
                   "disabled": {
@@ -28218,7 +29240,8 @@
           "types": [
             "object"
           ],
-          "description": "Event bus for emitting UI events (optional, uses hook if not provided)"
+          "description": "Event bus for emitting UI events (optional, uses hook if not provided)",
+          "nonAuthorable": true
         },
         "background": {
           "types": [
@@ -28449,7 +29472,8 @@
           "types": [
             "object"
           ],
-          "description": "Event bus for emitting UI events (optional, uses hook if not provided)"
+          "description": "Event bus for emitting UI events (optional, uses hook if not provided)",
+          "nonAuthorable": true
         },
         "variant": {
           "types": [
@@ -29870,7 +30894,8 @@
               "name": "getImage",
               "type": "function"
             }
-          ]
+          ],
+          "nonEmittable": true
         },
         "hasActiveEffects": {
           "types": [
@@ -29895,25 +30920,41 @@
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "string"
+                ]
+              }
             },
             "units": {
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "string"
+                ]
+              }
             },
             "features": {
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "string"
+                ]
+              }
             },
             "effects": {
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "string"
+                ]
+              }
             }
           }
         }
@@ -30087,7 +31128,11 @@
             "object"
           ],
           "description": "Map of platform type to tile sprite URL",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "backgroundImage": {
           "types": [
@@ -30474,6 +31519,12 @@
             "string"
           ],
           "description": "Display format",
+          "enumValues": [
+            "number",
+            "hearts",
+            "bar",
+            "text"
+          ],
           "default": "number"
         },
         "icon": {
@@ -30487,6 +31538,11 @@
             "string"
           ],
           "description": "Size variant",
+          "enumValues": [
+            "sm",
+            "md",
+            "lg"
+          ],
           "default": "md"
         },
         "variant": {
@@ -30494,6 +31550,13 @@
             "string"
           ],
           "description": "Visual variant",
+          "enumValues": [
+            "default",
+            "primary",
+            "success",
+            "warning",
+            "danger"
+          ],
           "default": "default"
         },
         "className": {
@@ -30701,8 +31764,7 @@
             "orbitalSchema": {
               "types": [
                 "object"
-              ],
-              "freeform": true
+              ]
             }
           },
           "propertyRequired": [
@@ -30895,8 +31957,7 @@
                     "orbitalSchema": {
                       "types": [
                         "object"
-                      ],
-                      "freeform": true
+                      ]
                     }
                   },
                   "required": [
@@ -30968,7 +32029,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -30980,7 +32066,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -31298,25 +32388,41 @@
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 },
                 "units": {
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 },
                 "features": {
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 },
                 "effects": {
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 }
               },
               "required": [
@@ -36583,7 +37689,8 @@
               "name": "timestamp",
               "type": "number"
             }
-          ]
+          ],
+          "nonEmittable": true
         },
         "hasActiveEffects": {
           "types": [
@@ -37140,10 +38247,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "Castle entity data",
-          "required": true,
+          "description": "Castle entity data. Also accepts the canonical `EntityRow` the compiler binds (and arrays); narrowed to `CastleEntity` internally.",
           "properties": {
             "id": {
               "types": [
@@ -37472,19 +38579,31 @@
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 },
                 "units": {
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 },
                 "features": {
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 }
               },
               "required": [
@@ -39269,7 +40388,57 @@
           ],
           "description": "Sound manifest — keys mapped to SoundEntry definitions",
           "required": true,
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "path": {
+                "types": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "volume": {
+                "types": [
+                  "number"
+                ]
+              },
+              "loop": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "poolSize": {
+                "types": [
+                  "number"
+                ]
+              },
+              "autostart": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "crossfade": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "crossfadeDurationMs": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "path"
+            ]
+          }
         },
         "baseUrl": {
           "types": [
@@ -39602,7 +40771,27 @@
             "object"
           ],
           "description": "Category → color mapping",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "bg": {
+                "types": [
+                  "string"
+                ]
+              },
+              "border": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "bg",
+              "border"
+            ]
+          }
         },
         "tooltipFrameUrl": {
           "types": [
@@ -40122,7 +41311,27 @@
             "object"
           ],
           "description": "Custom state styles passed to StateIndicator",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "icon": {
+                "types": [
+                  "string"
+                ]
+              },
+              "bgClass": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "icon",
+              "bgClass"
+            ]
+          }
         },
         "className": {
           "types": [
@@ -40191,10 +41400,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "entity prop",
-          "required": true,
+          "description": "The compiler binds the generic `EntityRow`, so the inlet accepts it (and",
           "properties": {
             "initialUnits": {
               "types": [
@@ -40443,7 +41652,7 @@
             "object",
             "array"
           ],
-          "description": "World map entity data",
+          "description": "World map entity data. Also accepts the canonical `EntityRow` the compiler binds; the component narrows to `WorldMapEntity` below.",
           "properties": {
             "id": {
               "types": [
@@ -40488,7 +41697,11 @@
                     "types": [
                       "object"
                     ],
-                    "freeform": true
+                    "mapValue": {
+                      "types": [
+                        "object"
+                      ]
+                    }
                   },
                   "passable": {
                     "types": [
@@ -40525,6 +41738,10 @@
                   "owner": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy"
                     ]
                   },
                   "position": {
@@ -40687,19 +41904,31 @@
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 },
                 "units": {
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 },
                 "features": {
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "mapValue": {
+                    "types": [
+                      "string"
+                    ]
+                  }
                 }
               },
               "required": [
@@ -40973,7 +42202,11 @@
                         "types": [
                           "object"
                         ],
-                        "freeform": true
+                        "mapValue": {
+                          "types": [
+                            "object"
+                          ]
+                        }
                       },
                       "passable": {
                         "types": [
@@ -41005,6 +42238,10 @@
                       "owner": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy"
                         ]
                       },
                       "position": {
@@ -41103,6 +42340,10 @@
                       "owner": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy"
                         ]
                       },
                       "position": {
@@ -41310,7 +42551,11 @@
                         "types": [
                           "object"
                         ],
-                        "freeform": true
+                        "mapValue": {
+                          "types": [
+                            "object"
+                          ]
+                        }
                       },
                       "passable": {
                         "types": [
@@ -41342,6 +42587,10 @@
                       "owner": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy"
                         ]
                       },
                       "position": {
@@ -41440,6 +42689,10 @@
                       "owner": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy"
                         ]
                       },
                       "position": {
@@ -41647,7 +42900,11 @@
                         "types": [
                           "object"
                         ],
-                        "freeform": true
+                        "mapValue": {
+                          "types": [
+                            "object"
+                          ]
+                        }
                       },
                       "passable": {
                         "types": [
@@ -41679,6 +42936,10 @@
                       "owner": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy"
                         ]
                       },
                       "position": {
@@ -41777,6 +43038,10 @@
                       "owner": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy"
                         ]
                       },
                       "position": {
@@ -41984,7 +43249,11 @@
                         "types": [
                           "object"
                         ],
-                        "freeform": true
+                        "mapValue": {
+                          "types": [
+                            "object"
+                          ]
+                        }
                       },
                       "passable": {
                         "types": [
@@ -42016,6 +43285,10 @@
                       "owner": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy"
                         ]
                       },
                       "position": {
@@ -42114,6 +43387,10 @@
                       "owner": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy"
                         ]
                       },
                       "position": {
@@ -42350,7 +43627,11 @@
                     "types": [
                       "object"
                     ],
-                    "freeform": true
+                    "mapValue": {
+                      "types": [
+                        "object"
+                      ]
+                    }
                   },
                   "passable": {
                     "types": [
@@ -42589,7 +43870,45 @@
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "value": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "min": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "max": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "step": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "value",
+                  "min",
+                  "max",
+                  "step",
+                  "label"
+                ]
+              }
             }
           },
           "propertyRequired": [
@@ -42670,7 +43989,45 @@
           ],
           "description": "parameters prop",
           "required": true,
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "types": [
+                  "number"
+                ]
+              },
+              "min": {
+                "types": [
+                  "number"
+                ]
+              },
+              "max": {
+                "types": [
+                  "number"
+                ]
+              },
+              "step": {
+                "types": [
+                  "number"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "value",
+              "min",
+              "max",
+              "step",
+              "label"
+            ]
+          }
         },
         "onPlay": {
           "types": [
@@ -42854,10 +44211,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "entity prop",
-          "required": true,
+          "description": "The compiler binds the generic `EntityRow`, so the inlet accepts it (and",
           "properties": {
             "id": {
               "types": [
@@ -43040,10 +44397,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "entity prop",
-          "required": true,
+          "description": "The compiler binds the generic `EntityRow`, so the inlet accepts it (and",
           "properties": {
             "id": {
               "types": [
@@ -43221,10 +44578,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "entity prop",
-          "required": true,
+          "description": "The compiler binds the generic `EntityRow`, so the inlet accepts it (and",
           "properties": {
             "id": {
               "types": [
@@ -43372,10 +44729,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "Puzzle data",
-          "required": true,
+          "description": "Puzzle data. The compiler binds the generic `EntityRow`, so the inlet accepts it (and arrays) as union members; the component narrows to its curated `EventHandlerPuzzleEntity` read-shape below (a valid union-narrow) and renders nothing until a puzzle entity is present.",
           "properties": {
             "id": {
               "types": [
@@ -44091,10 +45448,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "entity prop",
-          "required": true,
+          "description": "The compiler binds the generic `EntityRow`, so the inlet accepts it (and",
           "properties": {
             "id": {
               "types": [
@@ -44427,7 +45784,27 @@
             "object"
           ],
           "description": "Category → color mapping",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "bg": {
+                "types": [
+                  "string"
+                ]
+              },
+              "border": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "bg",
+              "border"
+            ]
+          }
         },
         "size": {
           "types": [
@@ -44611,7 +45988,27 @@
             "object"
           ],
           "description": "Category → color mapping",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "bg": {
+                "types": [
+                  "string"
+                ]
+              },
+              "border": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "bg",
+              "border"
+            ]
+          }
         }
       }
     },
@@ -44927,7 +46324,27 @@
             "object"
           ],
           "description": "Category → color mapping",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "bg": {
+                "types": [
+                  "string"
+                ]
+              },
+              "border": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "bg",
+              "border"
+            ]
+          }
         },
         "slotFeedback": {
           "types": [
@@ -44979,10 +46396,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "Puzzle data",
-          "required": true,
+          "description": "Puzzle data. Also accepts the canonical `EntityRow` the compiler binds (and arrays); narrowed to `SequencerPuzzleEntity` internally.",
           "properties": {
             "id": {
               "types": [
@@ -45224,7 +46641,27 @@
             "object"
           ],
           "description": "Category → color mapping",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "bg": {
+                "types": [
+                  "string"
+                ]
+              },
+              "border": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "bg",
+              "border"
+            ]
+          }
         },
         "stepDurationMs": {
           "types": [
@@ -45283,10 +46720,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "entity prop",
-          "required": true,
+          "description": "The compiler binds the generic `EntityRow`, so the inlet accepts it (and",
           "properties": {
             "id": {
               "types": [
@@ -45526,10 +46963,10 @@
       "propsSchema": {
         "entity": {
           "types": [
-            "object"
+            "object",
+            "array"
           ],
-          "description": "Puzzle data",
-          "required": true,
+          "description": "Puzzle data. Also accepts the canonical `EntityRow` the compiler binds (and arrays); narrowed to `StateArchitectPuzzleEntity` internally.",
           "properties": {
             "id": {
               "types": [
@@ -46301,7 +47738,11 @@
             "object"
           ],
           "description": "Feature color overrides",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         }
       }
     },
@@ -46343,7 +47784,32 @@
           "types": [
             "object"
           ],
-          "description": "Error state"
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
         },
         "sortBy": {
           "types": [
@@ -46355,7 +47821,11 @@
           "types": [
             "string"
           ],
-          "description": "Current sort direction"
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "searchValue": {
           "types": [
@@ -46404,6 +47874,11 @@
             "number"
           ],
           "description": "Number of columns",
+          "numericEnumValues": [
+            2,
+            3,
+            4
+          ],
           "default": 3
         },
         "gap": {
@@ -46442,11 +47917,21 @@
               "colSpan": {
                 "types": [
                   "number"
+                ],
+                "numericEnumValues": [
+                  1,
+                  2,
+                  3,
+                  4
                 ]
               },
               "rowSpan": {
                 "types": [
                   "number"
+                ],
+                "numericEnumValues": [
+                  1,
+                  2
                 ]
               }
             }
@@ -47642,6 +49127,130 @@
         }
       }
     },
+    "step-flow": {
+      "type": "step-flow",
+      "category": "component",
+      "tier": "molecules",
+      "family": "marketing",
+      "description": "StepFlow component",
+      "suggestedFor": [
+        "step",
+        "flow",
+        "step flow"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "steps": {
+          "types": [
+            "array"
+          ],
+          "description": "steps prop",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "number": {
+                "types": [
+                  "number"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "description": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "title",
+              "description"
+            ]
+          }
+        },
+        "orientation": {
+          "types": [
+            "string"
+          ],
+          "description": "orientation prop",
+          "enumValues": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal"
+        },
+        "showConnectors": {
+          "types": [
+            "boolean"
+          ],
+          "description": "showConnectors prop",
+          "default": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "stat-card": {
+      "type": "stat-card",
+      "category": "display",
+      "tier": "atoms",
+      "family": "marketing",
+      "description": "StatCard component",
+      "suggestedFor": [
+        "stat",
+        "card",
+        "stat card"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "value": {
+          "types": [
+            "string"
+          ],
+          "description": "The stat value to display prominently",
+          "required": true
+        },
+        "label": {
+          "types": [
+            "string"
+          ],
+          "description": "Label describing the value",
+          "required": true
+        },
+        "size": {
+          "types": [
+            "string"
+          ],
+          "description": "Size of the value text",
+          "enumValues": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional class names"
+        }
+      }
+    },
     "heading": {
       "type": "heading",
       "category": "component",
@@ -47683,6 +49292,14 @@
             "number"
           ],
           "description": "Heading level (1-6) - alternative to variant for headings",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
           "default": 2
         },
         "color": {
@@ -47762,7 +49379,7 @@
         },
         "as": {
           "types": [
-            "string"
+            "component"
           ],
           "description": "Custom HTML element"
         },
@@ -47839,6 +49456,14 @@
             "number"
           ],
           "description": "Heading level (1-6) - alternative to variant for headings",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6
+          ],
           "default": 2
         },
         "color": {
@@ -47918,7 +49543,7 @@
         },
         "as": {
           "types": [
-            "string"
+            "component"
           ],
           "description": "Custom HTML element"
         },
