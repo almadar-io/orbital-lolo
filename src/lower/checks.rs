@@ -973,3 +973,142 @@ fn primitive_type_of_emit_value(value: &SExpression) -> Option<&'static str> {
         SExpression::Array(_) => Some("array"),
     }
 }
+
+/// Parse-time checks for `uses`-imported trait/page references against the
+/// baked behavior-contract slice (`crate::registry`): unknown trait/page refs
+/// (3.2), rebind row-constraints (3.3), and typed config overrides (3.4).
+/// Operates on the lowered (pre-inline) orbitals; a `None` registry lookup
+/// (local `.orb` import or behavior absent from the slice) skips silently, and
+/// the compiler re-verifies post-inline as a backstop.
+pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
+    for orbital in orbitals {
+        // alias (`Modal`) → behavior key (`std-modal`), from the `uses` table.
+        let mut alias_key: HashMap<String, String> = HashMap::new();
+        if let Some(uses) = &orbital.uses {
+            for u in uses {
+                alias_key.insert(
+                    u.alias.clone(),
+                    crate::registry::behavior_key_from_path(&u.from).to_string(),
+                );
+            }
+        }
+        // Target field set — only known fully for an inline entity. An `extends`
+        // target inherits fields not visible until inline, so row-constraints
+        // are skipped there (compiler backstop covers it).
+        let entity_fields: Option<HashSet<String>> = match &orbital.entity {
+            EntityRef::Inline(ed) => Some(
+                ed.fields
+                    .iter()
+                    .filter_map(|f| f.name.clone())
+                    .collect(),
+            ),
+            _ => None,
+        };
+
+        for tref in &orbital.traits {
+            let TraitReference::Reference {
+                reference: Some(ref_str),
+                linked_entity,
+                config,
+                ..
+            } = tref
+            else {
+                continue;
+            };
+            // "Alias.kind.Member"
+            let parts: Vec<&str> = ref_str.split('.').collect();
+            if parts.len() != 3 {
+                continue;
+            }
+            let (alias, kind, member) = (parts[0], parts[1], parts[2]);
+            let Some(key) = alias_key.get(alias) else {
+                continue;
+            };
+            let Some(beh) = crate::registry::get_behavior(key) else {
+                continue; // local/unknown import — not in the slice; skip.
+            };
+
+            match kind {
+                "traits" => {
+                    let Some(tc) = beh.trait_contract(member) else {
+                        return Err(LowerError::UnknownTraitRef {
+                            reference: ref_str.clone(),
+                            member: member.to_string(),
+                            behavior: key.clone(),
+                        });
+                    };
+                    // 3.3 row-constraints (inline-entity targets only).
+                    if let (Some(fields), Some(ent)) = (&entity_fields, linked_entity) {
+                        let missing: Vec<String> = tc
+                            .requires
+                            .iter()
+                            .filter(|r| !fields.contains(*r))
+                            .cloned()
+                            .collect();
+                        if !missing.is_empty() {
+                            return Err(LowerError::RebindMissingFields {
+                                entity: ent.clone(),
+                                member: member.to_string(),
+                                behavior: key.clone(),
+                                missing,
+                            });
+                        }
+                    }
+                    // 3.4 typed config overrides (clear scalar mismatches only).
+                    if let Some(cfg) = config {
+                        for (k, v) in cfg {
+                            if let (Some(expected), Some(got)) =
+                                (tc.config.get(k), primitive_type_of_emit_value(v))
+                            {
+                                if !config_type_compatible(got, expected) {
+                                    return Err(LowerError::ConfigTypeMismatch {
+                                        reference: ref_str.clone(),
+                                        key: k.clone(),
+                                        expected: expected.clone(),
+                                        got: got.to_string(),
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+                "pages" => {
+                    if !beh.has_page(member) {
+                        return Err(LowerError::UnknownPageRef {
+                            reference: ref_str.clone(),
+                            member: member.to_string(),
+                            behavior: key.clone(),
+                        });
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Lenient config value↔declared-type compatibility: returns `false` only for
+/// clear scalar contradictions (a number where a string/boolean is declared,
+/// etc.); permissive for arrays/objects/`pattern`/`slot`/`SExpr`/unknown
+/// declared types so the check never false-positives on a knob it can't reason
+/// about.
+fn config_type_compatible(got: &str, expected: &str) -> bool {
+    match got {
+        "number" => !matches!(
+            expected,
+            "string" | "boolean" | "pattern" | "slot" | "icon" | "component"
+        ),
+        "boolean" => !matches!(
+            expected,
+            "string" | "number" | "int" | "float" | "pattern" | "slot" | "icon" | "component"
+        ),
+        "string" => !matches!(expected, "number" | "int" | "float" | "boolean"),
+        "array" => !matches!(expected, "number" | "int" | "float" | "boolean" | "string"),
+        "object" => !matches!(
+            expected,
+            "number" | "int" | "float" | "boolean" | "string" | "array"
+        ),
+        _ => true,
+    }
+}

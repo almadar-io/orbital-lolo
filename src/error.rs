@@ -314,6 +314,63 @@ pub enum LowerError {
         kind: String,
     },
 
+    /// `uses`-imported trait reference `Alias.traits.X` names a trait the
+    /// imported behavior doesn't declare (typo / stale name). Caught at parse
+    /// time from the baked behavior-contract slice; the compiler's inline phase
+    /// would otherwise fail later with an opaque ref-resolution error.
+    #[error(
+        "trait reference {reference:?} names trait {member:?}, but behavior {behavior:?} \
+         does not declare it — check the name against `signatures.lolo`"
+    )]
+    UnknownTraitRef {
+        reference: String,
+        member: String,
+        behavior: String,
+    },
+
+    /// `uses`-imported page reference `Alias.pages.X` names a page the imported
+    /// behavior doesn't declare.
+    #[error(
+        "page reference {reference:?} names page {member:?}, but behavior {behavior:?} \
+         does not declare it"
+    )]
+    UnknownPageRef {
+        reference: String,
+        member: String,
+        behavior: String,
+    },
+
+    /// A rebind target entity is missing field(s) the imported trait READS
+    /// (`entityContract.requires`). Pre-inline mirror of the compiler's
+    /// post-inline `ORB_T_REBIND_MISSING_FIELDS`; only fires for inline-entity
+    /// targets (an `extends` target's inherited fields aren't visible until
+    /// inline, so those are left to the compiler backstop).
+    #[error(
+        "rebind target entity {entity:?} is missing field(s) {missing:?} required by trait \
+         {member:?} from behavior {behavior:?} — add them to the entity or remap via fields"
+    )]
+    RebindMissingFields {
+        entity: String,
+        member: String,
+        behavior: String,
+        missing: Vec<String>,
+    },
+
+    /// A `config { key = value }` override on a `uses`-imported trait reference
+    /// supplies a value whose type doesn't match the atom's declared config-key
+    /// type (from the baked slice). Only clear scalar mismatches are flagged;
+    /// bindings and array/object/SExpr-typed knobs are skipped.
+    #[error(
+        "config override {key:?} on {reference:?} expects type {expected:?} but the value \
+         is {got:?}"
+    )]
+    ConfigTypeMismatch {
+        reference: String,
+        key: String,
+        expected: String,
+        got: String,
+    },
+
     /// Error from the type-system resolver. See `TypeError` for variants.
     /// Carries a span so the CLI can surface `file:line:col: …`.
     #[error("{0}")]

@@ -27,9 +27,9 @@ mod r#trait;
 mod type_helpers;
 
 pub(crate) use checks::{
-    canonicalise_route, check_button_transitions, check_emit_payload_literals,
-    check_entity_fields_have_setters, check_listens_integrity, check_navigate_targets,
-    check_set_value_types, collect_entity_field_refs, resolve_top_segment,
+    canonicalise_route, check_behavior_contracts, check_button_transitions,
+    check_emit_payload_literals, check_entity_fields_have_setters, check_listens_integrity,
+    check_navigate_targets, check_set_value_types, collect_entity_field_refs, resolve_top_segment,
 };
 pub(crate) use emit_listen::{lower_emit, lower_listen, lower_tick, type_expr_to_payload_fields};
 pub(crate) use entity::{lower_entity, lower_type_expr};
@@ -126,6 +126,7 @@ pub fn lower_to_orb(ast: &Program) -> Result<OrbitalSchema, LowerError> {
     check_button_transitions(&orbitals)?;
     check_navigate_targets(&orbitals)?;
     check_emit_payload_literals(&orbitals)?;
+    check_behavior_contracts(&orbitals)?;
 
     let mut schema = OrbitalSchema {
         name: if ast.app.name.is_empty() {
