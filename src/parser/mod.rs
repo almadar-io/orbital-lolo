@@ -364,6 +364,12 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
             | "datetime"
             | "duration"
             | "money"
+            // Refinement primitives: a string + a validity rule. `icon` = a valid
+            // Lucide name; `component` = a valid element tag (or a @trait ref).
+            // Both lower to `string`; the value rule is enforced where the value
+            // is used (render-ui icon / prop validation).
+            | "icon"
+            | "component"
             | "object"
             | "void"
             | "null"

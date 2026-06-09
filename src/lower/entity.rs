@@ -232,7 +232,9 @@ pub(crate) fn lower_type_expr(
 
 pub(crate) fn primitive_to_field_type(name: &str) -> FieldType {
     match name {
-        "string" | "money" | "any" => FieldType::String,
+        // `icon`/`component` are refinement types over string (validity enforced
+        // at the render-ui layer); they lower to a plain string field.
+        "string" | "money" | "any" | "icon" | "component" => FieldType::String,
         "int" | "float" | "number" | "duration" => FieldType::Number,
         "bool" | "boolean" => FieldType::Boolean,
         "date" => FieldType::Date,
