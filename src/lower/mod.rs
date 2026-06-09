@@ -127,7 +127,7 @@ pub fn lower_to_orb(ast: &Program) -> Result<OrbitalSchema, LowerError> {
     check_navigate_targets(&orbitals)?;
     check_emit_payload_literals(&orbitals)?;
 
-    Ok(OrbitalSchema {
+    let mut schema = OrbitalSchema {
         name: if ast.app.name.is_empty() {
             ast.orbitals
                 .first()
@@ -140,7 +140,13 @@ pub fn lower_to_orb(ast: &Program) -> Result<OrbitalSchema, LowerError> {
         description: ast.app.description.clone(),
         orbitals,
         metadata: None,
-    })
+    };
+
+    // Canonicalize flat `fn` lambdas to the grouped form so the emitted/baked
+    // `.orb` carries one shape (see `orbital_core::schema::normalize_fn_shapes`).
+    orbital_core::schema::normalize_fn_shapes(&mut schema);
+
+    Ok(schema)
 }
 
 #[derive(Debug, Clone)]
