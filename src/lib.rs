@@ -20,6 +20,7 @@ pub mod lexer;
 pub mod lower;
 pub mod parser;
 pub mod patterns_meta;
+pub mod registry;
 pub mod types;
 
 pub use ast::{Ast, EntityField, EventField, Span, TypeExpr};
