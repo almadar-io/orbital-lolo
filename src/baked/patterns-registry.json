@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-08T19:05:53.459Z",
+  "exportedAt": "2026-06-09T01:18:33.001Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1608,7 +1608,7 @@
     "page-header": {
       "type": "page-header",
       "category": "header",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Page title with optional breadcrumb and action buttons",
       "suggestedFor": [
@@ -4235,7 +4235,7 @@
     "wizard-container": {
       "type": "wizard-container",
       "category": "navigation",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Multi-step wizard container",
       "suggestedFor": [
@@ -5582,7 +5582,7 @@
     "confirm-dialog": {
       "type": "confirm-dialog",
       "category": "container",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Confirmation dialog",
       "suggestedFor": [
@@ -10349,7 +10349,7 @@
     "header": {
       "type": "header",
       "category": "header",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Header Organism Component  A header component for mobile/responsive layouts with menu toggle, brand, and user avatar. Styled to match the main Layout component's mobile header.",
       "suggestedFor": [
@@ -10698,7 +10698,7 @@
     "navigation": {
       "type": "navigation",
       "category": "navigation",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Navigation Organism Component  A navigation component with items, active indicators, icons, and badges. Uses Menu, ButtonGroup molecules and Button, Icon, Badge, Typography, Divider atoms.",
       "suggestedFor": [
@@ -10841,7 +10841,7 @@
     "orbital-visualization": {
       "type": "orbital-visualization",
       "category": "display",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "OrbitalVisualization Component  Visualizes KFlow schemas as atomic orbitals based on complexity. Uses CSS 3D transforms for lightweight rendering without Three.js.  Orbital Types (based on complexity score): - 1s (1-3): Simple sphere - Red - 2s (4-8): Larger sphere - Orange - 2p (9-15): Dumbbell shape - Yellow - 3s (16-25): Sphere with node - Green - 3p (26-40): Complex dumbbell - Blue - 3d (41-60): Cloverleaf - Indigo - 4f (61+): Multi-lobe - Violet",
       "suggestedFor": [
@@ -11004,7 +11004,7 @@
     "section": {
       "type": "section",
       "category": "display",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Section Component  A semantic section wrapper with optional title, description, and action. Perfect for grouping related content with consistent spacing.",
       "suggestedFor": [
@@ -11143,7 +11143,7 @@
     "sidebar": {
       "type": "sidebar",
       "category": "navigation",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Sidebar Organism Component  A sidebar component with logo, navigation items, user section, and collapse/expand. Styled to match the main Layout component with theme-aware CSS variables.",
       "suggestedFor": [
@@ -11357,7 +11357,7 @@
     "split": {
       "type": "split",
       "category": "layout",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Split Component  A two-column layout with configurable ratios. Perfect for sidebar/content layouts or side-by-side comparisons.",
       "suggestedFor": [
@@ -11510,257 +11510,6 @@
             "string"
           ],
           "description": "Entity name for schema-driven auto-fetch"
-        }
-      }
-    },
-    "table": {
-      "type": "table",
-      "category": "display",
-      "tier": "organisms",
-      "family": "core",
-      "description": "Table Organism Component  A table component with header row, data rows, pagination, sorting, and filters. Uses Pagination, SearchInput, ButtonGroup, Card, Menu molecules and Button, Icon, Checkbox, Typography, Badge, Divider atoms.",
-      "suggestedFor": [
-        "table"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Entity record or array of records — pre-resolved by the trait via render-ui after a fetch emit",
-          "kind": "entity",
-          "cardinality": "collection",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "freeform": true
-          }
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction (display hint)",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "columns": {
-          "types": [
-            "array"
-          ],
-          "description": "Table columns",
-          "required": true,
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "key": {
-                "types": [
-                  "string"
-                ]
-              },
-              "label": {
-                "types": [
-                  "string"
-                ]
-              },
-              "sortable": {
-                "types": [
-                  "boolean"
-                ]
-              },
-              "render": {
-                "types": [
-                  "function"
-                ]
-              },
-              "width": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "required": [
-              "key",
-              "label"
-            ]
-          }
-        },
-        "selectable": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable row selection",
-          "default": false
-        },
-        "sortable": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable sorting",
-          "default": false
-        },
-        "sortColumn": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort column (display hint, mapped from sortBy)"
-        },
-        "searchable": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable search/filter",
-          "default": false
-        },
-        "searchPlaceholder": {
-          "types": [
-            "string"
-          ],
-          "description": "Search placeholder"
-        },
-        "paginated": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable pagination",
-          "default": false
-        },
-        "currentPage": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page (display hint)"
-        },
-        "totalPages": {
-          "types": [
-            "number"
-          ],
-          "description": "Total pages (display hint)"
-        },
-        "rowActions": {
-          "types": [
-            "function"
-          ],
-          "description": "Row actions menu items",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "row",
-              "type": "object"
-            }
-          ],
-          "renderCallback": true
-        },
-        "emptyMessage": {
-          "types": [
-            "string"
-          ],
-          "description": "Empty state message"
-        },
-        "loading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state",
-          "default": false
         }
       }
     },
@@ -12496,7 +12245,7 @@
     "chart": {
       "type": "chart",
       "category": "visualization",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Data visualization chart supporting bar, line, pie, area, and donut types",
       "suggestedFor": [
@@ -13564,7 +13313,7 @@
     "signature-pad": {
       "type": "signature-pad",
       "category": "form",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Canvas-based signature capture pad with draw, clear, and confirm actions",
       "suggestedFor": [
@@ -13712,7 +13461,7 @@
     "document-viewer": {
       "type": "document-viewer",
       "category": "display",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Document viewer for PDFs, text, HTML, and markdown with zoom and pagination",
       "suggestedFor": [
@@ -13933,7 +13682,7 @@
     "graph-canvas": {
       "type": "graph-canvas",
       "category": "game",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Force-directed graph visualization for node-link data with interactive zoom, pan, and layout",
       "suggestedFor": [
@@ -14251,7 +14000,7 @@
     "code-viewer": {
       "type": "code-viewer",
       "category": "display",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "Code and diff viewer with line numbers, copy, word-wrap, and multi-file tabs",
       "suggestedFor": [
@@ -14905,7 +14654,7 @@
     "content-renderer": {
       "type": "content-renderer",
       "category": "display",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "ContentRenderer Organism  Renders rich content as a sequence of typed segments: markdown, code, orbital diagrams (via JazariStateMachine), and quiz blocks. Accepts either raw content string (auto-parsed) or pre-parsed segments.  Event Contract: - Delegates to child components (CodeBlock -> UI:COPY_CODE) - entityAware: false",
       "suggestedFor": [
@@ -15058,7 +14807,7 @@
     "jazari-state-machine": {
       "type": "jazari-state-machine",
       "category": "display",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "core",
       "description": "JazariStateMachine component",
       "suggestedFor": [
@@ -19181,60 +18930,6 @@
           ],
           "description": "Label for the link button",
           "default": "Read more"
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional class names"
-        }
-      }
-    },
-    "code-example": {
-      "type": "code-example",
-      "category": "component",
-      "tier": "molecules",
-      "family": "core",
-      "description": "CodeExample component",
-      "suggestedFor": [
-        "code",
-        "example",
-        "code example"
-      ],
-      "typicalSize": "medium",
-      "propsSchema": {
-        "code": {
-          "types": [
-            "string"
-          ],
-          "description": "The code content to display",
-          "required": true
-        },
-        "language": {
-          "types": [
-            "string"
-          ],
-          "description": "Programming language label",
-          "required": true
-        },
-        "title": {
-          "types": [
-            "string"
-          ],
-          "description": "Optional title shown in the header bar"
-        },
-        "copyable": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Whether to show a copy button",
-          "default": false
-        },
-        "maxHeight": {
-          "types": [
-            "string"
-          ],
-          "description": "Maximum height of the code area (CSS value)"
         },
         "className": {
           "types": [
