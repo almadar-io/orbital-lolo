@@ -565,7 +565,7 @@ fn is_primitive(name: &str) -> bool {
     )
 }
 
-fn closest_name(needle: &str, haystack: &[String]) -> Option<String> {
+pub(crate) fn closest_name(needle: &str, haystack: &[String]) -> Option<String> {
     // Levenshtein, basic.
     let mut best: Option<(usize, &String)> = None;
     for candidate in haystack {

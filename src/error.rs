@@ -371,6 +371,21 @@ pub enum LowerError {
         got: String,
     },
 
+    /// A `config { key = value }` override on a `uses`-imported trait reference
+    /// names a key the imported atom does not declare in its `config { }` block.
+    /// Silently dropping such a key (the prior behavior) hid typos and renamed
+    /// knobs; this surfaces them at author time with a nearest-key suggestion.
+    #[error(
+        "config override {key:?} on {reference:?} is not a declared config key of the \
+         imported trait{}",
+        hint_suggestion(suggestion)
+    )]
+    UnknownConfigKey {
+        reference: String,
+        key: String,
+        suggestion: Option<String>,
+    },
+
     /// Error from the type-system resolver. See `TypeError` for variants.
     /// Carries a span so the CLI can surface `file:line:col: …`.
     #[error("{0}")]

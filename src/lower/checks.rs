@@ -143,6 +143,19 @@ pub(crate) fn check_set_value_types(
         }
     }
 
+    // Parallel per-emitted-event payload schema lookup. Keyed by the LOCAL
+    // emit event name. A `(set @entity.X ?payloadField)` firing on an
+    // emit-declared event resolves `@payload.X` against this map when the
+    // event has no matching `listens` entry. `Emit.payload` and
+    // `Listen.payload` are both `Vec<EventField>` in the lolo AST, so the
+    // same `?field` resolution path consumes either source unchanged.
+    let mut emit_payloads: HashMap<&str, &[EventField]> = HashMap::new();
+    for emit in &t.emits {
+        if !emit.payload.is_empty() {
+            emit_payloads.insert(emit.event.as_str(), emit.payload.as_slice());
+        }
+    }
+
     // Per-config-field type lookup.
     let config_fields: HashMap<&str, &TypeExpr> = t
         .config
@@ -165,6 +178,7 @@ pub(crate) fn check_set_value_types(
                     t,
                     &entity_field_types,
                     &listen_payloads,
+                    &emit_payloads,
                     &config_fields,
                 )?;
             }
@@ -178,6 +192,7 @@ pub(crate) fn check_set_value_types(
                 t,
                 &entity_field_types,
                 &listen_payloads,
+                &emit_payloads,
                 &config_fields,
             )?;
         }
@@ -195,6 +210,7 @@ fn check_set_in_expr(
     t: &Trait,
     entity_fields: &HashMap<&str, &TypeExpr>,
     listen_payloads: &HashMap<&str, &[EventField]>,
+    emit_payloads: &HashMap<&str, &[EventField]>,
     config_fields: &HashMap<&str, &TypeExpr>,
 ) -> Result<(), LowerError> {
     if let SExpression::Array(arr) = expr {
@@ -214,6 +230,7 @@ fn check_set_in_expr(
                                 &arr[2],
                                 event,
                                 listen_payloads,
+                                emit_payloads,
                                 config_fields,
                                 entity_fields,
                             )?;
@@ -223,11 +240,27 @@ fn check_set_in_expr(
             }
         }
         for item in arr {
-            check_set_in_expr(item, event, t, entity_fields, listen_payloads, config_fields)?;
+            check_set_in_expr(
+                item,
+                event,
+                t,
+                entity_fields,
+                listen_payloads,
+                emit_payloads,
+                config_fields,
+            )?;
         }
     } else if let SExpression::Object(obj) = expr {
         for value in obj.values() {
-            check_set_in_expr(value, event, t, entity_fields, listen_payloads, config_fields)?;
+            check_set_in_expr(
+                value,
+                event,
+                t,
+                entity_fields,
+                listen_payloads,
+                emit_payloads,
+                config_fields,
+            )?;
         }
     }
     Ok(())
@@ -245,6 +278,7 @@ fn check_one_set_value(
     value: &SExpression,
     event: &str,
     listen_payloads: &HashMap<&str, &[EventField]>,
+    emit_payloads: &HashMap<&str, &[EventField]>,
     config_fields: &HashMap<&str, &TypeExpr>,
     entity_fields: &HashMap<&str, &TypeExpr>,
 ) -> Result<(), LowerError> {
@@ -267,7 +301,13 @@ fn check_one_set_value(
         SExpression::String(s) => {
             if let Some(rest) = s.strip_prefix("@payload.") {
                 resolve_top_segment(rest).and_then(|f| {
-                    let payload = listen_payloads.get(event)?;
+                    // Resolve `@payload.X` against the declared payload schema
+                    // for the firing event. A `listens` entry wins; otherwise
+                    // fall back to an `emits`-declared payload so emit-sourced
+                    // payload fields are type-checked the same way.
+                    let payload = listen_payloads
+                        .get(event)
+                        .or_else(|| emit_payloads.get(event))?;
                     let declared_payload_field = payload.iter().find(|pf| pf.name == f)?;
                     Some((
                         type_expr_to_compat_str(&declared_payload_field.type_expr),
@@ -1055,6 +1095,11 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                         }
                     }
                     // 3.4 typed config overrides (clear scalar mismatches only).
+                    // NOTE: unknown-config-key detection (USES-CONFIG-KEY-SILENT)
+                    // was attempted here but reverted — as a hard LowerError it
+                    // blocks format/emit and breaks formatter fixtures that pass
+                    // nested config to exercise the formatter; it belongs in the
+                    // validate phase, not lower. Deferred (P1).
                     if let Some(cfg) = config {
                         for (k, v) in cfg {
                             if let (Some(expected), Some(got)) =
