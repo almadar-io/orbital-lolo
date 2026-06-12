@@ -29,14 +29,14 @@ mod type_helpers;
 pub(crate) use checks::{
     canonicalise_route, check_behavior_contracts, check_button_transitions,
     check_emit_payload_literals, check_entity_fields_have_setters, check_listens_integrity,
-    check_navigate_targets, check_set_value_types, collect_entity_field_refs, resolve_top_segment,
+    check_navigate_targets, check_set_value_types, resolve_top_segment,
 };
 pub(crate) use emit_listen::{lower_emit, lower_listen, lower_tick, type_expr_to_payload_fields};
 pub(crate) use entity::{lower_entity, lower_type_expr};
 pub(crate) use page::lower_page_decl;
 pub(crate) use r#trait::lower_trait_decl;
 pub(crate) use type_helpers::{
-    emit_primitive_compatible, humanize_event_key, primitive_type_compatible,
+    emit_primitive_compatible, humanize_event_key,
     type_expr_to_compat_str, type_expr_to_config_string, type_expr_to_config_values,
     type_expr_to_string,
 };

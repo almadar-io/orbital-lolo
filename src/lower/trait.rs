@@ -475,19 +475,19 @@ pub(crate) fn infer_entity_contract(
         for tr in &state.transitions {
             let event = tr.event.as_str();
             if let Some(guard) = &tr.guard {
-                collect_entity_field_refs(guard, &mut referenced_fields, &mut set_fields, event);
+                guard.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, event);
             }
             for effect in &tr.effects {
-                collect_entity_field_refs(effect, &mut referenced_fields, &mut set_fields, event);
+                effect.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, event);
             }
         }
     }
     for tick in &t.ticks {
         if let Some(guard) = &tick.guard {
-            collect_entity_field_refs(guard, &mut referenced_fields, &mut set_fields, "TICK");
+            guard.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, "TICK");
         }
         for effect in &tick.effects {
-            collect_entity_field_refs(effect, &mut referenced_fields, &mut set_fields, "TICK");
+            effect.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, "TICK");
         }
     }
     // The walker records a `(set @entity.X ...)` target in BOTH set_fields

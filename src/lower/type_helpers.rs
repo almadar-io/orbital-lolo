@@ -98,30 +98,6 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
     }
 }
 
-/// Primitive-type compatibility check between declared and actual.
-/// Mirrors the L2 emit-payload validator's `primitive_types_compatible`.
-/// `any` matches anything; `date`/`datetime`/`timestamp` accept string
-/// or number; `entity`/`relation` accept object or string; named entity
-/// types (e.g. `Article`) accept object.
-pub(crate) fn primitive_type_compatible(declared: &str, actual: &str) -> bool {
-    let d = declared.trim_end_matches('!');
-    let a = actual.trim_end_matches('!');
-    if d == a {
-        return true;
-    }
-    match d {
-        "any" => true,
-        "date" | "datetime" | "timestamp" => a == "string" || a == "number",
-        "entity" | "relation" => a == "object" || a == "string",
-        // Named entity / struct types accept object literals or string
-        // (id reference).
-        s if s.chars().next().map(|c| c.is_uppercase()).unwrap_or(false) => {
-            a == "object" || a == "string"
-        }
-        _ => false,
-    }
-}
-
 /// Lenient primitive compatibility check for emit payload literals.
 /// Mirrors the L2 validator's `primitive_types_compatible` so the two
 /// detection layers agree. `any` matches anything; `date`/`datetime`/
