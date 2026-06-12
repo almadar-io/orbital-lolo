@@ -1,5 +1,5 @@
-;; Stage 2 fixture — Form B typed emit payload. `name :: Type` inside the field
-;; list expands to nested PayloadField entries (`location.lat`, `location.lng`, ...).
+;; Stage 2 fixture — Form B typed emit payload. `name :: Type` lowers to ONE
+;; object-typed PayloadField whose `properties` carry the entity's fields.
 
 type Location = Entity {
   lat : number!

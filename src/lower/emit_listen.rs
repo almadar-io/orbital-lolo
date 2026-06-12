@@ -63,8 +63,11 @@ pub(crate) fn lower_emit(
         // Anonymous struct (inline `{ … }` or a `type X = { … }` alias, NOT an
         // entity): keep it as ONE field carrying the nested shape so codegen
         // emits a strict inline object type instead of widening to
-        // `EventPayload`. Entity references fall through to the dotted-flatten
-        // below (rows expose bindable `@payload.rec.field` paths).
+        // `EventPayload`. An entity reference is handled the same way below —
+        // ONE nested field whose `properties` are the entity's fields — so the
+        // emitted member name is a bare identifier (`row`), never a dotted
+        // `row.category` that is illegal as a TS member name. This also matches
+        // the runtime DataGrid shape `{ id, row: itemData }`.
         if let Some(props) = struct_payload_properties(&f.type_expr, aliases) {
             if !seen.insert(f.name.clone()) {
                 return Err(LowerError::PayloadFieldCollision {
@@ -81,22 +84,19 @@ pub(crate) fn lower_emit(
             });
         } else if let TypeExpr::Named(type_name) = &f.type_expr {
             let nested = resolve_payload_type(type_name, aliases, entities_by_name)?;
-            for nf in nested {
-                let prefixed = format!("{}.{}", f.name, nf.name);
-                if !seen.insert(prefixed.clone()) {
-                    return Err(LowerError::PayloadFieldCollision {
-                        event: e.event.clone(),
-                        field: prefixed,
-                    });
-                }
-                fields.push(PayloadField {
-                    name: prefixed,
-                    field_type: nf.field_type,
-                    required: nf.required,
-                    description: None,
-                    properties: None,
+            if !seen.insert(f.name.clone()) {
+                return Err(LowerError::PayloadFieldCollision {
+                    event: e.event.clone(),
+                    field: f.name.clone(),
                 });
             }
+            fields.push(PayloadField {
+                name: f.name.clone(),
+                field_type: "object".to_string(),
+                required: if f.required { Some(true) } else { None },
+                description: None,
+                properties: Some(nested),
+            });
         } else {
             if !seen.insert(f.name.clone()) {
                 return Err(LowerError::PayloadFieldCollision {

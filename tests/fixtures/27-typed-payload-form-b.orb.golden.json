@@ -43,18 +43,24 @@
                   "type": "string"
                 },
                 {
-                  "name": "location.lat",
-                  "required": true,
-                  "type": "number"
-                },
-                {
-                  "name": "location.lng",
-                  "required": true,
-                  "type": "number"
-                },
-                {
-                  "name": "location.address",
-                  "type": "string"
+                  "name": "location",
+                  "properties": [
+                    {
+                      "name": "lat",
+                      "required": true,
+                      "type": "number"
+                    },
+                    {
+                      "name": "lng",
+                      "required": true,
+                      "type": "number"
+                    },
+                    {
+                      "name": "address",
+                      "type": "string"
+                    }
+                  ],
+                  "type": "object"
                 },
                 {
                   "name": "timestamp",
@@ -83,18 +89,24 @@
                     "type": "string"
                   },
                   {
-                    "name": "location.lat",
-                    "required": true,
-                    "type": "number"
-                  },
-                  {
-                    "name": "location.lng",
-                    "required": true,
-                    "type": "number"
-                  },
-                  {
-                    "name": "location.address",
-                    "type": "string"
+                    "name": "location",
+                    "properties": [
+                      {
+                        "name": "lat",
+                        "required": true,
+                        "type": "number"
+                      },
+                      {
+                        "name": "lng",
+                        "required": true,
+                        "type": "number"
+                      },
+                      {
+                        "name": "address",
+                        "type": "string"
+                      }
+                    ],
+                    "type": "object"
                   },
                   {
                     "name": "timestamp",
