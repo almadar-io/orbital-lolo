@@ -165,7 +165,10 @@ impl Formatter {
                 fields,
             } => {
                 self.output.push_str("Entity");
-                self.fmt_persistence_tag(persistence.as_ref(), collection.as_ref().map(|s| s.as_str()));
+                self.fmt_persistence_tag(
+                    persistence.as_ref(),
+                    collection.as_ref().map(|s| s.as_str()),
+                );
                 self.output.push_str(" {");
                 if !fields.is_empty() {
                     self.write_newline();
@@ -499,7 +502,10 @@ impl Formatter {
             self.output.push(' ');
             self.fmt_type_annotation(ann);
         }
-        self.fmt_persistence_tag(entity.persistence.as_ref(), entity.collection.as_ref().map(|s| s.as_str()));
+        self.fmt_persistence_tag(
+            entity.persistence.as_ref(),
+            entity.collection.as_ref().map(|s| s.as_str()),
+        );
         self.output.push_str(" {");
         if !entity.fields.is_empty() {
             self.write_newline();
@@ -535,7 +541,11 @@ impl Formatter {
             self.indent();
             self.fmt_trait_ref_overrides(ref_data);
             if !tr.listens.is_empty() {
-                if !ref_data.events.is_empty() || !ref_data.fields.is_empty() || !ref_data.config.is_empty() || ref_data.emits_scope.is_some() {
+                if !ref_data.events.is_empty()
+                    || !ref_data.fields.is_empty()
+                    || !ref_data.config.is_empty()
+                    || ref_data.emits_scope.is_some()
+                {
                     self.write_newline();
                 }
                 self.write_indent();
@@ -784,7 +794,10 @@ impl Formatter {
             self.write_newline();
         }
         if let Some(scope) = &ref_data.emits_scope {
-            if !ref_data.events.is_empty() || !ref_data.fields.is_empty() || !ref_data.config.is_empty() {
+            if !ref_data.events.is_empty()
+                || !ref_data.fields.is_empty()
+                || !ref_data.config.is_empty()
+            {
                 self.write_newline();
             }
             self.write_indent();
@@ -792,7 +805,6 @@ impl Formatter {
             self.output.push_str(scope);
             self.write_newline();
         }
-
     }
 
     fn fmt_state(&mut self, state: &State) {

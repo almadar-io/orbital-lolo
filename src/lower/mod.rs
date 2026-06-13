@@ -10,12 +10,11 @@ use crate::patterns_meta::event_prop_names;
 use crate::types::check_program;
 use orbital_core::schema::{
     Cardinality, ConfigField as SchemaConfigField, EmitDefinition, EntityDefinition,
-    EntityFieldContract, EntityRef, EventDefinition,
-    EventScope, FieldDefinition, FieldType, ListenDefinition, ListenSource,
-    Orbital as CoreOrbital, OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
-    Persistence as CorePersistence, RelationDefinition, SExpression, StateDefinition, StateMachine,
-    StringOrArray, StringOrNumber, TickDefinition, TraitCategory, TraitDefinition, TraitReference,
-    TransitionDefinition, UseDeclaration,
+    EntityFieldContract, EntityRef, EventDefinition, EventScope, FieldDefinition, FieldType,
+    ListenDefinition, ListenSource, Orbital as CoreOrbital, OrbitalSchema, PageDefinition, PageRef,
+    PageRefObject, PayloadField, Persistence as CorePersistence, RelationDefinition, SExpression,
+    StateDefinition, StateMachine, StringOrArray, StringOrNumber, TickDefinition, TraitCategory,
+    TraitDefinition, TraitReference, TransitionDefinition, UseDeclaration,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -36,9 +35,8 @@ pub(crate) use entity::{lower_entity, lower_type_expr, primitive_field_type};
 pub(crate) use page::lower_page_decl;
 pub(crate) use r#trait::lower_trait_decl;
 pub(crate) use type_helpers::{
-    emit_primitive_compatible, humanize_event_key,
-    type_expr_to_compat_str, type_expr_to_config_string, type_expr_to_config_values,
-    type_expr_to_string,
+    emit_primitive_compatible, humanize_event_key, type_expr_to_compat_str,
+    type_expr_to_config_string, type_expr_to_config_values, type_expr_to_string,
 };
 
 /// Lower an entire `.lolo` program into an `OrbitalSchema`.
@@ -179,9 +177,7 @@ pub(crate) struct EventTypeResolved {
 /// Collect `type X = Event <T> [scope] "description"` aliases into a lookup
 /// table. Mirrors `collect_entity_type_bodies`'s scoping: aliases live at
 /// file scope and are extended per-orbital from `orb.type_aliases`.
-fn collect_event_type_bodies(
-    aliases: &[TypeAlias],
-) -> BTreeMap<String, EventTypeResolved> {
+fn collect_event_type_bodies(aliases: &[TypeAlias]) -> BTreeMap<String, EventTypeResolved> {
     let mut out: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
     for ta in aliases {
         if let TypeBody::Event {
@@ -608,7 +604,9 @@ mod tests {
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
         match result {
-            Err(LowerError::EntityFieldNeverSet { trait_name, field, .. }) => {
+            Err(LowerError::EntityFieldNeverSet {
+                trait_name, field, ..
+            }) => {
                 assert_eq!(trait_name, "T");
                 assert_eq!(field, "currentPage");
             }
@@ -682,7 +680,10 @@ mod tests {
         ";
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        assert!(result.is_ok(), "Trait without linkedEntity should skip rule");
+        assert!(
+            result.is_ok(),
+            "Trait without linkedEntity should skip rule"
+        );
     }
 
     // ------------------------------------------------------------------
@@ -1062,7 +1063,12 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         match lower_to_orb(&ast) {
-            Err(LowerError::EnumValueNotMember { field, value, suggestion, .. }) => {
+            Err(LowerError::EnumValueNotMember {
+                field,
+                value,
+                suggestion,
+                ..
+            }) => {
                 assert_eq!(field, "status");
                 assert_eq!(value, "pendng");
                 assert_eq!(suggestion.as_deref(), Some("pending"));

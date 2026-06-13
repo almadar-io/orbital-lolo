@@ -59,9 +59,7 @@ pub fn event_prop_names() -> &'static HashSet<String> {
             return names;
         };
         for (_pattern_name, pattern_value) in patterns {
-            let Some(props_schema) = pattern_value
-                .get("propsSchema")
-                .and_then(|v| v.as_object())
+            let Some(props_schema) = pattern_value.get("propsSchema").and_then(|v| v.as_object())
             else {
                 continue;
             };
@@ -77,8 +75,7 @@ pub fn event_prop_names() -> &'static HashSet<String> {
                         // Descriptor-array prop. The event-name lives on
                         // an inner field of each item; pattern-sync
                         // records the field name in `eventField`.
-                        if let Some(field) = prop_value.get("eventField").and_then(|v| v.as_str())
-                        {
+                        if let Some(field) = prop_value.get("eventField").and_then(|v| v.as_str()) {
                             names.insert(field.to_string());
                         }
                     }

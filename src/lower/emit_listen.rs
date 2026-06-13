@@ -33,7 +33,10 @@ pub(crate) fn lower_emit(
             return Ok(EmitDefinition {
                 event: e.event.clone(),
                 // Inline `@description` wins; fall back to the alias's description.
-                description: e.description.clone().or_else(|| resolved.description.clone()),
+                description: e
+                    .description
+                    .clone()
+                    .or_else(|| resolved.description.clone()),
                 synonyms: e.synonyms.clone(),
                 tier: e.tier.clone(),
                 scope,
@@ -139,9 +142,7 @@ pub(crate) fn type_expr_to_payload_fields(
     entities_by_name: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
 ) -> Result<Vec<PayloadField>, LowerError> {
     match payload {
-        TypeExpr::Named(type_name) => {
-            resolve_payload_type(type_name, aliases, entities_by_name)
-        }
+        TypeExpr::Named(type_name) => resolve_payload_type(type_name, aliases, entities_by_name),
         TypeExpr::Object(fields) => {
             let mut flat: Vec<PayloadField> = Vec::with_capacity(fields.len());
             let mut seen: HashSet<String> = HashSet::new();
@@ -292,10 +293,7 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
 /// Returns `(event, None)` when the event has no source prefix (local shape).
 pub(crate) fn split_listen_source(
     raw: &str,
-) -> (
-    String,
-    Option<orbital_core::schema::ListenSource>,
-) {
+) -> (String, Option<orbital_core::schema::ListenSource>) {
     use orbital_core::schema::ListenSource;
     let parts: Vec<&str> = raw.split('.').collect();
     match parts.len() {

@@ -393,7 +393,9 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         }
         TypeExpr::Optional(inner) => type_expr_config_only_type(inner),
         TypeExpr::Union(parts) => parts.iter().find_map(type_expr_config_only_type),
-        TypeExpr::Object(fields) => fields.iter().find_map(|(_, ty, _)| type_expr_config_only_type(ty)),
+        TypeExpr::Object(fields) => fields
+            .iter()
+            .find_map(|(_, ty, _)| type_expr_config_only_type(ty)),
         TypeExpr::Primitive(_)
         | TypeExpr::Named(_)
         | TypeExpr::StringLiteral(_)
@@ -433,7 +435,9 @@ pub(crate) fn is_event_name(name: &str) -> bool {
     // (e.g. BrowseItemLoaded, ConfirmActionLoadFailed). First char must be uppercase
     // ASCII letter; remaining chars are letters, digits, or underscores.
     let mut chars = name.chars();
-    let Some(first) = chars.next() else { return false };
+    let Some(first) = chars.next() else {
+        return false;
+    };
     if !first.is_ascii_uppercase() {
         return false;
     }
@@ -565,8 +569,14 @@ mod tests {
         let t = &prog.orbitals[0].traits[0];
         assert!(t.entity_rebindable);
         assert_eq!(t.linked_entity.as_deref(), Some("E"));
-        assert_eq!(t.entity_binding_description.as_deref(), Some("the tracked record"));
-        assert_eq!(t.entity_binding_synonyms.as_deref(), Some("track X / audit X"));
+        assert_eq!(
+            t.entity_binding_description.as_deref(),
+            Some("the tracked record")
+        );
+        assert_eq!(
+            t.entity_binding_synonyms.as_deref(),
+            Some("track X / audit X")
+        );
     }
 
     #[test]

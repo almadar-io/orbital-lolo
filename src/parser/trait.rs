@@ -57,7 +57,9 @@ impl Parser {
                     "instance" => {
                         if scope.is_some() {
                             return Err(ParseError::UnexpectedToken {
-                                expected: "at most one of `instance` | `collection` in trait modifiers".to_string(),
+                                expected:
+                                    "at most one of `instance` | `collection` in trait modifiers"
+                                        .to_string(),
                                 got: "duplicate scope marker".to_string(),
                                 span: self.peek_span(),
                             });
@@ -67,7 +69,9 @@ impl Parser {
                     "collection" => {
                         if scope.is_some() {
                             return Err(ParseError::UnexpectedToken {
-                                expected: "at most one of `instance` | `collection` in trait modifiers".to_string(),
+                                expected:
+                                    "at most one of `instance` | `collection` in trait modifiers"
+                                        .to_string(),
                                 got: "duplicate scope marker".to_string(),
                                 span: self.peek_span(),
                             });

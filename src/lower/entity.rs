@@ -166,7 +166,13 @@ pub(crate) fn lower_type_expr(
                 description: None,
                 synonyms: None,
             };
-            (FieldType::Object, None, Some(Box::new(value_field)), None, None)
+            (
+                FieldType::Object,
+                None,
+                Some(Box::new(value_field)),
+                None,
+                None,
+            )
         }
         TypeExpr::Object(fields) => {
             let mut props = HashMap::new();

@@ -235,14 +235,18 @@ pub(crate) fn lower_trait(
             continue;
         }
         if l.description.is_some() || l.synonyms.is_some() || l.tier.is_some() {
-            event_annotations
-                .insert(l.event.clone(), (l.description.clone(), l.synonyms.clone(), l.tier.clone()));
+            event_annotations.insert(
+                l.event.clone(),
+                (l.description.clone(), l.synonyms.clone(), l.tier.clone()),
+            );
         }
     }
     for e in &t.emits {
         if e.description.is_some() || e.synonyms.is_some() || e.tier.is_some() {
-            event_annotations
-                .insert(e.event.clone(), (e.description.clone(), e.synonyms.clone(), e.tier.clone()));
+            event_annotations.insert(
+                e.event.clone(),
+                (e.description.clone(), e.synonyms.clone(), e.tier.clone()),
+            );
         }
     }
 
@@ -274,8 +278,10 @@ pub(crate) fn lower_trait(
                 .into_iter()
                 .map(|k| -> Result<EventDefinition, LowerError> {
                     let name = humanize_event_key(&k, entity_hint);
-                    let (description, synonyms, tier) =
-                        event_annotations.get(&k).cloned().unwrap_or((None, None, None));
+                    let (description, synonyms, tier) = event_annotations
+                        .get(&k)
+                        .cloned()
+                        .unwrap_or((None, None, None));
                     // Payload resolution precedence for stateMachine.events[]:
                     //   1. Explicit local listen payload (e.g. `listens { X { f: T } }`)
                     //   2. Orbital-scope `type X = Event <T>` declaration

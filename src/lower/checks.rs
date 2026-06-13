@@ -165,12 +165,16 @@ fn check_set_in_expr(
 ) -> Result<(), LowerError> {
     if let SExpression::Array(arr) = expr {
         if arr.len() >= 3 {
-            if let (SExpression::String(op), SExpression::String(target)) =
-                (&arr[0], &arr[1])
-            {
+            if let (SExpression::String(op), SExpression::String(target)) = (&arr[0], &arr[1]) {
                 if op == "set" && target.starts_with("@entity.") {
                     let path = &target[8..];
-                    let field = path.split('.').next().unwrap_or("").split('[').next().unwrap_or("");
+                    let field = path
+                        .split('.')
+                        .next()
+                        .unwrap_or("")
+                        .split('[')
+                        .next()
+                        .unwrap_or("");
                     if !field.is_empty() {
                         if let Some(declared) = entity_fields.get(field) {
                             check_one_set_value(
@@ -414,14 +418,14 @@ pub(crate) fn check_listens_integrity(orbitals: &[CoreOrbital]) -> Result<(), Lo
                         }
                     }
                 }
-                TraitReference::Reference { name, reference, .. } => {
-                    let trait_name = name
-                        .clone()
-                        .or_else(|| {
-                            reference
-                                .as_deref()
-                                .and_then(|r| r.rsplit('.').next().map(str::to_owned))
-                        });
+                TraitReference::Reference {
+                    name, reference, ..
+                } => {
+                    let trait_name = name.clone().or_else(|| {
+                        reference
+                            .as_deref()
+                            .and_then(|r| r.rsplit('.').next().map(str::to_owned))
+                    });
                     if let Some(n) = trait_name {
                         reference_traits.insert((orbital.name.clone(), n));
                     }
@@ -570,14 +574,14 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
                         entry.insert(trans.event.clone());
                     }
                 }
-                TraitReference::Reference { name, reference, .. } => {
-                    let trait_name = name
-                        .clone()
-                        .or_else(|| {
-                            reference
-                                .as_deref()
-                                .and_then(|r| r.rsplit('.').next().map(str::to_owned))
-                        });
+                TraitReference::Reference {
+                    name, reference, ..
+                } => {
+                    let trait_name = name.clone().or_else(|| {
+                        reference
+                            .as_deref()
+                            .and_then(|r| r.rsplit('.').next().map(str::to_owned))
+                    });
                     if let Some(n) = trait_name {
                         reference_traits.insert((orbital.name.clone(), n));
                     }
@@ -591,7 +595,9 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
         HashMap::new();
     for orbital in orbitals {
         for trait_ref in &orbital.traits {
-            let TraitReference::Inline(td) = trait_ref else { continue };
+            let TraitReference::Inline(td) = trait_ref else {
+                continue;
+            };
             let entry = trait_listens
                 .entry((orbital.name.clone(), td.name.clone()))
                 .or_default();
@@ -616,7 +622,9 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
     // Scan each inline trait for button actions in render-ui effects.
     for orbital in orbitals {
         for trait_ref in &orbital.traits {
-            let TraitReference::Inline(td) = trait_ref else { continue };
+            let TraitReference::Inline(td) = trait_ref else {
+                continue;
+            };
             let source_trait = &td.name;
             let source_key = (orbital.name.clone(), source_trait.clone());
 
@@ -655,7 +663,11 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
                         let has_listen = trait_listens
                             .get(&target_key)
                             .map(|listens| {
-                                listens.contains(&(orbital.name.clone(), source_trait.clone(), action.clone()))
+                                listens.contains(&(
+                                    orbital.name.clone(),
+                                    source_trait.clone(),
+                                    action.clone(),
+                                ))
                             })
                             .unwrap_or(false);
                         if !has_listen {
@@ -713,7 +725,9 @@ pub(crate) fn check_navigate_targets(orbitals: &[CoreOrbital]) -> Result<(), Low
 
     for orbital in orbitals {
         for trait_ref in &orbital.traits {
-            let TraitReference::Inline(td) = trait_ref else { continue };
+            let TraitReference::Inline(td) = trait_ref else {
+                continue;
+            };
             for trans in &td.state_machine.transitions {
                 if let Some(effects) = &trans.effects {
                     for effect in effects {
@@ -830,7 +844,9 @@ pub(crate) fn canonicalise_route(path: &str) -> String {
 pub(crate) fn check_emit_payload_literals(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
     for orbital in orbitals {
         for trait_ref in &orbital.traits {
-            let TraitReference::Inline(td) = trait_ref else { continue };
+            let TraitReference::Inline(td) = trait_ref else {
+                continue;
+            };
 
             // Build event -> payload schema lookup once per trait.
             let emit_schemas: HashMap<&str, &[PayloadField]> = td
@@ -846,18 +862,12 @@ pub(crate) fn check_emit_payload_literals(orbitals: &[CoreOrbital]) -> Result<()
             }
 
             // Walk every transition's effects + every tick's effects.
-            let trait_emits_walk =
-                |effects: &[SExpression]| -> Result<(), LowerError> {
-                    for effect in effects {
-                        check_emit_literal_recursive(
-                            effect,
-                            &emit_schemas,
-                            &orbital.name,
-                            &td.name,
-                        )?;
-                    }
-                    Ok(())
-                };
+            let trait_emits_walk = |effects: &[SExpression]| -> Result<(), LowerError> {
+                for effect in effects {
+                    check_emit_literal_recursive(effect, &emit_schemas, &orbital.name, &td.name)?;
+                }
+                Ok(())
+            };
 
             for trans in &td.state_machine.transitions {
                 if let Some(effects) = &trans.effects {
@@ -1032,12 +1042,9 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
         // target inherits fields not visible until inline, so row-constraints
         // are skipped there (compiler backstop covers it).
         let entity_fields: Option<HashSet<String>> = match &orbital.entity {
-            EntityRef::Inline(ed) => Some(
-                ed.fields
-                    .iter()
-                    .filter_map(|f| f.name.clone())
-                    .collect(),
-            ),
+            EntityRef::Inline(ed) => {
+                Some(ed.fields.iter().filter_map(|f| f.name.clone()).collect())
+            }
             _ => None,
         };
 

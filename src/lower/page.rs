@@ -36,7 +36,10 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
 
 pub(crate) fn lower_page(p: &Page) -> PageRef {
     PageRef::Inline(PageDefinition {
-        name: p.name.clone().unwrap_or_else(|| page_name_from_path(&p.path)),
+        name: p
+            .name
+            .clone()
+            .unwrap_or_else(|| page_name_from_path(&p.path)),
         path: p.path.clone(),
         view_type: p.view.clone(),
         primary_entity: p.primary_entity.clone(),

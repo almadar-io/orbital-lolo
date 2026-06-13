@@ -7,8 +7,8 @@
 //!   intrinsic) absent from the bound entity is rejected at lower time with
 //!   `LowerError::RebindMissingDataField` (test d).
 
-use orbital_lolo::parse_and_lower_str;
 use orbital_core::schema::TraitReference;
+use orbital_lolo::parse_and_lower_str;
 
 /// (Fix 1) `@intrinsic` parses, lowers onto the field, and the intrinsic field
 /// is kept OUT of the rebindable trait's `requires` contract — a rebind target
@@ -58,7 +58,10 @@ orbital WidgetOrbital {
     let TraitReference::Inline(td) = &orbital.traits[0] else {
         panic!("expected inline trait");
     };
-    let contract = td.entity_contract.as_ref().expect("rebindable trait has a contract");
+    let contract = td
+        .entity_contract
+        .as_ref()
+        .expect("rebindable trait has a contract");
     assert!(
         !contract.requires.contains(&"viewState".to_string()),
         "intrinsic field must not appear in entityContract.requires, got {:?}",
@@ -242,6 +245,5 @@ orbital OkOrbital {
   }
 }"#;
 
-    parse_and_lower_str(src)
-        .expect("an intrinsic field read needs no DATA backing and must lower");
+    parse_and_lower_str(src).expect("an intrinsic field read needs no DATA backing and must lower");
 }

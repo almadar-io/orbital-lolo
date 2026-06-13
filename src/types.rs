@@ -554,7 +554,12 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         TypeExpr::RelationMany(n) | TypeExpr::RelationManyNonEmpty(n) => {
             out.insert(n.clone());
         }
-        TypeExpr::Primitive(_) | TypeExpr::StringLiteral(_) | TypeExpr::Trait | TypeExpr::Slot | TypeExpr::Pattern | TypeExpr::SExpr => {}
+        TypeExpr::Primitive(_)
+        | TypeExpr::StringLiteral(_)
+        | TypeExpr::Trait
+        | TypeExpr::Slot
+        | TypeExpr::Pattern
+        | TypeExpr::SExpr => {}
     }
 }
 
