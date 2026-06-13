@@ -286,6 +286,27 @@ pub enum LowerError {
         value_source: String,
     },
 
+    /// `(set @entity.<F> "literal")` assigns a string literal that is not one
+    /// of the declared enum members of F (an inline `"a" | "b"` union or a
+    /// named string-enum alias). The union validated + emitted before but was
+    /// never enforced, so an out-of-set value passed silently
+    /// (Gap G-LOLO-ENUM-UNENFORCED). The optional `did you mean` names the
+    /// closest declared member.
+    #[error(
+        "(set @entity.{field} {value:?}): {value:?} is not a declared member of \
+         {field}'s enum [{members}]{}",
+        suggestion.as_ref().map(|s| format!(" — did you mean {s:?}?")).unwrap_or_default()
+    )]
+    EnumValueNotMember {
+        orbital: String,
+        trait_name: String,
+        field: String,
+        value: String,
+        /// Comma-joined declared members, for the diagnostic.
+        members: String,
+        suggestion: Option<String>,
+    },
+
     /// Entity name collides with a sibling trait's locally-emitted
     /// state/event union type. The TS codegen emits `type
     /// <TraitName>State = '<s1>' | …` and `type <TraitName>Event = '<e1>' | …`

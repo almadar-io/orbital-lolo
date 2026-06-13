@@ -1042,6 +1042,61 @@ mod tests {
     }
 
     #[test]
+    fn set_literal_outside_declared_enum_errors() {
+        // `(set @entity.status pendng)` violates the declared union — Gap
+        // G-LOLO-ENUM-UNENFORCED; the closest member feeds the suggestion.
+        let src = r#"
+            orbital TicketOrbital {
+                entity Ticket {
+                    id : string!
+                    status : "open" | "closed" | "pending"
+                }
+                trait TicketFlow -> Ticket [interaction] {
+                    initial: idle
+                    state idle {
+                        INIT -> idle
+                            (set @entity.status pendng)
+                    }
+                }
+            }
+        "#;
+        let ast = parse_str(src).expect("parse");
+        match lower_to_orb(&ast) {
+            Err(LowerError::EnumValueNotMember { field, value, suggestion, .. }) => {
+                assert_eq!(field, "status");
+                assert_eq!(value, "pendng");
+                assert_eq!(suggestion.as_deref(), Some("pending"));
+            }
+            other => panic!("expected EnumValueNotMember, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn set_literal_member_of_declared_enum_passes() {
+        // A declared member assigns clean.
+        let src = r#"
+            orbital TicketOrbital {
+                entity Ticket {
+                    id : string!
+                    status : "open" | "closed" | "pending"
+                }
+                trait TicketFlow -> Ticket [interaction] {
+                    initial: idle
+                    state idle {
+                        INIT -> idle
+                            (set @entity.status closed)
+                    }
+                }
+            }
+        "#;
+        let ast = parse_str(src).expect("parse");
+        assert!(
+            lower_to_orb(&ast).is_ok(),
+            "a declared enum member should pass the membership check"
+        );
+    }
+
+    #[test]
     fn set_payload_field_resolves_against_listen_block() {
         // `(set @entity.count @payload.count)` where the listen block
         // declares `count : number` and entity field is `count : int`
