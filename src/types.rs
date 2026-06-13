@@ -559,10 +559,41 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
 }
 
 fn is_primitive(name: &str) -> bool {
-    matches!(
-        name,
-        "string" | "number" | "bool" | "boolean" | "int" | "float" | "date" | "datetime" | "any"
-    )
+    // Single source of truth: the lowerer's primitive set (Gap
+    // G-LOLO-TYPENAME-SILENT-FALLBACK — the checker and lowerer must agree on
+    // what a primitive is, else a name the lowerer maps is flagged unknown here,
+    // or vice versa).
+    crate::lower::primitive_field_type(name).is_some()
+}
+
+/// Validate every type-name reference inside an entity- or config-field
+/// `type_expr` resolves to a known primitive, type alias, or entity name. An
+/// unrecognized name (a typo'd alias, an undeclared type) surfaces as
+/// `UnknownType` with a nearest-name suggestion — instead of silently lowering
+/// to a bare `string` and erasing the declared contract (Gap
+/// G-LOLO-TYPENAME-SILENT-FALLBACK). Primitives are filtered out by
+/// `visit_expr_refs`; the remaining refs must be aliases or entity names.
+fn check_field_type_refs(
+    type_expr: &TypeExpr,
+    span: Span,
+    ctx: &ResolveCtx<'_>,
+    entity_names: &BTreeSet<String>,
+) -> Result<(), TypeError> {
+    let mut refs = BTreeSet::new();
+    visit_expr_refs(type_expr, &mut refs);
+    for r in &refs {
+        if ctx.lookup(r).is_some() || entity_names.contains(r) {
+            continue;
+        }
+        let mut haystack = ctx.known_names();
+        haystack.extend(entity_names.iter().cloned());
+        return Err(TypeError::UnknownType {
+            name: r.clone(),
+            suggestion: closest_name(r, &haystack),
+            span,
+        });
+    }
+    Ok(())
 }
 
 pub(crate) fn closest_name(needle: &str, haystack: &[String]) -> Option<String> {
@@ -770,6 +801,13 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
     for ta in &program.type_aliases {
         file.insert(ta.clone());
     }
+    // All declared entity names — legal targets for a field's relation/type
+    // reference (`field : OtherEntity`), alongside primitives and type aliases.
+    let entity_names: BTreeSet<String> = program
+        .orbitals
+        .iter()
+        .filter_map(|o| o.entity.as_ref().map(|e| e.name.clone()))
+        .collect();
 
     // Pre-build per-orbital scoped registries so cycle detection + annotation
     // checks see both scopes consistently.
@@ -790,10 +828,16 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
             if let Some(ann) = &entity.type_annotation {
                 check_entity_annotation(ann, entity, &ctx)?;
             }
+            for f in &entity.fields {
+                check_field_type_refs(&f.type_expr, f.span, &ctx, &entity_names)?;
+            }
         }
         for trt in &orb.traits {
             if let Some(ann) = &trt.type_annotation {
                 check_trait_annotation(ann, trt, &ctx)?;
+            }
+            for cf in &trt.config {
+                check_field_type_refs(&cf.type_expr, cf.span, &ctx, &entity_names)?;
             }
             // Validate emit-payload type references against the registry.
             // Entity- or struct-kind only. Other kinds (trait/page/orbital)
@@ -876,6 +920,63 @@ orbital OrbX {
 "#;
         let err = check(src).unwrap_err();
         assert!(matches!(err, TypeError::UnknownType { .. }));
+    }
+
+    #[test]
+    fn err_unknown_entity_field_type_typo() {
+        // G-LOLO-TYPENAME-SILENT-FALLBACK: a typo'd field type name must be
+        // rejected (not silently lowered to `string`).
+        let src = r#"
+orbital OrbY {
+  entity Order [persistent: orders] {
+    id : string!
+    status : Statsu
+  }
+  trait OrderTrait -> Order [interaction] { state idle { INIT -> idle (ref Order) } }
+  page "/orders" -> OrderTrait
+}
+"#;
+        let err = check(src).unwrap_err();
+        assert!(matches!(err, TypeError::UnknownType { .. }), "got {err:?}");
+    }
+
+    #[test]
+    fn ok_documented_string_primitives() {
+        // email/url/phone/uuid are recognized (lower to string), not "unknown".
+        let src = r#"
+orbital OrbZ {
+  entity Contact [persistent: contacts] {
+    id   : uuid!
+    mail : email
+    site : url
+    tel  : phone
+  }
+  trait ContactTrait -> Contact [interaction] { state idle { INIT -> idle (ref Contact) } }
+  page "/contacts" -> ContactTrait
+}
+"#;
+        check(src).unwrap();
+    }
+
+    #[test]
+    fn ok_named_alias_field_resolves() {
+        // a valid named alias as a field type resolves — not falsely rejected by
+        // the new unknown-type check.
+        let src = r#"
+type Addr = Entity {
+  street : string!
+}
+
+orbital OrbW {
+  entity Item [persistent: items] {
+    id : string!
+    addr : Addr
+  }
+  trait ItemTrait -> Item [interaction] { state idle { INIT -> idle (ref Item) } }
+  page "/items" -> ItemTrait
+}
+"#;
+        check(src).unwrap();
     }
 
     #[test]

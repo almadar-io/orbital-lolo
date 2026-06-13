@@ -32,7 +32,7 @@ pub(crate) use checks::{
     check_navigate_targets, check_set_value_types, resolve_top_segment,
 };
 pub(crate) use emit_listen::{lower_emit, lower_listen, lower_tick, type_expr_to_payload_fields};
-pub(crate) use entity::{lower_entity, lower_type_expr};
+pub(crate) use entity::{lower_entity, lower_type_expr, primitive_field_type};
 pub(crate) use page::lower_page_decl;
 pub(crate) use r#trait::lower_trait_decl;
 pub(crate) use type_helpers::{

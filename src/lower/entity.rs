@@ -230,17 +230,40 @@ pub(crate) fn lower_type_expr(
     }
 }
 
-pub(crate) fn primitive_to_field_type(name: &str) -> FieldType {
-    match name {
+/// The canonical primitive-type-name set and its `FieldType` mapping — the
+/// single source consulted by BOTH the lowerer (`primitive_to_field_type`) and
+/// the type checker (`types::is_primitive`), so the two layers can't disagree on
+/// what counts as a primitive. `None` for a non-primitive name (an alias /
+/// entity reference / typo), which the type checker then rejects.
+pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
+    Some(match name {
         // `icon`/`component` are refinement types over string (validity enforced
         // at the render-ui layer); they lower to a plain string field.
         "string" | "money" | "any" | "icon" | "component" => FieldType::String,
+        // email/url/phone/uuid are grammar-documented string subtypes
+        // (Almadar_LOLO.md prim_type). Recognized here (no format validation yet)
+        // so they don't silently erase via the unknown-name path
+        // (Gap G-LOLO-TYPENAME-SILENT-FALLBACK).
+        "email" | "url" | "phone" | "uuid" => FieldType::String,
+        // De-facto accepted config/field types in the std corpus — `json` (free
+        // value), `node` (renderable content), `render-ui` (a render-ui pattern
+        // object config), `relation` (a foreign-key reference). They lowered to
+        // a string field via the old unknown-name fallback; recognized here to
+        // preserve that (re-typing e.g. json→object is a separate refinement)
+        // while still rejecting genuine typos.
+        "json" | "node" | "render-ui" | "relation" => FieldType::String,
         "int" | "float" | "number" | "duration" => FieldType::Number,
         "bool" | "boolean" => FieldType::Boolean,
         "date" => FieldType::Date,
         "datetime" => FieldType::Datetime,
         "timestamp" => FieldType::Timestamp,
         "object" => FieldType::Object,
-        _ => FieldType::String,
-    }
+        _ => return None,
+    })
+}
+
+pub(crate) fn primitive_to_field_type(name: &str) -> FieldType {
+    // The type checker rejects unknown type names up front, so by lowering time
+    // every name here is a known primitive; the String fallback is defensive.
+    primitive_field_type(name).unwrap_or(FieldType::String)
 }
