@@ -26,9 +26,9 @@ mod r#trait;
 mod type_helpers;
 
 pub(crate) use checks::{
-    canonicalise_route, check_behavior_contracts, check_button_transitions,
-    check_emit_payload_literals, check_entity_fields_have_setters, check_listens_integrity,
-    check_navigate_targets, check_set_value_types, resolve_top_segment,
+    check_behavior_contracts, check_button_transitions, check_emit_payload_literals,
+    check_entity_fields_have_setters, check_listens_integrity, check_navigate_targets,
+    check_set_value_types,
 };
 pub(crate) use emit_listen::{lower_emit, lower_listen, lower_tick, type_expr_to_payload_fields};
 pub(crate) use entity::{lower_entity, lower_type_expr, primitive_field_type};
@@ -420,6 +420,7 @@ fn lower_orbital(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::lower::checks::{canonicalise_route, resolve_top_segment};
     use crate::parser::parse_str;
 
     fn lower(src: &str) -> OrbitalSchema {

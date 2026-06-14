@@ -28,8 +28,6 @@ mod page;
 mod r#trait;
 mod r#type;
 
-pub(crate) use expression::lower_self_sigil;
-
 /// Parse a `.lolo` source string into a Program AST.
 pub fn parse_str(source: &str) -> Result<Program, ParseError> {
     let (tokens, comments) = tokenize_with_comments(source)?;
