@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-16T13:55:25.201Z",
+  "exportedAt": "2026-06-16T19:32:31.111Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -275,7 +275,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "variant": {
@@ -378,7 +379,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "onClick": {
@@ -429,7 +431,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "onClick": {
@@ -494,15 +497,6 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Entity record or array of records — pre-resolved by the trait via render-ui after a fetch emit",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
         "className": {
           "types": [
             "string"
@@ -605,6 +599,15 @@
             ]
           },
           "default": []
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Entity data (single record or collection).",
+          "kind": "entity",
+          "cardinality": "collection"
         },
         "entityType": {
           "types": [
@@ -738,7 +741,8 @@
                   },
                   "icon": {
                     "types": [
-                      "icon"
+                      "icon",
+                      "string"
                     ]
                   },
                   "avatar": {
@@ -748,7 +752,7 @@
                     "properties": {
                       "src": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "alt": {
@@ -1225,14 +1229,6 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
-        "entity": {
-          "types": [
-            "object"
-          ],
-          "description": "RECORD-cardinality override: renders ONE record (see body collapse below).",
-          "kind": "entity",
-          "cardinality": "record"
-        },
         "className": {
           "types": [
             "string"
@@ -1335,6 +1331,14 @@
             ]
           }
         },
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "RECORD-cardinality: renders ONE record (see body collapse below).",
+          "kind": "entity",
+          "cardinality": "record"
+        },
         "title": {
           "types": [
             "string"
@@ -1418,7 +1422,8 @@
                     },
                     "icon": {
                       "types": [
-                        "icon"
+                        "icon",
+                        "string"
                       ]
                     },
                     "copyable": {
@@ -1457,7 +1462,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "onClick": {
@@ -1741,7 +1747,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "loading": {
@@ -6637,23 +6644,20 @@
         },
         "leftIcon": {
           "types": [
-            "node",
             "icon",
             "string"
           ],
-          "description": "Left icon as ReactNode, Lucide component, or string name (e.g. \"plus\", \"trash\")"
+          "description": "Left icon: a Lucide component or a canonical icon name string (e.g. \"plus\", \"trash\")."
         },
         "rightIcon": {
           "types": [
-            "node",
             "icon",
             "string"
           ],
-          "description": "Right icon as ReactNode, Lucide component, or string name"
+          "description": "Right icon: a Lucide component or a canonical icon name string."
         },
         "icon": {
           "types": [
-            "node",
             "icon",
             "string"
           ],
@@ -6661,7 +6665,6 @@
         },
         "iconRight": {
           "types": [
-            "node",
             "icon",
             "string"
           ],
@@ -6759,9 +6762,10 @@
         },
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
-          "description": "Icon name (Lucide icon string) or React node"
+          "description": "Lucide icon component or canonical kebab-case icon name string"
         },
         "onRemove": {
           "types": [
@@ -6794,7 +6798,7 @@
       "propsSchema": {
         "src": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Image source URL"
         },
@@ -7062,6 +7066,13 @@
             "node"
           ],
           "description": "Card content"
+        },
+        "action": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event key emitted on click for trait dispatch",
+          "kind": "event"
         }
       }
     },
@@ -7287,13 +7298,15 @@
         },
         "leftIcon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "leftIcon prop"
         },
         "rightIcon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "rightIcon prop"
         },
@@ -7302,7 +7315,7 @@
             "icon",
             "string"
           ],
-          "description": "Lucide icon component for left side (convenience prop), or a canonical kebab-case icon name string (resolved via `resolveIcon`)."
+          "description": "Lucide icon component or canonical kebab-case icon name string for left side"
         },
         "clearable": {
           "types": [
@@ -7312,11 +7325,10 @@
         },
         "onClear": {
           "types": [
-            "function"
+            "function",
+            "string"
           ],
-          "description": "Callback when clear button is clicked",
-          "kind": "callback",
-          "callbackArgs": []
+          "description": "Callback or declarative event key when clear button is clicked"
         },
         "options": {
           "types": [
@@ -7354,11 +7366,10 @@
         },
         "onChange": {
           "types": [
-            "function"
+            "function",
+            "string"
           ],
-          "description": "onChange handler - accepts events from input, select, or textarea",
-          "kind": "callback",
-          "callbackArgs": []
+          "description": "onChange handler or declarative event key for trait dispatch"
         }
       }
     },
@@ -7405,6 +7416,13 @@
             "string"
           ],
           "description": "Error message"
+        },
+        "onChange": {
+          "types": [
+            "function",
+            "string"
+          ],
+          "description": "onChange handler or declarative event key for trait dispatch"
         }
       }
     },
@@ -7479,6 +7497,13 @@
             "string"
           ],
           "description": "Error message"
+        },
+        "onChange": {
+          "types": [
+            "function",
+            "string"
+          ],
+          "description": "onChange handler or declarative event key for trait dispatch"
         }
       }
     },
@@ -7518,6 +7543,13 @@
             "string"
           ],
           "description": "label prop"
+        },
+        "onChange": {
+          "types": [
+            "function",
+            "string"
+          ],
+          "description": "onChange handler or declarative event key for trait dispatch"
         }
       }
     },
@@ -9620,7 +9652,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "onClick": {
@@ -9655,9 +9688,10 @@
         },
         "icon": {
           "types": [
+            "icon",
             "string"
           ],
-          "description": "Icon name (resolves to a Lucide icon by PascalCase / kebab-case lookup)."
+          "description": "Icon: a canonical icon name string (resolved by Button) or a Lucide component."
         },
         "onClick": {
           "types": [
@@ -9826,9 +9860,10 @@
         },
         "icon": {
           "types": [
+            "icon",
             "string"
           ],
-          "description": "Icon name to show before title"
+          "description": "Lucide icon name or component to show before title"
         },
         "hasErrors": {
           "types": [
@@ -10360,7 +10395,7 @@
         },
         "logoSrc": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Logo image source"
         },
@@ -10398,7 +10433,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "badge": {
@@ -10474,7 +10510,7 @@
           "properties": {
             "src": {
               "types": [
-                "string"
+                "asset"
               ]
             },
             "alt": {
@@ -10724,7 +10760,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "badge": {
@@ -11197,7 +11234,7 @@
         },
         "logoSrc": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Logo image source"
         },
@@ -11231,7 +11268,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "badge": {
@@ -11631,7 +11669,7 @@
         },
         "backgroundImage": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Background image URL"
         },
@@ -11834,7 +11872,7 @@
             },
             "avatar": {
               "types": [
-                "string"
+                "asset"
               ]
             }
           },
@@ -11897,6 +11935,7 @@
             "properties": {
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -12904,7 +12943,8 @@
               },
               "icon": {
                 "types": [
-                  "icon"
+                  "icon",
+                  "string"
                 ]
               },
               "tags": {
@@ -13142,7 +13182,7 @@
               },
               "src": {
                 "types": [
-                  "string"
+                  "asset"
                 ]
               },
               "alt": {
@@ -13152,7 +13192,7 @@
               },
               "thumbnail": {
                 "types": [
-                  "string"
+                  "asset"
                 ]
               },
               "mediaType": {
@@ -13455,7 +13495,7 @@
         },
         "src": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Document URL (for PDF/external documents)"
         },
@@ -13577,7 +13617,7 @@
               },
               "src": {
                 "types": [
-                  "string"
+                  "asset"
                 ]
               },
               "content": {
@@ -15993,6 +16033,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -16060,6 +16101,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -16129,6 +16171,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -16435,6 +16478,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -16492,6 +16536,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -16551,6 +16596,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -16704,6 +16750,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -16748,6 +16795,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -17441,7 +17489,7 @@
             "properties": {
               "src": {
                 "types": [
-                  "string"
+                  "asset"
                 ]
               },
               "alt": {
@@ -17758,9 +17806,10 @@
         },
         "icon": {
           "types": [
+            "icon",
             "string"
           ],
-          "description": "Icon name (Lucide string)"
+          "description": "Icon name or component"
         },
         "disabled": {
           "types": [
@@ -18285,6 +18334,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -18337,6 +18387,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -18498,9 +18549,10 @@
         },
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
-          "description": "Lucide icon name or React node"
+          "description": "Lucide icon name or component"
         },
         "iconBg": {
           "types": [
@@ -18955,10 +19007,10 @@
       "propsSchema": {
         "icon": {
           "types": [
-            "string",
-            "node"
+            "icon",
+            "string"
           ],
-          "description": "Icon name (Lucide string) or ReactNode"
+          "description": "icon prop"
         },
         "title": {
           "types": [
@@ -19046,8 +19098,8 @@
             "properties": {
               "icon": {
                 "types": [
-                  "string",
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "title": {
@@ -19245,7 +19297,7 @@
           "properties": {
             "src": {
               "types": [
-                "string"
+                "object"
               ]
             },
             "alt": {
@@ -19628,7 +19680,7 @@
           "properties": {
             "src": {
               "types": [
-                "string"
+                "object"
               ]
             },
             "alt": {
@@ -19780,7 +19832,7 @@
           "properties": {
             "src": {
               "types": [
-                "string"
+                "object"
               ]
             },
             "alt": {
@@ -19999,7 +20051,7 @@
         },
         "avatar": {
           "types": [
-            "string",
+            "asset",
             "object"
           ],
           "description": "avatar prop",
@@ -21354,7 +21406,7 @@
         },
         "src": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "URL to an SVG file. Fetched and inlined to enable stroke/fill animations."
         },
@@ -22187,9 +22239,10 @@
         },
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
-          "description": "Optional icon name (Lucide icon string) or React node"
+          "description": "Lucide icon component or canonical kebab-case icon name string"
         },
         "onRemove": {
           "types": [
@@ -23649,7 +23702,8 @@
         },
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "Icon displayed before the label"
         },
@@ -23842,7 +23896,8 @@
         },
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "Icon component or emoji"
         },
@@ -24119,7 +24174,8 @@
       "propsSchema": {
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "Icon component or emoji"
         },
@@ -24360,7 +24416,8 @@
       "propsSchema": {
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "Icon component or emoji"
         },
@@ -24446,7 +24503,8 @@
         },
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "Icon component or emoji"
         },
@@ -24668,6 +24726,7 @@
             "properties": {
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -24706,9 +24765,10 @@
       "propsSchema": {
         "icon": {
           "types": [
+            "icon",
             "string"
           ],
-          "description": "Lucide kebab-case icon name",
+          "description": "Lucide icon name or component",
           "required": true
         },
         "label": {
@@ -24904,7 +24964,8 @@
         },
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "Custom icon to render inside the marker"
         },
@@ -27286,7 +27347,8 @@
               },
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "variant": {
@@ -27523,7 +27585,8 @@
             "properties": {
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "label": {
@@ -27558,7 +27621,8 @@
           "properties": {
             "icon": {
               "types": [
-                "node"
+                "icon",
+                "string"
               ]
             },
             "label": {
@@ -27947,7 +28011,8 @@
             "properties": {
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "label": {
@@ -28058,13 +28123,13 @@
         },
         "backgroundImage": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Background image URL"
         },
         "assetBaseUrl": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Base URL prefix for asset URLs",
           "default": ""
@@ -28185,6 +28250,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -28536,7 +28602,8 @@
               },
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               }
             },
@@ -28768,7 +28835,8 @@
             "properties": {
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "label": {
@@ -28850,7 +28918,8 @@
               },
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "label": {
@@ -29316,7 +29385,7 @@
               },
               "terrainSprite": {
                 "types": [
-                  "string"
+                  "asset"
                 ]
               },
               "passable": {
@@ -29399,7 +29468,7 @@
               },
               "sprite": {
                 "types": [
-                  "string"
+                  "asset"
                 ]
               },
               "unitType": {
@@ -29559,12 +29628,12 @@
               },
               "sprite": {
                 "types": [
-                  "string"
+                  "asset"
                 ]
               },
               "assetUrl": {
                 "types": [
-                  "string"
+                  "asset"
                 ]
               },
               "color": {
@@ -29802,7 +29871,7 @@
         },
         "backgroundImage": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Background image URL tiled behind the isometric grid"
         },
@@ -29931,7 +30000,7 @@
                   },
                   "sprite": {
                     "types": [
-                      "string"
+                      "asset"
                     ]
                   },
                   "unitType": {
@@ -30078,7 +30147,7 @@
           "description": "Additional sprite URLs to preload (e.g., effect sprites)",
           "items": {
             "types": [
-              "string"
+              "asset"
             ]
           },
           "default": []
@@ -30114,7 +30183,7 @@
         },
         "assetBaseUrl": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "--- Remote asset loading ---"
         },
@@ -30327,7 +30396,7 @@
         },
         "playerSprite": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Player sprite image URL"
         },
@@ -30338,19 +30407,19 @@
           "description": "Map of platform type to tile sprite URL",
           "mapValue": {
             "types": [
-              "string"
+              "asset"
             ]
           }
         },
         "backgroundImage": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Background image URL"
         },
         "assetBaseUrl": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Base URL prefix for asset URLs",
           "default": ""
@@ -30442,7 +30511,8 @@
               },
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "label": {
@@ -30580,7 +30650,8 @@
             "properties": {
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "label": {
@@ -30737,7 +30808,8 @@
         },
         "icon": {
           "types": [
-            "node"
+            "icon",
+            "string"
           ],
           "description": "Icon component or emoji"
         },
@@ -30830,7 +30902,8 @@
               },
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "event": {
@@ -30889,7 +30962,8 @@
               },
               "icon": {
                 "types": [
-                  "node"
+                  "icon",
+                  "string"
                 ]
               },
               "event": {
@@ -31016,7 +31090,7 @@
         },
         "coverImageUrl": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "coverImageUrl prop"
         },
@@ -32256,7 +32330,7 @@
           "description": "effectSpriteUrls prop",
           "items": {
             "types": [
-              "string"
+              "asset"
             ]
           },
           "default": []
@@ -32495,13 +32569,13 @@
         },
         "effectSpriteUrl": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "--- Remote asset loading ---"
         },
         "assetBaseUrl": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Base URL for remote assets. Prepended to relative effectSpriteUrl paths."
         },
@@ -32513,7 +32587,7 @@
           "properties": {
             "baseUrl": {
               "types": [
-                "string"
+                "asset"
               ]
             },
             "particles": {
@@ -32873,12 +32947,12 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "assetUrl": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "color": {
@@ -32946,7 +33020,7 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "unitType": {
@@ -33100,12 +33174,12 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "assetUrl": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "color": {
@@ -33223,12 +33297,12 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "assetUrl": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "color": {
@@ -33296,7 +33370,7 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "unitType": {
@@ -33450,12 +33524,12 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "assetUrl": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "color": {
@@ -33573,12 +33647,12 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "assetUrl": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "color": {
@@ -33646,7 +33720,7 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "unitType": {
@@ -33800,12 +33874,12 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "assetUrl": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "color": {
@@ -33923,12 +33997,12 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "assetUrl": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "color": {
@@ -33996,7 +34070,7 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "unitType": {
@@ -34150,12 +34224,12 @@
                       },
                       "sprite": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "assetUrl": {
                         "types": [
-                          "string"
+                          "asset"
                         ]
                       },
                       "color": {
@@ -34247,12 +34321,12 @@
                   },
                   "sprite": {
                     "types": [
-                      "string"
+                      "asset"
                     ]
                   },
                   "assetUrl": {
                     "types": [
-                      "string"
+                      "asset"
                     ]
                   },
                   "color": {
@@ -34333,7 +34407,7 @@
                   },
                   "sprite": {
                     "types": [
-                      "string"
+                      "asset"
                     ]
                   },
                   "unitType": {
@@ -34819,7 +34893,7 @@
             },
             "iconUrl": {
               "types": [
-                "string"
+                "asset"
               ]
             },
             "stateMachine": {
@@ -34972,7 +35046,7 @@
         },
         "tooltipFrameUrl": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Optional tooltip frame image URL"
         },
@@ -35067,7 +35141,7 @@
                   },
                   "iconUrl": {
                     "types": [
-                      "string"
+                      "asset"
                     ]
                   },
                   "stateMachine": {
@@ -35204,7 +35278,7 @@
                   },
                   "iconUrl": {
                     "types": [
-                      "string"
+                      "asset"
                     ]
                   },
                   "stateMachine": {
@@ -35495,6 +35569,7 @@
             "properties": {
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -36356,7 +36431,7 @@
           "description": "effectSpriteUrls prop",
           "items": {
             "types": [
-              "string"
+              "asset"
             ]
           },
           "default": []
@@ -37975,7 +38050,7 @@
               },
               "iconUrl": {
                 "types": [
-                  "string"
+                  "object"
                 ]
               },
               "stateMachine": {
@@ -38281,7 +38356,7 @@
             },
             "iconUrl": {
               "types": [
-                "string"
+                "object"
               ]
             },
             "stateMachine": {
@@ -38465,7 +38540,7 @@
               },
               "iconUrl": {
                 "types": [
-                  "string"
+                  "object"
                 ]
               },
               "stateMachine": {
@@ -38605,7 +38680,7 @@
                   },
                   "iconUrl": {
                     "types": [
-                      "string"
+                      "object"
                     ]
                   },
                   "stateMachine": {
@@ -39544,12 +39619,12 @@
               },
               "sprite": {
                 "types": [
-                  "string"
+                  "object"
                 ]
               },
               "assetUrl": {
                 "types": [
-                  "string"
+                  "object"
                 ]
               },
               "color": {
@@ -39633,12 +39708,12 @@
                   },
                   "sprite": {
                     "types": [
-                      "string"
+                      "object"
                     ]
                   },
                   "assetUrl": {
                     "types": [
-                      "string"
+                      "object"
                     ]
                   },
                   "color": {
@@ -39703,12 +39778,12 @@
                   },
                   "sprite": {
                     "types": [
-                      "string"
+                      "object"
                     ]
                   },
                   "assetUrl": {
                     "types": [
-                      "string"
+                      "object"
                     ]
                   },
                   "color": {
@@ -40631,7 +40706,7 @@
           "properties": {
             "src": {
               "types": [
-                "string"
+                "asset"
               ]
             },
             "alt": {
@@ -40804,6 +40879,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -40893,6 +40969,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -40931,6 +41008,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               },
@@ -41163,6 +41241,7 @@
               },
               "icon": {
                 "types": [
+                  "icon",
                   "string"
                 ]
               }
