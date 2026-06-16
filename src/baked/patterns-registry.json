@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-16T10:02:47.077Z",
+  "exportedAt": "2026-06-16T13:55:25.201Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -6930,7 +6930,15 @@
           "types": [
             "string"
           ],
-          "description": "Color class (Tailwind color class) or 'inherit' for theme default"
+          "description": "Semantic palette token or an arbitrary Tailwind color class.",
+          "enumValues": [
+            "primary",
+            "secondary",
+            "success",
+            "warning",
+            "error",
+            "muted"
+          ]
         },
         "animation": {
           "types": [
@@ -7106,6 +7114,7 @@
             "primary",
             "success",
             "warning",
+            "error",
             "danger"
           ],
           "default": "primary"
@@ -7120,6 +7129,7 @@
             "primary",
             "success",
             "warning",
+            "error",
             "danger"
           ]
         },
@@ -11611,7 +11621,7 @@
             "string"
           ],
           "description": "App name",
-          "default": "{{APP_TITLE}}"
+          "default": "My App"
         },
         "logo": {
           "types": [
@@ -13123,7 +13133,48 @@
           "items": {
             "types": [
               "object"
-            ]
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "src": {
+                "types": [
+                  "string"
+                ]
+              },
+              "alt": {
+                "types": [
+                  "string"
+                ]
+              },
+              "thumbnail": {
+                "types": [
+                  "string"
+                ]
+              },
+              "mediaType": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "image",
+                  "video"
+                ]
+              },
+              "caption": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fileSize": {
+                "types": [
+                  "string"
+                ]
+              }
+            }
           }
         },
         "columns": {
@@ -13921,252 +13972,6 @@
         }
       }
     },
-    "code-viewer": {
-      "type": "code-viewer",
-      "category": "display",
-      "tier": "molecules",
-      "family": "core",
-      "description": "Code and diff viewer with line numbers, copy, word-wrap, and multi-file tabs",
-      "suggestedFor": [
-        "code display",
-        "diff viewing",
-        "schema inspection",
-        "log viewing"
-      ],
-      "typicalSize": "medium",
-      "propsSchema": {
-        "title": {
-          "types": [
-            "string"
-          ],
-          "description": "Viewer title"
-        },
-        "code": {
-          "types": [
-            "string"
-          ],
-          "description": "Code content"
-        },
-        "language": {
-          "types": [
-            "unknown"
-          ],
-          "description": "Language for display label"
-        },
-        "diff": {
-          "types": [
-            "array"
-          ],
-          "description": "Diff lines (for diff mode)",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "type": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "add",
-                  "remove",
-                  "context"
-                ]
-              },
-              "content": {
-                "types": [
-                  "string"
-                ]
-              },
-              "lineNumber": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "type",
-              "content"
-            ]
-          }
-        },
-        "oldValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Old value (for generating diff)"
-        },
-        "newValue": {
-          "types": [
-            "string"
-          ],
-          "description": "New value (for generating diff)"
-        },
-        "mode": {
-          "types": [
-            "string"
-          ],
-          "description": "Display mode",
-          "enumValues": [
-            "code",
-            "diff"
-          ],
-          "default": "code"
-        },
-        "showLineNumbers": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show line numbers",
-          "default": true
-        },
-        "showCopy": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show copy button",
-          "default": true
-        },
-        "wordWrap": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable word wrap",
-          "default": false
-        },
-        "maxHeight": {
-          "types": [
-            "number",
-            "string"
-          ],
-          "description": "Max height before scrolling",
-          "default": 500
-        },
-        "files": {
-          "types": [
-            "array"
-          ],
-          "description": "Multiple files (tabbed view)",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "label": {
-                "types": [
-                  "string"
-                ]
-              },
-              "code": {
-                "types": [
-                  "string"
-                ]
-              },
-              "language": {
-                "types": [
-                  "unknown"
-                ]
-              }
-            },
-            "required": [
-              "label",
-              "code"
-            ]
-          }
-        },
-        "actions": {
-          "types": [
-            "array"
-          ],
-          "description": "Actions",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "label": {
-                "types": [
-                  "string"
-                ]
-              },
-              "event": {
-                "types": [
-                  "string"
-                ]
-              },
-              "navigatesTo": {
-                "types": [
-                  "string"
-                ]
-              },
-              "variant": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "primary",
-                  "secondary",
-                  "ghost"
-                ]
-              }
-            },
-            "required": [
-              "label"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "string"
-          ],
-          "description": "Entity name for schema-driven auto-fetch"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state",
-          "default": false
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        }
-      }
-    },
     "battle-template": {
       "type": "battle-template",
       "category": "game",
@@ -14459,14 +14264,43 @@
           "types": [
             "string"
           ],
-          "description": "The code content to display",
-          "required": true
+          "description": "The code content to display"
         },
         "language": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "Programming language for syntax highlighting",
+          "enumValues": [
+            "text",
+            "json",
+            "javascript",
+            "js",
+            "typescript",
+            "ts",
+            "jsx",
+            "tsx",
+            "css",
+            "markdown",
+            "md",
+            "bash",
+            "shell",
+            "sh",
+            "yaml",
+            "yml",
+            "rust",
+            "python",
+            "py",
+            "sql",
+            "diff",
+            "toml",
+            "go",
+            "graphql",
+            "html",
+            "xml",
+            "orb",
+            "lolo"
+          ],
           "default": "text"
         },
         "showCopyButton": {
@@ -14485,7 +14319,8 @@
         },
         "maxHeight": {
           "types": [
-            "string"
+            "string",
+            "number"
           ],
           "description": "Maximum height before scrolling",
           "default": "60vh"
@@ -14528,6 +14363,239 @@
           ],
           "description": "GAP-80: line-level error/warning highlights for editable mode. Map of 1-based line number → severity. The overlay paints a colored background on each line: error = red, warning = yellow. Pass undefined (default) to disable. The consumer is responsible for computing the path → line map from the schema + validation results.",
           "nonAuthorable": true
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "── Viewer props (absorbed from CodeViewer / DocCodeBlock) ────────────────"
+        },
+        "mode": {
+          "types": [
+            "string"
+          ],
+          "description": "Diff or plain-code display mode",
+          "enumValues": [
+            "code",
+            "diff"
+          ],
+          "default": "code"
+        },
+        "diff": {
+          "types": [
+            "array"
+          ],
+          "description": "Pre-computed diff lines",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "added",
+                  "removed",
+                  "unchanged",
+                  "context"
+                ]
+              },
+              "beforeLineNumber": {
+                "types": [
+                  "number"
+                ]
+              },
+              "afterLineNumber": {
+                "types": [
+                  "number"
+                ]
+              },
+              "content": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "content"
+            ]
+          }
+        },
+        "oldValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Old source text — generates diff when combined with newValue"
+        },
+        "newValue": {
+          "types": [
+            "string"
+          ],
+          "description": "New source text — generates diff when combined with oldValue"
+        },
+        "showLineNumbers": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show line numbers in code / diff mode",
+          "default": false
+        },
+        "wordWrap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable word-wrap in code / diff mode",
+          "default": false
+        },
+        "files": {
+          "types": [
+            "array"
+          ],
+          "description": "Multiple files shown as tabs",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "code": {
+                "types": [
+                  "string"
+                ]
+              },
+              "language": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "text",
+                  "json",
+                  "javascript",
+                  "js",
+                  "typescript",
+                  "ts",
+                  "jsx",
+                  "tsx",
+                  "css",
+                  "markdown",
+                  "md",
+                  "bash",
+                  "shell",
+                  "sh",
+                  "yaml",
+                  "yml",
+                  "rust",
+                  "python",
+                  "py",
+                  "sql",
+                  "diff",
+                  "toml",
+                  "go",
+                  "graphql",
+                  "html",
+                  "xml",
+                  "orb",
+                  "lolo"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "code"
+            ]
+          }
+        },
+        "actions": {
+          "types": [
+            "array"
+          ],
+          "description": "Action badges in the toolbar",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ]
+              },
+              "navigatesTo": {
+                "types": [
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "primary",
+                  "secondary",
+                  "ghost"
+                ]
+              }
+            },
+            "required": [
+              "label"
+            ]
+          }
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state",
+          "default": false
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "showCopy": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show copy button (viewer alias for showCopyButton)"
         }
       }
     },
@@ -14555,11 +14623,12 @@
           "types": [
             "string"
           ],
-          "description": "Text direction",
+          "description": "Text direction (defaults to ltr; `ltr` is first so the generated config seeds it)",
           "enumValues": [
-            "rtl",
-            "ltr"
-          ]
+            "ltr",
+            "rtl"
+          ],
+          "default": "ltr"
         },
         "className": {
           "types": [
@@ -14698,7 +14767,28 @@
             "types": [
               "object"
             ],
-            "freeform": true
+            "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "markdown",
+                  "code",
+                  "orbital",
+                  "quiz"
+                ]
+              },
+              "content": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "content"
+            ]
           }
         },
         "direction": {
@@ -21561,8 +21651,16 @@
           "types": [
             "string"
           ],
-          "description": "Stroke color",
-          "default": "var(--color-primary)"
+          "description": "Semantic palette token or a raw CSS color value for the stroke.",
+          "enumValues": [
+            "primary",
+            "secondary",
+            "success",
+            "warning",
+            "error",
+            "muted"
+          ],
+          "default": "primary"
         },
         "strokeWidth": {
           "types": [
@@ -24290,7 +24388,15 @@
           "types": [
             "string"
           ],
-          "description": "Accent color class (e.g. 'text-yellow-400')"
+          "description": "Semantic palette token or an arbitrary Tailwind color class.",
+          "enumValues": [
+            "primary",
+            "secondary",
+            "success",
+            "warning",
+            "error",
+            "muted"
+          ]
         },
         "size": {
           "types": [
@@ -24600,9 +24706,9 @@
       "propsSchema": {
         "icon": {
           "types": [
-            "node"
+            "string"
           ],
-          "description": "Icon to display for the effect",
+          "description": "Lucide kebab-case icon name",
           "required": true
         },
         "label": {
@@ -24920,14 +25026,14 @@
             "number"
           ],
           "description": "x prop",
-          "required": true
+          "default": 5
         },
         "y": {
           "types": [
             "number"
           ],
           "description": "y prop",
-          "required": true
+          "default": 50
         },
         "variant": {
           "types": [
@@ -24974,6 +25080,27 @@
             "string"
           ],
           "description": "className prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 100
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 100
         }
       }
     },
@@ -24995,28 +25122,28 @@
             "number"
           ],
           "description": "x1 prop",
-          "required": true
+          "default": 10
         },
         "y1": {
           "types": [
             "number"
           ],
           "description": "y1 prop",
-          "required": true
+          "default": 50
         },
         "x2": {
           "types": [
             "number"
           ],
           "description": "x2 prop",
-          "required": true
+          "default": 90
         },
         "y2": {
           "types": [
             "number"
           ],
           "description": "y2 prop",
-          "required": true
+          "default": 50
         },
         "variant": {
           "types": [
@@ -25056,6 +25183,27 @@
             "string"
           ],
           "description": "className prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 100
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 100
         }
       }
     },
@@ -25077,7 +25225,6 @@
             "array"
           ],
           "description": "points prop",
-          "required": true,
           "items": {
             "types": [
               "array"
@@ -25122,6 +25269,27 @@
             "string"
           ],
           "description": "className prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 100
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 100
         }
       }
     },
@@ -25143,14 +25311,14 @@
             "number"
           ],
           "description": "x prop",
-          "required": true
+          "default": 10
         },
         "y": {
           "types": [
             "number"
           ],
           "description": "y prop",
-          "required": true
+          "default": 10
         },
         "cols": {
           "types": [
@@ -25211,6 +25379,27 @@
             ]
           },
           "default": []
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 100
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 100
         }
       }
     },
@@ -25232,14 +25421,14 @@
             "number"
           ],
           "description": "cx prop",
-          "required": true
+          "default": 50
         },
         "cy": {
           "types": [
             "number"
           ],
           "description": "cy prop",
-          "required": true
+          "default": 50
         },
         "rx": {
           "types": [
@@ -25288,6 +25477,27 @@
             "string"
           ],
           "description": "className prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 100
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 100
         }
       }
     },
@@ -25309,14 +25519,14 @@
             "number"
           ],
           "description": "cx prop",
-          "required": true
+          "default": 60
         },
         "cy": {
           "types": [
             "number"
           ],
           "description": "cy prop",
-          "required": true
+          "default": 60
         },
         "nodes": {
           "types": [
@@ -25358,6 +25568,27 @@
             "string"
           ],
           "description": "className prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 120
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 120
         }
       }
     },
@@ -25379,14 +25610,14 @@
             "number"
           ],
           "description": "x prop",
-          "required": true
+          "default": 5
         },
         "y": {
           "types": [
             "number"
           ],
           "description": "y prop",
-          "required": true
+          "default": 10
         },
         "size": {
           "types": [
@@ -25426,6 +25657,27 @@
             "string"
           ],
           "description": "className prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 130
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 50
         }
       }
     },
@@ -25447,14 +25699,14 @@
             "number"
           ],
           "description": "x prop",
-          "required": true
+          "default": 50
         },
         "y": {
           "types": [
             "number"
           ],
           "description": "y prop",
-          "required": true
+          "default": 50
         },
         "r": {
           "types": [
@@ -25500,6 +25752,27 @@
             "string"
           ],
           "description": "label prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 100
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 100
         }
       }
     },
@@ -25521,14 +25794,14 @@
             "number"
           ],
           "description": "cx prop",
-          "required": true
+          "default": 70
         },
         "cy": {
           "types": [
             "number"
           ],
           "description": "cy prop",
-          "required": true
+          "default": 70
         },
         "rings": {
           "types": [
@@ -25570,6 +25843,27 @@
             "string"
           ],
           "description": "className prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 140
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 140
         }
       }
     },
@@ -25591,14 +25885,14 @@
             "number"
           ],
           "description": "cx prop",
-          "required": true
+          "default": 50
         },
         "cy": {
           "types": [
             "number"
           ],
           "description": "cy prop",
-          "required": true
+          "default": 50
         },
         "r": {
           "types": [
@@ -25651,6 +25945,27 @@
             "string"
           ],
           "description": "label prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 100
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 100
         }
       }
     },
@@ -25672,14 +25987,14 @@
             "number"
           ],
           "description": "x prop",
-          "required": true
+          "default": 50
         },
         "y": {
           "types": [
             "number"
           ],
           "description": "y prop",
-          "required": true
+          "default": 50
         },
         "size": {
           "types": [
@@ -25719,6 +26034,27 @@
             "string"
           ],
           "description": "className prop"
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 100
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 100
         }
       }
     },
@@ -25740,14 +26076,14 @@
             "number"
           ],
           "description": "x prop",
-          "required": true
+          "default": 10
         },
         "y": {
           "types": [
             "number"
           ],
           "description": "y prop",
-          "required": true
+          "default": 40
         },
         "layers": {
           "types": [
@@ -25799,6 +26135,27 @@
               "string"
             ]
           }
+        },
+        "asRoot": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), wraps in a standalone <svg> so the shape is visible without a parent SVG context.",
+          "default": true
+        },
+        "svgWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "svgWidth prop",
+          "default": 90
+        },
+        "svgHeight": {
+          "types": [
+            "number"
+          ],
+          "description": "svgHeight prop",
+          "default": 80
         }
       }
     },
@@ -25847,54 +26204,6 @@
             "string"
           ],
           "description": "Additional CSS classes"
-        }
-      }
-    },
-    "doc-code-block": {
-      "type": "doc-code-block",
-      "category": "component",
-      "tier": "molecules",
-      "family": "core",
-      "description": "DocCodeBlock component",
-      "suggestedFor": [
-        "doc",
-        "code",
-        "block",
-        "doc code block"
-      ],
-      "typicalSize": "medium",
-      "propsSchema": {
-        "code": {
-          "types": [
-            "string"
-          ],
-          "description": "Code content to display",
-          "required": true
-        },
-        "language": {
-          "types": [
-            "unknown"
-          ],
-          "description": "Programming language label"
-        },
-        "title": {
-          "types": [
-            "string"
-          ],
-          "description": "Optional title/filename shown in the header bar"
-        },
-        "showLineNumbers": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show line numbers in the gutter",
-          "default": false
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional class names"
         }
       }
     },
@@ -26155,7 +26464,15 @@
           "types": [
             "string"
           ],
-          "description": "Override the center color (CSS value). Defaults to var(--color-primary)."
+          "description": "Semantic palette token or a raw CSS color value. Defaults to 'primary'.",
+          "enumValues": [
+            "primary",
+            "secondary",
+            "success",
+            "warning",
+            "error",
+            "muted"
+          ]
         },
         "className": {
           "types": [
@@ -27868,7 +28185,7 @@
               },
               "icon": {
                 "types": [
-                  "node"
+                  "string"
                 ]
               },
               "format": {
@@ -38800,48 +39117,6 @@
             }
           ],
           "default": "PUZZLE_COMPLETE"
-        }
-      }
-    },
-    "code-view": {
-      "type": "code-view",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "description": "CodeView Component  Shows the JSON code representation of a state machine. Toggle between visual and code view in State Architect tier.",
-      "suggestedFor": [
-        "code",
-        "view",
-        "code view"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "data": {
-          "types": [
-            "object"
-          ],
-          "description": "JSON data to display",
-          "required": true,
-          "freeform": true
-        },
-        "label": {
-          "types": [
-            "string"
-          ],
-          "description": "Label"
-        },
-        "defaultExpanded": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Whether the code is expanded by default",
-          "default": false
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
         }
       }
     },
