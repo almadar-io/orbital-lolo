@@ -363,10 +363,14 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
             | "duration"
             | "money"
             // Refinement primitives: a string + a validity rule. `icon` = a valid
-            // Lucide name; `component` = a valid element tag (or a @trait ref).
-            // Both lower to `string`; the value rule is enforced where the value
-            // is used (render-ui icon / prop validation).
+            // Lucide name; `component` = a valid element tag (or a @trait ref);
+            // `asset` = a resolvable asset URL. All lower to `string`; the value
+            // rule is enforced where the value is used (render-ui icon / prop
+            // validation). The distinct config-type tag (`icon`/`asset`) survives
+            // to the `.orb` `type` field so the property inspector can dispatch an
+            // IconPicker / AssetPicker on it.
             | "icon"
+            | "asset"
             | "component"
             | "object"
             | "void"
