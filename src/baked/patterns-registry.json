@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-12T08:35:33.532Z",
+  "exportedAt": "2026-06-16T10:02:47.077Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -9107,8 +9107,7 @@
             "small",
             "large",
             "label"
-          ],
-          "default": "body"
+          ]
         },
         "level": {
           "types": [
@@ -9122,8 +9121,7 @@
             4,
             5,
             6
-          ],
-          "default": 2
+          ]
         },
         "color": {
           "types": [
@@ -11599,7 +11597,7 @@
       "type": "auth-layout",
       "category": "template",
       "tier": "templates",
-      "family": "core",
+      "family": "marketing",
       "description": "AuthLayout component",
       "suggestedFor": [
         "auth",
@@ -13951,7 +13949,7 @@
         },
         "language": {
           "types": [
-            "string"
+            "unknown"
           ],
           "description": "Language for display label"
         },
@@ -14066,7 +14064,7 @@
               },
               "language": {
                 "types": [
-                  "string"
+                  "unknown"
                 ]
               }
             },
@@ -14466,7 +14464,7 @@
         },
         "language": {
           "types": [
-            "string"
+            "unknown"
           ],
           "description": "Programming language for syntax highlighting",
           "default": "text"
@@ -19938,7 +19936,7 @@
       "type": "case-study-organism",
       "category": "display",
       "tier": "organisms",
-      "family": "core",
+      "family": "marketing",
       "description": "CaseStudyOrganism component",
       "suggestedFor": [
         "case",
@@ -20080,7 +20078,7 @@
       "type": "feature-grid-organism",
       "category": "display",
       "tier": "organisms",
-      "family": "core",
+      "family": "marketing",
       "description": "FeatureGridOrganism component",
       "suggestedFor": [
         "feature",
@@ -20235,7 +20233,7 @@
       "type": "hero-organism",
       "category": "header",
       "tier": "organisms",
-      "family": "core",
+      "family": "marketing",
       "description": "HeroOrganism component",
       "suggestedFor": [
         "hero",
@@ -20511,7 +20509,7 @@
       "type": "showcase-organism",
       "category": "display",
       "tier": "organisms",
-      "family": "core",
+      "family": "marketing",
       "description": "ShowcaseOrganism component",
       "suggestedFor": [
         "showcase",
@@ -20807,7 +20805,7 @@
       "type": "step-flow-organism",
       "category": "display",
       "tier": "organisms",
-      "family": "core",
+      "family": "marketing",
       "description": "StepFlowOrganism component",
       "suggestedFor": [
         "step",
@@ -23036,6 +23034,13 @@
           ],
           "description": "placeholder prop"
         },
+        "enableBlocks": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Opt-in to the Notion-style block authoring chrome (insert toolbar, per-row +/menu gutter, turn-into menu). Off by default: the editor renders as a plain rich text surface that edits block content inline without any add-block affordances.",
+          "default": false
+        },
         "showToolbar": {
           "types": [
             "boolean"
@@ -23911,9 +23916,10 @@
         },
         "portrait": {
           "types": [
-            "string"
+            "asset"
           ],
-          "description": "URL for the speaker portrait image"
+          "description": "URL for the speaker portrait image",
+          "default": "https://almadar-kflow-assets.web.app/shared/characters/archetypes/00_base_model.png"
         },
         "position": {
           "types": [
@@ -24386,10 +24392,11 @@
       "propsSchema": {
         "spritesheet": {
           "types": [
-            "string"
+            "asset"
           ],
           "description": "Spritesheet image URL",
-          "required": true
+          "required": true,
+          "default": "https://almadar-kflow-assets.web.app/shared/isometric-blocks/Spritesheet/allTiles_sheet.png"
         },
         "frameWidth": {
           "types": [
@@ -25866,7 +25873,7 @@
         },
         "language": {
           "types": [
-            "string"
+            "unknown"
           ],
           "description": "Programming language label"
         },
@@ -26162,7 +26169,7 @@
       "type": "pull-quote",
       "category": "component",
       "tier": "molecules",
-      "family": "core",
+      "family": "marketing",
       "description": "PullQuote component",
       "suggestedFor": [
         "pull",
@@ -40277,7 +40284,7 @@
       "type": "marketing-footer",
       "category": "component",
       "tier": "molecules",
-      "family": "core",
+      "family": "marketing",
       "description": "MarketingFooter component",
       "suggestedFor": [
         "marketing",
@@ -40961,334 +40968,6 @@
             "string"
           ],
           "description": "Additional class names"
-        }
-      }
-    },
-    "heading": {
-      "type": "heading",
-      "category": "component",
-      "tier": "atoms",
-      "family": "core",
-      "description": "Alias for typography — Typography Atom Component  Text elements following the KFlow design system with theme-aware styling.",
-      "suggestedFor": [
-        "typography"
-      ],
-      "typicalSize": "small",
-      "propsSchema": {
-        "variant": {
-          "types": [
-            "string"
-          ],
-          "description": "Typography variant",
-          "enumValues": [
-            "h1",
-            "h2",
-            "h3",
-            "h4",
-            "h5",
-            "h6",
-            "heading",
-            "subheading",
-            "body1",
-            "body2",
-            "body",
-            "caption",
-            "overline",
-            "small",
-            "large",
-            "label"
-          ],
-          "default": "body"
-        },
-        "level": {
-          "types": [
-            "number"
-          ],
-          "description": "Heading level (1-6) - alternative to variant for headings",
-          "numericEnumValues": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "default": 2
-        },
-        "color": {
-          "types": [
-            "string"
-          ],
-          "description": "Text color",
-          "enumValues": [
-            "primary",
-            "secondary",
-            "muted",
-            "error",
-            "success",
-            "warning",
-            "inherit"
-          ],
-          "default": "primary"
-        },
-        "align": {
-          "types": [
-            "string"
-          ],
-          "description": "Text alignment",
-          "enumValues": [
-            "left",
-            "center",
-            "right"
-          ]
-        },
-        "weight": {
-          "types": [
-            "string"
-          ],
-          "description": "Font weight override",
-          "enumValues": [
-            "light",
-            "normal",
-            "medium",
-            "semibold",
-            "bold"
-          ]
-        },
-        "size": {
-          "types": [
-            "string"
-          ],
-          "description": "Font size override",
-          "enumValues": [
-            "xs",
-            "sm",
-            "md",
-            "lg",
-            "xl",
-            "2xl",
-            "3xl"
-          ]
-        },
-        "truncate": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Truncate with ellipsis (single line)",
-          "default": false
-        },
-        "overflow": {
-          "types": [
-            "string"
-          ],
-          "description": "Overflow handling mode",
-          "enumValues": [
-            "visible",
-            "hidden",
-            "wrap",
-            "clamp-2",
-            "clamp-3"
-          ]
-        },
-        "as": {
-          "types": [
-            "component"
-          ],
-          "description": "Custom HTML element"
-        },
-        "id": {
-          "types": [
-            "string"
-          ],
-          "description": "HTML id attribute"
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional class names"
-        },
-        "style": {
-          "types": [
-            "object"
-          ],
-          "description": "Inline style"
-        },
-        "content": {
-          "types": [
-            "node"
-          ],
-          "description": "Text content (alternative to children)"
-        },
-        "children": {
-          "types": [
-            "node"
-          ],
-          "description": "Children elements"
-        }
-      }
-    },
-    "text": {
-      "type": "text",
-      "category": "component",
-      "tier": "atoms",
-      "family": "core",
-      "description": "Alias for typography — Typography Atom Component  Text elements following the KFlow design system with theme-aware styling.",
-      "suggestedFor": [
-        "typography"
-      ],
-      "typicalSize": "small",
-      "propsSchema": {
-        "variant": {
-          "types": [
-            "string"
-          ],
-          "description": "Typography variant",
-          "enumValues": [
-            "h1",
-            "h2",
-            "h3",
-            "h4",
-            "h5",
-            "h6",
-            "heading",
-            "subheading",
-            "body1",
-            "body2",
-            "body",
-            "caption",
-            "overline",
-            "small",
-            "large",
-            "label"
-          ],
-          "default": "body"
-        },
-        "level": {
-          "types": [
-            "number"
-          ],
-          "description": "Heading level (1-6) - alternative to variant for headings",
-          "numericEnumValues": [
-            1,
-            2,
-            3,
-            4,
-            5,
-            6
-          ],
-          "default": 2
-        },
-        "color": {
-          "types": [
-            "string"
-          ],
-          "description": "Text color",
-          "enumValues": [
-            "primary",
-            "secondary",
-            "muted",
-            "error",
-            "success",
-            "warning",
-            "inherit"
-          ],
-          "default": "primary"
-        },
-        "align": {
-          "types": [
-            "string"
-          ],
-          "description": "Text alignment",
-          "enumValues": [
-            "left",
-            "center",
-            "right"
-          ]
-        },
-        "weight": {
-          "types": [
-            "string"
-          ],
-          "description": "Font weight override",
-          "enumValues": [
-            "light",
-            "normal",
-            "medium",
-            "semibold",
-            "bold"
-          ]
-        },
-        "size": {
-          "types": [
-            "string"
-          ],
-          "description": "Font size override",
-          "enumValues": [
-            "xs",
-            "sm",
-            "md",
-            "lg",
-            "xl",
-            "2xl",
-            "3xl"
-          ]
-        },
-        "truncate": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Truncate with ellipsis (single line)",
-          "default": false
-        },
-        "overflow": {
-          "types": [
-            "string"
-          ],
-          "description": "Overflow handling mode",
-          "enumValues": [
-            "visible",
-            "hidden",
-            "wrap",
-            "clamp-2",
-            "clamp-3"
-          ]
-        },
-        "as": {
-          "types": [
-            "component"
-          ],
-          "description": "Custom HTML element"
-        },
-        "id": {
-          "types": [
-            "string"
-          ],
-          "description": "HTML id attribute"
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional class names"
-        },
-        "style": {
-          "types": [
-            "object"
-          ],
-          "description": "Inline style"
-        },
-        "content": {
-          "types": [
-            "node"
-          ],
-          "description": "Text content (alternative to children)"
-        },
-        "children": {
-          "types": [
-            "node"
-          ],
-          "description": "Children elements"
         }
       }
     }
