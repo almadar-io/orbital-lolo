@@ -23,10 +23,10 @@ pub mod patterns_meta;
 pub mod registry;
 pub mod types;
 
-pub use ast::{Ast, EntityField, EventField, Span, TypeExpr};
+pub use ast::{Ast, Comment, EntityField, EventField, Span, TypeExpr};
 pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
 pub use format::format_program;
-pub use lexer::{tokenize, Token, TokenKind};
+pub use lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
 pub use lower::lower_to_orb;
 pub use parser::{parse, parse_str};
 
