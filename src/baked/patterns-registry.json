@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-17T08:23:54.917Z",
+  "exportedAt": "2026-06-17T02:56:15.601Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -473,7 +473,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — orthogonal to the semantic variant.",
+          "description": "Layer 2 visual treatment \u2014 orthogonal to the semantic variant.",
           "enumValues": [
             "dense",
             "spacious",
@@ -884,7 +884,7 @@
             "object",
             "array"
           ],
-          "description": "Entity record or array of records — pre-resolved by the trait via render-ui after a fetch emit",
+          "description": "Entity record or array of records \u2014 pre-resolved by the trait via render-ui after a fetch emit",
           "kind": "entity",
           "cardinality": "collection"
         },
@@ -1954,7 +1954,7 @@
           "types": [
             "string"
           ],
-          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'.",
+          "description": "Form mode \u2014 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'.",
           "enumValues": [
             "create",
             "edit"
@@ -2661,7 +2661,7 @@
       "category": "form",
       "tier": "organisms",
       "family": "core",
-      "description": "Alias for form — Complete form with fields and actions",
+      "description": "Alias for form \u2014 Complete form with fields and actions",
       "suggestedFor": [
         "create forms",
         "edit forms",
@@ -2735,7 +2735,7 @@
           "types": [
             "string"
           ],
-          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'.",
+          "description": "Form mode \u2014 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'.",
           "enumValues": [
             "create",
             "edit"
@@ -3654,7 +3654,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — orthogonal to the semantic variant.",
+          "description": "Layer 2 visual treatment \u2014 orthogonal to the semantic variant.",
           "enumValues": [
             "toolbar",
             "chips",
@@ -3833,7 +3833,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative tab change event — emits UI:{tabChangeEvent} with { tabId }",
+          "description": "Declarative tab change event \u2014 emits UI:{tabChangeEvent} with { tabId }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -4050,7 +4050,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative step click event — emits UI:{stepClickEvent} with { stepIndex }",
+          "description": "Declarative step click event \u2014 emits UI:{stepClickEvent} with { stepIndex }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -4138,7 +4138,7 @@
           "types": [
             "string"
           ],
-          "description": "Event to emit on Back click — emits UI:{onBack} with { currentStep, totalSteps }",
+          "description": "Event to emit on Back click \u2014 emits UI:{onBack} with { currentStep, totalSteps }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -4158,7 +4158,7 @@
           "types": [
             "string"
           ],
-          "description": "Event to emit on Next click — emits UI:{onNext} with { currentStep, totalSteps }",
+          "description": "Event to emit on Next click \u2014 emits UI:{onNext} with { currentStep, totalSteps }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -4178,7 +4178,7 @@
           "types": [
             "string"
           ],
-          "description": "Event to emit on Complete click — emits UI:{onComplete} with { currentStep, totalSteps }",
+          "description": "Event to emit on Complete click \u2014 emits UI:{onComplete} with { currentStep, totalSteps }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -5038,7 +5038,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative page change event — emits UI:{pageChangeEvent} with { page }",
+          "description": "Declarative page change event \u2014 emits UI:{pageChangeEvent} with { page }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -5052,7 +5052,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative page size change event — emits UI:{pageSizeChangeEvent} with { pageSize }",
+          "description": "Declarative page size change event \u2014 emits UI:{pageSizeChangeEvent} with { pageSize }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -5144,7 +5144,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative action event — emits UI:{actionEvent} via eventBus when action button is clicked",
+          "description": "Declarative action event \u2014 emits UI:{actionEvent} via eventBus when action button is clicked",
           "kind": "event-ref",
           "emitPayloadSchema": []
         },
@@ -5152,7 +5152,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — orthogonal to the semantic variant (which carries status color).",
+          "description": "Layer 2 visual treatment \u2014 orthogonal to the semantic variant (which carries status color).",
           "enumValues": [
             "illustrated",
             "icon-only",
@@ -5242,7 +5242,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative retry event — emits UI:{retryEvent} via eventBus when retry button is clicked",
+          "description": "Declarative retry event \u2014 emits UI:{retryEvent} via eventBus when retry button is clicked",
           "kind": "event-ref",
           "emitPayloadSchema": []
         }
@@ -5340,7 +5340,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative dismiss event — emits UI:{dismissEvent} via eventBus when toast is dismissed",
+          "description": "Declarative dismiss event \u2014 emits UI:{dismissEvent} via eventBus when toast is dismissed",
           "kind": "event-ref",
           "emitPayloadSchema": []
         },
@@ -5348,7 +5348,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative action event — emits UI:{actionEvent} via eventBus when action button is clicked",
+          "description": "Declarative action event \u2014 emits UI:{actionEvent} via eventBus when action button is clicked",
           "kind": "event-ref",
           "emitPayloadSchema": []
         }
@@ -5446,7 +5446,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative close event — emits UI:{closeEvent} via eventBus when modal should close",
+          "description": "Declarative close event \u2014 emits UI:{closeEvent} via eventBus when modal should close",
           "kind": "event-ref",
           "emitPayloadSchema": []
         },
@@ -5461,7 +5461,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — orthogonal to the semantic variant.",
+          "description": "Layer 2 visual treatment \u2014 orthogonal to the semantic variant.",
           "enumValues": [
             "centered-card",
             "top-sheet",
@@ -5575,7 +5575,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative close event — emits UI:{closeEvent} via eventBus when drawer should close",
+          "description": "Declarative close event \u2014 emits UI:{closeEvent} via eventBus when drawer should close",
           "kind": "event"
         }
       }
@@ -6121,7 +6121,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "description": "Declarative event name \u2014 emits UI:{action} via eventBus on click",
           "kind": "event"
         },
         "actionPayload": {
@@ -6135,7 +6135,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave",
+          "description": "Declarative hover event \u2014 emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave",
           "kind": "event"
         },
         "maxWidth": {
@@ -6674,7 +6674,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "description": "Declarative event name \u2014 emits UI:{action} via eventBus on click",
           "kind": "event"
         },
         "actionPayload": {
@@ -6758,7 +6758,7 @@
             "string",
             "number"
           ],
-          "description": "Badge label text (alternative to children for schema-driven rendering). Numeric values are auto-coerced to string for rendering — common case is unread counts, error counts, status codes, etc."
+          "description": "Badge label text (alternative to children for schema-driven rendering). Numeric values are auto-coerced to string for rendering \u2014 common case is unread counts, error counts, status codes, etc."
         },
         "icon": {
           "types": [
@@ -6771,7 +6771,7 @@
           "types": [
             "function"
           ],
-          "description": "When set, renders a small X button on the right of the badge that invokes this handler — turns the badge into a removable chip. Used by the TagInput molecule and other \"list of removable values\" surfaces.",
+          "description": "When set, renders a small X button on the right of the badge that invokes this handler \u2014 turns the badge into a removable chip. Used by the TagInput molecule and other \"list of removable values\" surfaces.",
           "kind": "callback",
           "callbackArgs": []
         },
@@ -6878,7 +6878,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "description": "Declarative event name \u2014 emits UI:{action} via eventBus on click",
           "kind": "event"
         },
         "actionPayload": {
@@ -6908,7 +6908,7 @@
             "icon",
             "string"
           ],
-          "description": "Lucide icon component (preferred for type-safe usage), OR a canonical kebab-case icon name string — a string is treated exactly like `name` so trait/factory authors can pass an icon by name through the `icon` prop."
+          "description": "Lucide icon component (preferred for type-safe usage), OR a canonical kebab-case icon name string \u2014 a string is treated exactly like `name` so trait/factory authors can pass an icon by name through the `icon` prop."
         },
         "name": {
           "types": [
@@ -7049,7 +7049,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — orthogonal to the semantic variant.",
+          "description": "Layer 2 visual treatment \u2014 orthogonal to the semantic variant.",
           "enumValues": [
             "elevated",
             "flat-bordered",
@@ -7821,7 +7821,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative dismiss event — emits UI:{dismissEvent} via eventBus when alert is dismissed",
+          "description": "Declarative dismiss event \u2014 emits UI:{dismissEvent} via eventBus when alert is dismissed",
           "kind": "event"
         }
       }
@@ -8207,7 +8207,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative toggle event — emits UI:{toggleEvent} with { itemId, isOpen }",
+          "description": "Declarative toggle event \u2014 emits UI:{toggleEvent} with { itemId, isOpen }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -8806,7 +8806,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "description": "Declarative event name \u2014 emits UI:{action} via eventBus on click",
           "kind": "event"
         }
       }
@@ -8967,7 +8967,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "description": "Declarative event name \u2014 emits UI:{action} via eventBus on click",
           "kind": "event"
         },
         "actionPayload": {
@@ -9064,14 +9064,14 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "description": "Declarative event name \u2014 emits UI:{action} via eventBus on click",
           "kind": "event"
         },
         "hoverEvent": {
           "types": [
             "string"
           ],
-          "description": "Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false }",
+          "description": "Declarative hover event \u2014 emits UI:{hoverEvent} with { hovered: true/false }",
           "kind": "event"
         }
       }
@@ -10106,7 +10106,7 @@
           "types": [
             "string"
           ],
-          "description": "Panel width as Tailwind class string. Default fills the viewport on mobile and snaps to `w-96` (384 px) at `sm:` and above so phones don't lose content to a fixed 384 px column. Consumers passing a custom value should include a `w-full` mobile fallback in the same string (e.g. `\"w-full sm:w-[480px]\"`) — Tailwind's JIT can't see dynamically-concatenated class names.",
+          "description": "Panel width as Tailwind class string. Default fills the viewport on mobile and snaps to `w-96` (384 px) at `sm:` and above so phones don't lose content to a fixed 384 px column. Consumers passing a custom value should include a `w-full` mobile fallback in the same string (e.g. `\"w-full sm:w-[480px]\"`) \u2014 Tailwind's JIT can't see dynamically-concatenated class names.",
           "default": "w-full sm:w-96"
         },
         "position": {
@@ -10137,7 +10137,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative close event — emits UI:{closeEvent} via eventBus when panel should close",
+          "description": "Declarative close event \u2014 emits UI:{closeEvent} via eventBus when panel should close",
           "kind": "event-ref",
           "emitPayloadSchema": []
         }
@@ -10567,7 +10567,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — orthogonal to the structural variant (which currently flips mobile vs desktop).",
+          "description": "Layer 2 visual treatment \u2014 orthogonal to the structural variant (which currently flips mobile vs desktop).",
           "enumValues": [
             "hero",
             "compact-bar",
@@ -11891,14 +11891,14 @@
           "types": [
             "boolean"
           ],
-          "description": "Show the top-bar search box. Default `false` — opt in by setting `searchEvent` (any truthy value implies showSearch) or this flag.",
+          "description": "Show the top-bar search box. Default `false` \u2014 opt in by setting `searchEvent` (any truthy value implies showSearch) or this flag.",
           "default": false
         },
         "searchEvent": {
           "types": [
             "string"
           ],
-          "description": "Declarative search event — fires `UI:{searchEvent}` on the bus when the user submits the search box (Enter key). Setting this implies `showSearch=true`. Use `onSearchSubmit` for direct React usage instead.",
+          "description": "Declarative search event \u2014 fires `UI:{searchEvent}` on the bus when the user submits the search box (Enter key). Setting this implies `showSearch=true`. Use `onSearchSubmit` for direct React usage instead.",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -11925,7 +11925,7 @@
           "types": [
             "array"
           ],
-          "description": "Generic top-bar action buttons rendered between the search bar and the notifications bell. Each entry: `{icon, label?, event, badge?, variant?}`. Domain-agnostic — consumers add a cart icon, profile button, help-bubble, or any other top-bar action by appending entries. Empty array (default) renders nothing.",
+          "description": "Generic top-bar action buttons rendered between the search bar and the notifications bell. Each entry: `{icon, label?, event, badge?, variant?}`. Domain-agnostic \u2014 consumers add a cart icon, profile button, help-bubble, or any other top-bar action by appending entries. Empty array (default) renders nothing.",
           "kind": "event-list",
           "eventField": "event",
           "items": {
@@ -12019,7 +12019,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative bell click event — fires `UI:{notificationClickEvent}` on the bus with an empty payload when the user clicks the bell.",
+          "description": "Declarative bell click event \u2014 fires `UI:{notificationClickEvent}` on the bus with an empty payload when the user clicks the bell.",
           "kind": "event-ref",
           "emitPayloadSchema": []
         },
@@ -12035,14 +12035,14 @@
           "types": [
             "boolean"
           ],
-          "description": "Show the theme toggle button in the header. Default `true` — universally useful for a11y / dark mode.",
+          "description": "Show the theme toggle button in the header. Default `true` \u2014 universally useful for a11y / dark mode.",
           "default": true
         },
         "sidebarFooter": {
           "types": [
             "node"
           ],
-          "description": "Custom sidebar footer (optional). When omitted, the sidebar has no footer — apps that need Settings/etc. add them via navItems."
+          "description": "Custom sidebar footer (optional). When omitted, the sidebar has no footer \u2014 apps that need Settings/etc. add them via navItems."
         },
         "currentPath": {
           "types": [
@@ -12234,7 +12234,7 @@
       "category": "game",
       "tier": "templates",
       "family": "game",
-      "description": "GameShell  A full-screen layout wrapper for game applications. Replaces DashboardLayout for game clients — no sidebar nav, just full-viewport rendering with an optional HUD overlay bar.  Used as a React Router layout route element: <Route element={<GameShell appName=\"TraitWars\" />}> <Route index element={<WorldMapPage />} /> ... </Route>",
+      "description": "GameShell  A full-screen layout wrapper for game applications. Replaces DashboardLayout for game clients \u2014 no sidebar nav, just full-viewport rendering with an optional HUD overlay bar.  Used as a React Router layout route element: <Route element={<GameShell appName=\"TraitWars\" />}> <Route index element={<WorldMapPage />} /> ... </Route>",
       "suggestedFor": [
         "game",
         "shell",
@@ -12333,7 +12333,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — drives the chart sub-renderer (bar / line / pie / etc.).",
+          "description": "Layer 2 visual treatment \u2014 drives the chart sub-renderer (bar / line / pie / etc.).",
           "enumValues": [
             "bar-vertical",
             "bar-horizontal",
@@ -12521,7 +12521,7 @@
           "types": [
             "boolean"
           ],
-          "description": "Format X-axis labels as time (ISO date in → \"Mar 2026\"-style label out)",
+          "description": "Format X-axis labels as time (ISO date in \u2192 \"Mar 2026\"-style label out)",
           "default": false
         },
         "drillEvent": {
@@ -14056,7 +14056,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct tile data — forwarded to BattleBoard; takes priority over entity.",
+          "description": "Direct tile data \u2014 forwarded to BattleBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -14128,7 +14128,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct unit data — forwarded to BattleBoard; takes priority over entity.",
+          "description": "Direct unit data \u2014 forwarded to BattleBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -14304,7 +14304,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct feature data — forwarded to BattleBoard; takes priority over entity.",
+          "description": "Direct feature data \u2014 forwarded to BattleBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -14367,7 +14367,7 @@
           "types": [
             "string"
           ],
-          "description": "Direct asset manifest — forwarded to BattleBoard; takes priority over entity."
+          "description": "Direct asset manifest \u2014 forwarded to BattleBoard; takes priority over entity."
         }
       }
     },
@@ -14408,7 +14408,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct tile data — forwarded to CastleBoard; takes priority over entity.",
+          "description": "Direct tile data \u2014 forwarded to CastleBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -14480,7 +14480,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct unit data — forwarded to CastleBoard; takes priority over entity.",
+          "description": "Direct unit data \u2014 forwarded to CastleBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -14656,7 +14656,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct feature data — forwarded to CastleBoard; takes priority over entity.",
+          "description": "Direct feature data \u2014 forwarded to CastleBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -14719,7 +14719,7 @@
           "types": [
             "string"
           ],
-          "description": "Direct asset manifest — forwarded to CastleBoard; takes priority over entity."
+          "description": "Direct asset manifest \u2014 forwarded to CastleBoard; takes priority over entity."
         }
       }
     },
@@ -14781,7 +14781,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct tile data — forwarded to WorldMapBoard; takes priority over entity.",
+          "description": "Direct tile data \u2014 forwarded to WorldMapBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -14853,7 +14853,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct unit data — forwarded to WorldMapBoard; takes priority over entity.",
+          "description": "Direct unit data \u2014 forwarded to WorldMapBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -15029,7 +15029,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct feature data — forwarded to WorldMapBoard; takes priority over entity.",
+          "description": "Direct feature data \u2014 forwarded to WorldMapBoard; takes priority over entity.",
           "items": {
             "types": [
               "object"
@@ -15092,7 +15092,7 @@
           "types": [
             "string"
           ],
-          "description": "Direct asset manifest — forwarded to WorldMapBoard; takes priority over entity."
+          "description": "Direct asset manifest \u2014 forwarded to WorldMapBoard; takes priority over entity."
         }
       }
     },
@@ -15121,7 +15121,7 @@
             "node",
             "function"
           ],
-          "description": "Fallback UI when an error is caught — ReactNode or render function"
+          "description": "Fallback UI when an error is caught \u2014 ReactNode or render function"
         },
         "className": {
           "types": [
@@ -15339,7 +15339,7 @@
           "types": [
             "function"
           ],
-          "description": "GAP-51: called with the new code on every keystroke when `editable === true`. Consumers should debounce + parse downstream — `CodeBlock` does not.",
+          "description": "GAP-51: called with the new code on every keystroke when `editable === true`. Consumers should debounce + parse downstream \u2014 `CodeBlock` does not.",
           "kind": "callback",
           "callbackArgs": [
             {
@@ -15352,14 +15352,14 @@
           "types": [
             "object"
           ],
-          "description": "GAP-80: line-level error/warning highlights for editable mode. Map of 1-based line number → severity. The overlay paints a colored background on each line: error = red, warning = yellow. Pass undefined (default) to disable. The consumer is responsible for computing the path → line map from the schema + validation results.",
+          "description": "GAP-80: line-level error/warning highlights for editable mode. Map of 1-based line number \u2192 severity. The overlay paints a colored background on each line: error = red, warning = yellow. Pass undefined (default) to disable. The consumer is responsible for computing the path \u2192 line map from the schema + validation results.",
           "nonAuthorable": true
         },
         "title": {
           "types": [
             "string"
           ],
-          "description": "── Viewer props (absorbed from CodeViewer / DocCodeBlock) ────────────────"
+          "description": "\u2500\u2500 Viewer props (absorbed from CodeViewer / DocCodeBlock) \u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500"
         },
         "mode": {
           "types": [
@@ -15419,13 +15419,13 @@
           "types": [
             "string"
           ],
-          "description": "Old source text — generates diff when combined with newValue"
+          "description": "Old source text \u2014 generates diff when combined with newValue"
         },
         "newValue": {
           "types": [
             "string"
           ],
-          "description": "New source text — generates diff when combined with oldValue"
+          "description": "New source text \u2014 generates diff when combined with oldValue"
         },
         "showLineNumbers": {
           "types": [
@@ -15595,7 +15595,7 @@
       "category": "component",
       "tier": "molecules",
       "family": "core",
-      "description": "MarkdownContent Molecule Component  Renders markdown content with support for GFM (GitHub Flavored Markdown), math equations (KaTeX), and raw HTML. Handles inline code only — fenced code blocks should be parsed out and rendered with CodeBlock component.  Event Contract: - No events emitted (display-only component) - entityAware: false  NOTE: react-markdown's `components` override API requires native HTML elements — this is the same library-boundary exception as `<iframe>` in DocumentViewer and `<svg>` in JazariStateMachine/StateMachineView.",
+      "description": "MarkdownContent Molecule Component  Renders markdown content with support for GFM (GitHub Flavored Markdown), math equations (KaTeX), and raw HTML. Handles inline code only \u2014 fenced code blocks should be parsed out and rendered with CodeBlock component.  Event Contract: - No events emitted (display-only component) - entityAware: false  NOTE: react-markdown's `components` override API requires native HTML elements \u2014 this is the same library-boundary exception as `<iframe>` in DocumentViewer and `<svg>` in JazariStateMachine/StateMachineView.",
       "suggestedFor": [
         "markdown",
         "content",
@@ -15747,7 +15747,7 @@
           "types": [
             "string"
           ],
-          "description": "Raw content string — auto-parsed into segments"
+          "description": "Raw content string \u2014 auto-parsed into segments"
         },
         "segments": {
           "types": [
@@ -15857,7 +15857,7 @@
           "types": [
             "object"
           ],
-          "description": "Full schema — extracts first trait's state machine",
+          "description": "Full schema \u2014 extracts first trait's state machine",
           "nonAuthorable": true
         },
         "trait": {
@@ -15967,7 +15967,7 @@
           "types": [
             "function"
           ],
-          "description": "Custom state node renderer — when provided, replaces the default circle nodes",
+          "description": "Custom state node renderer \u2014 when provided, replaces the default circle nodes",
           "kind": "callback",
           "callbackArgs": [
             {
@@ -16297,7 +16297,7 @@
             "number",
             "string"
           ],
-          "description": "Override the viewport-driven day window. `'auto'` (default) tracks `window.innerWidth` — 1 day on mobile, 3 on tablet, 7 on laptop+. Pass an explicit number to force a fixed window (useful for print layouts or screenshot tests).",
+          "description": "Override the viewport-driven day window. `'auto'` (default) tracks `window.innerWidth` \u2014 1 day on mobile, 3 on tablet, 7 on laptop+. Pass an explicit number to force a fixed window (useful for print layouts or screenshot tests).",
           "enumValues": [
             "auto"
           ],
@@ -16950,14 +16950,14 @@
           "types": [
             "boolean"
           ],
-          "description": "Mark this container as the DnD root for its subtree — descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
+          "description": "Mark this container as the DnD root for its subtree \u2014 descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
         },
         "entity": {
           "types": [
             "object",
             "array"
           ],
-          "description": "Schema entity data — the collection of rows to render. pattern-sync tags it `kind:\"entity\", cardinality:\"collection\"` so consumers bind the domain entity without name-matching the prop.",
+          "description": "Schema entity data \u2014 the collection of rows to render. pattern-sync tags it `kind:\"entity\", cardinality:\"collection\"` so consumers bind the domain entity without name-matching the prop.",
           "required": true,
           "kind": "entity",
           "cardinality": "collection"
@@ -16966,7 +16966,7 @@
           "types": [
             "array"
           ],
-          "description": "Field definitions for rendering each card. The pattern contract in `@almadar/patterns` documents `columns` as the wire-format alias the compiler emits — both names resolve to the same shape here. Pass either.",
+          "description": "Field definitions for rendering each card. The pattern contract in `@almadar/patterns` documents `columns` as the wire-format alias the compiler emits \u2014 both names resolve to the same shape here. Pass either.",
           "items": {
             "types": [
               "object"
@@ -17034,7 +17034,7 @@
           "types": [
             "array"
           ],
-          "description": "Alias for `fields` — the compiler emits `columns` for field defs.",
+          "description": "Alias for `fields` \u2014 the compiler emits `columns` for field defs.",
           "items": {
             "types": [
               "object"
@@ -17148,7 +17148,7 @@
           "types": [
             "number"
           ],
-          "description": "Max inline primary action buttons before the rest collapse into a \"⋯\" overflow menu. Omit = all inline."
+          "description": "Max inline primary action buttons before the rest collapse into a \"\u22ef\" overflow menu. Omit = all inline."
         },
         "scrollX": {
           "types": [
@@ -17323,7 +17323,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — mirrors the `entity-table` look enum so data-grid / data-list / entity-table share one knob name from authors.",
+          "description": "Layer 2 visual treatment \u2014 mirrors the `entity-table` look enum so data-grid / data-list / entity-table share one knob name from authors.",
           "enumValues": [
             "dense",
             "spacious",
@@ -17395,14 +17395,14 @@
           "types": [
             "boolean"
           ],
-          "description": "Mark this container as the DnD root for its subtree — descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
+          "description": "Mark this container as the DnD root for its subtree \u2014 descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
         },
         "entity": {
           "types": [
             "object",
             "array"
           ],
-          "description": "Schema entity data — the collection of rows to render.",
+          "description": "Schema entity data \u2014 the collection of rows to render.",
           "required": true,
           "kind": "entity",
           "cardinality": "collection"
@@ -17411,7 +17411,7 @@
           "types": [
             "array"
           ],
-          "description": "Field definitions for rendering each row. The pattern contract in `@almadar/patterns` documents `columns` as the wire-format alias the compiler emits — both names resolve to the same shape here. Pass either.",
+          "description": "Field definitions for rendering each row. The pattern contract in `@almadar/patterns` documents `columns` as the wire-format alias the compiler emits \u2014 both names resolve to the same shape here. Pass either.",
           "items": {
             "types": [
               "object"
@@ -17469,7 +17469,7 @@
           "types": [
             "array"
           ],
-          "description": "Alias for `fields` — the compiler emits `columns` for field defs.",
+          "description": "Alias for `fields` \u2014 the compiler emits `columns` for field defs.",
           "items": {
             "types": [
               "object"
@@ -17573,7 +17573,7 @@
           "types": [
             "number"
           ],
-          "description": "Max inline action buttons before the rest collapse into a \"⋯\" overflow menu. Omit = all inline."
+          "description": "Max inline action buttons before the rest collapse into a \"\u22ef\" overflow menu. Omit = all inline."
         },
         "itemClickEvent": {
           "types": [
@@ -17840,7 +17840,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — mirrors the `entity-table` look enum so data-grid / data-list / entity-table share one knob name from authors.",
+          "description": "Layer 2 visual treatment \u2014 mirrors the `entity-table` look enum so data-grid / data-list / entity-table share one knob name from authors.",
           "enumValues": [
             "dense",
             "spacious",
@@ -19445,7 +19445,7 @@
           "types": [
             "number"
           ],
-          "description": "Signed delta vs previous period. >0 renders ↑ green, <0 renders ↓ red, 0 hides. Polarity reversal via `trendPolarity`."
+          "description": "Signed delta vs previous period. >0 renders \u2191 green, <0 renders \u2193 red, 0 hides. Polarity reversal via `trendPolarity`."
         },
         "trendPolarity": {
           "types": [
@@ -19462,7 +19462,7 @@
           "types": [
             "string"
           ],
-          "description": "When `'percent'`, renders trend with a `%` suffix (e.g. `↓ 3.3%`); default is `'absolute'`.",
+          "description": "When `'percent'`, renders trend with a `%` suffix (e.g. `\u2193 3.3%`); default is `'absolute'`.",
           "enumValues": [
             "absolute",
             "percent"
@@ -19490,7 +19490,7 @@
           "types": [
             "string"
           ],
-          "description": "Prefix prepended to the formatted value (e.g. \"≈ \")."
+          "description": "Prefix prepended to the formatted value (e.g. \"\u2248 \")."
         },
         "suffix": {
           "types": [
@@ -22974,7 +22974,7 @@
             "boolean",
             "object"
           ],
-          "description": "Enable Suspense boundaries around each slot. When true, each inline slot is wrapped in `<ErrorBoundary><Suspense>` with Skeleton fallbacks. Opt-in — existing isLoading prop pattern still works.",
+          "description": "Enable Suspense boundaries around each slot. When true, each inline slot is wrapped in `<ErrorBoundary><Suspense>` with Skeleton fallbacks. Opt-in \u2014 existing isLoading prop pattern still works.",
           "properties": {
             "enabled": {
               "types": [
@@ -23003,7 +23003,7 @@
       "category": "component",
       "tier": "atoms",
       "family": "core",
-      "description": "TraitFrame — renders the current frame of a referenced trait.  Resolves the `@trait.X[.slot]` binding at render time by looking up the referenced trait's last `render-ui` payload from the orbital's `UISlotManager`. Re-renders automatically when that trait transitions via the per-trait subscription channel (`subscribeTrait`).  This is the single rendering primitive both runtime paths converge on:  - **Interpreted path** — the trait-binding resolver in `renderer/trait-binding-resolver.ts` walks pattern trees at render time, substituting `\"@trait.X\"` string children with this component. - **Compiled path** — the TypeScript shell codegen in `orbital-shell-typescript/src/backend.rs::pattern_to_jsx_with_data` emits this component directly into generated JSX wherever a `@trait.*` string appears in a pattern tree.  Embedding is passive: the referenced trait's state machine runs unchanged; TraitFrame is only a read-only lens on its current frame. Event propagation happens over the shared event bus, not through this component.",
+      "description": "TraitFrame \u2014 renders the current frame of a referenced trait.  Resolves the `@trait.X[.slot]` binding at render time by looking up the referenced trait's last `render-ui` payload from the orbital's `UISlotManager`. Re-renders automatically when that trait transitions via the per-trait subscription channel (`subscribeTrait`).  This is the single rendering primitive both runtime paths converge on:  - **Interpreted path** \u2014 the trait-binding resolver in `renderer/trait-binding-resolver.ts` walks pattern trees at render time, substituting `\"@trait.X\"` string children with this component. - **Compiled path** \u2014 the TypeScript shell codegen in `orbital-shell-typescript/src/backend.rs::pattern_to_jsx_with_data` emits this component directly into generated JSX wherever a `@trait.*` string appears in a pattern tree.  Embedding is passive: the referenced trait's state machine runs unchanged; TraitFrame is only a read-only lens on its current frame. Event propagation happens over the shared event bus, not through this component.",
       "suggestedFor": [
         "trait",
         "frame",
@@ -23199,7 +23199,7 @@
           "types": [
             "function"
           ],
-          "description": "Called when the user clicks the remove (×) button",
+          "description": "Called when the user clicks the remove (\u00d7) button",
           "kind": "callback",
           "callbackArgs": []
         },
@@ -23207,7 +23207,7 @@
           "types": [
             "boolean"
           ],
-          "description": "Disable the remove button (renders without × control)",
+          "description": "Disable the remove button (renders without \u00d7 control)",
           "default": true
         },
         "onClick": {
@@ -23236,7 +23236,7 @@
           "types": [
             "string"
           ],
-          "description": "Event name dispatched via event bus when the remove (×) button is clicked. Payload: { label }",
+          "description": "Event name dispatched via event bus when the remove (\u00d7) button is clicked. Payload: { label }",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -24092,7 +24092,7 @@
             "object",
             "array"
           ],
-          "description": "Initial block payload — the rows that orb-bound traits emit. Items missing id/type are normalized into paragraph blocks at mount.",
+          "description": "Initial block payload \u2014 the rows that orb-bound traits emit. Items missing id/type are normalized into paragraph blocks at mount.",
           "kind": "entity",
           "cardinality": "collection"
         },
@@ -24415,7 +24415,7 @@
           "types": [
             "object"
           ],
-          "description": "Selection constraint. Optional — defaults to single-select (the generic factory can't author a discriminated-union value; an author overrides it).",
+          "description": "Selection constraint. Optional \u2014 defaults to single-select (the generic factory can't author a discriminated-union value; an author overrides it).",
           "nonAuthorable": true,
           "properties": {
             "type": {
@@ -25625,7 +25625,7 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "description": "StateIndicator Component  Displays a visual indicator for a game entity's current state. Generic — not tied to any specific game. Projects can extend the state styles via the `stateStyles` prop.",
+      "description": "StateIndicator Component  Displays a visual indicator for a game entity's current state. Generic \u2014 not tied to any specific game. Projects can extend the state styles via the `stateStyles` prop.",
       "suggestedFor": [
         "state",
         "indicator",
@@ -28397,7 +28397,7 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "description": "CombatLog Component  Scrollable log of combat events with icons and colors. Generalized from Trait Wars — removed asset manifest coupling.",
+      "description": "CombatLog Component  Scrollable log of combat events with icons and colors. Generalized from Trait Wars \u2014 removed asset manifest coupling.",
       "suggestedFor": [
         "combat",
         "log",
@@ -29057,13 +29057,13 @@
           "types": [
             "string"
           ],
-          "description": "Event name emitted each tick with { dt, frame } — for closed-circuit .orb integration"
+          "description": "Event name emitted each tick with { dt, frame } \u2014 for closed-circuit .orb integration"
         },
         "drawEvent": {
           "types": [
             "string"
           ],
-          "description": "Event name emitted each draw frame with { frame } — for closed-circuit .orb integration"
+          "description": "Event name emitted each draw frame with { frame } \u2014 for closed-circuit .orb integration"
         },
         "fps": {
           "types": [
@@ -30696,7 +30696,7 @@
           "types": [
             "function"
           ],
-          "description": "--- Event handlers (legacy callbacks — prefer declarative event string props below) ---",
+          "description": "--- Event handlers (legacy callbacks \u2014 prefer declarative event string props below) ---",
           "kind": "callback",
           "callbackArgs": [
             {
@@ -31131,7 +31131,7 @@
           "types": [
             "boolean"
           ],
-          "description": "Whether there are active effects — keeps RAF loop alive",
+          "description": "Whether there are active effects \u2014 keeps RAF loop alive",
           "default": false
         },
         "assetBaseUrl": {
@@ -31990,7 +31990,7 @@
           "types": [
             "object"
           ],
-          "description": "Embedded orbital diagram — passed SEPARATELY (off the entity boundary).",
+          "description": "Embedded orbital diagram \u2014 passed SEPARATELY (off the entity boundary).",
           "nonAuthorable": true
         },
         "direction": {
@@ -32297,7 +32297,7 @@
             "object",
             "string"
           ],
-          "description": "Field name translation map — a BookFieldMap object or locale key (\"ar\")",
+          "description": "Field name translation map \u2014 a BookFieldMap object or locale key (\"ar\")",
           "properties": {
             "title": {
               "types": [
@@ -32504,7 +32504,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct tile data — takes priority over entity-derived tiles.",
+          "description": "Direct tile data \u2014 takes priority over entity-derived tiles.",
           "items": {
             "types": [
               "object"
@@ -32576,7 +32576,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct unit data — takes priority over entity-derived units.",
+          "description": "Direct unit data \u2014 takes priority over entity-derived units.",
           "items": {
             "types": [
               "object"
@@ -32752,7 +32752,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct feature data — takes priority over entity-derived features.",
+          "description": "Direct feature data \u2014 takes priority over entity-derived features.",
           "items": {
             "types": [
               "object"
@@ -32815,7 +32815,7 @@
           "types": [
             "object"
           ],
-          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "description": "Direct asset manifest \u2014 takes priority over entity-derived manifest.",
           "properties": {
             "baseUrl": {
               "types": [
@@ -34198,7 +34198,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct tile data — takes priority over entity-derived tiles.",
+          "description": "Direct tile data \u2014 takes priority over entity-derived tiles.",
           "items": {
             "types": [
               "object"
@@ -34270,7 +34270,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct unit data — takes priority over entity-derived units.",
+          "description": "Direct unit data \u2014 takes priority over entity-derived units.",
           "items": {
             "types": [
               "object"
@@ -34446,7 +34446,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct feature data — takes priority over entity-derived features.",
+          "description": "Direct feature data \u2014 takes priority over entity-derived features.",
           "items": {
             "types": [
               "object"
@@ -34509,7 +34509,7 @@
           "types": [
             "object"
           ],
-          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "description": "Direct asset manifest \u2014 takes priority over entity-derived manifest.",
           "properties": {
             "baseUrl": {
               "types": [
@@ -36313,7 +36313,7 @@
           "types": [
             "object"
           ],
-          "description": "Sound manifest — keys mapped to SoundEntry definitions",
+          "description": "Sound manifest \u2014 keys mapped to SoundEntry definitions",
           "required": true,
           "mapValue": {
             "types": [
@@ -36697,7 +36697,7 @@
           "types": [
             "object"
           ],
-          "description": "Category → color mapping",
+          "description": "Category \u2192 color mapping",
           "mapValue": {
             "types": [
               "object"
@@ -37339,7 +37339,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct tile data — takes priority over entity-derived tiles.",
+          "description": "Direct tile data \u2014 takes priority over entity-derived tiles.",
           "items": {
             "types": [
               "object"
@@ -37411,7 +37411,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct unit data — takes priority over entity-derived units.",
+          "description": "Direct unit data \u2014 takes priority over entity-derived units.",
           "items": {
             "types": [
               "object"
@@ -37587,7 +37587,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct feature data — takes priority over entity-derived features.",
+          "description": "Direct feature data \u2014 takes priority over entity-derived features.",
           "items": {
             "types": [
               "object"
@@ -37650,7 +37650,7 @@
           "types": [
             "string"
           ],
-          "description": "Direct asset manifest — takes priority over entity-derived manifest."
+          "description": "Direct asset manifest \u2014 takes priority over entity-derived manifest."
         }
       }
     },
@@ -37724,7 +37724,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct tile data — takes priority over entity-derived tiles.",
+          "description": "Direct tile data \u2014 takes priority over entity-derived tiles.",
           "items": {
             "types": [
               "object"
@@ -37796,7 +37796,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct unit data — takes priority over entity-derived units.",
+          "description": "Direct unit data \u2014 takes priority over entity-derived units.",
           "items": {
             "types": [
               "object"
@@ -37972,7 +37972,7 @@
           "types": [
             "array"
           ],
-          "description": "Direct feature data — takes priority over entity-derived features.",
+          "description": "Direct feature data \u2014 takes priority over entity-derived features.",
           "items": {
             "types": [
               "object"
@@ -38035,7 +38035,7 @@
           "types": [
             "object"
           ],
-          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "description": "Direct asset manifest \u2014 takes priority over entity-derived manifest.",
           "properties": {
             "baseUrl": {
               "types": [
@@ -38804,7 +38804,7 @@
       "category": "game",
       "tier": "organisms",
       "family": "game",
-      "description": "SimulationCanvas  Self-contained 2D physics canvas for educational presets. Runs its own Euler integration loop — no external physics hook needed.",
+      "description": "SimulationCanvas  Self-contained 2D physics canvas for educational presets. Runs its own Euler integration loop \u2014 no external physics hook needed.",
       "suggestedFor": [
         "simulation",
         "canvas",
@@ -40506,7 +40506,7 @@
           "types": [
             "object"
           ],
-          "description": "Category → color mapping",
+          "description": "Category \u2192 color mapping",
           "mapValue": {
             "types": [
               "object"
@@ -40811,7 +40811,7 @@
           "types": [
             "object"
           ],
-          "description": "Category → color mapping",
+          "description": "Category \u2192 color mapping",
           "mapValue": {
             "types": [
               "object"
@@ -40853,7 +40853,7 @@
           "types": [
             "array"
           ],
-          "description": "The current sequence (sparse — undefined means empty slot)",
+          "description": "The current sequence (sparse \u2014 undefined means empty slot)",
           "required": true,
           "items": {
             "types": [
@@ -41147,7 +41147,7 @@
           "types": [
             "object"
           ],
-          "description": "Category → color mapping",
+          "description": "Category \u2192 color mapping",
           "mapValue": {
             "types": [
               "object"
@@ -41324,7 +41324,7 @@
             "object",
             "array"
           ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `availableActions` / `maxSlots` / `solutions` etc. off the row. `availableActions` carries `SlotItemData[]` (a UI drag-DTO, not entity data — it holds a non-FieldValue `stateMachine` member).",
+          "description": "Puzzle board-state entity (single row or array). The board reads `availableActions` / `maxSlots` / `solutions` etc. off the row. `availableActions` carries `SlotItemData[]` (a UI drag-DTO, not entity data \u2014 it holds a non-FieldValue `stateMachine` member).",
           "kind": "entity",
           "cardinality": "collection"
         },
@@ -41332,7 +41332,7 @@
           "types": [
             "object"
           ],
-          "description": "Category → color mapping",
+          "description": "Category \u2192 color mapping",
           "mapValue": {
             "types": [
               "object"
@@ -41918,7 +41918,7 @@
     "feature-renderer": {
       "type": "feature-renderer",
       "category": "game",
-      "tier": "molecules",
+      "tier": "organisms",
       "family": "game",
       "description": "FeatureRenderer component",
       "suggestedFor": [
@@ -42641,7 +42641,7 @@
           "types": [
             "string"
           ],
-          "description": "Stroke color. `auto` (default): success when the series trends up (last ≥ first), error when it trends down.",
+          "description": "Stroke color. `auto` (default): success when the series trends up (last \u2265 first), error when it trends down.",
           "enumValues": [
             "auto",
             "primary",
@@ -42719,7 +42719,7 @@
           "types": [
             "string"
           ],
-          "description": "Event name emitted as `UI:{event}` with payload `{ from, to }`. Optional — when omitted, only the `onChange` callback fires.",
+          "description": "Event name emitted as `UI:{event}` with payload `{ from, to }`. Optional \u2014 when omitted, only the `onChange` callback fires.",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -42915,7 +42915,7 @@
           "types": [
             "string"
           ],
-          "description": "Placeholder for the entry input. Default: `\"Type and press Enter…\"`."
+          "description": "Placeholder for the entry input. Default: `\"Type and press Enter\u2026\"`."
         },
         "disabled": {
           "types": [
@@ -43139,14 +43139,14 @@
           "types": [
             "boolean"
           ],
-          "description": "Mark this container as the DnD root for its subtree — descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
+          "description": "Mark this container as the DnD root for its subtree \u2014 descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
         },
         "entity": {
           "types": [
             "object",
             "array"
           ],
-          "description": "Schema entity data — the collection of rows to render.",
+          "description": "Schema entity data \u2014 the collection of rows to render.",
           "required": true,
           "kind": "entity",
           "cardinality": "collection"
@@ -43381,7 +43381,7 @@
           "types": [
             "number"
           ],
-          "description": "Max inline action buttons before the rest collapse into a \"⋯\" overflow menu. Omit = all inline."
+          "description": "Max inline action buttons before the rest collapse into a \"\u22ef\" overflow menu. Omit = all inline."
         },
         "selectable": {
           "types": [
@@ -43535,7 +43535,7 @@
           "types": [
             "string"
           ],
-          "description": "Layer 2 visual treatment — mirrors the data-list / entity-table look enum so authors share one knob name across row renderers.",
+          "description": "Layer 2 visual treatment \u2014 mirrors the data-list / entity-table look enum so authors share one knob name across row renderers.",
           "enumValues": [
             "dense",
             "spacious",
@@ -43778,6 +43778,11 @@
               "elevation": {
                 "types": [
                   "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
                 ]
               }
             },
@@ -44233,6 +44238,11 @@
                     "types": [
                       "number"
                     ]
+                  },
+                  "modelUrl": {
+                    "types": [
+                      "asset"
+                    ]
                   }
                 },
                 "required": [
@@ -44593,6 +44603,11 @@
                   "elevation": {
                     "types": [
                       "number"
+                    ]
+                  },
+                  "modelUrl": {
+                    "types": [
+                      "asset"
                     ]
                   }
                 },
