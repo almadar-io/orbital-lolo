@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-17T02:56:15.601Z",
+  "exportedAt": "2026-06-17T08:23:54.917Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -41918,7 +41918,7 @@
     "feature-renderer": {
       "type": "feature-renderer",
       "category": "game",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "game",
       "description": "FeatureRenderer component",
       "suggestedFor": [
@@ -43669,6 +43669,1808 @@
             "string"
           ],
           "description": "Additional class names"
+        }
+      }
+    },
+    "game-canvas-3d": {
+      "type": "game-canvas-3d",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "description": "Props for GameCanvas3D component",
+      "suggestedFor": [
+        "game",
+        "canvas3",
+        "game canvas3 d"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "--- Closed-circuit props (MANDATORY) ---"
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "Children to render inside the 3D canvas (e.g., physics objects, custom meshes)"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "string"
+          ],
+          "description": "Error state"
+        },
+        "entity": {
+          "types": [
+            "string"
+          ],
+          "description": "Entity name for schema-driven auto-fetch"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Array of tiles to render",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "default": []
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Array of units to render",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "default": []
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Array of features to render",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          },
+          "default": []
+        },
+        "events": {
+          "types": [
+            "array"
+          ],
+          "description": "Array of events to display",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "message": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "x"
+            ]
+          },
+          "default": []
+        },
+        "fogOfWar": {
+          "types": [
+            "array"
+          ],
+          "description": "Fog of war data",
+          "items": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "boolean"
+              ]
+            }
+          }
+        },
+        "orientation": {
+          "types": [
+            "string"
+          ],
+          "description": "Map orientation",
+          "enumValues": [
+            "standard",
+            "rotated"
+          ],
+          "default": "standard"
+        },
+        "cameraMode": {
+          "types": [
+            "string"
+          ],
+          "description": "Camera mode",
+          "enumValues": [
+            "isometric",
+            "perspective",
+            "top-down"
+          ],
+          "default": "isometric"
+        },
+        "showGrid": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show grid",
+          "default": true
+        },
+        "showCoordinates": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show coordinates overlay",
+          "default": false
+        },
+        "showTileInfo": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show tile information",
+          "default": false
+        },
+        "overlay": {
+          "types": [
+            "string"
+          ],
+          "description": "Overlay control mode",
+          "enumValues": [
+            "default",
+            "hidden",
+            "minimap"
+          ],
+          "default": "default"
+        },
+        "shadows": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable shadows",
+          "default": true
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Background color",
+          "default": "#1a1a2e"
+        },
+        "onTileClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Callback when a tile is clicked",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "tile",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "z": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "terrain": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "type": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "terrainSprite": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "passable": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "movementCost": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "tileType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "elevation": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              }
+            },
+            {
+              "name": "event",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "onUnitClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Callback when a unit is clicked",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "unit",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "position": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "x": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "y": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ]
+                  },
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "z": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "sprite": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "unitType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "heroId": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "team": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "neutral"
+                    ]
+                  },
+                  "faction": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "neutral"
+                    ]
+                  },
+                  "health": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "maxHealth": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "traits": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "name": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "currentState": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "states": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "string"
+                            ]
+                          }
+                        },
+                        "cooldown": {
+                          "types": [
+                            "number"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "currentState",
+                        "states",
+                        "cooldown"
+                      ]
+                    }
+                  },
+                  "previousPosition": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "x": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "y": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
+                    ]
+                  },
+                  "elevation": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            },
+            {
+              "name": "event",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "onFeatureClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Callback when a feature is clicked",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "feature",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "z": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "type": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "sprite": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "assetUrl": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "elevation": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "type"
+                ]
+              }
+            },
+            {
+              "name": "event",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "onCanvasClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Callback when canvas is clicked (background)",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "event",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "onTileHover": {
+          "types": [
+            "function"
+          ],
+          "description": "Callback when mouse moves over a tile",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "tile",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "z": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "terrain": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "type": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "terrainSprite": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "passable": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "movementCost": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "tileType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "elevation": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              }
+            },
+            {
+              "name": "event",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "onUnitAnimation": {
+          "types": [
+            "function"
+          ],
+          "description": "Callback for unit animation state change",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "unitId",
+              "type": "string"
+            },
+            {
+              "name": "state",
+              "type": "string"
+            }
+          ]
+        },
+        "assetLoader": {
+          "types": [
+            "object"
+          ],
+          "description": "Asset loader instance (uses global singleton if not provided)"
+        },
+        "tileRenderer": {
+          "types": [
+            "object"
+          ],
+          "description": "Custom tile renderer component"
+        },
+        "unitRenderer": {
+          "types": [
+            "object"
+          ],
+          "description": "Custom unit renderer component"
+        },
+        "featureRenderer": {
+          "types": [
+            "object"
+          ],
+          "description": "Custom feature renderer component"
+        },
+        "preloadAssets": {
+          "types": [
+            "array"
+          ],
+          "description": "URLs to preload",
+          "items": {
+            "types": [
+              "string"
+            ]
+          },
+          "default": []
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "tileId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "z",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "terrain",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "elevation",
+              "type": "number",
+              "required": false
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "z",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "unitType",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "name",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "team",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "faction",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "health",
+              "type": "number",
+              "required": false
+            },
+            {
+              "name": "maxHealth",
+              "type": "number",
+              "required": false
+            }
+          ]
+        },
+        "featureClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: feature click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "featureId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "z",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "elevation",
+              "type": "number",
+              "required": false
+            }
+          ]
+        },
+        "canvasClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: canvas click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "clientX",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "clientY",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "button",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "tileHoverEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: tile hover",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "tileId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "z",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "required": false
+            }
+          ]
+        },
+        "tileLeaveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: tile leave",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "unitAnimationEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: unit animation",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "state",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "timestamp",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "cameraChangeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: camera change",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "position",
+              "type": "object",
+              "required": true
+            },
+            {
+              "name": "timestamp",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "loadingMessage": {
+          "types": [
+            "string"
+          ],
+          "description": "Loading message",
+          "default": "Loading 3D Scene..."
+        },
+        "useInstancing": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether to use instancing for tiles",
+          "default": true
+        },
+        "validMoves": {
+          "types": [
+            "array"
+          ],
+          "description": "Valid move positions",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ]
+          },
+          "default": []
+        },
+        "attackTargets": {
+          "types": [
+            "array"
+          ],
+          "description": "Attack target positions",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ]
+          },
+          "default": []
+        },
+        "selectedTileIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Selected tile IDs",
+          "items": {
+            "types": [
+              "string"
+            ]
+          },
+          "default": []
+        },
+        "selectedUnitId": {
+          "types": [
+            "string"
+          ],
+          "description": "Selected unit ID",
+          "default": null
+        }
+      }
+    },
+    "game-canvas-3d-battle-template": {
+      "type": "game-canvas-3d-battle-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "GameCanvas3DBattleTemplate  Pure declarative template wrapper for 3D battle scenes. Optimized for tactical combat view with turn indicators.  Page: Battle3DPage Entity: Battle3D ViewType: detail  Events Emitted: - TILE_SELECTED - When a tile is clicked - UNIT_SELECTED - When a unit is clicked - UNIT_ATTACK - When attacking a unit - UNIT_MOVE - When moving a unit - END_TURN - When ending turn - EXIT_BATTLE - When exiting battle",
+      "suggestedFor": [
+        "game",
+        "canvas3",
+        "battle",
+        "template",
+        "game canvas3 d battle template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "External styling override"
+        },
+        "cameraMode": {
+          "types": [
+            "string"
+          ],
+          "description": "3D camera mode - defaults to perspective for dramatic effect",
+          "enumValues": [
+            "isometric",
+            "perspective",
+            "top-down"
+          ],
+          "default": "perspective"
+        },
+        "showGrid": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show grid helper",
+          "default": true
+        },
+        "shadows": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable shadows",
+          "default": true
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Background color - darker for battle atmosphere",
+          "default": "#2a1a1a"
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for tile clicks"
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for unit clicks"
+        },
+        "unitAttackEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for unit attack"
+        },
+        "unitMoveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for unit move"
+        },
+        "endTurnEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for ending turn"
+        },
+        "exitEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for exiting battle"
+        },
+        "selectedUnitId": {
+          "types": [
+            "string"
+          ],
+          "description": "Currently selected unit ID"
+        },
+        "validMoves": {
+          "types": [
+            "array"
+          ],
+          "description": "Valid move positions",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ]
+          }
+        },
+        "attackTargets": {
+          "types": [
+            "array"
+          ],
+          "description": "Valid attack targets",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ]
+          }
+        },
+        "showTurnIndicator": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show turn indicator overlay"
+        }
+      }
+    },
+    "game-canvas-3d-castle-template": {
+      "type": "game-canvas-3d-castle-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "GameCanvas3DCastleTemplate  Pure declarative template wrapper for 3D castle/settlement view. Shows castle layout with buildings and garrisoned units.  Page: Castle3DPage, Settlement3DPage Entity: Castle3D, Settlement3D ViewType: detail  Events Emitted: - BUILDING_SELECTED - When a building is clicked - UNIT_SELECTED - When a garrison unit is clicked - BUILD - When building/upgrading - RECRUIT - When recruiting units - EXIT - When exiting castle view",
+      "suggestedFor": [
+        "game",
+        "canvas3",
+        "castle",
+        "template",
+        "game canvas3 d castle template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "External styling override"
+        },
+        "cameraMode": {
+          "types": [
+            "string"
+          ],
+          "description": "3D camera mode",
+          "enumValues": [
+            "isometric",
+            "perspective",
+            "top-down"
+          ],
+          "default": "isometric"
+        },
+        "showGrid": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show grid helper",
+          "default": true
+        },
+        "shadows": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable shadows",
+          "default": true
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Background color",
+          "default": "#1e1e2e"
+        },
+        "buildingClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for building clicks"
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for unit clicks"
+        },
+        "buildEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for build action"
+        },
+        "recruitEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for recruit action"
+        },
+        "exitEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for exit"
+        },
+        "selectedBuildingId": {
+          "types": [
+            "string"
+          ],
+          "description": "Currently selected building ID"
+        },
+        "availableBuildSites": {
+          "types": [
+            "array"
+          ],
+          "description": "Available build positions",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ]
+          }
+        },
+        "showHeader": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show castle name header",
+          "default": true
+        },
+        "selectedTileIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Pre-computed selected tile IDs array",
+          "items": {
+            "types": [
+              "string"
+            ]
+          },
+          "default": []
+        }
+      }
+    },
+    "game-canvas-3d-world-map-template": {
+      "type": "game-canvas-3d-world-map-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "GameCanvas3DWorldMapTemplate  Pure declarative template wrapper for 3D world map. No hooks, no callbacks, no local state -- just entity data and config props.  Page: WorldMap3DPage Entity: WorldMap3D ViewType: detail  Events Emitted: - TILE_SELECTED - When a tile is clicked ({ tileId, x, z, type }) - UNIT_SELECTED - When a unit is clicked ({ unitId, x, z, name }) - FEATURE_SELECTED - When a feature is clicked ({ featureId, x, z, type }) - TILE_HOVERED - When hovering over a tile ({ tileId, x, z }) - TILE_LEAVE - When leaving a tile ({}) - CAMERA_CHANGED - When camera position changes ({ position })",
+      "suggestedFor": [
+        "game",
+        "canvas3",
+        "world",
+        "map",
+        "template",
+        "game canvas3 d world map template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "External styling override"
+        },
+        "cameraMode": {
+          "types": [
+            "string"
+          ],
+          "description": "3D camera mode",
+          "enumValues": [
+            "isometric",
+            "perspective",
+            "top-down"
+          ],
+          "default": "isometric"
+        },
+        "showGrid": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show grid helper",
+          "default": true
+        },
+        "showCoordinates": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show coordinate overlay",
+          "default": true
+        },
+        "showTileInfo": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show tile info on hover",
+          "default": true
+        },
+        "shadows": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable shadows",
+          "default": true
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Background color",
+          "default": "#1a1a2e"
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for tile clicks"
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for unit clicks"
+        },
+        "featureClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for feature clicks"
+        },
+        "tileHoverEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for tile hover"
+        },
+        "tileLeaveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for tile leave"
+        },
+        "cameraChangeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for camera changes"
+        },
+        "exitEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Exit/back event name"
+        },
+        "selectedUnitId": {
+          "types": [
+            "string"
+          ],
+          "description": "Currently selected unit ID"
+        },
+        "validMoves": {
+          "types": [
+            "array"
+          ],
+          "description": "Valid move positions for selected unit",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ]
+          }
+        },
+        "attackTargets": {
+          "types": [
+            "array"
+          ],
+          "description": "Attack target positions",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "z"
+            ]
+          }
         }
       }
     }
