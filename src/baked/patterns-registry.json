@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-16T19:32:31.111Z",
+  "exportedAt": "2026-06-17T02:07:52.301Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -14086,6 +14086,323 @@
           ],
           "description": "Canvas render scale",
           "default": 0.45
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct tile data — forwarded to CastleBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct unit data — forwarded to CastleBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct feature data — forwarded to CastleBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Direct asset manifest — forwarded to CastleBoard; takes priority over entity."
         }
       }
     },
@@ -14142,6 +14459,323 @@
           ],
           "description": "Allow selecting / moving ALL heroes (including enemy). For testing.",
           "default": false
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct tile data — forwarded to WorldMapBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct unit data — forwarded to WorldMapBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct feature data — forwarded to WorldMapBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Direct asset manifest — forwarded to WorldMapBoard; takes priority over entity."
         }
       }
     },
@@ -24072,7 +24706,7 @@
             "asset"
           ],
           "description": "URL for the speaker portrait image",
-          "default": "https://almadar-kflow-assets.web.app/shared/characters/archetypes/00_base_model.png"
+          "default": "https://almadar-kflow-assets.web.app/shared/characters/archetypes/04_hero.png"
         },
         "position": {
           "types": [
@@ -28125,14 +28759,15 @@
           "types": [
             "asset"
           ],
-          "description": "Background image URL"
+          "description": "Background image URL",
+          "default": "https://almadar-kflow-assets.web.app/shared/scenes/resonators.jpeg"
         },
         "assetBaseUrl": {
           "types": [
             "asset"
           ],
           "description": "Base URL prefix for asset URLs",
-          "default": ""
+          "default": "https://almadar-kflow-assets.web.app/shared/"
         },
         "className": {
           "types": [
@@ -29873,7 +30508,8 @@
           "types": [
             "asset"
           ],
-          "description": "Background image URL tiled behind the isometric grid"
+          "description": "Background image URL tiled behind the isometric grid",
+          "default": "https://almadar-kflow-assets.web.app/shared/scenes/court.png"
         },
         "showMinimap": {
           "types": [
@@ -30185,7 +30821,8 @@
           "types": [
             "asset"
           ],
-          "description": "--- Remote asset loading ---"
+          "description": "--- Remote asset loading ---",
+          "default": "https://almadar-kflow-assets.web.app/shared/"
         },
         "assetManifest": {
           "types": [
@@ -30398,7 +31035,8 @@
           "types": [
             "asset"
           ],
-          "description": "Player sprite image URL"
+          "description": "Player sprite image URL",
+          "default": "https://almadar-kflow-assets.web.app/shared/platformer/characters/platformChar_idle.png"
         },
         "tileSprites": {
           "types": [
@@ -30415,14 +31053,15 @@
           "types": [
             "asset"
           ],
-          "description": "Background image URL"
+          "description": "Background image URL",
+          "default": "https://almadar-kflow-assets.web.app/shared/scenes/court.png"
         },
         "assetBaseUrl": {
           "types": [
             "asset"
           ],
           "description": "Base URL prefix for asset URLs",
-          "default": ""
+          "default": "https://almadar-kflow-assets.web.app/shared/platformer/"
         },
         "leftEvent": {
           "types": [
@@ -31544,6 +32183,370 @@
           "kind": "entity",
           "cardinality": "collection"
         },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct tile data — takes priority over entity-derived tiles.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct unit data — takes priority over entity-derived units.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct feature data — takes priority over entity-derived features.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "effects": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
+          }
+        },
         "scale": {
           "types": [
             "number"
@@ -32571,13 +33574,15 @@
           "types": [
             "asset"
           ],
-          "description": "--- Remote asset loading ---"
+          "description": "--- Remote asset loading ---",
+          "default": "https://almadar-kflow-assets.web.app/shared/effects/gas/gas00.png"
         },
         "assetBaseUrl": {
           "types": [
             "asset"
           ],
-          "description": "Base URL for remote assets. Prepended to relative effectSpriteUrl paths."
+          "description": "Base URL for remote assets. Prepended to relative effectSpriteUrl paths.",
+          "default": "https://almadar-kflow-assets.web.app/shared/effects/"
         },
         "assetManifest": {
           "types": [
@@ -32871,6 +33876,360 @@
           "description": "Castle board-state entity (single row or array). The board reads `tiles` / `features` / `units` arrays plus an `assetManifest` off it.",
           "kind": "entity",
           "cardinality": "collection"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct tile data — takes priority over entity-derived tiles.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct unit data — takes priority over entity-derived units.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct feature data — takes priority over entity-derived features.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
+          }
         },
         "scale": {
           "types": [
@@ -35726,6 +37085,360 @@
           "description": "World-map board-state entity (single row or array). The board reads `hexes` / `heroes` / `features` arrays + `selectedHeroId` off it.",
           "kind": "entity",
           "cardinality": "collection"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct tile data — takes priority over entity-derived tiles.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct unit data — takes priority over entity-derived units.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct feature data — takes priority over entity-derived features.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
+          }
         },
         "scale": {
           "types": [
