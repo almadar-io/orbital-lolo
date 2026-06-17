@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-17T02:07:52.301Z",
+  "exportedAt": "2026-06-17T02:56:15.601Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -14051,6 +14051,323 @@
           ],
           "description": "Unit draw-size multiplier",
           "default": 1
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct tile data — forwarded to BattleBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct unit data — forwarded to BattleBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct feature data — forwarded to BattleBoard; takes priority over entity.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Direct asset manifest — forwarded to BattleBoard; takes priority over entity."
         }
       }
     },
@@ -37017,6 +37334,323 @@
           "description": "Single board-state entity row (or array). The internal `useBattleState`",
           "kind": "entity",
           "cardinality": "collection"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct tile data — takes priority over entity-derived tiles.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct unit data — takes priority over entity-derived units.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct feature data — takes priority over entity-derived features.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Direct asset manifest — takes priority over entity-derived manifest."
         }
       }
     },
