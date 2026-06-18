@@ -1,0 +1,148 @@
+{
+  "name": "fetch-stream-test",
+  "version": "0.1.0",
+  "description": "Minimal test for the fetch-stream operator",
+  "orbitals": [
+    {
+      "name": "StreamOrbital",
+      "entity": {
+        "name": "StreamChunk",
+        "persistence": "runtime",
+        "fields": [
+          { "name": "id", "type": "string", "required": true },
+          { "name": "content", "type": "string" }
+        ]
+      },
+      "traits": [
+        {
+          "name": "StreamChunkStream",
+          "linkedEntity": "StreamChunk",
+          "emits": [
+            {
+              "event": "StreamChunkLoaded",
+              "scope": "internal",
+              "payloadSchema": [
+                { "name": "data", "type": "[StreamChunk]" },
+                { "name": "totalCount", "type": "number" }
+              ]
+            },
+            {
+              "event": "StreamChunkLoadFailed",
+              "scope": "internal",
+              "payloadSchema": [{ "name": "error", "type": "string" }]
+            },
+            {
+              "event": "CHUNK_RECEIVED",
+              "scope": "internal",
+              "payloadSchema": [{ "name": "chunk", "type": "object" }]
+            },
+            {
+              "event": "STREAM_DONE",
+              "scope": "internal",
+              "payloadSchema": [
+                { "name": "data", "type": "[StreamChunk]" }
+              ]
+            },
+            {
+              "event": "STREAM_FAILED",
+              "scope": "internal",
+              "payloadSchema": [{ "name": "error", "type": "string" }]
+            },
+            {
+              "event": "VIEW",
+              "scope": "external",
+              "payloadSchema": [
+                { "name": "id", "type": "string", "required": true }
+              ]
+            }
+          ],
+          "stateMachine": {
+            "states": [
+              { "name": "loading", "isInitial": true },
+              { "name": "idle" },
+              { "name": "streaming" }
+            ],
+            "events": [
+              { "key": "INIT" },
+              {
+                "key": "StreamChunkLoaded",
+                "payloadSchema": [
+                  { "name": "data", "type": "[StreamChunk]" },
+                  { "name": "totalCount", "type": "number" }
+                ]
+              },
+              { "key": "StreamChunkLoadFailed" },
+              { "key": "START_STREAM" },
+              { "key": "VIEW" },
+              { "key": "CHUNK_RECEIVED" },
+              { "key": "STREAM_DONE" },
+              { "key": "STREAM_FAILED" }
+            ],
+            "transitions": [
+              {
+                "from": "loading",
+                "to": "idle",
+                "event": "INIT",
+                "effects": [
+                  ["fetch", "StreamChunk", { "emit": { "success": "StreamChunkLoaded", "failure": "StreamChunkLoadFailed" } }]
+                ]
+              },
+              {
+                "from": "idle",
+                "to": "idle",
+                "event": "StreamChunkLoaded",
+                "effects": [
+                  ["render-ui", "main", {
+                    "type": "data-grid",
+                    "entity": "@payload.data",
+                    "fields": [{ "name": "content", "label": "Content" }],
+                    "itemActions": [{ "label": "View", "event": "VIEW" }]
+                  }]
+                ],
+                "payloadSchema": [
+                  { "name": "data", "type": "[StreamChunk]" },
+                  { "name": "totalCount", "type": "number" }
+                ]
+              },
+              {
+                "from": "idle",
+                "to": "idle",
+                "event": "VIEW"
+              },
+              {
+                "from": "idle",
+                "to": "streaming",
+                "event": "START_STREAM",
+                "effects": [
+                  ["fetch-stream", "StreamChunk", { "emit": { "on_message": "CHUNK_RECEIVED", "success": "STREAM_DONE", "failure": "STREAM_FAILED" } }]
+                ]
+              },
+              {
+                "from": "streaming",
+                "to": "streaming",
+                "event": "CHUNK_RECEIVED"
+              },
+              {
+                "from": "streaming",
+                "to": "idle",
+                "event": "STREAM_DONE"
+              },
+              {
+                "from": "streaming",
+                "to": "idle",
+                "event": "STREAM_FAILED"
+              }
+            ]
+          }
+        }
+      ],
+      "pages": [
+        {
+          "name": "StreamPage",
+          "path": "/stream",
+          "traits": [{ "ref": "StreamChunkStream" }]
+        }
+      ]
+    }
+  ]
+}

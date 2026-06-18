@@ -1,0 +1,27 @@
+orbital StreamOrbital {
+  entity StreamChunk [persistent: chunks] {
+    id : string!
+    content : string
+  }
+  trait StreamTrait -> StreamChunk [interaction] {
+    emits CHUNK_RECEIVED { chunk: any }
+    emits STREAM_DONE { data: any }
+    emits STREAM_FAILED { error: string }
+    state idle {
+      INIT -> idle
+        (fetch StreamChunk { emit: { success: STREAM_DONE, failure: STREAM_FAILED } })
+        (render-ui main { type: entity-table, entity: @payload.data, fields: [] })
+      START_STREAM -> streaming
+        (fetch-stream StreamChunk { emit: { on_message: CHUNK_RECEIVED, success: STREAM_DONE, failure: STREAM_FAILED } })
+    }
+    state streaming {
+      INIT -> streaming
+        (render-ui main { type: entity-table, entity: @payload.data, fields: [] })
+      CHUNK_RECEIVED -> streaming
+        (render-ui main { type: entity-table, entity: @payload.chunk, fields: [] })
+      STREAM_DONE -> idle
+      STREAM_FAILED -> idle
+    }
+  }
+  page "/stream" as StreamPage -> StreamTrait
+}
