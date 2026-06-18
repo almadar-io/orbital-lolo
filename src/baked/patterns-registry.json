@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-18T10:28:38.516Z",
+  "exportedAt": "2026-06-18T22:45:03.741Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -14275,6 +14275,11 @@
                   "object"
                 ]
               },
+              "modelUrl": {
+                "types": [
+                  "object"
+                ]
+              },
               "unitType": {
                 "types": [
                   "string"
@@ -14628,6 +14633,11 @@
                 ]
               },
               "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "modelUrl": {
                 "types": [
                   "object"
                 ]
@@ -15006,6 +15016,11 @@
                 ]
               },
               "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "modelUrl": {
                 "types": [
                   "object"
                 ]
@@ -30533,6 +30548,11 @@
                   "asset"
                 ]
               },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
               "unitType": {
                 "types": [
                   "string"
@@ -31062,6 +31082,11 @@
                     ]
                   },
                   "sprite": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "modelUrl": {
                     "types": [
                       "asset"
                     ]
@@ -32739,6 +32764,11 @@
                 ]
               },
               "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
                 "types": [
                   "asset"
                 ]
@@ -34442,6 +34472,11 @@
                   "asset"
                 ]
               },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
               "unitType": {
                 "types": [
                   "string"
@@ -34819,6 +34854,11 @@
                           "asset"
                         ]
                       },
+                      "modelUrl": {
+                        "types": [
+                          "asset"
+                        ]
+                      },
                       "unitType": {
                         "types": [
                           "string"
@@ -35165,6 +35205,11 @@
                         ]
                       },
                       "sprite": {
+                        "types": [
+                          "asset"
+                        ]
+                      },
+                      "modelUrl": {
                         "types": [
                           "asset"
                         ]
@@ -35519,6 +35564,11 @@
                           "asset"
                         ]
                       },
+                      "modelUrl": {
+                        "types": [
+                          "asset"
+                        ]
+                      },
                       "unitType": {
                         "types": [
                           "string"
@@ -35869,6 +35919,11 @@
                           "asset"
                         ]
                       },
+                      "modelUrl": {
+                        "types": [
+                          "asset"
+                        ]
+                      },
                       "unitType": {
                         "types": [
                           "string"
@@ -36202,6 +36257,11 @@
                     ]
                   },
                   "sprite": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "modelUrl": {
                     "types": [
                       "asset"
                     ]
@@ -37589,6 +37649,11 @@
                   "object"
                 ]
               },
+              "modelUrl": {
+                "types": [
+                  "object"
+                ]
+              },
               "unitType": {
                 "types": [
                   "string"
@@ -37975,6 +38040,11 @@
                 ]
               },
               "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
                 "types": [
                   "asset"
                 ]
@@ -43980,6 +44050,11 @@
                   "object"
                 ]
               },
+              "modelUrl": {
+                "types": [
+                  "object"
+                ]
+              },
               "unitType": {
                 "types": [
                   "string"
@@ -44384,10 +44459,36 @@
             },
             {
               "name": "event",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "clientX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "clientY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "button": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "clientX",
+                  "clientY",
+                  "button"
+                ]
+              }
             }
-          ],
-          "nonEmittable": true
+          ]
         },
         "onUnitClick": {
           "types": [
@@ -44446,6 +44547,11 @@
                     ]
                   },
                   "sprite": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "modelUrl": {
                     "types": [
                       "object"
                     ]
@@ -44572,10 +44678,36 @@
             },
             {
               "name": "event",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "clientX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "clientY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "button": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "clientX",
+                  "clientY",
+                  "button"
+                ]
+              }
             }
-          ],
-          "nonEmittable": true
+          ]
         },
         "onFeatureClick": {
           "types": [
@@ -44647,10 +44779,36 @@
             },
             {
               "name": "event",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "clientX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "clientY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "button": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "clientX",
+                  "clientY",
+                  "button"
+                ]
+              }
             }
-          ],
-          "nonEmittable": true
+          ]
         },
         "onCanvasClick": {
           "types": [
@@ -44661,10 +44819,36 @@
           "callbackArgs": [
             {
               "name": "event",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "clientX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "clientY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "button": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "clientX",
+                  "clientY",
+                  "button"
+                ]
+              }
             }
-          ],
-          "nonEmittable": true
+          ]
         },
         "onTileHover": {
           "types": [
@@ -44750,10 +44934,36 @@
             },
             {
               "name": "event",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "clientX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "clientY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "button": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "clientX",
+                  "clientY",
+                  "button"
+                ]
+              }
             }
-          ],
-          "nonEmittable": true
+          ]
         },
         "onUnitAnimation": {
           "types": [
@@ -45621,6 +45831,385 @@
               "z"
             ]
           }
+        }
+      }
+    },
+    "activation-block": {
+      "type": "activation-block",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "ActivationBlock component",
+      "suggestedFor": [
+        "activation",
+        "block",
+        "activation block"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "question": {
+          "types": [
+            "string"
+          ],
+          "description": "The prior-knowledge question",
+          "required": true
+        },
+        "savedResponse": {
+          "types": [
+            "string"
+          ],
+          "description": "Pre-filled response from saved state"
+        },
+        "saveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name emitted on save/skip (as `UI:<saveEvent>`). Defaults to 'SAVE_ACTIVATION'.",
+          "default": "SAVE_ACTIVATION"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "bloom-quiz-block": {
+      "type": "bloom-quiz-block",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "BloomQuizBlock component",
+      "suggestedFor": [
+        "bloom",
+        "quiz",
+        "block",
+        "bloom quiz block"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "level": {
+          "types": [
+            "string"
+          ],
+          "description": "level prop",
+          "required": true,
+          "enumValues": [
+            "remember",
+            "understand",
+            "apply",
+            "analyze",
+            "evaluate",
+            "create"
+          ]
+        },
+        "question": {
+          "types": [
+            "string"
+          ],
+          "description": "question prop",
+          "required": true
+        },
+        "answer": {
+          "types": [
+            "string"
+          ],
+          "description": "answer prop",
+          "required": true
+        },
+        "index": {
+          "types": [
+            "number"
+          ],
+          "description": "Zero-based index (used in the emitted event payload)"
+        },
+        "isAnswered": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether the learner has already answered"
+        },
+        "answerEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name emitted on first reveal (as `UI:<answerEvent>`). Defaults to 'ANSWER_BLOOM'.",
+          "default": "ANSWER_BLOOM"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "connection-block": {
+      "type": "connection-block",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "ConnectionBlock component",
+      "suggestedFor": [
+        "connection",
+        "block",
+        "connection block"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "content": {
+          "types": [
+            "string"
+          ],
+          "description": "Markdown content summarising what the learner already knows",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "reflection-block": {
+      "type": "reflection-block",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "ReflectionBlock component",
+      "suggestedFor": [
+        "reflection",
+        "block",
+        "reflection block"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "prompt": {
+          "types": [
+            "string"
+          ],
+          "description": "The reflection prompt",
+          "required": true
+        },
+        "index": {
+          "types": [
+            "number"
+          ],
+          "description": "Zero-based index of this block (used in the emitted event payload)",
+          "required": true
+        },
+        "savedNote": {
+          "types": [
+            "string"
+          ],
+          "description": "Pre-filled note from saved state"
+        },
+        "saveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name emitted on save (as `UI:<saveEvent>`). Defaults to 'SAVE_REFLECTION'.",
+          "default": "SAVE_REFLECTION"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "code-runner-panel": {
+      "type": "code-runner-panel",
+      "category": "display",
+      "tier": "organisms",
+      "family": "core",
+      "description": "CodeRunnerPanel component",
+      "suggestedFor": [
+        "code",
+        "runner",
+        "panel",
+        "code runner panel"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "code": {
+          "types": [
+            "string"
+          ],
+          "description": "Initial code content",
+          "required": true
+        },
+        "language": {
+          "types": [
+            "string"
+          ],
+          "description": "Programming language for syntax highlighting",
+          "required": true
+        },
+        "runnable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether the panel allows running (false = read-only code block)",
+          "default": true
+        },
+        "onRun": {
+          "types": [
+            "function"
+          ],
+          "description": "Simulate executing the code. Omit to render a read-only block. Real execution is a separate future track — this callback supplies deterministic simulated output for UI feedback.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "code",
+              "type": "string"
+            }
+          ],
+          "renderCallback": true
+        },
+        "runEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name to emit on run (emitted as `UI:<runEvent>`). Defaults to 'RUN_CODE'.",
+          "default": "RUN_CODE"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "segment-renderer": {
+      "type": "segment-renderer",
+      "category": "display",
+      "tier": "organisms",
+      "family": "core",
+      "description": "SegmentRenderer component",
+      "suggestedFor": [
+        "segment",
+        "renderer",
+        "segment renderer"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "segments": {
+          "types": [
+            "array"
+          ],
+          "description": "Parsed lesson segments (see `parseLessonSegments`)",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "unknown"
+                ]
+              },
+              "content": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "content"
+            ]
+          }
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes for the root container"
+        },
+        "containerClassName": {
+          "types": [
+            "string"
+          ],
+          "description": "CSS classes for the outer wrapping div"
+        },
+        "userProgress": {
+          "types": [
+            "object"
+          ],
+          "description": "User progress for restoring activation/reflection state",
+          "properties": {
+            "activationResponse": {
+              "types": [
+                "string"
+              ]
+            },
+            "reflectionNotes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "bloomAnswered": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            }
+          }
+        },
+        "onRunCodeSimulation": {
+          "types": [
+            "function"
+          ],
+          "description": "Simulate executing runnable code blocks. Omit to render runnable blocks as read-only. Real execution is a future track.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "code",
+              "type": "string"
+            },
+            {
+              "name": "language",
+              "type": "string"
+            }
+          ],
+          "renderCallback": true
+        },
+        "onRenderVisualization": {
+          "types": [
+            "function"
+          ],
+          "description": "Optional render slot for `visualization` segment types. When not provided, visualization segments are silently skipped. Callers can wire this to any custom component or orbital generator.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "type",
+              "type": "string"
+            },
+            {
+              "name": "description",
+              "type": "string"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            }
+          ],
+          "renderCallback": true
         }
       }
     }
