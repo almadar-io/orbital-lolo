@@ -1,0 +1,196 @@
+orbital ChatOrbital {
+  entity ChatMessage [persistent: chatmessages] {
+    id      : string!
+    text    : string
+    role    : "user" | "assistant" = user
+    sentAt  : string
+  }
+
+  type ChatMessageSent      = Event { id: string }
+  type ChatMessageSendFailed = Event { error: string }
+  type ChatMessageLoaded    = Event { data: [ChatMessage] }
+  type ChatMessageLoadFailed = Event { error: string }
+
+  trait ChatMessageChat -> ChatMessage [interaction, collection] {
+    initial: loading
+
+    state loading {
+      INIT -> loading
+        (fetch ChatMessage { emit: { success: ChatMessageLoaded, failure: ChatMessageLoadFailed } })
+        (render-ui main {
+          align: center
+          children: [{ type: spinner }, {
+            color: muted
+            content: "Loading messages…"
+            type: typography
+            variant: caption
+          }]
+          className: py-12
+          direction: vertical
+          gap: md
+          type: stack
+        })
+      ChatMessageLoaded -> idle
+        (render-ui main {
+          children: [{
+            align: center
+            children: [{
+              content: "Chat"
+              type: typography
+              variant: h2
+            }]
+            direction: horizontal
+            gap: sm
+            justify: between
+            type: stack
+          }, { type: divider }, {
+            entity: ?data
+            fields: []
+            renderItem: (fn item {
+              children: [{
+                label: @item.role
+                type: badge
+              }, {
+                content: @item.text
+                type: typography
+                variant: body
+              }]
+              direction: horizontal
+              gap: sm
+              type: stack
+            })
+            type: data-list
+          }, {
+            cancelEvent: CANCEL
+            fields: (text)
+            mode: create
+            submitEvent: SEND
+            type: form-section
+          }]
+          direction: vertical
+          gap: lg
+          type: stack
+        })
+      ChatMessageLoadFailed -> error
+        (render-ui main {
+          align: center
+          children: [{
+            color: error
+            name: alert-triangle
+            type: icon
+          }, {
+            content: "Failed to load messages"
+            type: typography
+            variant: h3
+          }, {
+            action: INIT
+            icon: rotate-ccw
+            label: Retry
+            type: button
+            variant: primary
+          }]
+          className: py-12
+          direction: vertical
+          gap: md
+          type: stack
+        })
+    }
+
+    state idle {
+      SEND -> sending
+        (send-server CHAT_MESSAGE { text: @payload.text })
+        (persist create ChatMessage {
+          text: @payload.text
+          role: user
+          sentAt: @now
+        } {
+          emit: { failure: ChatMessageSendFailed, success: ChatMessageSent }
+        })
+        (render-ui main {
+          align: center
+          children: [{ type: spinner }, {
+            color: muted
+            content: "Sending…"
+            type: typography
+            variant: caption
+          }]
+          className: py-12
+          direction: vertical
+          gap: md
+          type: stack
+        })
+      CANCEL -> loading
+        (fetch ChatMessage { emit: { success: ChatMessageLoaded, failure: ChatMessageLoadFailed } })
+        (render-ui main { type: spinner })
+    }
+
+    state sending {
+      ChatMessageSent -> loading
+        (fetch ChatMessage { emit: { success: ChatMessageLoaded, failure: ChatMessageLoadFailed } })
+        (render-ui main { type: spinner })
+      ChatMessageSendFailed -> error
+        (render-ui main {
+          align: center
+          children: [{
+            color: error
+            name: alert-triangle
+            type: icon
+          }, {
+            content: "Failed to send"
+            type: typography
+            variant: h3
+          }, {
+            color: muted
+            content: ?error
+            type: typography
+            variant: body
+          }, {
+            action: INIT
+            icon: rotate-ccw
+            label: Retry
+            type: button
+            variant: primary
+          }]
+          className: py-12
+          direction: vertical
+          gap: md
+          type: stack
+        })
+    }
+
+    state error {
+      INIT -> loading
+        (fetch ChatMessage { emit: { success: ChatMessageLoaded, failure: ChatMessageLoadFailed } })
+        (render-ui main { type: spinner })
+    }
+
+    emits {
+      ChatMessageLoaded { data: [ChatMessage] }
+        @description "Fires when chat messages finish loading."
+        @synonyms "loaded, fetched"
+        @tier "essential"
+      ChatMessageLoadFailed { error: string }
+        @description "Fires when loading messages fails."
+        @synonyms "error, failure"
+        @tier "internal"
+      ChatMessageSent { id: string }
+        @description "Fires when a message is persisted."
+        @synonyms "sent, saved, created"
+        @tier "essential"
+      ChatMessageSendFailed { error: string }
+        @description "Fires when sending a message fails."
+        @synonyms "error, failure"
+        @tier "internal"
+      SEND { text: string! }
+        @description "User submits a chat message."
+        @synonyms "send, submit, post"
+        @tier "essential"
+      CANCEL { }
+        @description "User cancels composing a message."
+        @synonyms "cancel, dismiss"
+        @tier "essential"
+    }
+  }
+
+  page "/chat" -> ChatMessageChat
+}

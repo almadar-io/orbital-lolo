@@ -1,0 +1,535 @@
+{
+  "name": "ChatOrbital",
+  "orbitals": [
+    {
+      "name": "ChatOrbital",
+      "entity": {
+        "name": "ChatMessage",
+        "collection": "chatmessages",
+        "persistence": "persistent",
+        "fields": [
+          {
+            "name": "id",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "text",
+            "type": "string"
+          },
+          {
+            "name": "role",
+            "type": "string",
+            "default": "user",
+            "values": [
+              "user",
+              "assistant"
+            ]
+          },
+          {
+            "name": "sentAt",
+            "type": "string"
+          }
+        ]
+      },
+      "traits": [
+        {
+          "name": "ChatMessageChat",
+          "category": "interaction",
+          "linkedEntity": "ChatMessage",
+          "emits": [
+            {
+              "event": "ChatMessageLoaded",
+              "description": "Fires when chat messages finish loading.",
+              "synonyms": "loaded, fetched",
+              "tier": "essential",
+              "payloadSchema": [
+                {
+                  "name": "data",
+                  "type": "[ChatMessage]"
+                }
+              ]
+            },
+            {
+              "event": "ChatMessageLoadFailed",
+              "description": "Fires when loading messages fails.",
+              "synonyms": "error, failure",
+              "tier": "internal",
+              "payloadSchema": [
+                {
+                  "name": "error",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "event": "ChatMessageSent",
+              "description": "Fires when a message is persisted.",
+              "synonyms": "sent, saved, created",
+              "tier": "essential",
+              "payloadSchema": [
+                {
+                  "name": "id",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "event": "ChatMessageSendFailed",
+              "description": "Fires when sending a message fails.",
+              "synonyms": "error, failure",
+              "tier": "internal",
+              "payloadSchema": [
+                {
+                  "name": "error",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "event": "SEND",
+              "description": "User submits a chat message.",
+              "synonyms": "send, submit, post",
+              "tier": "essential",
+              "payloadSchema": [
+                {
+                  "name": "text",
+                  "type": "string",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "event": "CANCEL",
+              "description": "User cancels composing a message.",
+              "synonyms": "cancel, dismiss",
+              "tier": "essential"
+            }
+          ],
+          "stateMachine": {
+            "states": [
+              {
+                "name": "loading",
+                "isInitial": true
+              },
+              {
+                "name": "idle"
+              },
+              {
+                "name": "sending"
+              },
+              {
+                "name": "error"
+              }
+            ],
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              },
+              {
+                "key": "ChatMessageLoaded",
+                "name": "ChatMessage loaded",
+                "description": "Fires when chat messages finish loading.",
+                "synonyms": "loaded, fetched",
+                "tier": "essential",
+                "payloadSchema": [
+                  {
+                    "name": "data",
+                    "type": "[ChatMessage]"
+                  }
+                ]
+              },
+              {
+                "key": "ChatMessageLoadFailed",
+                "name": "ChatMessage load failed",
+                "description": "Fires when loading messages fails.",
+                "synonyms": "error, failure",
+                "tier": "internal",
+                "payloadSchema": [
+                  {
+                    "name": "error",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "key": "SEND",
+                "name": "Send",
+                "description": "User submits a chat message.",
+                "synonyms": "send, submit, post",
+                "tier": "essential",
+                "payloadSchema": [
+                  {
+                    "name": "text",
+                    "type": "string",
+                    "required": true
+                  }
+                ]
+              },
+              {
+                "key": "CANCEL",
+                "name": "Cancel",
+                "description": "User cancels composing a message.",
+                "synonyms": "cancel, dismiss",
+                "tier": "essential"
+              },
+              {
+                "key": "ChatMessageSent",
+                "name": "ChatMessage sent",
+                "description": "Fires when a message is persisted.",
+                "synonyms": "sent, saved, created",
+                "tier": "essential",
+                "payloadSchema": [
+                  {
+                    "name": "id",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "key": "ChatMessageSendFailed",
+                "name": "ChatMessage send failed",
+                "description": "Fires when sending a message fails.",
+                "synonyms": "error, failure",
+                "tier": "internal",
+                "payloadSchema": [
+                  {
+                    "name": "error",
+                    "type": "string"
+                  }
+                ]
+              }
+            ],
+            "transitions": [
+              {
+                "from": "loading",
+                "to": "loading",
+                "event": "INIT",
+                "effects": [
+                  [
+                    "fetch",
+                    "ChatMessage",
+                    {
+                      "emit": {
+                        "success": "ChatMessageLoaded",
+                        "failure": "ChatMessageLoadFailed"
+                      }
+                    }
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "className": "py-12",
+                      "align": "center",
+                      "children": [
+                        {
+                          "type": "spinner"
+                        },
+                        {
+                          "type": "typography",
+                          "color": "muted",
+                          "content": "Loading messages…",
+                          "variant": "caption"
+                        }
+                      ],
+                      "direction": "vertical",
+                      "gap": "md",
+                      "type": "stack"
+                    }
+                  ]
+                ]
+              },
+              {
+                "from": "loading",
+                "to": "idle",
+                "event": "ChatMessageLoaded",
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "gap": "lg",
+                      "type": "stack",
+                      "direction": "vertical",
+                      "children": [
+                        {
+                          "type": "stack",
+                          "direction": "horizontal",
+                          "children": [
+                            {
+                              "variant": "h2",
+                              "type": "typography",
+                              "content": "Chat"
+                            }
+                          ],
+                          "justify": "between",
+                          "align": "center",
+                          "gap": "sm"
+                        },
+                        {
+                          "type": "divider"
+                        },
+                        {
+                          "fields": [],
+                          "entity": "@payload.data",
+                          "renderItem": [
+                            "fn",
+                            "item",
+                            {
+                              "direction": "horizontal",
+                              "type": "stack",
+                              "gap": "sm",
+                              "children": [
+                                {
+                                  "type": "badge",
+                                  "label": "@item.role"
+                                },
+                                {
+                                  "variant": "body",
+                                  "content": "@item.text",
+                                  "type": "typography"
+                                }
+                              ]
+                            }
+                          ],
+                          "type": "data-list"
+                        },
+                        {
+                          "submitEvent": "SEND",
+                          "fields": [
+                            "text"
+                          ],
+                          "type": "form-section",
+                          "cancelEvent": "CANCEL",
+                          "mode": "create"
+                        }
+                      ]
+                    }
+                  ]
+                ]
+              },
+              {
+                "from": "loading",
+                "to": "error",
+                "event": "ChatMessageLoadFailed",
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "className": "py-12",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "name": "alert-triangle",
+                          "color": "error"
+                        },
+                        {
+                          "content": "Failed to load messages",
+                          "variant": "h3",
+                          "type": "typography"
+                        },
+                        {
+                          "icon": "rotate-ccw",
+                          "label": "Retry",
+                          "variant": "primary",
+                          "action": "INIT",
+                          "type": "button"
+                        }
+                      ],
+                      "direction": "vertical",
+                      "gap": "md",
+                      "align": "center",
+                      "type": "stack"
+                    }
+                  ]
+                ]
+              },
+              {
+                "from": "idle",
+                "to": "sending",
+                "event": "SEND",
+                "effects": [
+                  [
+                    "send-server",
+                    "CHAT_MESSAGE",
+                    {
+                      "text": "@payload.text"
+                    }
+                  ],
+                  [
+                    "persist",
+                    "create",
+                    "ChatMessage",
+                    {
+                      "text": "@payload.text",
+                      "sentAt": "@now",
+                      "role": "user"
+                    },
+                    {
+                      "emit": {
+                        "failure": "ChatMessageSendFailed",
+                        "success": "ChatMessageSent"
+                      }
+                    }
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "align": "center",
+                      "children": [
+                        {
+                          "type": "spinner"
+                        },
+                        {
+                          "content": "Sending…",
+                          "color": "muted",
+                          "variant": "caption",
+                          "type": "typography"
+                        }
+                      ],
+                      "className": "py-12",
+                      "gap": "md",
+                      "direction": "vertical",
+                      "type": "stack"
+                    }
+                  ]
+                ]
+              },
+              {
+                "from": "idle",
+                "to": "loading",
+                "event": "CANCEL",
+                "effects": [
+                  [
+                    "fetch",
+                    "ChatMessage",
+                    {
+                      "emit": {
+                        "success": "ChatMessageLoaded",
+                        "failure": "ChatMessageLoadFailed"
+                      }
+                    }
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "type": "spinner"
+                    }
+                  ]
+                ]
+              },
+              {
+                "from": "sending",
+                "to": "loading",
+                "event": "ChatMessageSent",
+                "effects": [
+                  [
+                    "fetch",
+                    "ChatMessage",
+                    {
+                      "emit": {
+                        "failure": "ChatMessageLoadFailed",
+                        "success": "ChatMessageLoaded"
+                      }
+                    }
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "type": "spinner"
+                    }
+                  ]
+                ]
+              },
+              {
+                "from": "sending",
+                "to": "error",
+                "event": "ChatMessageSendFailed",
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "direction": "vertical",
+                      "children": [
+                        {
+                          "type": "icon",
+                          "name": "alert-triangle",
+                          "color": "error"
+                        },
+                        {
+                          "content": "Failed to send",
+                          "variant": "h3",
+                          "type": "typography"
+                        },
+                        {
+                          "color": "muted",
+                          "type": "typography",
+                          "variant": "body",
+                          "content": "@payload.error"
+                        },
+                        {
+                          "variant": "primary",
+                          "action": "INIT",
+                          "label": "Retry",
+                          "icon": "rotate-ccw",
+                          "type": "button"
+                        }
+                      ],
+                      "gap": "md",
+                      "type": "stack",
+                      "align": "center",
+                      "className": "py-12"
+                    }
+                  ]
+                ]
+              },
+              {
+                "from": "error",
+                "to": "loading",
+                "event": "INIT",
+                "effects": [
+                  [
+                    "fetch",
+                    "ChatMessage",
+                    {
+                      "emit": {
+                        "failure": "ChatMessageLoadFailed",
+                        "success": "ChatMessageLoaded"
+                      }
+                    }
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "type": "spinner"
+                    }
+                  ]
+                ]
+              }
+            ]
+          },
+          "scope": "collection"
+        }
+      ],
+      "pages": [
+        {
+          "name": "Chat",
+          "path": "/chat",
+          "traits": [
+            {
+              "ref": "ChatMessageChat"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
