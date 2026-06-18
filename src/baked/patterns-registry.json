@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-17T11:00:54.689Z",
+  "exportedAt": "2026-06-18T10:28:38.516Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -7067,6 +7067,12 @@
           ],
           "description": "Declarative event key emitted on click for trait dispatch",
           "kind": "event"
+        },
+        "loading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Shows a skeleton/spinner overlay while true."
         }
       }
     },
@@ -7215,6 +7221,12 @@
             "lg"
           ],
           "default": "md"
+        },
+        "overlay": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Renders a centered overlay backdrop instead of inline."
         }
       }
     },
@@ -7283,6 +7295,18 @@
             "select",
             "textarea"
           ]
+        },
+        "label": {
+          "types": [
+            "string"
+          ],
+          "description": "label prop"
+        },
+        "helperText": {
+          "types": [
+            "string"
+          ],
+          "description": "helperText prop"
         },
         "error": {
           "types": [
@@ -7443,8 +7467,7 @@
           "types": [
             "array"
           ],
-          "description": "Select options",
-          "required": true,
+          "description": "Select options (flat list)",
           "items": {
             "types": [
               "object"
@@ -7467,6 +7490,54 @@
             ]
           }
         },
+        "groups": {
+          "types": [
+            "array"
+          ],
+          "description": "Grouped options — rendered as <optgroup> in native mode, sections in rich mode.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "options": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "value": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "value",
+                    "label"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "label",
+              "options"
+            ]
+          }
+        },
         "placeholder": {
           "types": [
             "string"
@@ -7475,9 +7546,15 @@
         },
         "value": {
           "types": [
-            "string"
+            "string",
+            "array"
           ],
-          "description": "Current value"
+          "description": "Current value (string for single, string[] for multiple)",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "action": {
           "types": [
@@ -7492,12 +7569,37 @@
           ],
           "description": "Error message"
         },
+        "multiple": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Allow selecting multiple values — activates the rich dropdown."
+        },
+        "searchable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show a search input inside the dropdown — activates the rich dropdown."
+        },
+        "clearable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show a clear button when a value is selected."
+        },
         "onChange": {
           "types": [
             "function",
             "string"
           ],
-          "description": "onChange handler or declarative event key for trait dispatch"
+          "description": "onChange handler (native ChangeEvent) or declarative event key for trait dispatch"
+        },
+        "onValueChange": {
+          "types": [
+            "function",
+            "string"
+          ],
+          "description": "Value-based change: a React callback (internal use) OR a declarative event key that emits `{ value }` on the bus (render-ui / lolo authoring). Mirrors the `onChange` handler|event convention so it's an event-emitting prop, not a bare callback."
         }
       }
     },
@@ -8071,6 +8173,18 @@
             "string"
           ],
           "description": "Additional CSS classes"
+        },
+        "header": {
+          "types": [
+            "node"
+          ],
+          "description": "Optional slot rendered above the items."
+        },
+        "footer": {
+          "types": [
+            "node"
+          ],
+          "description": "Optional slot rendered below the items."
         }
       }
     },
@@ -44662,25 +44776,29 @@
           "types": [
             "object"
           ],
-          "description": "Asset loader instance (uses global singleton if not provided)"
+          "description": "Asset loader instance (uses global singleton if not provided)",
+          "nonAuthorable": true
         },
         "tileRenderer": {
           "types": [
             "object"
           ],
-          "description": "Custom tile renderer component"
+          "description": "Custom tile renderer component",
+          "nonAuthorable": true
         },
         "unitRenderer": {
           "types": [
             "object"
           ],
-          "description": "Custom unit renderer component"
+          "description": "Custom unit renderer component",
+          "nonAuthorable": true
         },
         "featureRenderer": {
           "types": [
             "object"
           ],
-          "description": "Custom feature renderer component"
+          "description": "Custom feature renderer component",
+          "nonAuthorable": true
         },
         "preloadAssets": {
           "types": [
