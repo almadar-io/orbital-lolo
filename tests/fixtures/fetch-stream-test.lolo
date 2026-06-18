@@ -1,27 +1,73 @@
 orbital StreamOrbital {
   entity StreamChunk [persistent: chunks] {
-    id : string!
+    id      : string!
     content : string
+    index   : number
   }
-  trait StreamTrait -> StreamChunk [interaction] {
-    emits CHUNK_RECEIVED { chunk: any }
-    emits STREAM_DONE { data: any }
-    emits STREAM_FAILED { error: string }
+
+  type StreamChunkLoaded = Event { data: [StreamChunk] }
+  type StreamChunkFailed = Event { error: string }
+  type ChunkReceived     = Event { chunk: StreamChunk }
+  type StreamLoaded      = Event { data: [StreamChunk] }
+  type StreamFailed      = Event { error: string }
+
+  trait StreamChunkStream -> StreamChunk [interaction] {
+    initial: loading
+    state loading {
+      INIT -> loading
+        (fetch StreamChunk { emit: { success: StreamChunkLoaded, failure: StreamChunkFailed } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Loading…" }] })
+      StreamChunkLoaded -> idle
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", children: [{ type: "typography", variant: "h3", content: "Chunks" }, { type: "data-grid", entity: "@payload.data", fields: [{ name: "content", label: "Content" }, { name: "index", label: "#" }], itemActions: [{ label: "View", event: "VIEW" }, { label: "Refresh Stream", event: "START_STREAM" }] }] })
+      StreamChunkFailed -> idle
+        (render-ui main { type: "alert", variant: "error", message: "@payload.error" })
+    }
     state idle {
-      INIT -> idle
-        (fetch StreamChunk { emit: { success: STREAM_DONE, failure: STREAM_FAILED } })
-        (render-ui main { type: entity-table, entity: @payload.data, fields: [] })
       START_STREAM -> streaming
-        (fetch-stream StreamChunk { emit: { on_message: CHUNK_RECEIVED, success: STREAM_DONE, failure: STREAM_FAILED } })
+        (fetch-stream StreamChunk { emit: { on_message: ChunkReceived, success: StreamLoaded, failure: StreamFailed } })
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", align: "center", className: "py-12", children: [{ type: "spinner" }, { type: "typography", variant: "caption", color: "muted", content: "Streaming…" }] })
+      VIEW -> idle
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", children: [{ type: "typography", variant: "h3", content: "Chunk Detail" }, { type: "data-grid", entity: "@entity", fields: [{ name: "content", label: "Content" }, { name: "index", label: "#" }], itemActions: [{ label: "View", event: "VIEW" }, { label: "Start Stream", event: "START_STREAM" }] }] })
     }
     state streaming {
-      INIT -> streaming
-        (render-ui main { type: entity-table, entity: @payload.data, fields: [] })
-      CHUNK_RECEIVED -> streaming
-        (render-ui main { type: entity-table, entity: @payload.chunk, fields: [] })
-      STREAM_DONE -> idle
-      STREAM_FAILED -> idle
+      ChunkReceived -> streaming
+        (render-ui main { type: "stack", direction: "vertical", gap: "sm", children: [{ type: "typography", variant: "caption", color: "muted", content: "Receiving chunks…" }, { type: "data-grid", entity: "@payload.chunk", fields: [{ name: "content", label: "Content" }, { name: "index", label: "#" }], itemActions: [{ label: "View", event: "VIEW" }] }] })
+      StreamLoaded -> idle
+        (render-ui main { type: "stack", direction: "vertical", gap: "md", children: [{ type: "typography", variant: "h3", content: "Stream Complete" }, { type: "data-grid", entity: "@payload.data", fields: [{ name: "content", label: "Content" }, { name: "index", label: "#" }], itemActions: [{ label: "View", event: "VIEW" }, { label: "Stream Again", event: "START_STREAM" }] }] })
+      StreamFailed -> idle
+        (render-ui main { type: "alert", variant: "error", message: "@payload.error" })
+    }
+    emits {
+      VIEW { id: string! }
+        @description "Signals a specific chunk has been selected for viewing."
+        @synonyms "select, open, inspect"
+        @tier "essential"
+      START_STREAM { }
+        @description "Triggers a new streaming fetch of chunks."
+        @synonyms "stream, start, begin, fetch-stream"
+        @tier "essential"
+      ChunkReceived { chunk: StreamChunk }
+        @description "Fires for each incoming chunk during streaming."
+        @synonyms "chunk, message, update"
+        @tier "essential"
+      StreamLoaded { data: [StreamChunk] }
+        @description "Fires when the stream completes with all chunks."
+        @synonyms "complete, done, finished, loaded"
+        @tier "essential"
+      StreamFailed { error: string }
+        @description "Fires when the stream fails."
+        @synonyms "error, failure, failed"
+        @tier "internal"
+      StreamChunkLoaded { data: [StreamChunk] }
+        @description "Fires when initial chunk fetch completes."
+        @synonyms "loaded, fetched, retrieved"
+        @tier "essential"
+      StreamChunkFailed { error: string }
+        @description "Fires when initial chunk fetch fails."
+        @synonyms "error, failure, failed"
+        @tier "internal"
     }
   }
-  page "/stream" as StreamPage -> StreamTrait
+
+  page "/stream" -> StreamChunkStream
 }

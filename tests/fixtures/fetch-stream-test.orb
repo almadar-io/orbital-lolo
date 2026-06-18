@@ -1,136 +1,530 @@
 {
-  "name": "fetch-stream-test",
-  "version": "0.1.0",
-  "description": "Minimal test for the fetch-stream operator",
+  "name": "StreamOrbital",
   "orbitals": [
     {
       "name": "StreamOrbital",
       "entity": {
         "name": "StreamChunk",
-        "persistence": "runtime",
+        "collection": "chunks",
+        "persistence": "persistent",
         "fields": [
-          { "name": "id", "type": "string", "required": true },
-          { "name": "content", "type": "string" }
+          {
+            "name": "id",
+            "type": "string",
+            "required": true
+          },
+          {
+            "name": "content",
+            "type": "string"
+          },
+          {
+            "name": "index",
+            "type": "number"
+          }
         ]
       },
       "traits": [
         {
           "name": "StreamChunkStream",
+          "category": "interaction",
           "linkedEntity": "StreamChunk",
           "emits": [
             {
-              "event": "StreamChunkLoaded",
-              "scope": "internal",
-              "payloadSchema": [
-                { "name": "data", "type": "[StreamChunk]" },
-                { "name": "totalCount", "type": "number" }
-              ]
-            },
-            {
-              "event": "StreamChunkLoadFailed",
-              "scope": "internal",
-              "payloadSchema": [{ "name": "error", "type": "string" }]
-            },
-            {
-              "event": "CHUNK_RECEIVED",
-              "scope": "internal",
-              "payloadSchema": [{ "name": "chunk", "type": "object" }]
-            },
-            {
-              "event": "STREAM_DONE",
-              "scope": "internal",
-              "payloadSchema": [
-                { "name": "data", "type": "[StreamChunk]" }
-              ]
-            },
-            {
-              "event": "STREAM_FAILED",
-              "scope": "internal",
-              "payloadSchema": [{ "name": "error", "type": "string" }]
-            },
-            {
               "event": "VIEW",
-              "scope": "external",
+              "description": "Signals a specific chunk has been selected for viewing.",
+              "synonyms": "select, open, inspect",
+              "tier": "essential",
               "payloadSchema": [
-                { "name": "id", "type": "string", "required": true }
+                {
+                  "name": "id",
+                  "type": "string",
+                  "required": true
+                }
+              ]
+            },
+            {
+              "event": "START_STREAM",
+              "description": "Triggers a new streaming fetch of chunks.",
+              "synonyms": "stream, start, begin, fetch-stream",
+              "tier": "essential"
+            },
+            {
+              "event": "ChunkReceived",
+              "description": "Fires for each incoming chunk during streaming.",
+              "synonyms": "chunk, message, update",
+              "tier": "essential",
+              "payloadSchema": [
+                {
+                  "name": "chunk",
+                  "type": "object",
+                  "properties": [
+                    {
+                      "name": "id",
+                      "type": "string",
+                      "required": true
+                    },
+                    {
+                      "name": "content",
+                      "type": "string"
+                    },
+                    {
+                      "name": "index",
+                      "type": "number"
+                    }
+                  ]
+                }
+              ]
+            },
+            {
+              "event": "StreamLoaded",
+              "description": "Fires when the stream completes with all chunks.",
+              "synonyms": "complete, done, finished, loaded",
+              "tier": "essential",
+              "payloadSchema": [
+                {
+                  "name": "data",
+                  "type": "[StreamChunk]"
+                }
+              ]
+            },
+            {
+              "event": "StreamFailed",
+              "description": "Fires when the stream fails.",
+              "synonyms": "error, failure, failed",
+              "tier": "internal",
+              "payloadSchema": [
+                {
+                  "name": "error",
+                  "type": "string"
+                }
+              ]
+            },
+            {
+              "event": "StreamChunkLoaded",
+              "description": "Fires when initial chunk fetch completes.",
+              "synonyms": "loaded, fetched, retrieved",
+              "tier": "essential",
+              "payloadSchema": [
+                {
+                  "name": "data",
+                  "type": "[StreamChunk]"
+                }
+              ]
+            },
+            {
+              "event": "StreamChunkFailed",
+              "description": "Fires when initial chunk fetch fails.",
+              "synonyms": "error, failure, failed",
+              "tier": "internal",
+              "payloadSchema": [
+                {
+                  "name": "error",
+                  "type": "string"
+                }
               ]
             }
           ],
           "stateMachine": {
             "states": [
-              { "name": "loading", "isInitial": true },
-              { "name": "idle" },
-              { "name": "streaming" }
+              {
+                "name": "loading",
+                "isInitial": true
+              },
+              {
+                "name": "idle"
+              },
+              {
+                "name": "streaming"
+              }
             ],
             "events": [
-              { "key": "INIT" },
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              },
               {
                 "key": "StreamChunkLoaded",
+                "name": "StreamChunk loaded",
+                "description": "Fires when initial chunk fetch completes.",
+                "synonyms": "loaded, fetched, retrieved",
+                "tier": "essential",
                 "payloadSchema": [
-                  { "name": "data", "type": "[StreamChunk]" },
-                  { "name": "totalCount", "type": "number" }
+                  {
+                    "name": "data",
+                    "type": "[StreamChunk]"
+                  }
                 ]
               },
-              { "key": "StreamChunkLoadFailed" },
-              { "key": "START_STREAM" },
-              { "key": "VIEW" },
-              { "key": "CHUNK_RECEIVED" },
-              { "key": "STREAM_DONE" },
-              { "key": "STREAM_FAILED" }
+              {
+                "key": "StreamChunkFailed",
+                "name": "StreamChunk failed",
+                "description": "Fires when initial chunk fetch fails.",
+                "synonyms": "error, failure, failed",
+                "tier": "internal",
+                "payloadSchema": [
+                  {
+                    "name": "error",
+                    "type": "string"
+                  }
+                ]
+              },
+              {
+                "key": "START_STREAM",
+                "name": "Start Stream",
+                "description": "Triggers a new streaming fetch of chunks.",
+                "synonyms": "stream, start, begin, fetch-stream",
+                "tier": "essential"
+              },
+              {
+                "key": "VIEW",
+                "name": "View",
+                "description": "Signals a specific chunk has been selected for viewing.",
+                "synonyms": "select, open, inspect",
+                "tier": "essential",
+                "payloadSchema": [
+                  {
+                    "name": "id",
+                    "type": "string",
+                    "required": true
+                  }
+                ]
+              },
+              {
+                "key": "ChunkReceived",
+                "name": "Chunk received",
+                "description": "Fires for each incoming chunk during streaming.",
+                "synonyms": "chunk, message, update",
+                "tier": "essential",
+                "payloadSchema": [
+                  {
+                    "name": "chunk",
+                    "type": "StreamChunk"
+                  }
+                ]
+              },
+              {
+                "key": "StreamLoaded",
+                "name": "Stream loaded",
+                "description": "Fires when the stream completes with all chunks.",
+                "synonyms": "complete, done, finished, loaded",
+                "tier": "essential",
+                "payloadSchema": [
+                  {
+                    "name": "data",
+                    "type": "[StreamChunk]"
+                  }
+                ]
+              },
+              {
+                "key": "StreamFailed",
+                "name": "Stream failed",
+                "description": "Fires when the stream fails.",
+                "synonyms": "error, failure, failed",
+                "tier": "internal",
+                "payloadSchema": [
+                  {
+                    "name": "error",
+                    "type": "string"
+                  }
+                ]
+              }
             ],
             "transitions": [
               {
                 "from": "loading",
-                "to": "idle",
+                "to": "loading",
                 "event": "INIT",
                 "effects": [
-                  ["fetch", "StreamChunk", { "emit": { "success": "StreamChunkLoaded", "failure": "StreamChunkLoadFailed" } }]
+                  [
+                    "fetch",
+                    "StreamChunk",
+                    {
+                      "emit": {
+                        "success": "StreamChunkLoaded",
+                        "failure": "StreamChunkFailed"
+                      }
+                    }
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "align": "center",
+                      "children": [
+                        {
+                          "type": "spinner"
+                        },
+                        {
+                          "variant": "caption",
+                          "type": "typography",
+                          "content": "Loading…",
+                          "color": "muted"
+                        }
+                      ],
+                      "className": "py-12",
+                      "direction": "vertical",
+                      "type": "stack",
+                      "gap": "md"
+                    }
+                  ]
                 ]
               },
               {
-                "from": "idle",
+                "from": "loading",
                 "to": "idle",
                 "event": "StreamChunkLoaded",
                 "effects": [
-                  ["render-ui", "main", {
-                    "type": "data-grid",
-                    "entity": "@payload.data",
-                    "fields": [{ "name": "content", "label": "Content" }],
-                    "itemActions": [{ "label": "View", "event": "VIEW" }]
-                  }]
-                ],
-                "payloadSchema": [
-                  { "name": "data", "type": "[StreamChunk]" },
-                  { "name": "totalCount", "type": "number" }
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "gap": "md",
+                      "direction": "vertical",
+                      "type": "stack",
+                      "children": [
+                        {
+                          "content": "Chunks",
+                          "variant": "h3",
+                          "type": "typography"
+                        },
+                        {
+                          "type": "data-grid",
+                          "entity": "@payload.data",
+                          "fields": [
+                            {
+                              "name": "content",
+                              "label": "Content"
+                            },
+                            {
+                              "label": "#",
+                              "name": "index"
+                            }
+                          ],
+                          "itemActions": [
+                            {
+                              "event": "VIEW",
+                              "label": "View"
+                            },
+                            {
+                              "event": "START_STREAM",
+                              "label": "Refresh Stream"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
                 ]
               },
               {
-                "from": "idle",
+                "from": "loading",
                 "to": "idle",
-                "event": "VIEW"
+                "event": "StreamChunkFailed",
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "message": "@payload.error",
+                      "type": "alert",
+                      "variant": "error"
+                    }
+                  ]
+                ]
               },
               {
                 "from": "idle",
                 "to": "streaming",
                 "event": "START_STREAM",
                 "effects": [
-                  ["fetch-stream", "StreamChunk", { "emit": { "on_message": "CHUNK_RECEIVED", "success": "STREAM_DONE", "failure": "STREAM_FAILED" } }]
+                  [
+                    "fetch-stream",
+                    "StreamChunk",
+                    {
+                      "emit": {
+                        "on_message": "ChunkReceived",
+                        "success": "StreamLoaded",
+                        "failure": "StreamFailed"
+                      }
+                    }
+                  ],
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "align": "center",
+                      "gap": "md",
+                      "className": "py-12",
+                      "direction": "vertical",
+                      "type": "stack",
+                      "children": [
+                        {
+                          "type": "spinner"
+                        },
+                        {
+                          "variant": "caption",
+                          "type": "typography",
+                          "color": "muted",
+                          "content": "Streaming…"
+                        }
+                      ]
+                    }
+                  ]
+                ]
+              },
+              {
+                "from": "idle",
+                "to": "idle",
+                "event": "VIEW",
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "children": [
+                        {
+                          "content": "Chunk Detail",
+                          "variant": "h3",
+                          "type": "typography"
+                        },
+                        {
+                          "type": "data-grid",
+                          "fields": [
+                            {
+                              "name": "content",
+                              "label": "Content"
+                            },
+                            {
+                              "name": "index",
+                              "label": "#"
+                            }
+                          ],
+                          "entity": "@entity",
+                          "itemActions": [
+                            {
+                              "label": "View",
+                              "event": "VIEW"
+                            },
+                            {
+                              "label": "Start Stream",
+                              "event": "START_STREAM"
+                            }
+                          ]
+                        }
+                      ],
+                      "type": "stack",
+                      "direction": "vertical",
+                      "gap": "md"
+                    }
+                  ]
                 ]
               },
               {
                 "from": "streaming",
                 "to": "streaming",
-                "event": "CHUNK_RECEIVED"
+                "event": "ChunkReceived",
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "direction": "vertical",
+                      "gap": "sm",
+                      "children": [
+                        {
+                          "type": "typography",
+                          "color": "muted",
+                          "variant": "caption",
+                          "content": "Receiving chunks…"
+                        },
+                        {
+                          "type": "data-grid",
+                          "fields": [
+                            {
+                              "name": "content",
+                              "label": "Content"
+                            },
+                            {
+                              "label": "#",
+                              "name": "index"
+                            }
+                          ],
+                          "itemActions": [
+                            {
+                              "label": "View",
+                              "event": "VIEW"
+                            }
+                          ],
+                          "entity": "@payload.chunk"
+                        }
+                      ],
+                      "type": "stack"
+                    }
+                  ]
+                ]
               },
               {
                 "from": "streaming",
                 "to": "idle",
-                "event": "STREAM_DONE"
+                "event": "StreamLoaded",
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "direction": "vertical",
+                      "gap": "md",
+                      "type": "stack",
+                      "children": [
+                        {
+                          "content": "Stream Complete",
+                          "type": "typography",
+                          "variant": "h3"
+                        },
+                        {
+                          "type": "data-grid",
+                          "entity": "@payload.data",
+                          "fields": [
+                            {
+                              "name": "content",
+                              "label": "Content"
+                            },
+                            {
+                              "name": "index",
+                              "label": "#"
+                            }
+                          ],
+                          "itemActions": [
+                            {
+                              "event": "VIEW",
+                              "label": "View"
+                            },
+                            {
+                              "label": "Stream Again",
+                              "event": "START_STREAM"
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                ]
               },
               {
                 "from": "streaming",
                 "to": "idle",
-                "event": "STREAM_FAILED"
+                "event": "StreamFailed",
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "message": "@payload.error",
+                      "type": "alert",
+                      "variant": "error"
+                    }
+                  ]
+                ]
               }
             ]
           }
@@ -138,9 +532,13 @@
       ],
       "pages": [
         {
-          "name": "StreamPage",
+          "name": "Stream",
           "path": "/stream",
-          "traits": [{ "ref": "StreamChunkStream" }]
+          "traits": [
+            {
+              "ref": "StreamChunkStream"
+            }
+          ]
         }
       ]
     }
