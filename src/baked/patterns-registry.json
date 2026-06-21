@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-21T09:36:29.838Z",
+  "exportedAt": "2026-06-21T10:11:30.957Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -37926,6 +37926,38 @@
             "string"
           ],
           "description": "Direct asset manifest — takes priority over entity-derived manifest."
+        },
+        "stepEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{stepEvent} with { attackerId, targetId, damage } each battle round",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "attackerId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "targetId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "damage",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on restart",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         }
       }
     },
@@ -41814,6 +41846,61 @@
               "required": true
             }
           ]
+        },
+        "placeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{placeEvent} with { slotIndex, actionId } when an action is dropped into a slot",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "slotIndex",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "actionId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "removeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{removeEvent} with { slotIndex } when an action is removed from a slot",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "slotIndex",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "checkEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{checkEvent} with { sequence } when the player submits the sequence",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "sequence",
+              "type": "array",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on reset",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         }
       }
     },
