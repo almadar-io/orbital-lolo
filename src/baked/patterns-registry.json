@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-21T10:54:31.159Z",
+  "exportedAt": "2026-06-21T19:10:19.285Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -14465,7 +14465,7 @@
         },
         "assetManifest": {
           "types": [
-            "object"
+            "string"
           ],
           "description": "Direct asset manifest — forwarded to BattleBoard; takes priority over entity."
         }
@@ -14827,7 +14827,7 @@
         },
         "assetManifest": {
           "types": [
-            "object"
+            "string"
           ],
           "description": "Direct asset manifest — forwarded to CastleBoard; takes priority over entity."
         }
@@ -15211,7 +15211,7 @@
         },
         "assetManifest": {
           "types": [
-            "object"
+            "string"
           ],
           "description": "Direct asset manifest — forwarded to WorldMapBoard; takes priority over entity."
         }
@@ -24765,6 +24765,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over icon when provided"
+        },
         "label": {
           "types": [
             "string"
@@ -24910,6 +24916,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL displayed alongside the combo number"
+        },
         "combo": {
           "types": [
             "number"
@@ -24963,6 +24975,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over icon when provided"
+        },
         "label": {
           "types": [
             "string"
@@ -25076,6 +25094,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — displayed as a hit-effect icon alongside the number"
+        },
         "value": {
           "types": [
             "number"
@@ -25500,6 +25524,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over icon when provided"
+        },
         "icon": {
           "types": [
             "icon",
@@ -25576,6 +25606,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over icon when provided"
+        },
         "value": {
           "types": [
             "number"
@@ -25775,6 +25811,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over the state icon when provided"
+        },
         "state": {
           "types": [
             "string"
@@ -25857,6 +25899,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over icon when provided"
+        },
         "icon": {
           "types": [
             "icon",
@@ -25997,6 +26045,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over the dot indicator when provided"
+        },
         "currentTurn": {
           "types": [
             "number"
@@ -26056,6 +26110,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over icon when provided"
+        },
         "label": {
           "types": [
             "string"
@@ -29075,6 +29135,12 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Portrait sprite URL — takes precedence over the default avatar slot"
+        },
         "name": {
           "types": [
             "string"
@@ -31930,6 +31996,12 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over icon when provided"
+        },
         "label": {
           "types": [
             "string"
@@ -35133,6 +35205,47 @@
                     "types": [
                       "number"
                     ]
+                  },
+                  "gold": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "health": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "maxHealth": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "wave": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "tickCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "buildings": {
+                    "types": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  "result": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "none",
+                      "victory",
+                      "defeat"
+                    ]
                   }
                 },
                 "required": [
@@ -35142,7 +35255,14 @@
                   "selectedFeature",
                   "clearSelection",
                   "tileToScreen",
-                  "scale"
+                  "scale",
+                  "gold",
+                  "health",
+                  "maxHealth",
+                  "wave",
+                  "tickCount",
+                  "buildings",
+                  "result"
                 ]
               }
             }
@@ -35488,6 +35608,47 @@
                     "types": [
                       "number"
                     ]
+                  },
+                  "gold": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "health": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "maxHealth": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "wave": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "tickCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "buildings": {
+                    "types": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  "result": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "none",
+                      "victory",
+                      "defeat"
+                    ]
                   }
                 },
                 "required": [
@@ -35497,7 +35658,14 @@
                   "selectedFeature",
                   "clearSelection",
                   "tileToScreen",
-                  "scale"
+                  "scale",
+                  "gold",
+                  "health",
+                  "maxHealth",
+                  "wave",
+                  "tickCount",
+                  "buildings",
+                  "result"
                 ]
               }
             }
@@ -35843,6 +36011,47 @@
                     "types": [
                       "number"
                     ]
+                  },
+                  "gold": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "health": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "maxHealth": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "wave": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "tickCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "buildings": {
+                    "types": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  "result": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "none",
+                      "victory",
+                      "defeat"
+                    ]
                   }
                 },
                 "required": [
@@ -35852,7 +36061,14 @@
                   "selectedFeature",
                   "clearSelection",
                   "tileToScreen",
-                  "scale"
+                  "scale",
+                  "gold",
+                  "health",
+                  "maxHealth",
+                  "wave",
+                  "tickCount",
+                  "buildings",
+                  "result"
                 ]
               }
             }
@@ -36198,6 +36414,47 @@
                     "types": [
                       "number"
                     ]
+                  },
+                  "gold": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "health": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "maxHealth": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "wave": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "tickCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "buildings": {
+                    "types": [
+                      "object",
+                      "array"
+                    ]
+                  },
+                  "result": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "none",
+                      "victory",
+                      "defeat"
+                    ]
                   }
                 },
                 "required": [
@@ -36207,7 +36464,14 @@
                   "selectedFeature",
                   "clearSelection",
                   "tileToScreen",
-                  "scale"
+                  "scale",
+                  "gold",
+                  "health",
+                  "maxHealth",
+                  "wave",
+                  "tickCount",
+                  "buildings",
+                  "result"
                 ]
               }
             }
@@ -36550,6 +36814,14 @@
               "required": true
             }
           ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on play again / reset",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         },
         "className": {
           "types": [
@@ -39658,6 +39930,33 @@
               "required": true
             }
           ]
+        },
+        "editRuleEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{editRuleEvent} with { objectId, rules } — model updates @entity.objects",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "objectId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "rules",
+              "type": "array",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} to reset the model",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         }
       }
     },
@@ -41099,6 +41398,57 @@
               "required": true
             }
           ]
+        },
+        "addTransitionEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{addTransitionEvent} — lolo handles ADD_TRANSITION",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "from",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "event",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "removeTransitionEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{removeTransitionEvent} — lolo handles REMOVE_TRANSITION",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} — lolo handles PLAY_AGAIN",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         }
       }
     },
@@ -44358,6 +44708,146 @@
           ],
           "description": "External styling override"
         },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Fallback tile data when no entity is present",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Fallback feature data when no entity is present",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
         "cameraMode": {
           "types": [
             "string"
@@ -44374,15 +44864,13 @@
           "types": [
             "boolean"
           ],
-          "description": "Show grid helper",
-          "default": true
+          "description": "Show grid helper"
         },
         "shadows": {
           "types": [
             "boolean"
           ],
-          "description": "Enable shadows",
-          "default": true
+          "description": "Enable shadows"
         },
         "backgroundColor": {
           "types": [
@@ -44395,25 +44883,13 @@
           "types": [
             "string"
           ],
-          "description": "Event name for tile clicks"
+          "description": "Event name for tile clicks — forwarded to the model"
         },
         "unitClickEvent": {
           "types": [
             "string"
           ],
-          "description": "Event name for unit clicks"
-        },
-        "unitAttackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for unit attack"
-        },
-        "unitMoveEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for unit move"
+          "description": "Event name for unit clicks — forwarded to the model"
         },
         "endTurnEvent": {
           "types": [
@@ -44426,66 +44902,6 @@
             "string"
           ],
           "description": "Event name for exiting battle"
-        },
-        "selectedUnitId": {
-          "types": [
-            "string"
-          ],
-          "description": "Currently selected unit ID"
-        },
-        "validMoves": {
-          "types": [
-            "array"
-          ],
-          "description": "Valid move positions",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          }
-        },
-        "attackTargets": {
-          "types": [
-            "array"
-          ],
-          "description": "Valid attack targets",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          }
         },
         "showTurnIndicator": {
           "types": [
@@ -44523,6 +44939,146 @@
           ],
           "description": "External styling override"
         },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Fallback tile data when no entity is present",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Fallback feature data when no entity is present",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
         "cameraMode": {
           "types": [
             "string"
@@ -44539,15 +45095,13 @@
           "types": [
             "boolean"
           ],
-          "description": "Show grid helper",
-          "default": true
+          "description": "Show grid helper"
         },
         "shadows": {
           "types": [
             "boolean"
           ],
-          "description": "Enable shadows",
-          "default": true
+          "description": "Enable shadows"
         },
         "backgroundColor": {
           "types": [
@@ -44560,7 +45114,7 @@
           "types": [
             "string"
           ],
-          "description": "Event name for building clicks"
+          "description": "Event name for building (feature) clicks"
         },
         "unitClickEvent": {
           "types": [
@@ -44586,57 +45140,12 @@
           ],
           "description": "Event name for exit"
         },
-        "selectedBuildingId": {
-          "types": [
-            "string"
-          ],
-          "description": "Currently selected building ID"
-        },
-        "availableBuildSites": {
-          "types": [
-            "array"
-          ],
-          "description": "Available build positions",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          }
-        },
         "showHeader": {
           "types": [
             "boolean"
           ],
           "description": "Show castle name header",
           "default": true
-        },
-        "selectedTileIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Pre-computed selected tile IDs array",
-          "items": {
-            "types": [
-              "string"
-            ]
-          },
-          "default": []
         }
       }
     },
@@ -44669,6 +45178,146 @@
           ],
           "description": "External styling override"
         },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Fallback tile data when no entity is present",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Fallback feature data when no entity is present",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
         "cameraMode": {
           "types": [
             "string"
@@ -44685,29 +45334,25 @@
           "types": [
             "boolean"
           ],
-          "description": "Show grid helper",
-          "default": true
+          "description": "Show grid helper"
         },
         "showCoordinates": {
           "types": [
             "boolean"
           ],
-          "description": "Show coordinate overlay",
-          "default": true
+          "description": "Show coordinate overlay"
         },
         "showTileInfo": {
           "types": [
             "boolean"
           ],
-          "description": "Show tile info on hover",
-          "default": true
+          "description": "Show tile info on hover"
         },
         "shadows": {
           "types": [
             "boolean"
           ],
-          "description": "Enable shadows",
-          "default": true
+          "description": "Enable shadows"
         },
         "backgroundColor": {
           "types": [
@@ -44720,13 +45365,13 @@
           "types": [
             "string"
           ],
-          "description": "Event name for tile clicks"
+          "description": "Event name for tile clicks — forwarded to the model"
         },
         "unitClickEvent": {
           "types": [
             "string"
           ],
-          "description": "Event name for unit clicks"
+          "description": "Event name for unit clicks — forwarded to the model"
         },
         "featureClickEvent": {
           "types": [
@@ -44757,66 +45402,6 @@
             "string"
           ],
           "description": "Exit/back event name"
-        },
-        "selectedUnitId": {
-          "types": [
-            "string"
-          ],
-          "description": "Currently selected unit ID"
-        },
-        "validMoves": {
-          "types": [
-            "array"
-          ],
-          "description": "Valid move positions for selected unit",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          }
-        },
-        "attackTargets": {
-          "types": [
-            "array"
-          ],
-          "description": "Attack target positions",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          }
         }
       }
     },
@@ -45196,6 +45781,1847 @@
             }
           ],
           "renderCallback": true
+        }
+      }
+    },
+    "game-board-3d": {
+      "type": "game-board-3d",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "GameBoard3D component",
+      "suggestedFor": [
+        "game",
+        "board3",
+        "game board3 d"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Entity row carrying all gameplay state (controlled).",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Static tile data (config default).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          },
+          "default": []
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Static feature data (config default).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "object"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          },
+          "default": []
+        },
+        "cameraMode": {
+          "types": [
+            "string"
+          ],
+          "description": "Camera mode forwarded to GameCanvas3D.",
+          "enumValues": [
+            "isometric",
+            "perspective",
+            "top-down"
+          ],
+          "default": "perspective"
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Background color forwarded to GameCanvas3D.",
+          "default": "#2a1a1a"
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative tile click event emitted to the model.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "tileId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "z",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative unit click event emitted to the model.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "z",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS class."
+        }
+      }
+    },
+    "platformer-board": {
+      "type": "platformer-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "PlatformerBoard component",
+      "suggestedFor": [
+        "platformer",
+        "board",
+        "platformer board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Entity containing all board state (result, lives, score, level, player, platforms)",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "player": {
+          "types": [
+            "object"
+          ],
+          "description": "Direct player state — takes priority over entity-derived player",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "width": {
+              "types": [
+                "number"
+              ]
+            },
+            "height": {
+              "types": [
+                "number"
+              ]
+            },
+            "vx": {
+              "types": [
+                "number"
+              ]
+            },
+            "vy": {
+              "types": [
+                "number"
+              ]
+            },
+            "grounded": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "facingRight": {
+              "types": [
+                "boolean"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ]
+        },
+        "platforms": {
+          "types": [
+            "array"
+          ],
+          "description": "Direct platform data — takes priority over entity-derived platforms",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ground",
+                  "platform",
+                  "hazard",
+                  "goal"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ]
+          }
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "Game result read from entity",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "lives": {
+          "types": [
+            "number"
+          ],
+          "description": "Lives remaining"
+        },
+        "score": {
+          "types": [
+            "number"
+          ],
+          "description": "Current score"
+        },
+        "level": {
+          "types": [
+            "number"
+          ],
+          "description": "Current level"
+        },
+        "worldWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "World/canvas dimensions",
+          "default": 800
+        },
+        "worldHeight": {
+          "types": [
+            "number"
+          ],
+          "description": "worldHeight prop",
+          "default": 400
+        },
+        "canvasWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "canvasWidth prop",
+          "default": 800
+        },
+        "canvasHeight": {
+          "types": [
+            "number"
+          ],
+          "description": "canvasHeight prop",
+          "default": 400
+        },
+        "playerSprite": {
+          "types": [
+            "asset"
+          ],
+          "description": "Player sprite URL"
+        },
+        "tileSprites": {
+          "types": [
+            "object"
+          ],
+          "description": "Map of platform type to tile sprite URL",
+          "mapValue": {
+            "types": [
+              "asset"
+            ]
+          }
+        },
+        "bgColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Canvas background color"
+        },
+        "leftEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event names forwarded to PlatformerCanvas",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "direction",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "LEFT"
+        },
+        "rightEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "rightEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "direction",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "RIGHT"
+        },
+        "jumpEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "jumpEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [],
+          "default": "JUMP"
+        },
+        "stopEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "stopEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [],
+          "default": "STOP"
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} on restart",
+          "kind": "event-ref",
+          "emitPayloadSchema": [],
+          "default": "PLAY_AGAIN"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "roguelike-board": {
+      "type": "roguelike-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "RoguelikeBoard component",
+      "suggestedFor": [
+        "roguelike",
+        "board",
+        "roguelike board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "entity prop",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "tiles prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "enemies": {
+          "types": [
+            "array"
+          ],
+          "description": "enemies prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "hp": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "hp",
+              "attack"
+            ]
+          }
+        },
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "items prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "health_potion",
+                  "sword",
+                  "shield"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "kind"
+            ]
+          }
+        },
+        "player": {
+          "types": [
+            "object"
+          ],
+          "description": "player prop",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ]
+        },
+        "playerHp": {
+          "types": [
+            "number"
+          ],
+          "description": "playerHp prop"
+        },
+        "playerMaxHp": {
+          "types": [
+            "number"
+          ],
+          "description": "playerMaxHp prop"
+        },
+        "playerAttack": {
+          "types": [
+            "number"
+          ],
+          "description": "playerAttack prop"
+        },
+        "depth": {
+          "types": [
+            "number"
+          ],
+          "description": "depth prop"
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "result prop",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "phase": {
+          "types": [
+            "string"
+          ],
+          "description": "phase prop"
+        },
+        "stairsX": {
+          "types": [
+            "number"
+          ],
+          "description": "stairsX prop"
+        },
+        "stairsY": {
+          "types": [
+            "number"
+          ],
+          "description": "stairsY prop"
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "assetManifest prop",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
+          }
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "scale prop",
+          "default": 0.45
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "unitScale prop",
+          "default": 1
+        },
+        "moveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "moveEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "dx",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "dy",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playAgainEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        }
+      }
+    },
+    "tower-defense-board": {
+      "type": "tower-defense-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "TowerDefenseBoard component",
+      "suggestedFor": [
+        "tower",
+        "defense",
+        "board",
+        "tower defense board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "entity prop",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "tiles prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "path": {
+          "types": [
+            "array"
+          ],
+          "description": "path prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "towers": {
+          "types": [
+            "array"
+          ],
+          "description": "towers prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "range": {
+                "types": [
+                  "number"
+                ]
+              },
+              "damage": {
+                "types": [
+                  "number"
+                ]
+              },
+              "cooldown": {
+                "types": [
+                  "number"
+                ]
+              },
+              "lastFiredAt": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "range",
+              "damage",
+              "cooldown"
+            ]
+          }
+        },
+        "creeps": {
+          "types": [
+            "array"
+          ],
+          "description": "creeps prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "hp": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHp": {
+                "types": [
+                  "number"
+                ]
+              },
+              "pathIndex": {
+                "types": [
+                  "number"
+                ]
+              },
+              "speed": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "hp",
+              "maxHp",
+              "pathIndex",
+              "speed"
+            ]
+          }
+        },
+        "gold": {
+          "types": [
+            "number"
+          ],
+          "description": "gold prop"
+        },
+        "lives": {
+          "types": [
+            "number"
+          ],
+          "description": "lives prop"
+        },
+        "wave": {
+          "types": [
+            "number"
+          ],
+          "description": "wave prop"
+        },
+        "maxWaves": {
+          "types": [
+            "number"
+          ],
+          "description": "maxWaves prop"
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "result prop",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "waveActive": {
+          "types": [
+            "boolean"
+          ],
+          "description": "waveActive prop"
+        },
+        "towerCost": {
+          "types": [
+            "number"
+          ],
+          "description": "towerCost prop",
+          "default": 25
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "scale prop",
+          "default": 0.45
+        },
+        "placeTowerEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "placeTowerEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "startWaveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "startWaveEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "wave",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playAgainEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        }
+      }
+    },
+    "platformer-template": {
+      "type": "platformer-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "PlatformerTemplate component",
+      "suggestedFor": [
+        "platformer",
+        "template",
+        "platformer template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "External styling override"
+        },
+        "platforms": {
+          "types": [
+            "string"
+          ],
+          "description": "Level geometry forwarded to PlatformerBoard"
+        },
+        "goalX": {
+          "types": [
+            "number"
+          ],
+          "description": "Goal X pixel for config"
+        },
+        "worldWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "World dimensions",
+          "default": 800
+        },
+        "worldHeight": {
+          "types": [
+            "number"
+          ],
+          "description": "worldHeight prop",
+          "default": 400
+        },
+        "canvasWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas display size",
+          "default": 800
+        },
+        "canvasHeight": {
+          "types": [
+            "number"
+          ],
+          "description": "canvasHeight prop",
+          "default": 400
+        },
+        "playerSprite": {
+          "types": [
+            "string"
+          ],
+          "description": "Player sprite URL"
+        },
+        "tileSprites": {
+          "types": [
+            "object"
+          ],
+          "description": "Map of platform type to tile sprite URL",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "bgColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Canvas background color",
+          "default": "#5c94fc"
+        }
+      }
+    },
+    "roguelike-template": {
+      "type": "roguelike-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "RoguelikeTemplate component",
+      "suggestedFor": [
+        "roguelike",
+        "template",
+        "roguelike template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "External styling override"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "scale prop",
+          "default": 0.45
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "unitScale prop",
+          "default": 1
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "tiles prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "assetManifest prop"
+        }
+      }
+    },
+    "tower-defense-template": {
+      "type": "tower-defense-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "TowerDefenseTemplate  Thin template wrapper: titled header + TowerDefenseBoard. All game state is driven by the entity prop (passed through from the orbital trait).",
+      "suggestedFor": [
+        "tower",
+        "defense",
+        "template",
+        "tower defense template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "title prop",
+          "default": "Tower Defense"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "tiles prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "path": {
+          "types": [
+            "array"
+          ],
+          "description": "path prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "towers": {
+          "types": [
+            "array"
+          ],
+          "description": "towers prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "range": {
+                "types": [
+                  "number"
+                ]
+              },
+              "damage": {
+                "types": [
+                  "number"
+                ]
+              },
+              "cooldown": {
+                "types": [
+                  "number"
+                ]
+              },
+              "lastFiredAt": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "range",
+              "damage",
+              "cooldown"
+            ]
+          }
+        },
+        "gold": {
+          "types": [
+            "number"
+          ],
+          "description": "gold prop"
+        },
+        "lives": {
+          "types": [
+            "number"
+          ],
+          "description": "lives prop"
+        },
+        "maxWaves": {
+          "types": [
+            "number"
+          ],
+          "description": "maxWaves prop"
+        },
+        "towerCost": {
+          "types": [
+            "number"
+          ],
+          "description": "towerCost prop"
+        },
+        "towerRange": {
+          "types": [
+            "number"
+          ],
+          "description": "towerRange prop"
+        },
+        "towerDamage": {
+          "types": [
+            "number"
+          ],
+          "description": "towerDamage prop"
+        },
+        "creepsPerWave": {
+          "types": [
+            "number"
+          ],
+          "description": "creepsPerWave prop"
+        },
+        "creepBaseHp": {
+          "types": [
+            "number"
+          ],
+          "description": "creepBaseHp prop"
+        },
+        "goldPerKill": {
+          "types": [
+            "number"
+          ],
+          "description": "goldPerKill prop"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "scale prop"
+        },
+        "placeTowerEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "placeTowerEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "startWaveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "startWaveEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "wave",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playAgainEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         }
       }
     }
