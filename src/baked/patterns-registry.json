@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-21T19:10:19.285Z",
+  "exportedAt": "2026-06-22T02:48:24.845Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -14275,6 +14275,11 @@
                   "object"
                 ]
               },
+              "spriteSheet": {
+                "types": [
+                  "object"
+                ]
+              },
               "modelUrl": {
                 "types": [
                   "object"
@@ -14633,6 +14638,11 @@
                 ]
               },
               "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "spriteSheet": {
                 "types": [
                   "object"
                 ]
@@ -15017,6 +15027,11 @@
                 ]
               },
               "sprite": {
+                "types": [
+                  "object"
+                ]
+              },
+              "spriteSheet": {
                 "types": [
                   "object"
                 ]
@@ -30662,6 +30677,11 @@
                   "asset"
                 ]
               },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
               "modelUrl": {
                 "types": [
                   "asset"
@@ -31196,6 +31216,11 @@
                     ]
                   },
                   "sprite": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "spriteSheet": {
                     "types": [
                       "asset"
                     ]
@@ -32924,6 +32949,11 @@
                   "asset"
                 ]
               },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
               "modelUrl": {
                 "types": [
                   "asset"
@@ -34628,6 +34658,11 @@
                   "asset"
                 ]
               },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
               "modelUrl": {
                 "types": [
                   "asset"
@@ -35006,6 +35041,11 @@
                         ]
                       },
                       "sprite": {
+                        "types": [
+                          "asset"
+                        ]
+                      },
+                      "spriteSheet": {
                         "types": [
                           "asset"
                         ]
@@ -35413,6 +35453,11 @@
                           "asset"
                         ]
                       },
+                      "spriteSheet": {
+                        "types": [
+                          "asset"
+                        ]
+                      },
                       "modelUrl": {
                         "types": [
                           "asset"
@@ -35812,6 +35857,11 @@
                         ]
                       },
                       "sprite": {
+                        "types": [
+                          "asset"
+                        ]
+                      },
+                      "spriteSheet": {
                         "types": [
                           "asset"
                         ]
@@ -36219,6 +36269,11 @@
                           "asset"
                         ]
                       },
+                      "spriteSheet": {
+                        "types": [
+                          "asset"
+                        ]
+                      },
                       "modelUrl": {
                         "types": [
                           "asset"
@@ -36605,6 +36660,11 @@
                     ]
                   },
                   "sprite": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "spriteSheet": {
                     "types": [
                       "asset"
                     ]
@@ -37581,6 +37641,11 @@
                   "object"
                 ]
               },
+              "spriteSheet": {
+                "types": [
+                  "object"
+                ]
+              },
               "modelUrl": {
                 "types": [
                   "object"
@@ -38004,6 +38069,11 @@
                 ]
               },
               "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
                 "types": [
                   "asset"
                 ]
@@ -43386,6 +43456,11 @@
                   "object"
                 ]
               },
+              "spriteSheet": {
+                "types": [
+                  "object"
+                ]
+              },
               "modelUrl": {
                 "types": [
                   "object"
@@ -43883,6 +43958,11 @@
                     ]
                   },
                   "sprite": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "spriteSheet": {
                     "types": [
                       "object"
                     ]
@@ -44897,6 +44977,30 @@
           ],
           "description": "Event name for ending turn"
         },
+        "cancelEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for cancel/deselect"
+        },
+        "attackEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for attack emission"
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for play again / reset"
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for game end detection"
+        },
         "exitEvent": {
           "types": [
             "string"
@@ -45121,6 +45225,36 @@
             "string"
           ],
           "description": "Event name for unit clicks"
+        },
+        "endTurnEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for ending turn"
+        },
+        "cancelEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for cancel/deselect"
+        },
+        "attackEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for attack emission"
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for play again / reset"
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for game end detection"
         },
         "buildEvent": {
           "types": [
@@ -45372,6 +45506,36 @@
             "string"
           ],
           "description": "Event name for unit clicks — forwarded to the model"
+        },
+        "endTurnEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for ending turn"
+        },
+        "cancelEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for cancel/deselect"
+        },
+        "attackEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for attack emission"
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for play again / reset"
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event name for game end detection"
         },
         "featureClickEvent": {
           "types": [
@@ -46015,6 +46179,68 @@
             }
           ]
         },
+        "attackEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{attackEvent} with { attackerId, targetId, damage } on attack.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "attackerId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "targetId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "damage",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "endTurnEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{endTurnEvent} with {} on end turn.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "cancelEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{cancelEvent} with {} on cancel.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{gameEndEvent} with { result } when win/loss is detected.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
         "className": {
           "types": [
             "string"
@@ -46283,6 +46509,21 @@
           "kind": "event-ref",
           "emitPayloadSchema": [],
           "default": "PLAY_AGAIN"
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{gameEndEvent} with { result } when result becomes won/lost",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "default": "GAME_END"
         },
         "className": {
           "types": [
@@ -46739,6 +46980,20 @@
           "description": "playAgainEvent prop",
           "kind": "event-ref",
           "emitPayloadSchema": []
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
         }
       }
     },
@@ -47143,6 +47398,20 @@
           "description": "playAgainEvent prop",
           "kind": "event-ref",
           "emitPayloadSchema": []
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
         }
       }
     },
@@ -47177,12 +47446,6 @@
             "string"
           ],
           "description": "Level geometry forwarded to PlatformerBoard"
-        },
-        "goalX": {
-          "types": [
-            "number"
-          ],
-          "description": "Goal X pixel for config"
         },
         "worldWidth": {
           "types": [
@@ -47235,6 +47498,13 @@
           ],
           "description": "Canvas background color",
           "default": "#5c94fc"
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Forwarded to PlatformerBoard to emit GAME_END into the FSM",
+          "default": "GAME_END"
         }
       }
     },
@@ -47355,11 +47625,49 @@
             ]
           }
         },
+        "enemies": {
+          "types": [
+            "string"
+          ],
+          "description": "enemies prop"
+        },
+        "items": {
+          "types": [
+            "string"
+          ],
+          "description": "items prop"
+        },
+        "stairsX": {
+          "types": [
+            "number"
+          ],
+          "description": "stairsX prop"
+        },
+        "stairsY": {
+          "types": [
+            "number"
+          ],
+          "description": "stairsY prop"
+        },
         "assetManifest": {
           "types": [
             "string"
           ],
           "description": "assetManifest prop"
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
         }
       }
     },
@@ -47622,6 +47930,20 @@
           "description": "playAgainEvent prop",
           "kind": "event-ref",
           "emitPayloadSchema": []
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
         }
       }
     }
