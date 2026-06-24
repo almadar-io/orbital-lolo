@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-22T02:48:24.845Z",
+  "exportedAt": "2026-06-23T15:48:39.669Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -14024,6 +14024,64 @@
             }
           ]
         },
+        "onNodeDoubleClick": {
+          "types": [
+            "function"
+          ],
+          "description": "On node double-click (e.g. to drill in)",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "node",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "group": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "size": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          ]
+        },
         "nodeClickEvent": {
           "types": [
             "string"
@@ -14037,6 +14095,26 @@
               "required": true
             }
           ]
+        },
+        "selectedNodeId": {
+          "types": [
+            "string"
+          ],
+          "description": "Currently selected node id (rendered emphasized)"
+        },
+        "repulsion": {
+          "types": [
+            "number"
+          ],
+          "description": "Force-sim repulsion strength between nodes (larger ⇒ more spread out)",
+          "default": 800
+        },
+        "linkDistance": {
+          "types": [
+            "number"
+          ],
+          "description": "Force-sim target edge length (larger ⇒ more spread out)",
+          "default": 100
         },
         "layout": {
           "types": [
@@ -29129,6 +29207,25 @@
           "kind": "event-ref",
           "emitPayloadSchema": []
         },
+        "backgroundImage": {
+          "types": [
+            "asset"
+          ],
+          "description": "Optional full-frame scene image rendered behind the dialogue (visual-novel mode)."
+        },
+        "portraitUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Optional larger character portrait rendered standing over the scene (visual-novel mode)."
+        },
+        "portraitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Multiplier for the large `portraitUrl` height relative to its default (default 1).",
+          "default": 1
+        },
         "className": {
           "types": [
             "string"
@@ -29320,8 +29417,7 @@
           "types": [
             "asset"
           ],
-          "description": "Base URL prefix for asset URLs",
-          "default": "https://almadar-kflow-assets.web.app/shared/"
+          "description": "Base URL prefix for asset URLs"
         },
         "className": {
           "types": [
@@ -31113,6 +31209,20 @@
           "description": "Extra scale multiplier for unit draw size. 1 = default.",
           "default": 1
         },
+        "spriteHeightRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "Ratio of unit draw height to scaledFloorHeight. Default 1.5.",
+          "default": 1.5
+        },
+        "spriteMaxWidthRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "Max unit draw width as a ratio of scaledTileWidth. Default 0.6.",
+          "default": 0.6
+        },
         "boardWidth": {
           "types": [
             "number"
@@ -31412,8 +31522,7 @@
           "types": [
             "asset"
           ],
-          "description": "--- Remote asset loading ---",
-          "default": "https://almadar-kflow-assets.web.app/shared/"
+          "description": "--- Remote asset loading ---"
         },
         "assetManifest": {
           "types": [
@@ -31656,8 +31765,7 @@
           "types": [
             "asset"
           ],
-          "description": "Player sprite image URL",
-          "default": "https://almadar-kflow-assets.web.app/shared/platformer/characters/platformChar_idle.png"
+          "description": "Player sprite image URL"
         },
         "tileSprites": {
           "types": [
@@ -31681,8 +31789,7 @@
           "types": [
             "asset"
           ],
-          "description": "Base URL prefix for asset URLs",
-          "default": "https://almadar-kflow-assets.web.app/shared/platformer/"
+          "description": "Base URL prefix for asset URLs"
         },
         "leftEvent": {
           "types": [
@@ -33200,7 +33307,7 @@
             "number"
           ],
           "description": "Canvas render scale",
-          "default": 0.45
+          "default": 0.25
         },
         "unitScale": {
           "types": [
@@ -33208,6 +33315,20 @@
           ],
           "description": "Unit draw-size multiplier",
           "default": 1
+        },
+        "spriteHeightRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "Ratio of unit draw height to scaledFloorHeight. Default 1.5.",
+          "default": 1.5
+        },
+        "spriteMaxWidthRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "Max unit draw width as a ratio of scaledTileWidth. Default 0.6.",
+          "default": 0.6
         },
         "header": {
           "types": [
@@ -34222,15 +34343,13 @@
           "types": [
             "asset"
           ],
-          "description": "--- Remote asset loading ---",
-          "default": "https://almadar-kflow-assets.web.app/shared/effects/gas/gas00.png"
+          "description": "--- Remote asset loading ---"
         },
         "assetBaseUrl": {
           "types": [
             "asset"
           ],
-          "description": "Base URL for remote assets. Prepended to relative effectSpriteUrl paths.",
-          "default": "https://almadar-kflow-assets.web.app/shared/effects/"
+          "description": "Base URL for remote assets. Prepended to relative effectSpriteUrl paths."
         },
         "assetManifest": {
           "types": [
@@ -38314,7 +38433,7 @@
             "number"
           ],
           "description": "Canvas render scale",
-          "default": 0.4
+          "default": 0.25
         },
         "unitScale": {
           "types": [
@@ -38322,6 +38441,20 @@
           ],
           "description": "Unit draw-size multiplier",
           "default": 2.5
+        },
+        "spriteHeightRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "Ratio of unit draw height to scaledFloorHeight. Default 1.5.",
+          "default": 1.5
+        },
+        "spriteMaxWidthRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "Max unit draw width as a ratio of scaledTileWidth. Default 0.6.",
+          "default": 0.6
         },
         "allowMoveAllHeroes": {
           "types": [
@@ -44757,6 +44890,19 @@
           ],
           "description": "Selected unit ID",
           "default": null
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Unit draw-size multiplier. 1 = default tile-proportional size.",
+          "default": 1
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Board zoom/group scale. Applied to the scene group. Default 0.45."
         }
       }
     },
@@ -44792,7 +44938,7 @@
           "types": [
             "array"
           ],
-          "description": "Fallback tile data when no entity is present",
+          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
           "items": {
             "types": [
               "object"
@@ -44926,6 +45072,39 @@
               "y",
               "type"
             ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template).",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "models": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
           }
         },
         "cameraMode": {
@@ -45012,6 +45191,18 @@
             "boolean"
           ],
           "description": "Show turn indicator overlay"
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
         }
       }
     },
@@ -45047,7 +45238,7 @@
           "types": [
             "array"
           ],
-          "description": "Fallback tile data when no entity is present",
+          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
           "items": {
             "types": [
               "object"
@@ -45181,6 +45372,39 @@
               "y",
               "type"
             ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template).",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "models": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
           }
         },
         "cameraMode": {
@@ -45280,6 +45504,18 @@
           ],
           "description": "Show castle name header",
           "default": true
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
         }
       }
     },
@@ -45316,7 +45552,7 @@
           "types": [
             "array"
           ],
-          "description": "Fallback tile data when no entity is present",
+          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
           "items": {
             "types": [
               "object"
@@ -45450,6 +45686,39 @@
               "y",
               "type"
             ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template).",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "models": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
           }
         },
         "cameraMode": {
@@ -45566,6 +45835,18 @@
             "string"
           ],
           "description": "Exit/back event name"
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
         }
       }
     },
@@ -46130,6 +46411,20 @@
           ],
           "description": "Background color forwarded to GameCanvas3D.",
           "default": "#2a1a1a"
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Unit draw-size multiplier forwarded to GameCanvas3D. Default 1.",
+          "default": 1
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Board zoom/group scale forwarded to GameCanvas3D. Default 0.45.",
+          "default": 0.45
         },
         "tileClickEvent": {
           "types": [
@@ -46945,7 +47240,7 @@
             "number"
           ],
           "description": "scale prop",
-          "default": 0.45
+          "default": 0.25
         },
         "unitScale": {
           "types": [
@@ -46953,6 +47248,20 @@
           ],
           "description": "unitScale prop",
           "default": 1
+        },
+        "spriteHeightRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "spriteHeightRatio prop",
+          "default": 1.5
+        },
+        "spriteMaxWidthRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "spriteMaxWidthRatio prop",
+          "default": 0.6
         },
         "moveEvent": {
           "types": [
@@ -47303,6 +47612,49 @@
             ]
           }
         },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Asset base-url + terrain/unit/feature sprite maps (organism owns asset choice).",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
+          }
+        },
         "gold": {
           "types": [
             "number"
@@ -47344,6 +47696,34 @@
           ],
           "description": "waveActive prop"
         },
+        "hero": {
+          "types": [
+            "object"
+          ],
+          "description": "hero prop",
+          "properties": {
+            "id": {
+              "types": [
+                "string"
+              ]
+            },
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "id",
+            "x",
+            "y"
+          ]
+        },
         "towerCost": {
           "types": [
             "number"
@@ -47356,7 +47736,28 @@
             "number"
           ],
           "description": "scale prop",
-          "default": 0.45
+          "default": 0.25
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "unitScale prop",
+          "default": 1
+        },
+        "spriteHeightRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "spriteHeightRatio prop",
+          "default": 1.5
+        },
+        "spriteMaxWidthRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "spriteMaxWidthRatio prop",
+          "default": 0.6
         },
         "placeTowerEvent": {
           "types": [
@@ -47409,6 +47810,25 @@
             {
               "name": "result",
               "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "moveHeroEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "moveHeroEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "dx",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "dy",
+              "type": "number",
               "required": true
             }
           ]
@@ -47944,6 +48364,2369 @@
               "required": true
             }
           ]
+        }
+      }
+    },
+    "city-builder-board": {
+      "type": "city-builder-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "CityBuilderBoard component",
+      "suggestedFor": [
+        "city",
+        "builder",
+        "board",
+        "city builder board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "entity prop",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "tiles prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "buildings": {
+          "types": [
+            "array"
+          ],
+          "description": "buildings prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Asset base-url + terrain/unit/feature sprite maps (organism owns asset choice).",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
+          }
+        },
+        "buildTypes": {
+          "types": [
+            "array"
+          ],
+          "description": "buildTypes prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "label",
+              "cost"
+            ]
+          }
+        },
+        "pendingBuildType": {
+          "types": [
+            "string"
+          ],
+          "description": "pendingBuildType prop"
+        },
+        "gold": {
+          "types": [
+            "number"
+          ],
+          "description": "gold prop"
+        },
+        "wood": {
+          "types": [
+            "number"
+          ],
+          "description": "wood prop"
+        },
+        "population": {
+          "types": [
+            "number"
+          ],
+          "description": "population prop"
+        },
+        "tick": {
+          "types": [
+            "number"
+          ],
+          "description": "tick prop"
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "result prop",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "scale prop",
+          "default": 0.3
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "unitScale prop",
+          "default": 0.6
+        },
+        "spriteHeightRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "spriteHeightRatio prop",
+          "default": 1.5
+        },
+        "spriteMaxWidthRatio": {
+          "types": [
+            "number"
+          ],
+          "description": "spriteMaxWidthRatio prop",
+          "default": 0.7
+        },
+        "selectBuildTypeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "selectBuildTypeEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "buildType",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "placeBuildingEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "placeBuildingEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "top-down-shooter-board": {
+      "type": "top-down-shooter-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "TopDownShooterBoard component",
+      "suggestedFor": [
+        "top",
+        "down",
+        "shooter",
+        "board",
+        "top down shooter board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Entity carrying all board state (player, enemies, projectiles, score, wave, lives, result).",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "player": {
+          "types": [
+            "object"
+          ],
+          "description": "Direct state — each takes priority over its entity-derived value.",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ]
+        },
+        "enemies": {
+          "types": [
+            "array"
+          ],
+          "description": "enemies prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "hp": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "hp"
+            ]
+          }
+        },
+        "projectiles": {
+          "types": [
+            "array"
+          ],
+          "description": "projectiles prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vx": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vy": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "vx",
+              "vy"
+            ]
+          }
+        },
+        "score": {
+          "types": [
+            "number"
+          ],
+          "description": "score prop"
+        },
+        "wave": {
+          "types": [
+            "number"
+          ],
+          "description": "wave prop"
+        },
+        "lives": {
+          "types": [
+            "number"
+          ],
+          "description": "lives prop"
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "result prop",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Asset base-url + unit/feature sprite maps + background.",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "background": {
+              "types": [
+                "asset"
+              ]
+            }
+          }
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas / arena dimensions in pixels."
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop"
+        },
+        "spriteSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Pixel draw-size of sprites.",
+          "default": 32
+        },
+        "moveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Closed-circuit event emits (UI:{event}).",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "dx",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "dy",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "MOVE"
+        },
+        "fireEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "fireEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "tx",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "ty",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "FIRE"
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playAgainEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [],
+          "default": "PLAY_AGAIN"
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "default": "GAME_END"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "city-builder-template": {
+      "type": "city-builder-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "CityBuilderTemplate  Thin template wrapper: titled header + CityBuilderBoard. All game state is driven by the entity prop (passed through from the orbital trait).",
+      "suggestedFor": [
+        "city",
+        "builder",
+        "template",
+        "city builder template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "title prop",
+          "default": "City Builder"
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "tiles prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "buildings": {
+          "types": [
+            "array"
+          ],
+          "description": "buildings prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "buildTypes": {
+          "types": [
+            "array"
+          ],
+          "description": "buildTypes prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "label",
+              "cost"
+            ]
+          }
+        },
+        "pendingBuildType": {
+          "types": [
+            "string"
+          ],
+          "description": "pendingBuildType prop"
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "assetManifest prop"
+        },
+        "gold": {
+          "types": [
+            "number"
+          ],
+          "description": "gold prop"
+        },
+        "wood": {
+          "types": [
+            "number"
+          ],
+          "description": "wood prop"
+        },
+        "population": {
+          "types": [
+            "number"
+          ],
+          "description": "population prop"
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "result prop",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "scale prop"
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "unitScale prop"
+        },
+        "selectBuildTypeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "selectBuildTypeEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "buildType",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "placeBuildingEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "placeBuildingEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "top-down-shooter-template": {
+      "type": "top-down-shooter-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "TopDownShooterTemplate  Thin template wrapper: titled header + TopDownShooterBoard. All game state is driven by the entity prop (passed through from the orbital trait).",
+      "suggestedFor": [
+        "top",
+        "down",
+        "shooter",
+        "template",
+        "top down shooter template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "title prop",
+          "default": "Arena Shooter"
+        },
+        "player": {
+          "types": [
+            "object"
+          ],
+          "description": "player prop",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ]
+        },
+        "enemies": {
+          "types": [
+            "array"
+          ],
+          "description": "enemies prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "hp": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "hp"
+            ]
+          }
+        },
+        "projectiles": {
+          "types": [
+            "array"
+          ],
+          "description": "projectiles prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vx": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vy": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "vx",
+              "vy"
+            ]
+          }
+        },
+        "score": {
+          "types": [
+            "number"
+          ],
+          "description": "score prop"
+        },
+        "wave": {
+          "types": [
+            "number"
+          ],
+          "description": "wave prop"
+        },
+        "lives": {
+          "types": [
+            "number"
+          ],
+          "description": "lives prop"
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "result prop",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "assetManifest prop"
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop"
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop"
+        },
+        "spriteSize": {
+          "types": [
+            "number"
+          ],
+          "description": "spriteSize prop"
+        },
+        "moveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "moveEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "dx",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "dy",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "fireEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "fireEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "tx",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "ty",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playAgainEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "card-hand": {
+      "type": "card-hand",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "description": "CardHand component",
+      "suggestedFor": [
+        "card",
+        "hand",
+        "card hand"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "cards": {
+          "types": [
+            "array"
+          ],
+          "description": "Cards to lay out as a horizontal hand (or grid when wrapped).",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "iconUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              },
+              "defense": {
+                "types": [
+                  "number"
+                ]
+              },
+              "disabled": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "selectedId": {
+          "types": [
+            "string"
+          ],
+          "description": "Currently selected card id.",
+          "default": ""
+        },
+        "size": {
+          "types": [
+            "string"
+          ],
+          "description": "Card-art size variant.",
+          "enumValues": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md"
+        },
+        "onCardClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Direct callback when a (non-disabled) card is clicked.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        },
+        "cardClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event-bus event emitted with `{ cardId }` on click.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "cardId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "emptyLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Empty-state label when there are no cards.",
+          "default": "No cards in hand"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "card-battler-board": {
+      "type": "card-battler-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "CardBattlerBoard component",
+      "suggestedFor": [
+        "card",
+        "battler",
+        "board",
+        "card battler board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "entity prop",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "deck": {
+          "types": [
+            "array"
+          ],
+          "description": "Cards remaining in the draw deck (count-only view).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "iconKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              },
+              "defense": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "hand": {
+          "types": [
+            "array"
+          ],
+          "description": "Cards currently in the player's hand.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "iconKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              },
+              "defense": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "board": {
+          "types": [
+            "array"
+          ],
+          "description": "Cards played onto the board this match.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "iconKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              },
+              "defense": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "mana": {
+          "types": [
+            "number"
+          ],
+          "description": "mana prop"
+        },
+        "maxMana": {
+          "types": [
+            "number"
+          ],
+          "description": "maxMana prop"
+        },
+        "turn": {
+          "types": [
+            "number"
+          ],
+          "description": "turn prop"
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "result prop",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Base-url + per-iconKey card sprite map (organism owns asset choice).",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "cards": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
+          }
+        },
+        "playCardEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playCardEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "cardId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "endTurnEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "endTurnEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playAgainEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "visual-novel-board": {
+      "type": "visual-novel-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "VisualNovelBoard component",
+      "suggestedFor": [
+        "visual",
+        "novel",
+        "board",
+        "visual novel board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "entity prop",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "nodes": {
+          "types": [
+            "array"
+          ],
+          "description": "Full dialogue graph.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "speaker": {
+                "types": [
+                  "string"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "portraitKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "choices": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "nextId": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "nextId"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "speaker",
+              "text"
+            ]
+          }
+        },
+        "currentNodeId": {
+          "types": [
+            "string"
+          ],
+          "description": "Id of the node currently displayed."
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Asset base-url + scene/portrait sprite maps (organism owns asset choice).",
+          "properties": {
+            "baseUrl": {
+              "types": [
+                "asset"
+              ]
+            },
+            "backgrounds": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "portraits": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
+          }
+        },
+        "typewriterSpeed": {
+          "types": [
+            "number"
+          ],
+          "description": "Typewriter speed in ms per character (0 = instant).",
+          "default": 30
+        },
+        "portraitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Portrait draw-size multiplier.",
+          "default": 1
+        },
+        "chooseEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "chooseEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "choiceIndex",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "advanceEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "advanceEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "restartEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "restartEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        }
+      }
+    },
+    "card-battler-template": {
+      "type": "card-battler-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "CardBattlerTemplate  Thin template wrapper: titled header + CardBattlerBoard. All game state is driven by the entity prop (passed through from the orbital trait).",
+      "suggestedFor": [
+        "card",
+        "battler",
+        "template",
+        "card battler template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "title prop",
+          "default": "Card Battler"
+        },
+        "deck": {
+          "types": [
+            "array"
+          ],
+          "description": "deck prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "iconKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              },
+              "defense": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "hand": {
+          "types": [
+            "array"
+          ],
+          "description": "hand prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "iconKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              },
+              "defense": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "board": {
+          "types": [
+            "array"
+          ],
+          "description": "board prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "iconKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "cost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              },
+              "defense": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "mana": {
+          "types": [
+            "number"
+          ],
+          "description": "mana prop"
+        },
+        "maxMana": {
+          "types": [
+            "number"
+          ],
+          "description": "maxMana prop"
+        },
+        "turn": {
+          "types": [
+            "number"
+          ],
+          "description": "turn prop"
+        },
+        "result": {
+          "types": [
+            "string"
+          ],
+          "description": "result prop",
+          "enumValues": [
+            "none",
+            "won",
+            "lost"
+          ]
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "assetManifest prop"
+        },
+        "playCardEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playCardEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "cardId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "endTurnEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "endTurnEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "playAgainEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "gameEndEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "gameEndEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "result",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "visual-novel-template": {
+      "type": "visual-novel-template",
+      "category": "game",
+      "tier": "templates",
+      "family": "game",
+      "description": "VisualNovelTemplate  Thin template wrapper: titled header + VisualNovelBoard. All scene state is driven by the entity/props passed through from the orbital trait.",
+      "suggestedFor": [
+        "visual",
+        "novel",
+        "template",
+        "visual novel template"
+      ],
+      "typicalSize": "full",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity data, the sole source of runtime state",
+          "required": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "title prop",
+          "default": "Visual Novel"
+        },
+        "nodes": {
+          "types": [
+            "array"
+          ],
+          "description": "nodes prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "speaker": {
+                "types": [
+                  "string"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "portraitKey": {
+                "types": [
+                  "string"
+                ]
+              },
+              "choices": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "nextId": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "nextId"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "speaker",
+              "text"
+            ]
+          }
+        },
+        "currentNodeId": {
+          "types": [
+            "string"
+          ],
+          "description": "currentNodeId prop"
+        },
+        "typewriterSpeed": {
+          "types": [
+            "number"
+          ],
+          "description": "typewriterSpeed prop"
+        },
+        "portraitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "portraitScale prop"
+        },
+        "chooseEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "chooseEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "choiceIndex",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "advanceEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "advanceEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "restartEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "restartEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         }
       }
     }
