@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-23T15:48:39.669Z",
+  "exportedAt": "2026-06-24T07:42:14.716Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -6132,6 +6132,13 @@
           "description": "Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave",
           "kind": "event"
         },
+        "tapReveal": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true (default), a touch/pen tap also fires `hoverEvent` (toggling hovered) so hover-only reveals work on touch.",
+          "default": true
+        },
         "maxWidth": {
           "types": [
             "string"
@@ -11802,7 +11809,49 @@
             "object"
           ],
           "description": "Entity data, the sole source of runtime state",
-          "required": true
+          "required": true,
+          "kind": "entity",
+          "requiredFields": [
+            "id",
+            "count"
+          ],
+          "properties": {
+            "id": {
+              "types": [
+                "string"
+              ]
+            },
+            "count": {
+              "types": [
+                "number"
+              ]
+            },
+            "decrementDisabled": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "incrementDisabled": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "decrementLabel": {
+              "types": [
+                "string"
+              ]
+            },
+            "incrementLabel": {
+              "types": [
+                "string"
+              ]
+            },
+            "rangeText": {
+              "types": [
+                "string"
+              ]
+            }
+          }
         },
         "className": {
           "types": [
@@ -14116,6 +14165,20 @@
           "description": "Force-sim target edge length (larger ⇒ more spread out)",
           "default": 100
         },
+        "nodeSpacing": {
+          "types": [
+            "number"
+          ],
+          "description": "Minimum empty gap (px) enforced between node edges so nodes never overlap.",
+          "default": 28
+        },
+        "linkOpacity": {
+          "types": [
+            "number"
+          ],
+          "description": "Base opacity for links when nothing is hovered (kept faint so dense graphs stay readable; incident links brighten on hover).",
+          "default": 0.18
+        },
         "layout": {
           "types": [
             "string"
@@ -16409,10 +16472,31 @@
           "kind": "entity",
           "cardinality": "collection",
           "requiredFields": [
-            "id",
             "title",
             "startTime"
           ],
+          "properties": {
+            "title": {
+              "types": [
+                "string"
+              ]
+            },
+            "startTime": {
+              "types": [
+                "string"
+              ]
+            },
+            "endTime": {
+              "types": [
+                "string"
+              ]
+            },
+            "color": {
+              "types": [
+                "string"
+              ]
+            }
+          },
           "default": []
         },
         "onSlotClick": {
@@ -21365,7 +21449,39 @@
           "cardinality": "collection",
           "requiredFields": [
             "title"
-          ]
+          ],
+          "properties": {
+            "title": {
+              "types": [
+                "string"
+              ]
+            },
+            "description": {
+              "types": [
+                "string"
+              ]
+            },
+            "category": {
+              "types": [
+                "string"
+              ]
+            },
+            "categoryColor": {
+              "types": [
+                "string"
+              ]
+            },
+            "href": {
+              "types": [
+                "string"
+              ]
+            },
+            "linkLabel": {
+              "types": [
+                "string"
+              ]
+            }
+          }
         },
         "heading": {
           "types": [
@@ -21507,7 +21623,34 @@
           "cardinality": "collection",
           "requiredFields": [
             "title"
-          ]
+          ],
+          "properties": {
+            "title": {
+              "types": [
+                "string"
+              ]
+            },
+            "icon": {
+              "types": [
+                "string"
+              ]
+            },
+            "description": {
+              "types": [
+                "string"
+              ]
+            },
+            "href": {
+              "types": [
+                "string"
+              ]
+            },
+            "linkLabel": {
+              "types": [
+                "string"
+              ]
+            }
+          }
         },
         "columns": {
           "types": [
@@ -21660,7 +21803,105 @@
           "cardinality": "record",
           "requiredFields": [
             "title"
-          ]
+          ],
+          "properties": {
+            "title": {
+              "types": [
+                "string"
+              ]
+            },
+            "tag": {
+              "types": [
+                "string"
+              ]
+            },
+            "titleAccent": {
+              "types": [
+                "string"
+              ]
+            },
+            "subtitle": {
+              "types": [
+                "string"
+              ]
+            },
+            "primaryAction": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "href": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "secondaryAction": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "href": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "installCommand": {
+              "types": [
+                "string"
+              ]
+            },
+            "image": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "src": {
+                  "types": [
+                    "asset"
+                  ]
+                },
+                "alt": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "imagePosition": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "below",
+                "right",
+                "background"
+              ]
+            },
+            "background": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "dark",
+                "gradient",
+                "subtle"
+              ]
+            }
+          }
         },
         "children": {
           "types": [
@@ -21796,7 +22037,54 @@
           "requiredFields": [
             "name",
             "price"
-          ]
+          ],
+          "properties": {
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "price": {
+              "types": [
+                "string"
+              ]
+            },
+            "description": {
+              "types": [
+                "string"
+              ]
+            },
+            "features": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "actionLabel": {
+              "types": [
+                "string"
+              ]
+            },
+            "actionHref": {
+              "types": [
+                "string"
+              ]
+            },
+            "highlighted": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "badge": {
+              "types": [
+                "string"
+              ]
+            }
+          }
         },
         "heading": {
           "types": [
@@ -21937,7 +22225,51 @@
           "cardinality": "collection",
           "requiredFields": [
             "title"
-          ]
+          ],
+          "properties": {
+            "title": {
+              "types": [
+                "string"
+              ]
+            },
+            "description": {
+              "types": [
+                "string"
+              ]
+            },
+            "image": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "src": {
+                  "types": [
+                    "asset"
+                  ]
+                },
+                "alt": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "href": {
+              "types": [
+                "string"
+              ]
+            },
+            "badge": {
+              "types": [
+                "string"
+              ]
+            },
+            "accentColor": {
+              "types": [
+                "string"
+              ]
+            }
+          }
         },
         "columns": {
           "types": [
@@ -22091,7 +22423,19 @@
           "requiredFields": [
             "value",
             "label"
-          ]
+          ],
+          "properties": {
+            "value": {
+              "types": [
+                "string"
+              ]
+            },
+            "label": {
+              "types": [
+                "string"
+              ]
+            }
+          }
         },
         "columns": {
           "types": [
@@ -22234,7 +22578,29 @@
           "cardinality": "collection",
           "requiredFields": [
             "title"
-          ]
+          ],
+          "properties": {
+            "title": {
+              "types": [
+                "string"
+              ]
+            },
+            "number": {
+              "types": [
+                "number"
+              ]
+            },
+            "description": {
+              "types": [
+                "string"
+              ]
+            },
+            "icon": {
+              "types": [
+                "string"
+              ]
+            }
+          }
         },
         "orientation": {
           "types": [
@@ -22393,7 +22759,34 @@
           "cardinality": "collection",
           "requiredFields": [
             "name"
-          ]
+          ],
+          "properties": {
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "nameAr": {
+              "types": [
+                "string"
+              ]
+            },
+            "role": {
+              "types": [
+                "string"
+              ]
+            },
+            "bio": {
+              "types": [
+                "string"
+              ]
+            },
+            "avatar": {
+              "types": [
+                "asset"
+              ]
+            }
+          }
         },
         "heading": {
           "types": [
@@ -22428,7 +22821,262 @@
             "object"
           ],
           "description": "Entity data, the sole source of runtime state",
-          "required": true
+          "required": true,
+          "kind": "entity",
+          "requiredFields": [
+            "id",
+            "hero",
+            "articles"
+          ],
+          "properties": {
+            "id": {
+              "types": [
+                "string"
+              ]
+            },
+            "hero": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "id": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "tag": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "title": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "titleAccent": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "subtitle": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "primaryAction": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "href": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "href"
+                  ]
+                },
+                "secondaryAction": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "href": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "href"
+                  ]
+                },
+                "background": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "dark",
+                    "gradient",
+                    "subtle"
+                  ]
+                }
+              },
+              "required": [
+                "title",
+                "subtitle"
+              ]
+            },
+            "articles": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "content": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "title",
+                  "content"
+                ]
+              }
+            },
+            "team": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "nameAr": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "bio": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "avatar": {
+                    "types": [
+                      "asset"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "role",
+                  "bio"
+                ]
+              }
+            },
+            "caseStudies": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "categoryColor": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "href": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "linkLabel": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "description",
+                  "category",
+                  "href"
+                ]
+              }
+            },
+            "ctaTitle": {
+              "types": [
+                "string"
+              ]
+            },
+            "ctaAction": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "href": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "label",
+                "href"
+              ]
+            }
+          }
         },
         "className": {
           "types": [
@@ -22458,7 +23106,200 @@
             "object"
           ],
           "description": "Entity data, the sole source of runtime state",
-          "required": true
+          "required": true,
+          "kind": "entity",
+          "requiredFields": [
+            "id",
+            "hero",
+            "sections"
+          ],
+          "properties": {
+            "id": {
+              "types": [
+                "string"
+              ]
+            },
+            "hero": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "id": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "tag": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "title": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "titleAccent": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "subtitle": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "primaryAction": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "href": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "href"
+                  ]
+                },
+                "secondaryAction": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "href": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "href"
+                  ]
+                },
+                "background": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "dark",
+                    "gradient",
+                    "subtle"
+                  ]
+                }
+              },
+              "required": [
+                "title",
+                "subtitle"
+              ]
+            },
+            "sections": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "bullets": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "image": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "src": {
+                        "types": [
+                          "object"
+                        ]
+                      },
+                      "alt": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "src",
+                      "alt"
+                    ]
+                  },
+                  "imagePosition": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "left",
+                      "right"
+                    ]
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ]
+              }
+            },
+            "ctaTitle": {
+              "types": [
+                "string"
+              ]
+            },
+            "ctaAction": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "href": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "label",
+                "href"
+              ]
+            }
+          }
         },
         "className": {
           "types": [
@@ -22487,7 +23328,380 @@
             "object"
           ],
           "description": "Entity data, the sole source of runtime state",
-          "required": true
+          "required": true,
+          "kind": "entity",
+          "requiredFields": [
+            "id",
+            "hero",
+            "features",
+            "ctaTitle"
+          ],
+          "properties": {
+            "id": {
+              "types": [
+                "string"
+              ]
+            },
+            "hero": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "id": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "tag": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "title": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "titleAccent": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "subtitle": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "primaryAction": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "href": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "href"
+                  ]
+                },
+                "secondaryAction": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "href": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label",
+                    "href"
+                  ]
+                },
+                "installCommand": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "image": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "src": {
+                      "types": [
+                        "object"
+                      ]
+                    },
+                    "alt": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "src",
+                    "alt"
+                  ]
+                },
+                "imagePosition": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "below",
+                    "right",
+                    "background"
+                  ]
+                },
+                "background": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "dark",
+                    "gradient",
+                    "subtle"
+                  ]
+                }
+              },
+              "required": [
+                "title",
+                "subtitle"
+              ]
+            },
+            "features": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "icon": {
+                    "types": [
+                      "icon",
+                      "string"
+                    ]
+                  },
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "href": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ]
+              }
+            },
+            "stats": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "value": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "value",
+                  "label"
+                ]
+              }
+            },
+            "steps": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "icon": {
+                    "types": [
+                      "icon",
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "title",
+                  "description"
+                ]
+              }
+            },
+            "showcase": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "image": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "src": {
+                        "types": [
+                          "object"
+                        ]
+                      },
+                      "alt": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "src",
+                      "alt"
+                    ]
+                  },
+                  "href": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "badge": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "title",
+                  "image"
+                ]
+              }
+            },
+            "ctaTitle": {
+              "types": [
+                "string"
+              ]
+            },
+            "ctaSubtitle": {
+              "types": [
+                "string"
+              ]
+            },
+            "ctaPrimaryAction": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "href": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "label",
+                "href"
+              ]
+            },
+            "ctaSecondaryAction": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "href": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "label",
+                "href"
+              ]
+            },
+            "communityGithub": {
+              "types": [
+                "string"
+              ]
+            },
+            "communityDiscord": {
+              "types": [
+                "string"
+              ]
+            }
+          }
         },
         "className": {
           "types": [
@@ -22540,7 +23754,192 @@
             "object"
           ],
           "description": "Entity data, the sole source of runtime state",
-          "required": true
+          "required": true,
+          "kind": "entity",
+          "requiredFields": [
+            "id",
+            "hero",
+            "plans"
+          ],
+          "properties": {
+            "id": {
+              "types": [
+                "string"
+              ]
+            },
+            "hero": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "id": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "tag": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "title": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "titleAccent": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "subtitle": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "background": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "dark",
+                    "gradient",
+                    "subtle"
+                  ]
+                }
+              },
+              "required": [
+                "title",
+                "subtitle"
+              ]
+            },
+            "plans": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "price": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "features": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "actionLabel": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "actionHref": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "highlighted": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "badge": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "price",
+                  "features",
+                  "actionLabel",
+                  "actionHref"
+                ]
+              }
+            },
+            "faq": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "question": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "answer": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "question",
+                  "answer"
+                ]
+              }
+            },
+            "ctaTitle": {
+              "types": [
+                "string"
+              ]
+            },
+            "ctaSubtitle": {
+              "types": [
+                "string"
+              ]
+            },
+            "ctaAction": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "href": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "label",
+                "href"
+              ]
+            }
+          }
         },
         "className": {
           "types": [
@@ -24138,10 +25537,57 @@
           "kind": "entity",
           "cardinality": "collection",
           "requiredFields": [
-            "id",
             "authorName",
             "content"
-          ]
+          ],
+          "properties": {
+            "authorName": {
+              "types": [
+                "string"
+              ]
+            },
+            "content": {
+              "types": [
+                "string"
+              ]
+            },
+            "authorAvatarUrl": {
+              "types": [
+                "string"
+              ]
+            },
+            "postedAt": {
+              "types": [
+                "string"
+              ]
+            },
+            "voteCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "userVote": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "up",
+                "down",
+                "none"
+              ]
+            },
+            "collapsed": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "replies": {
+              "types": [
+                "object",
+                "array"
+              ]
+            }
+          }
         },
         "maxDepth": {
           "types": [
@@ -24731,11 +26177,65 @@
           "kind": "entity",
           "cardinality": "collection",
           "requiredFields": [
-            "id",
             "label",
             "x",
-            "y"
-          ]
+            "y",
+            "capacity"
+          ],
+          "properties": {
+            "label": {
+              "types": [
+                "string"
+              ]
+            },
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "capacity": {
+              "types": [
+                "number"
+              ]
+            },
+            "partySize": {
+              "types": [
+                "number"
+              ]
+            },
+            "serverName": {
+              "types": [
+                "string"
+              ]
+            },
+            "status": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "empty",
+                "seated",
+                "ordered",
+                "awaiting-bill",
+                "cleaning"
+              ]
+            },
+            "shape": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "round",
+                "rectangle",
+                "square"
+              ]
+            }
+          }
         },
         "width": {
           "types": [
