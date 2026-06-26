@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-24T15:53:51.685Z",
+  "exportedAt": "2026-06-25T10:12:47.487Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -13055,57 +13055,26 @@
               "object"
             ],
             "properties": {
-              "id": {
+              "source": {
                 "types": [
-                  "string"
+                  "unknown"
                 ]
               },
-              "title": {
+              "data": {
                 "types": [
-                  "string"
+                  "object"
                 ]
               },
-              "description": {
+              "index": {
                 "types": [
-                  "string"
+                  "number"
                 ]
-              },
-              "date": {
-                "types": [
-                  "string"
-                ]
-              },
-              "status": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "complete",
-                  "active",
-                  "pending",
-                  "error"
-                ]
-              },
-              "icon": {
-                "types": [
-                  "icon",
-                  "string"
-                ]
-              },
-              "tags": {
-                "types": [
-                  "array"
-                ],
-                "items": {
-                  "types": [
-                    "string"
-                  ]
-                }
               }
             },
             "required": [
-              "id",
-              "title"
+              "source",
+              "data",
+              "index"
             ]
           }
         },
@@ -26466,6 +26435,19 @@
           ],
           "description": "Choice index number (displayed as prefix)"
         },
+        "assetUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Sprite image URL — takes precedence over icon when provided"
+        },
+        "icon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "Icon displayed before the text"
+        },
         "disabled": {
           "types": [
             "boolean"
@@ -31632,6 +31614,11 @@
                   "string"
                 ]
               },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
               "label": {
                 "types": [
                   "string"
@@ -32674,7 +32661,8 @@
           "description": "--- Rendering options ---",
           "enumValues": [
             "isometric",
-            "hex"
+            "hex",
+            "flat"
           ],
           "default": "isometric"
         },
@@ -33387,6 +33375,11 @@
                   "string"
                 ]
               },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
               "icon": {
                 "types": [
                   "icon",
@@ -33787,6 +33780,11 @@
               "label": {
                 "types": [
                   "string"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
                 ]
               },
               "icon": {
@@ -52624,6 +52622,5367 @@
             "array"
           ],
           "description": "Features (resources, structures, etc.) on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest (same shape as IsometricCanvas.assetManifest)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to manifest sprite paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 0.45
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": true
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": true
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "chat-bar": {
+      "type": "chat-bar",
+      "category": "display",
+      "tier": "organisms",
+      "family": "core",
+      "description": "ChatBar component",
+      "suggestedFor": [
+        "chat",
+        "bar",
+        "chat bar"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "status": {
+          "types": [
+            "string"
+          ],
+          "description": "Pipeline status",
+          "enumValues": [
+            "idle",
+            "running",
+            "paused",
+            "complete",
+            "error"
+          ],
+          "default": "idle"
+        },
+        "activeGate": {
+          "types": [
+            "string"
+          ],
+          "description": "Currently active gate label, e.g. \"Gate 2: State machines\""
+        },
+        "jepaValidity": {
+          "types": [
+            "number"
+          ],
+          "description": "JEPA validity probability 0-1"
+        },
+        "placeholder": {
+          "types": [
+            "string"
+          ],
+          "description": "Input placeholder text"
+        },
+        "context": {
+          "types": [
+            "string"
+          ],
+          "description": "Agent context description"
+        }
+      }
+    },
+    "subagent-trace-panel": {
+      "type": "subagent-trace-panel",
+      "category": "display",
+      "tier": "organisms",
+      "family": "core",
+      "description": "SubagentTracePanel component",
+      "suggestedFor": [
+        "subagent",
+        "trace",
+        "panel",
+        "subagent trace panel"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "subagents": {
+          "types": [
+            "array"
+          ],
+          "description": "All known subagents from the runner.",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "freeform": true
+          }
+        },
+        "focusedOrbital": {
+          "types": [
+            "string"
+          ],
+          "description": "Current canvas focus orbital — only used by overlay mode. Tab mode ignores this."
+        },
+        "disclosureLevel": {
+          "types": [
+            "number"
+          ],
+          "description": "Drives density: 1-2 → compact, 3-4 → full activity embed (when mode='overlay').",
+          "required": true,
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4
+          ]
+        },
+        "open": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether the panel is visible. Typically auto-opens during generation in overlay mode.",
+          "required": true
+        },
+        "onClose": {
+          "types": [
+            "function"
+          ],
+          "description": "Optional dismiss handler.",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "coordinatorActivities": {
+          "types": [
+            "array"
+          ],
+          "description": "Full coordinator activities (tool calls, results, messages, errors).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "freeform": true
+          }
+        },
+        "coordinatorMessages": {
+          "types": [
+            "array"
+          ],
+          "description": "Canonical Coordinator conversation — same shape live and on reload. When present, takes precedence over `coordinatorActivities` for the Coordinator section.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "freeform": true
+          }
+        },
+        "mode": {
+          "types": [
+            "string"
+          ],
+          "description": "Rendering mode. - `'overlay'` (default): floating side panel positioned absolutely over the canvas. Density follows `disclosureLevel` (compact L1/L2, rich L3+). The `open` flag actually hides the panel when false. - `'tab'`: full-width content for a dedicated 'trace' supplemental tab. Always renders rich (regardless of disclosure level), always visible (the `open` flag is ignored), and includes an empty state when no subagents are present so users see the surface even before generation starts.",
+          "enumValues": [
+            "overlay",
+            "tab"
+          ],
+          "default": "overlay"
+        }
+      }
+    },
+    "boardgame-board": {
+      "type": "boardgame-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "BoardgameBoard component",
+      "suggestedFor": [
+        "boardgame",
+        "board",
+        "boardgame board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Board squares (flat top-down grid tiles)",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Tokens/units on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Features (markers, structures, etc.) on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest (same shape as IsometricCanvas.assetManifest)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to asset paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 0.45
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": false
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": true
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "fishing-board": {
+      "type": "fishing-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "FishingBoard component",
+      "suggestedFor": [
+        "fishing",
+        "board",
+        "fishing board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "backgroundImage": {
+          "types": [
+            "asset"
+          ],
+          "description": "Background image URL for the fishing scene"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to asset paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 1
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": false
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas width in pixels",
+          "default": 800
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas height in pixels",
+          "default": 600
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "holiday-runner-board": {
+      "type": "holiday-runner-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "HolidayRunnerBoard component",
+      "suggestedFor": [
+        "holiday",
+        "runner",
+        "board",
+        "holiday runner board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "backgroundImage": {
+          "types": [
+            "asset"
+          ],
+          "description": "Background image URL for the runner level"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prefix for asset URLs"
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas width in pixels",
+          "default": 800
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas height in pixels",
+          "default": 400
+        },
+        "fps": {
+          "types": [
+            "number"
+          ],
+          "description": "Target frames per second",
+          "default": 60
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale"
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay"
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls"
+        },
+        "tickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tickEvent} with { dt, frame } each tick",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "dt",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "frame",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "drawEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{drawEvent} with { frame } each draw frame",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "frame",
+              "type": "number",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "match-puzzle-board": {
+      "type": "match-puzzle-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "MatchPuzzleBoard component",
+      "suggestedFor": [
+        "match",
+        "puzzle",
+        "board",
+        "match puzzle board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Grid tiles for the match puzzle board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Units on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Gem/feature items on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest (same shape as IsometricCanvas.assetManifest)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to manifest sprite paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 0.45
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": false
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": false
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "minigolf-board": {
+      "type": "minigolf-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "MinigolfBoard component",
+      "suggestedFor": [
+        "minigolf",
+        "board",
+        "minigolf board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Isometric grid tiles",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Units on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Features (holes, obstacles, etc.) on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest (same shape as IsometricCanvas.assetManifest)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to manifest sprite paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 0.45
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": true
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": true
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "pinball-board": {
+      "type": "pinball-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "PinballBoard component",
+      "suggestedFor": [
+        "pinball",
+        "board",
+        "pinball board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Playfield tiles",
+          "items": {
+            "types": [
+              "unknown"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Ball units on the board",
+          "items": {
+            "types": [
+              "unknown"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Features (bumpers, paddles, etc.) on the board",
+          "items": {
+            "types": [
+              "unknown"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to manifest sprite paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 1
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay"
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls"
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "pirate-board": {
+      "type": "pirate-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "PirateBoard component",
+      "suggestedFor": [
+        "pirate",
+        "board",
+        "pirate board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Sea/island grid tiles",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Ship and crew units on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Features (ports, treasures, etc.) on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest (same shape as IsometricCanvas.assetManifest)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to manifest sprite paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 0.45
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": true
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": true
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "racing-board": {
+      "type": "racing-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "RacingBoard component",
+      "suggestedFor": [
+        "racing",
+        "board",
+        "racing board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "backgroundImage": {
+          "types": [
+            "asset"
+          ],
+          "description": "Race track background image URL"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to asset paths"
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas width in pixels",
+          "default": 800
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas height in pixels",
+          "default": 600
+        },
+        "fps": {
+          "types": [
+            "number"
+          ],
+          "description": "Target frames per second",
+          "default": 60
+        },
+        "tickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tickEvent} with { dt, frame } each tick",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "dt",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "frame",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "drawEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{drawEvent} with { frame } each draw frame",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "frame",
+              "type": "number",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "sokoban-board": {
+      "type": "sokoban-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "SokobanBoard component",
+      "suggestedFor": [
+        "sokoban",
+        "board",
+        "sokoban board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Grid tiles (floor, wall, target)",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Units on the board (the pusher character)",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Features (crates) on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest (same shape as IsometricCanvas.assetManifest)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to manifest sprite paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 0.45
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": false
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": false
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "space-shmup-board": {
+      "type": "space-shmup-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "SpaceShmupBoard component",
+      "suggestedFor": [
+        "space",
+        "shmup",
+        "board",
+        "space shmup board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "backgroundImage": {
+          "types": [
+            "asset"
+          ],
+          "description": "Background image URL (starfield / space scene)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prefix for asset URLs"
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas width in pixels",
+          "default": 800
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "Canvas height in pixels",
+          "default": 600
+        },
+        "fps": {
+          "types": [
+            "number"
+          ],
+          "description": "Target frames per second",
+          "default": 60
+        }
+      }
+    },
+    "space-station-board": {
+      "type": "space-station-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "SpaceStationBoard component",
+      "suggestedFor": [
+        "space",
+        "station",
+        "board",
+        "space station board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Isometric grid tiles",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Units on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Features (consoles, airlocks, etc.) on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest (same shape as IsometricCanvas.assetManifest)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to manifest sprite paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 0.45
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": true
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": true
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "sports-board": {
+      "type": "sports-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "SportsBoard component",
+      "suggestedFor": [
+        "sports",
+        "board",
+        "sports board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Court/field terrain tiles",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Player units on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Features (goals, markers, etc.) on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "assetUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "type"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "string"
+          ],
+          "description": "Asset sprite manifest (same shape as IsometricCanvas.assetManifest)"
+        },
+        "assetBaseUrl": {
+          "types": [
+            "asset"
+          ],
+          "description": "Base URL prepended to asset paths"
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Render scale",
+          "default": 0.45
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show minimap overlay",
+          "default": false
+        },
+        "enableCamera": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable camera pan/zoom controls",
+          "default": true
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{tileClickEvent} with { x, y } on tile click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event: emits UI:{unitClickEvent} with { unitId } on unit click",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "unitId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "tanks-board": {
+      "type": "tanks-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "description": "TanksBoard component",
+      "suggestedFor": [
+        "tanks",
+        "board",
+        "tanks board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "tiles": {
+          "types": [
+            "array"
+          ],
+          "description": "Ground/sand terrain tiles",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "terrain": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "terrainSprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "passable": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "movementCost": {
+                "types": [
+                  "number"
+                ]
+              },
+              "tileType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Tank units on the board",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "spriteSheet": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "modelUrl": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "unitType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "heroId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "team": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "faction": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "neutral"
+                ]
+              },
+              "health": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxHealth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "traits": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "currentState": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "states": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "cooldown": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "currentState",
+                    "states",
+                    "cooldown"
+                  ]
+                }
+              },
+              "previousPosition": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "elevation": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          }
+        },
+        "features": {
+          "types": [
+            "array"
+          ],
+          "description": "Features (obstacles, structures, etc.) on the board",
           "items": {
             "types": [
               "object"
