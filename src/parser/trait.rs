@@ -261,7 +261,7 @@ impl Parser {
 
         let mut events_renames: Vec<(String, String)> = Vec::new();
         let mut fields_renames: Vec<(String, String)> = Vec::new();
-        let mut config_values: Vec<(String, SExpression)> = Vec::new();
+        let mut config_values: Vec<ConfigField> = Vec::new();
         let mut listens: Vec<Listen> = Vec::new();
         let mut emits_scope: Option<String> = None;
 
@@ -332,10 +332,13 @@ impl Parser {
                 }
             } else if self.check_ident("config") {
                 // `config: { param: value, ... }` or `config { ... }` at the
-                // trait-ref call site — caller-supplied values for the imported
-                // atom's `config` fields. Lowered to the trait reference's
-                // `config` map; the inline phase substitutes `@config.<param>`
-                // inside the imported trait's effects with these values.
+                // trait-ref call site. Each entry is EITHER:
+                //   - Plain wiring:   `key : value` — a `ConfigField` with
+                //     only `default` set and `field_type` = `"unknown"`.
+                //   - Full declaration: `key : type = default @label "..." ...`
+                //     — a fully-annotated `ConfigField`. Distinguished from
+                //     plain wiring by the presence of `=` before the entry
+                //     separator (`,` / `}` / newline).
                 self.advance();
                 if matches!(self.peek(), TokenKind::Colon) {
                     self.advance();
@@ -347,10 +350,51 @@ impl Parser {
                         self.advance();
                         break;
                     }
+                    let span = self.peek_span();
                     let key = self.expect_ident()?;
                     self.expect_kind(&TokenKind::Colon, ":")?;
-                    let value = self.parse_sexpr_or_value()?;
-                    config_values.push((key, value));
+                    let field = if self.has_equals_before_entry_end() {
+                        // Declaration form: `key : type = default [@annotations]`
+                        let type_expr = self.parse_type_expr()?;
+                        let default = if matches!(self.peek(), TokenKind::Equals) {
+                            self.advance();
+                            Some(self.parse_sexpr_or_value()?)
+                        } else {
+                            None
+                        };
+                        if matches!(self.peek(), TokenKind::Newline) {
+                            self.advance();
+                        }
+                        let (label, description, synonyms, tier) =
+                            self.parse_config_annotations()?;
+                        ConfigField {
+                            name: key,
+                            type_expr,
+                            default,
+                            label,
+                            description,
+                            synonyms,
+                            tier,
+                            span,
+                        }
+                    } else {
+                        // Plain wiring form: `key : value`
+                        let value = self.parse_sexpr_or_value()?;
+                        if matches!(self.peek(), TokenKind::Newline) {
+                            self.advance();
+                        }
+                        ConfigField {
+                            name: key,
+                            type_expr: TypeExpr::Primitive("unknown".to_string()),
+                            default: Some(value),
+                            label: None,
+                            description: None,
+                            synonyms: None,
+                            tier: None,
+                            span,
+                        }
+                    };
+                    config_values.push(field);
                     if matches!(self.peek(), TokenKind::Comma) {
                         self.advance();
                     }
@@ -985,50 +1029,19 @@ impl Parser {
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
                 }
-                // Modern annotation form: `@label "..."`,
-                // `@description "..."`, `@synonyms "..."`, and
-                // `@tier "..."` on the lines following the declaration.
-                // Repeated until a non-annotation token appears (the
-                // next field or the closing brace). `@synonyms` is a
-                // comma-separated user-vocabulary list used by Stage A
-                // prompts + knob-embeddings; `@tier` is one of
-                // `essential` | `customization` | `advanced` |
-                // `internal` and drives the studio Questionnaire's
-                // filter + disclosure.
-                loop {
-                    self.skip_newlines();
-                    let sigil_name = match self.peek().clone() {
-                        TokenKind::Sigil(s) => s,
-                        _ => break,
-                    };
-                    let annotation = match sigil_name.as_str() {
-                        "label" | "description" | "synonyms" | "tier" => sigil_name,
-                        _ => break,
-                    };
-                    self.advance();
-                    let value = match self.peek().clone() {
-                        TokenKind::String(s) => {
-                            self.advance();
-                            s
-                        }
-                        other => {
-                            return Err(ParseError::UnexpectedToken {
-                                expected: format!("string literal after @{}", annotation),
-                                got: format!("{:?}", other),
-                                span: self.peek_span(),
-                            });
-                        }
-                    };
-                    match annotation.as_str() {
-                        "label" => label = Some(value),
-                        "description" => description = Some(value),
-                        "synonyms" => synonyms = Some(value),
-                        "tier" => tier = Some(value),
-                        _ => unreachable!(),
-                    }
-                    if matches!(self.peek(), TokenKind::Newline) {
-                        self.advance();
-                    }
+                let (ann_label, ann_description, ann_synonyms, ann_tier) =
+                    self.parse_config_annotations()?;
+                if ann_label.is_some() {
+                    label = ann_label;
+                }
+                if ann_description.is_some() {
+                    description = ann_description;
+                }
+                if ann_synonyms.is_some() {
+                    synonyms = ann_synonyms;
+                }
+                if ann_tier.is_some() {
+                    tier = ann_tier;
                 }
                 out.push(ConfigField {
                     name,
@@ -1045,5 +1058,76 @@ impl Parser {
             }
         }
         Ok(out)
+    }
+
+    /// Consume trailing `@label`/`@description`/`@synonyms`/`@tier` annotation
+    /// lines after a config field or call-site config entry. Stops at the first
+    /// non-annotation token. Shared by `parse_config_block` (atom declarations)
+    /// and the call-site config parser (organism overrides).
+    fn parse_config_annotations(
+        &mut self,
+    ) -> Result<(Option<String>, Option<String>, Option<String>, Option<String>), ParseError> {
+        let mut label = None;
+        let mut description = None;
+        let mut synonyms = None;
+        let mut tier = None;
+        loop {
+            self.skip_newlines();
+            let sigil_name = match self.peek().clone() {
+                TokenKind::Sigil(s) => s,
+                _ => break,
+            };
+            let annotation = match sigil_name.as_str() {
+                "label" | "description" | "synonyms" | "tier" => sigil_name,
+                _ => break,
+            };
+            self.advance();
+            let value = match self.peek().clone() {
+                TokenKind::String(s) => {
+                    self.advance();
+                    s
+                }
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: format!("string literal after @{}", annotation),
+                        got: format!("{:?}", other),
+                        span: self.peek_span(),
+                    });
+                }
+            };
+            match annotation.as_str() {
+                "label" => label = Some(value),
+                "description" => description = Some(value),
+                "synonyms" => synonyms = Some(value),
+                "tier" => tier = Some(value),
+                _ => unreachable!(),
+            }
+            if matches!(self.peek(), TokenKind::Newline) {
+                self.advance();
+            }
+        }
+        Ok((label, description, synonyms, tier))
+    }
+
+    /// Scan forward from the current position looking for a `=` token before
+    /// the next entry separator (`','`, `'}'`, newline, or EOF). Returns `true`
+    /// when a `=` is found, indicating a declaration form (`key : type = value`)
+    /// rather than a plain wiring value (`key : value`).
+    ///
+    /// This is a pure-lookahead operation — it does NOT advance the cursor.
+    fn has_equals_before_entry_end(&self) -> bool {
+        let mut i = self.pos;
+        let len = self.tokens.len();
+        while i < len {
+            match &self.tokens[i].kind {
+                TokenKind::Equals => return true,
+                TokenKind::Comma
+                | TokenKind::RBrace
+                | TokenKind::Newline
+                | TokenKind::Eof => return false,
+                _ => i += 1,
+            }
+        }
+        false
     }
 }

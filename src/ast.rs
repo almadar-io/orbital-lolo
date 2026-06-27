@@ -374,9 +374,11 @@ pub struct TraitRefData {
     pub fields: Vec<(String, String)>,
     /// Caller-supplied `config: { param: value, ... }` values at the
     /// trait-ref call site. Inline phase substitutes `@config.<param>` in the
-    /// imported trait's effects/guards with these values. Lowered to
-    /// `config: { ... }` on the trait reference.
-    pub config: Vec<(String, SExpression)>,
+    /// imported trait's effects/guards with these values. May carry full
+    /// annotations (`@label`/`@description`/`@synonyms`/`@tier`) when the
+    /// organism explicitly re-documents a knob. Lowered to `config: { ... }`
+    /// on the trait reference.
+    pub config: Vec<ConfigField>,
     /// `emitsScope external|internal` override. Lowered to `emitsScope` on
     /// the trait reference.
     pub emits_scope: Option<String>,

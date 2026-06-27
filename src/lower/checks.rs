@@ -1104,17 +1104,22 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                     // nested config to exercise the formatter; it belongs in the
                     // validate phase, not lower. Deferred (P1).
                     if let Some(cfg) = config {
-                        for (k, v) in cfg {
-                            if let (Some(expected), Some(got)) =
-                                (tc.config.get(k), primitive_type_of_emit_value(v))
-                            {
-                                if !config_type_compatible(got, expected) {
-                                    return Err(LowerError::ConfigTypeMismatch {
-                                        reference: ref_str.clone(),
-                                        key: k.clone(),
-                                        expected: expected.clone(),
-                                        got: got.to_string(),
-                                    });
+                        for (k, cf) in cfg {
+                            // For plain wiring entries the value lives in
+                            // `cf.default`; skip entries with no default
+                            // (annotation-only re-declarations are valid).
+                            if let Some(v) = cf.default.as_ref() {
+                                if let (Some(expected), Some(got)) =
+                                    (tc.config.get(k), primitive_type_of_emit_value(v))
+                                {
+                                    if !config_type_compatible(got, expected) {
+                                        return Err(LowerError::ConfigTypeMismatch {
+                                            reference: ref_str.clone(),
+                                            key: k.clone(),
+                                            expected: expected.clone(),
+                                            got: got.to_string(),
+                                        });
+                                    }
                                 }
                             }
                         }

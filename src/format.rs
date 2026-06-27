@@ -781,11 +781,24 @@ impl Formatter {
             self.output.push_str("config {");
             self.write_newline();
             self.indent();
-            for (k, v) in &ref_data.config {
+            for cf in &ref_data.config {
                 self.write_indent();
-                self.output.push_str(k);
-                self.output.push_str(": ");
-                self.fmt_sexpr(v);
+                let is_plain_wiring = matches!(&cf.type_expr, TypeExpr::Primitive(s) if s == "unknown")
+                    && cf.label.is_none()
+                    && cf.description.is_none()
+                    && cf.synonyms.is_none()
+                    && cf.tier.is_none();
+                if is_plain_wiring {
+                    // Compact wiring form: `key: value`
+                    self.output.push_str(&cf.name);
+                    self.output.push_str(": ");
+                    if let Some(v) = &cf.default {
+                        self.fmt_sexpr(v);
+                    }
+                } else {
+                    // Full declaration form with type and/or annotations.
+                    self.fmt_config_field(cf);
+                }
                 self.write_newline();
             }
             self.dedent();

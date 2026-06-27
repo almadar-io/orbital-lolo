@@ -61,16 +61,52 @@ pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Trait
         _ => None,
     });
 
+    // Lower call-site config entries. Each `ConfigField` is either a plain
+    // wiring entry (`type_expr = Primitive("unknown")`, only `default` set)
+    // or a fully-annotated re-declaration. Both lower to `SchemaConfigField`
+    // via the same path as atom config, but plain wiring entries skip the
+    // expensive `lower_type_expr` resolution — they carry no structural
+    // type information (`field_type = "unknown"`, no items/properties/values).
     let config = if ref_data.config.is_empty() {
         None
     } else {
-        Some(
-            ref_data
-                .config
-                .iter()
-                .cloned()
-                .collect::<HashMap<String, SExpression>>(),
-        )
+        let mut map: HashMap<String, SchemaConfigField> = HashMap::new();
+        for cf in &ref_data.config {
+            let is_plain_wiring = matches!(&cf.type_expr, crate::ast::TypeExpr::Primitive(s) if s == "unknown")
+                && cf.label.is_none()
+                && cf.description.is_none()
+                && cf.synonyms.is_none()
+                && cf.tier.is_none();
+            let schema_field = if is_plain_wiring {
+                SchemaConfigField {
+                    field_type: "unknown".to_string(),
+                    default: cf.default.clone(),
+                    label: None,
+                    description: None,
+                    synonyms: None,
+                    tier: None,
+                    values: None,
+                    items: None,
+                    properties: None,
+                }
+            } else {
+                let (_, _, items, properties, _) =
+                    lower_type_expr(&cf.type_expr, &Default::default(), &Default::default());
+                SchemaConfigField {
+                    field_type: type_expr_to_config_string(&cf.type_expr),
+                    default: cf.default.clone(),
+                    label: cf.label.clone(),
+                    description: cf.description.clone(),
+                    synonyms: cf.synonyms.clone(),
+                    tier: cf.tier.clone(),
+                    values: type_expr_to_config_values(&cf.type_expr),
+                    items,
+                    properties,
+                }
+            };
+            map.insert(cf.name.clone(), schema_field);
+        }
+        Some(map)
     };
 
     let fields = if ref_data.fields.is_empty() {
