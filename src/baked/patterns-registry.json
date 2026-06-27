@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-26T07:25:11.368Z",
+  "exportedAt": "2026-06-26T08:05:33.064Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -14548,6 +14548,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -14912,6 +14929,23 @@
                 ]
               },
               "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
                 "types": [
                   "number"
                 ]
@@ -15301,6 +15335,23 @@
                 ]
               },
               "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
                 "types": [
                   "number"
                 ]
@@ -27396,6 +27447,25 @@
           "description": "Number of columns in spritesheet (for frame calculation)",
           "default": 16
         },
+        "animState": {
+          "types": [
+            "string"
+          ],
+          "description": "Animation state name — drives lolo-ui config knob for animation selection",
+          "enumValues": [
+            "idle",
+            "walk",
+            "attack",
+            "hit",
+            "death"
+          ]
+        },
+        "frameRate": {
+          "types": [
+            "number"
+          ],
+          "description": "Frames per second — drives lolo-ui config knob for animation speed"
+        },
         "className": {
           "types": [
             "string"
@@ -32121,6 +32191,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -32188,6 +32275,45 @@
               "x",
               "y",
               "type"
+            ]
+          }
+        },
+        "effects": {
+          "types": [
+            "array"
+          ],
+          "description": "Active visual effects to draw after units. Sprite URLs resolved via assetManifest.effects[fx.key].",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "key": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "ttl": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "key",
+              "x",
+              "y",
+              "ttl"
             ]
           }
         },
@@ -32690,6 +32816,23 @@
                     "types": [
                       "number"
                     ]
+                  },
+                  "animation": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "idle",
+                      "walk",
+                      "attack",
+                      "hit",
+                      "death"
+                    ]
+                  },
+                  "frame": {
+                    "types": [
+                      "number"
+                    ]
                   }
                 },
                 "required": [
@@ -32752,8 +32895,7 @@
           "types": [
             "boolean"
           ],
-          "description": "Whether there are active effects — keeps RAF loop alive",
-          "default": false
+          "description": "Whether there are active effects — keeps RAF loop alive"
         },
         "assetBaseUrl": {
           "types": [
@@ -34423,6 +34565,23 @@
                 ]
               },
               "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
                 "types": [
                   "number"
                 ]
@@ -36147,6 +36306,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -36531,6 +36707,23 @@
                         ]
                       },
                       "elevation": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "animation": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "idle",
+                          "walk",
+                          "attack",
+                          "hit",
+                          "death"
+                        ]
+                      },
+                      "frame": {
                         "types": [
                           "number"
                         ]
@@ -36942,6 +37135,23 @@
                         "types": [
                           "number"
                         ]
+                      },
+                      "animation": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "idle",
+                          "walk",
+                          "attack",
+                          "hit",
+                          "death"
+                        ]
+                      },
+                      "frame": {
+                        "types": [
+                          "number"
+                        ]
                       }
                     },
                     "required": [
@@ -37347,6 +37557,23 @@
                         ]
                       },
                       "elevation": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "animation": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "idle",
+                          "walk",
+                          "attack",
+                          "hit",
+                          "death"
+                        ]
+                      },
+                      "frame": {
                         "types": [
                           "number"
                         ]
@@ -37758,6 +37985,23 @@
                         "types": [
                           "number"
                         ]
+                      },
+                      "animation": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "idle",
+                          "walk",
+                          "attack",
+                          "hit",
+                          "death"
+                        ]
+                      },
+                      "frame": {
+                        "types": [
+                          "number"
+                        ]
                       }
                     },
                     "required": [
@@ -38150,6 +38394,23 @@
                     ]
                   },
                   "elevation": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "animation": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "idle",
+                      "walk",
+                      "attack",
+                      "hit",
+                      "death"
+                    ]
+                  },
+                  "frame": {
                     "types": [
                       "number"
                     ]
@@ -39130,6 +39391,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -39559,6 +39837,23 @@
                 ]
               },
               "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
                 "types": [
                   "number"
                 ]
@@ -45060,6 +45355,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -45563,6 +45875,23 @@
                     ]
                   },
                   "elevation": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "animation": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "idle",
+                      "walk",
+                      "attack",
+                      "hit",
+                      "death"
+                    ]
+                  },
+                  "frame": {
                     "types": [
                       "number"
                     ]
@@ -52449,6 +52778,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -53310,6 +53656,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -54015,6 +54378,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -54524,6 +54904,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -55029,6 +55426,23 @@
                 ]
               },
               "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
                 "types": [
                   "number"
                 ]
@@ -55747,6 +56161,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -56255,6 +56686,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -56760,6 +57208,23 @@
                 ]
               },
               "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
                 "types": [
                   "number"
                 ]
@@ -57272,6 +57737,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -57778,6 +58260,23 @@
                 ]
               },
               "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
                 "types": [
                   "number"
                 ]
@@ -58289,6 +58788,23 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -58794,6 +59310,23 @@
                 ]
               },
               "elevation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "idle",
+                  "walk",
+                  "attack",
+                  "hit",
+                  "death"
+                ]
+              },
+              "frame": {
                 "types": [
                   "number"
                 ]
