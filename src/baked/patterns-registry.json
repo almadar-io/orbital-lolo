@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-29T11:28:29.437Z",
+  "exportedAt": "2026-06-28T09:30:34.297Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -9421,133 +9421,184 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
-        "className": {
+        "children": {
           "types": [
-            "string"
+            "node"
           ],
-          "description": "Additional CSS classes"
+          "description": "Button group content (Button components) - use this OR primary/secondary"
         },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
+        "primary": {
           "types": [
             "object"
           ],
-          "description": "Error state (UiError)",
+          "description": "Primary action button config (for form-actions pattern) Accepts Readonly for compatibility with generated const objects",
           "properties": {
-            "message": {
+            "label": {
               "types": [
                 "string"
               ]
             },
-            "name": {
+            "actionType": {
               "types": [
                 "string"
               ]
             },
-            "code": {
+            "event": {
               "types": [
                 "string"
               ]
             },
-            "stack": {
+            "navigatesTo": {
+              "types": [
+                "string"
+              ]
+            },
+            "variant": {
               "types": [
                 "string"
               ]
             }
           },
           "propertyRequired": [
-            "message"
+            "label"
           ]
         },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
+        "secondary": {
           "types": [
             "array"
           ],
-          "description": "Currently selected item IDs",
+          "description": "Secondary action buttons config (for form-actions pattern) Accepts readonly array for compatibility with generated const arrays",
           "items": {
             "types": [
-              "string",
-              "number"
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "actionType": {
+                "types": [
+                  "string"
+                ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ]
+              },
+              "navigatesTo": {
+                "types": [
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label"
             ]
           }
         },
-        "children": {
-          "types": [
-            "node"
-          ],
-          "description": "children prop",
-          "required": true
-        },
-        "sticky": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Sticky at bottom",
-          "default": false
-        },
-        "align": {
+        "variant": {
           "types": [
             "string"
           ],
-          "description": "Alignment",
+          "description": "Visual variant",
           "enumValues": [
-            "left",
-            "right",
-            "between",
-            "center"
+            "default",
+            "segmented",
+            "toggle"
           ],
-          "default": "right"
+          "default": "default"
+        },
+        "orientation": {
+          "types": [
+            "string"
+          ],
+          "description": "Orientation",
+          "enumValues": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "entity": {
+          "types": [
+            "string"
+          ],
+          "description": "Entity type for filter-group pattern (schema metadata)"
+        },
+        "filters": {
+          "types": [
+            "array"
+          ],
+          "description": "Filter definitions for filter-group pattern",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "field": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "checkbox",
+                  "select",
+                  "toggle"
+                ]
+              },
+              "options": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "field",
+              "label"
+            ]
+          }
+        },
+        "look": {
+          "types": [
+            "string"
+          ],
+          "description": "Layer 2 visual treatment for the action-cluster (form-actions) pattern.",
+          "enumValues": [
+            "right-aligned-buttons",
+            "floating-bar",
+            "inline-row",
+            "dropdown-menu",
+            "command-palette-trigger"
+          ],
+          "default": "right-aligned-buttons"
         }
       }
     },
@@ -13006,57 +13057,27 @@
               "object"
             ],
             "properties": {
-              "id": {
+              "source": {
                 "types": [
-                  "string"
+                  "unknown"
                 ]
               },
-              "title": {
+              "data": {
                 "types": [
-                  "string"
-                ]
-              },
-              "description": {
-                "types": [
-                  "string"
-                ]
-              },
-              "date": {
-                "types": [
-                  "string"
-                ]
-              },
-              "status": {
-                "types": [
-                  "string"
+                  "object"
                 ],
-                "enumValues": [
-                  "complete",
-                  "active",
-                  "pending",
-                  "error"
-                ]
+                "freeform": true
               },
-              "icon": {
+              "index": {
                 "types": [
-                  "icon",
-                  "string"
+                  "number"
                 ]
-              },
-              "tags": {
-                "types": [
-                  "array"
-                ],
-                "items": {
-                  "types": [
-                    "string"
-                  ]
-                }
               }
             },
             "required": [
-              "id",
-              "title"
+              "source",
+              "data",
+              "index"
             ]
           }
         },
@@ -15197,13 +15218,15 @@
           "types": [
             "object"
           ],
-          "description": "Full schema — extracts first trait's state machine"
+          "description": "Full schema — extracts first trait's state machine",
+          "nonAuthorable": true
         },
         "trait": {
           "types": [
             "object"
           ],
-          "description": "Or pass a single trait directly"
+          "description": "Or pass a single trait directly",
+          "nonAuthorable": true
         },
         "traitIndex": {
           "types": [
@@ -24862,7 +24885,7 @@
             "boolean"
           ],
           "description": "Opt-in to the Notion-style block authoring chrome (insert toolbar, per-row +/menu gutter, turn-into menu). Off by default: the editor renders as a plain rich text surface that edits block content inline without any add-block affordances.",
-          "default": true
+          "default": false
         },
         "showToolbar": {
           "types": [
@@ -27294,7 +27317,9 @@
             "icon",
             "string"
           ],
-          "description": "Lucide icon name or component"
+          "description": "Lucide icon name or component",
+          "required": true,
+          "default": "shield"
         },
         "label": {
           "types": [
@@ -29317,66 +29342,6 @@
                   "string"
                 ]
               },
-              "assetUrl": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              },
               "format": {
                 "types": [
                   "string"
@@ -29699,66 +29664,6 @@
                   "string"
                 ]
               },
-              "assetUrl": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              },
               "label": {
                 "types": [
                   "string"
@@ -29884,66 +29789,6 @@
                 "types": [
                   "icon",
                   "string"
-                ]
-              },
-              "assetUrl": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
                 ]
               },
               "label": {
@@ -30791,7 +30636,269 @@
           "types": [
             "object"
           ],
-          "description": "Direct asset manifest — takes priority over entity-derived manifest."
+          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "properties": {
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "effects": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
         },
         "scale": {
           "types": [
@@ -31911,7 +32018,204 @@
           "types": [
             "object"
           ],
-          "description": "Direct asset manifest — takes priority over entity-derived manifest."
+          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "properties": {
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
         },
         "scale": {
           "types": [
@@ -33204,7 +33508,204 @@
           "types": [
             "object"
           ],
-          "description": "Direct asset manifest — takes priority over entity-derived manifest."
+          "description": "Direct asset manifest — takes priority over entity-derived manifest.",
+          "properties": {
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
         },
         "scale": {
           "types": [
@@ -33997,7 +34498,8 @@
           "types": [
             "number"
           ],
-          "description": "speed prop"
+          "description": "speed prop",
+          "default": 1
         },
         "bodies": {
           "types": [
@@ -34196,79 +34698,6 @@
           "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
           "kind": "event-ref",
           "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/build).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
         }
       }
     },
@@ -34450,79 +34879,6 @@
           "description": "Emits UI:{playAgainEvent} with {} on reset / play again.",
           "kind": "event-ref",
           "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/send).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
         }
       }
     },
@@ -34800,79 +35156,6 @@
           "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
           "kind": "event-ref",
           "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/bug/send).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
         }
       }
     },
@@ -35324,79 +35607,6 @@
           "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
           "kind": "event-ref",
           "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/arrow).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
         }
       }
     },
@@ -36417,79 +36627,6 @@
           "description": "Emits UI:{playAgainEvent} with {} on reset / play again.",
           "kind": "event-ref",
           "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/play/reset).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
         }
       }
     },
@@ -39081,6 +39218,40 @@
           "items": {
             "types": [
               "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "hp": {
+                "types": [
+                  "number"
+                ]
+              },
+              "attack": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "hp",
+              "attack"
             ]
           }
         },
@@ -39092,6 +39263,39 @@
           "items": {
             "types": [
               "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "health_potion",
+                  "sword",
+                  "shield"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "x",
+              "y",
+              "kind"
             ]
           }
         },
@@ -39099,7 +39303,23 @@
           "types": [
             "object"
           ],
-          "description": "player prop"
+          "description": "player prop",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ]
         },
         "playerHp": {
           "types": [
@@ -39158,7 +39378,204 @@
           "types": [
             "object"
           ],
-          "description": "assetManifest prop"
+          "description": "assetManifest prop",
+          "properties": {
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
         },
         "scale": {
           "types": [
@@ -39542,7 +39959,204 @@
           "types": [
             "object"
           ],
-          "description": "Asset base-url + terrain/unit/feature sprite maps (organism owns asset choice)."
+          "description": "Asset base-url + terrain/unit/feature sprite maps (organism owns asset choice).",
+          "properties": {
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
         },
         "gold": {
           "types": [
@@ -40568,7 +41182,204 @@
           "types": [
             "object"
           ],
-          "description": "Asset base-url + terrain/unit/feature sprite maps (organism owns asset choice)."
+          "description": "Asset base-url + terrain/unit/feature sprite maps (organism owns asset choice).",
+          "properties": {
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
         },
         "buildTypes": {
           "types": [
@@ -40885,7 +41696,199 @@
           "types": [
             "object"
           ],
-          "description": "Asset base-url + unit/feature sprite maps + background."
+          "description": "Asset base-url + unit/feature sprite maps + background.",
+          "properties": {
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "background": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "url": {
+                  "types": [
+                    "asset"
+                  ]
+                },
+                "role": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "category": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "animations": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "style": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "dimension": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "aspect": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "name": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "thumbnailUrl": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "url"
+              ]
+            }
+          }
         },
         "width": {
           "types": [
@@ -41837,7 +42840,74 @@
           "types": [
             "object"
           ],
-          "description": "Base-url + per-iconKey card sprite map (organism owns asset choice)."
+          "description": "Base-url + per-iconKey card sprite map (organism owns asset choice).",
+          "properties": {
+            "cards": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
         },
         "playCardEvent": {
           "types": [
@@ -42089,7 +43159,139 @@
           "types": [
             "object"
           ],
-          "description": "Asset base-url + scene/portrait sprite maps (organism owns asset choice)."
+          "description": "Asset base-url + scene/portrait sprite maps (organism owns asset choice).",
+          "properties": {
+            "backgrounds": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "portraits": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
         },
         "typewriterSpeed": {
           "types": [
@@ -42696,9 +43898,9 @@
         },
         "assetManifest": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "Asset sprite manifest"
+          "description": "Asset sprite manifest (same shape as Canvas2D.assetManifest)"
         },
         "assetBaseUrl": {
           "types": [
@@ -43506,12 +44708,6 @@
           "propertyRequired": [
             "url"
           ]
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Asset sprite manifest"
         },
         "scale": {
           "types": [
@@ -44375,7 +45571,7 @@
         },
         "assetManifest": {
           "types": [
-            "object"
+            "string"
           ],
           "description": "Asset sprite manifest"
         },
@@ -44590,9 +45786,9 @@
         },
         "assetManifest": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "Asset sprite manifest"
+          "description": "Asset sprite manifest (same shape as Canvas2D.assetManifest)"
         },
         "assetBaseUrl": {
           "types": [
@@ -44806,9 +46002,9 @@
         },
         "assetManifest": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "Asset sprite manifest"
+          "description": "Asset sprite manifest (same shape as Canvas2D.assetManifest)"
         },
         "assetBaseUrl": {
           "types": [
@@ -45239,9 +46435,9 @@
         },
         "assetManifest": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "Asset sprite manifest"
+          "description": "Asset sprite manifest (same shape as Canvas2D.assetManifest)"
         },
         "assetBaseUrl": {
           "types": [
@@ -47028,66 +48224,6 @@
                   "string"
                 ]
               },
-              "assetUrl": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              },
               "variant": {
                 "types": [
                   "string"
@@ -47385,1664 +48521,6 @@
             "string"
           ],
           "description": "className prop"
-        }
-      }
-    },
-    "game-icon": {
-      "type": "game-icon",
-      "category": "game",
-      "tier": "atoms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "GameIcon component",
-      "suggestedFor": [
-        "game",
-        "icon",
-        "game icon"
-      ],
-      "typicalSize": "small",
-      "propsSchema": {
-        "assetUrl": {
-          "types": [
-            "object"
-          ],
-          "description": "Asset — when url is present, renders an img (Asset-primary).",
-          "properties": {
-            "url": {
-              "types": [
-                "asset"
-              ]
-            },
-            "role": {
-              "types": [
-                "string"
-              ]
-            },
-            "category": {
-              "types": [
-                "string"
-              ]
-            },
-            "animations": {
-              "types": [
-                "array"
-              ],
-              "items": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "style": {
-              "types": [
-                "string"
-              ]
-            },
-            "dimension": {
-              "types": [
-                "string"
-              ]
-            },
-            "aspect": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "thumbnailUrl": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "url"
-          ]
-        },
-        "icon": {
-          "types": [
-            "icon",
-            "string"
-          ],
-          "description": "Lucide component or kebab-case icon name (fallback when no assetUrl).",
-          "required": true
-        },
-        "size": {
-          "types": [
-            "number",
-            "string"
-          ],
-          "description": "Pixel size or named variant.",
-          "enumValues": [
-            "sm",
-            "md",
-            "lg"
-          ],
-          "default": "md"
-        },
-        "alt": {
-          "types": [
-            "string"
-          ],
-          "description": "Alt text for the img (defaults to assetUrl.category)."
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes."
-        }
-      }
-    },
-    "game-canvas-3d": {
-      "type": "game-canvas-3d",
-      "category": "game",
-      "tier": "molecules",
-      "family": "game",
-      "dimension": "3d",
-      "description": "Props for GameCanvas3D component",
-      "suggestedFor": [
-        "game",
-        "canvas3",
-        "game canvas3 d"
-      ],
-      "typicalSize": "medium",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "--- Closed-circuit props (MANDATORY) ---"
-        },
-        "children": {
-          "types": [
-            "node"
-          ],
-          "description": "Children to render inside the 3D canvas (e.g., physics objects, custom meshes)"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "string"
-          ],
-          "description": "Error state"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Array of tiles to render",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "units": {
-          "types": [
-            "array"
-          ],
-          "description": "Array of units to render",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Array of features to render",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "events": {
-          "types": [
-            "array"
-          ],
-          "description": "Array of events to display",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "id": {
-                "types": [
-                  "string"
-                ]
-              },
-              "type": {
-                "types": [
-                  "string"
-                ]
-              },
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              },
-              "y": {
-                "types": [
-                  "number"
-                ]
-              },
-              "message": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "type",
-              "x"
-            ]
-          },
-          "default": []
-        },
-        "fogOfWar": {
-          "types": [
-            "array"
-          ],
-          "description": "Fog of war data",
-          "items": {
-            "types": [
-              "array"
-            ],
-            "items": {
-              "types": [
-                "boolean"
-              ]
-            }
-          }
-        },
-        "orientation": {
-          "types": [
-            "string"
-          ],
-          "description": "Map orientation",
-          "enumValues": [
-            "standard",
-            "rotated"
-          ],
-          "default": "standard"
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "Camera mode",
-          "enumValues": [
-            "pan-zoom",
-            "follow",
-            "fixed"
-          ],
-          "default": "isometric"
-        },
-        "showGrid": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show grid",
-          "default": true
-        },
-        "showCoordinates": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show coordinates overlay",
-          "default": false
-        },
-        "showTileInfo": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show tile information",
-          "default": false
-        },
-        "overlay": {
-          "types": [
-            "string"
-          ],
-          "description": "Overlay control mode",
-          "enumValues": [
-            "default",
-            "hidden",
-            "minimap"
-          ],
-          "default": "default"
-        },
-        "shadows": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable shadows",
-          "default": true
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color",
-          "default": "#1a1a2e"
-        },
-        "onTileClick": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when a tile is clicked",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "tile",
-              "type": "object"
-            },
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onUnitClick": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when a unit is clicked",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "unit",
-              "type": "object"
-            },
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onFeatureClick": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when a feature is clicked",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "feature",
-              "type": "object"
-            },
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onCanvasClick": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when canvas is clicked (background)",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onTileHover": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when mouse moves over a tile",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "tile",
-              "type": "object"
-            },
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onUnitAnimation": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback for unit animation state change",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "unitId",
-              "type": "string"
-            },
-            {
-              "name": "state",
-              "type": "string"
-            }
-          ]
-        },
-        "assetLoader": {
-          "types": [
-            "object"
-          ],
-          "description": "Asset loader instance (uses global singleton if not provided)",
-          "nonAuthorable": true
-        },
-        "tileRenderer": {
-          "types": [
-            "object"
-          ],
-          "description": "Custom tile renderer component",
-          "nonAuthorable": true
-        },
-        "unitRenderer": {
-          "types": [
-            "object"
-          ],
-          "description": "Custom unit renderer component",
-          "nonAuthorable": true
-        },
-        "featureRenderer": {
-          "types": [
-            "object"
-          ],
-          "description": "Custom feature renderer component",
-          "nonAuthorable": true
-        },
-        "preloadAssets": {
-          "types": [
-            "array"
-          ],
-          "description": "URLs to preload",
-          "items": {
-            "types": [
-              "string"
-            ]
-          },
-          "default": []
-        },
-        "tileClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: tile click",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "tileId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "x",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "z",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "type",
-              "type": "string",
-              "required": false
-            },
-            {
-              "name": "terrain",
-              "type": "string",
-              "required": false
-            },
-            {
-              "name": "elevation",
-              "type": "number",
-              "required": false
-            }
-          ]
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: unit click",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "unitId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "x",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "z",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "unitType",
-              "type": "string",
-              "required": false
-            },
-            {
-              "name": "name",
-              "type": "string",
-              "required": false
-            },
-            {
-              "name": "team",
-              "type": "string",
-              "required": false
-            },
-            {
-              "name": "faction",
-              "type": "string",
-              "required": false
-            },
-            {
-              "name": "health",
-              "type": "number",
-              "required": false
-            },
-            {
-              "name": "maxHealth",
-              "type": "number",
-              "required": false
-            }
-          ]
-        },
-        "featureClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: feature click",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "featureId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "x",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "z",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "type",
-              "type": "string",
-              "required": false
-            },
-            {
-              "name": "elevation",
-              "type": "number",
-              "required": false
-            }
-          ]
-        },
-        "canvasClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: canvas click",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "clientX",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "clientY",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "button",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "tileHoverEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: tile hover",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "tileId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "x",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "z",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "type",
-              "type": "string",
-              "required": false
-            }
-          ]
-        },
-        "tileLeaveEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: tile leave",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "unitAnimationEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: unit animation",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "unitId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "state",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "timestamp",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "cameraChangeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: camera change",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "position",
-              "type": "object",
-              "required": true
-            },
-            {
-              "name": "timestamp",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "loadingMessage": {
-          "types": [
-            "string"
-          ],
-          "description": "Loading message",
-          "default": "Loading 3D Scene..."
-        },
-        "useInstancing": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Whether to use instancing for tiles",
-          "default": true
-        },
-        "validMoves": {
-          "types": [
-            "array"
-          ],
-          "description": "Valid move positions",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          },
-          "default": []
-        },
-        "attackTargets": {
-          "types": [
-            "array"
-          ],
-          "description": "Attack target positions",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          },
-          "default": []
-        },
-        "selectedTileIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Selected tile IDs",
-          "items": {
-            "types": [
-              "string"
-            ]
-          },
-          "default": []
-        },
-        "selectedUnitId": {
-          "types": [
-            "string"
-          ],
-          "description": "Selected unit ID",
-          "default": null
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier. 1 = default tile-proportional size.",
-          "default": 1
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale. Applied to the scene group. Default 0.45."
-        }
-      }
-    },
-    "game-board-3d": {
-      "type": "game-board-3d",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "3d",
-      "description": "GameBoard3D component",
-      "suggestedFor": [
-        "game",
-        "board3",
-        "game board3 d"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Entity row carrying all gameplay state (controlled).",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Static tile data (config default).",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Static feature data (config default).",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "Camera mode forwarded to GameCanvas3D.",
-          "enumValues": [
-            "pan-zoom",
-            "follow",
-            "fixed"
-          ],
-          "default": "perspective"
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color forwarded to GameCanvas3D.",
-          "default": "#2a1a1a"
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier forwarded to GameCanvas3D. Default 1.",
-          "default": 1
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale forwarded to GameCanvas3D. Default 0.45.",
-          "default": 0.45
-        },
-        "tileClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative tile click event emitted to the model.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "tileId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "x",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "z",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative unit click event emitted to the model.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "unitId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "x",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "z",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "attackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{attackEvent} with { attackerId, targetId, damage } on attack.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "attackerId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "targetId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "damage",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{endTurnEvent} with {} on end turn.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "cancelEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{cancelEvent} with {} on cancel.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{gameEndEvent} with { result } when win/loss is detected.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "result",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS class."
-        }
-      }
-    },
-    "game-canvas-3d-battle-template": {
-      "type": "game-canvas-3d-battle-template",
-      "category": "game",
-      "tier": "templates",
-      "family": "game",
-      "dimension": "3d",
-      "description": "GameCanvas3DBattleTemplate  Declarative template for 3D battle/tactical combat. Delegates all interaction state (selectedUnitId, validMoves, attackTargets) to <GameBoard3D> so the model (not this template) owns gameplay state.  Page: Battle3DPage Entity: Battle3D / GameBoard3DItem ViewType: detail  Events Emitted: - TILE_CLICK - When a tile is clicked - UNIT_CLICK - When a unit is clicked - END_TURN   - When ending turn - EXIT_BATTLE - When exiting battle",
-      "suggestedFor": [
-        "game",
-        "canvas3",
-        "battle",
-        "template",
-        "game canvas3 d battle template"
-      ],
-      "typicalSize": "full",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object"
-          ],
-          "description": "Entity data, the sole source of runtime state",
-          "required": true
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "External styling override"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback feature data when no entity is present",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template)."
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "3D camera mode - defaults to perspective for dramatic effect",
-          "enumValues": [
-            "isometric",
-            "perspective",
-            "top-down"
-          ],
-          "default": "perspective"
-        },
-        "showGrid": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show grid helper"
-        },
-        "shadows": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable shadows"
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color - darker for battle atmosphere",
-          "default": "#2a1a1a"
-        },
-        "tileClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for tile clicks — forwarded to the model"
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for unit clicks — forwarded to the model"
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for ending turn"
-        },
-        "cancelEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for cancel/deselect"
-        },
-        "attackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for attack emission"
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for play again / reset"
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for game end detection"
-        },
-        "exitEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for exiting battle"
-        },
-        "showTurnIndicator": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show turn indicator overlay"
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
-        }
-      }
-    },
-    "game-canvas-3d-castle-template": {
-      "type": "game-canvas-3d-castle-template",
-      "category": "game",
-      "tier": "templates",
-      "family": "game",
-      "dimension": "3d",
-      "description": "GameCanvas3DCastleTemplate  Declarative template for 3D castle/settlement view. Delegates interaction state (selectedUnitId, validMoves, attackTargets) to <GameBoard3D> so the model owns all gameplay state.  Page: Castle3DPage, Settlement3DPage Entity: Castle3D / GameBoard3DItem ViewType: detail  Events Emitted: - BUILDING_SELECTED - When a building is clicked - UNIT_SELECTED     - When a garrison unit is clicked - BUILD             - When building/upgrading - RECRUIT           - When recruiting units - EXIT              - When exiting castle view",
-      "suggestedFor": [
-        "game",
-        "canvas3",
-        "castle",
-        "template",
-        "game canvas3 d castle template"
-      ],
-      "typicalSize": "full",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object"
-          ],
-          "description": "Entity data, the sole source of runtime state",
-          "required": true
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "External styling override"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback feature data when no entity is present",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template)."
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "3D camera mode",
-          "enumValues": [
-            "isometric",
-            "perspective",
-            "top-down"
-          ],
-          "default": "isometric"
-        },
-        "showGrid": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show grid helper"
-        },
-        "shadows": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable shadows"
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color",
-          "default": "#1e1e2e"
-        },
-        "buildingClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for building (feature) clicks"
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for unit clicks"
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for ending turn"
-        },
-        "cancelEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for cancel/deselect"
-        },
-        "attackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for attack emission"
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for play again / reset"
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for game end detection"
-        },
-        "buildEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for build action"
-        },
-        "recruitEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for recruit action"
-        },
-        "exitEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for exit"
-        },
-        "showHeader": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show castle name header",
-          "default": true
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
-        }
-      }
-    },
-    "game-canvas-3d-world-map-template": {
-      "type": "game-canvas-3d-world-map-template",
-      "category": "game",
-      "tier": "templates",
-      "family": "game",
-      "dimension": "3d",
-      "description": "GameCanvas3DWorldMapTemplate  Declarative template for 3D world map. Delegates interaction state (selectedUnitId, validMoves, attackTargets) to <GameBoard3D> so the model owns all gameplay state.  Page: WorldMap3DPage Entity: WorldMap3D / GameBoard3DItem ViewType: detail  Events Emitted: - TILE_CLICK    - When a tile is clicked ({ tileId, x, z, type }) - UNIT_CLICK    - When a unit is clicked ({ unitId, x, z, name }) - FEATURE_CLICK - When a feature is clicked ({ featureId, x, z, type }) - TILE_HOVER    - When hovering over a tile ({ tileId, x, z }) - TILE_LEAVE    - When leaving a tile ({}) - CAMERA_CHANGE - When camera position changes ({ position })",
-      "suggestedFor": [
-        "game",
-        "canvas3",
-        "world",
-        "map",
-        "template",
-        "game canvas3 d world map template"
-      ],
-      "typicalSize": "full",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object"
-          ],
-          "description": "Entity data, the sole source of runtime state",
-          "required": true
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "External styling override"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback feature data when no entity is present",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template)."
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "3D camera mode",
-          "enumValues": [
-            "isometric",
-            "perspective",
-            "top-down"
-          ],
-          "default": "isometric"
-        },
-        "showGrid": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show grid helper"
-        },
-        "showCoordinates": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show coordinate overlay"
-        },
-        "showTileInfo": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show tile info on hover"
-        },
-        "shadows": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable shadows"
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color",
-          "default": "#1a1a2e"
-        },
-        "tileClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for tile clicks — forwarded to the model"
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for unit clicks — forwarded to the model"
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for ending turn"
-        },
-        "cancelEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for cancel/deselect"
-        },
-        "attackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for attack emission"
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for play again / reset"
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for game end detection"
-        },
-        "featureClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for feature clicks"
-        },
-        "tileHoverEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for tile hover"
-        },
-        "tileLeaveEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for tile leave"
-        },
-        "cameraChangeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for camera changes"
-        },
-        "exitEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Exit/back event name"
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
-        }
-      }
-    },
-    "vstack": {
-      "type": "vstack",
-      "category": "component",
-      "tier": "atoms",
-      "family": "core",
-      "description": "VStack - Vertical stack shorthand",
-      "suggestedFor": [
-        "stack",
-        "v stack"
-      ],
-      "typicalSize": "small",
-      "propsSchema": {}
-    },
-    "hstack": {
-      "type": "hstack",
-      "category": "component",
-      "tier": "atoms",
-      "family": "core",
-      "description": "HStack - Horizontal stack shorthand",
-      "suggestedFor": [
-        "stack",
-        "h stack"
-      ],
-      "typicalSize": "small",
-      "propsSchema": {}
-    },
-    "form-layout": {
-      "type": "form-layout",
-      "category": "form",
-      "tier": "molecules",
-      "family": "core",
-      "description": "Form layout with multiple sections",
-      "suggestedFor": [
-        "form",
-        "layout",
-        "form layout"
-      ],
-      "typicalSize": "medium",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "children": {
-          "types": [
-            "node"
-          ],
-          "description": "children prop",
-          "required": true
-        },
-        "dividers": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show section dividers",
-          "default": true
         }
       }
     }
