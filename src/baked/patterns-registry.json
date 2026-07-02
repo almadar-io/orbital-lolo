@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-06-30T16:27:48.221Z",
+  "exportedAt": "2026-07-02T00:14:49.904Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -25919,6 +25919,19 @@
           "description": "Declarative event name — emits UI:{action} via eventBus on click",
           "kind": "event"
         },
+        "payload": {
+          "types": [
+            "object"
+          ],
+          "description": "Semantic payload emitted with the action (e.g. `{ nextId, choiceIndex }` for a branching choice).",
+          "mapValue": {
+            "types": [
+              "string",
+              "number",
+              "boolean"
+            ]
+          }
+        },
         "className": {
           "types": [
             "string"
@@ -26433,6 +26446,25 @@
             "bottom"
           ],
           "default": "bottom"
+        },
+        "mood": {
+          "types": [
+            "string"
+          ],
+          "description": "Speaker mood — drives a portrait-ring accent; LOLO sets this per dialogue node/transition.",
+          "enumValues": [
+            "neutral",
+            "happy",
+            "concerned",
+            "angry"
+          ],
+          "default": "neutral"
+        },
+        "revealedChars": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of `text` characters to reveal (typewriter effect). Omit to show the full string — LOLO drives this from `@entity.revealedChars` via a tick, incrementing it until it reaches `text.length`."
         },
         "className": {
           "types": [
@@ -31244,148 +31276,6 @@
         }
       }
     },
-    "canvas-effect": {
-      "type": "canvas-effect",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "CanvasEffect component",
-      "suggestedFor": [
-        "canvas",
-        "effect",
-        "canvas effect"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "actionType": {
-          "types": [
-            "object"
-          ],
-          "description": "The type of combat action to visualise",
-          "required": true
-        },
-        "x": {
-          "types": [
-            "number"
-          ],
-          "description": "Screen-space X position (center of the effect)",
-          "required": true
-        },
-        "y": {
-          "types": [
-            "number"
-          ],
-          "description": "Screen-space Y position (center of the effect)",
-          "required": true
-        },
-        "duration": {
-          "types": [
-            "number"
-          ],
-          "description": "Duration in ms before auto-dismiss (default 2000 for canvas, 800 for emoji)",
-          "default": 2000
-        },
-        "intensity": {
-          "types": [
-            "number"
-          ],
-          "description": "Optional intensity multiplier (1 = normal, 2 = double size/brightness)",
-          "default": 1
-        },
-        "onComplete": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when the effect animation completes",
-          "kind": "callback",
-          "callbackArgs": []
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative event: emits UI:{completeEvent} when the effect animation completes",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "effectSpriteUrl": {
-          "types": [
-            "asset"
-          ],
-          "description": "--- Remote asset loading ---"
-        },
-        "assetBaseUrl": {
-          "types": [
-            "asset"
-          ],
-          "description": "Base URL for remote assets. Prepended to relative effectSpriteUrl paths."
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Full effect asset manifest for the sprite particle engine. When provided, enables the canvas-based particle system."
-        },
-        "width": {
-          "types": [
-            "number"
-          ],
-          "description": "Canvas width (default 400)",
-          "default": 400
-        },
-        "height": {
-          "types": [
-            "number"
-          ],
-          "description": "Canvas height (default 300)",
-          "default": 300
-        }
-      }
-    },
     "game-audio-toggle": {
       "type": "game-audio-toggle",
       "category": "game",
@@ -31583,7 +31473,7 @@
     "trait-slot": {
       "type": "trait-slot",
       "category": "game",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "game",
       "dimension": "2d",
       "description": "Event Contract: Emits: UI:CLICK Emits: UI:REMOVE",
@@ -31873,12 +31763,6 @@
           "propertyRequired": [
             "message"
           ]
-        },
-        "entity": {
-          "types": [
-            "string"
-          ],
-          "description": "Entity name for schema-driven auto-fetch"
         },
         "onItemDrop": {
           "types": [
@@ -32170,1127 +32054,32 @@
               "required": true
             }
           ]
-        }
-      }
-    },
-    "simulation-canvas": {
-      "type": "simulation-canvas",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "SimulationCanvas  Self-contained 2D physics canvas for educational presets. Runs its own Euler integration loop — no external physics hook needed.",
-      "suggestedFor": [
-        "simulation",
-        "canvas",
-        "simulation canvas"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "preset": {
-          "types": [
-            "string",
-            "object"
-          ],
-          "description": "preset prop",
-          "required": true,
-          "enumValues": [
-            "mechanics-projectile",
-            "mechanics-pendulum",
-            "mechanics-spring"
-          ]
         },
-        "width": {
-          "types": [
-            "number"
-          ],
-          "description": "width prop",
-          "default": 600
-        },
-        "height": {
-          "types": [
-            "number"
-          ],
-          "description": "height prop",
-          "default": 400
-        },
-        "running": {
-          "types": [
-            "boolean"
-          ],
-          "description": "running prop",
-          "required": true
-        },
-        "speed": {
-          "types": [
-            "number"
-          ],
-          "description": "speed prop"
-        },
-        "bodies": {
-          "types": [
-            "array"
-          ],
-          "description": "External model-authoritative body snapshots (~30Hz). When provided, the self-simulation loop is bypassed and positions are interpolated to 60fps between consecutive snapshots.",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "className": {
+        "dropEvent": {
           "types": [
             "string"
           ],
-          "description": "className prop"
-        }
-      }
-    },
-    "builder-board": {
-      "type": "builder-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "BuilderBoard  Component-snapping game board. The player places components onto slots in a blueprint. Correct placement completes the build.  Good for: architecture, circuits, molecules, system design stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
-      "suggestedFor": [
-        "builder",
-        "board",
-        "builder board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `components` / `slots` arrays plus `attempts` / `result` off the row — the state machine is the single source of truth for placements.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
+          "description": "Emits UI:{dropEvent} with { slotNumber, itemId } when an item is dropped into this slot",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "attempts",
+              "name": "slotNumber",
               "type": "number",
               "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "placeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{placeEvent} with { slotId, componentId } on component placement.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "slotId",
-              "type": "string",
-              "required": true
             },
-            {
-              "name": "componentId",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with {} when the player checks the build.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/build).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "classifier-board": {
-      "type": "classifier-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "ClassifierBoard  Drag-and-drop classification game. The player sorts items into the correct category buckets. All items must be correctly classified to win.  Good for: taxonomy, pattern recognition, sorting stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
-      "suggestedFor": [
-        "classifier",
-        "board",
-        "classifier board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `items` / `categories` arrays plus title/description/hint off the row. Items may carry `assignedCategory`; the row may carry `result` and `attempts` — all machine-owned.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "attempts",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "assignEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{assignEvent} with { itemId, categoryId } when an item is sorted.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
             {
               "name": "itemId",
               "type": "string",
               "required": true
-            },
-            {
-              "name": "categoryId",
-              "type": "string",
-              "required": true
             }
           ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with {} when the player submits/checks.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on reset / play again.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/send).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "debugger-board": {
-      "type": "debugger-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "DebuggerBoard  Error-finding game board. The player reviews a code/system listing and identifies lines or elements that contain bugs.  Good for: programming, logic, troubleshooting stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
-      "suggestedFor": [
-        "debugger",
-        "board",
-        "debugger board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `lines` array (each with `isFlagged`), `result`, `attempts`, plus title/description/bugCount/hint off the row.",
-          "kind": "entity",
-          "cardinality": "collection",
-          "properties": {
-            "lines": {
-              "types": [
-                "array"
-              ],
-              "items": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "id": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "content": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "isBug": {
-                    "types": [
-                      "boolean"
-                    ]
-                  },
-                  "isFlagged": {
-                    "types": [
-                      "boolean"
-                    ]
-                  },
-                  "explanation": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "id",
-                  "content",
-                  "isBug"
-                ]
-              }
-            },
-            "result": {
-              "types": [
-                "string"
-              ]
-            },
-            "attempts": {
-              "types": [
-                "number"
-              ]
-            },
-            "title": {
-              "types": [
-                "string"
-              ]
-            },
-            "description": {
-              "types": [
-                "string"
-              ]
-            },
-            "bugCount": {
-              "types": [
-                "number"
-              ]
-            },
-            "hint": {
-              "types": [
-                "string"
-              ]
-            },
-            "headerImage": {
-              "types": [
-                "string"
-              ]
-            },
-            "theme": {
-              "types": [
-                "object"
-              ],
-              "properties": {
-                "background": {
-                  "types": [
-                    "string"
-                  ]
-                },
-                "accentColor": {
-                  "types": [
-                    "string"
-                  ]
-                }
-              }
-            },
-            "successMessage": {
-              "types": [
-                "string"
-              ]
-            }
-          }
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "attempts",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "toggleFlagEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{toggleFlagEvent} with { lineId } when a line's bug-flag is toggled.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "lineId",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with {} when the player checks/submits.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/bug/send).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "event-handler-board": {
-      "type": "event-handler-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "EventHandlerBoard Organism  Contains ALL game logic for the Event Handler tier (ages 9-12). Kids click on world objects, set WHEN/THEN rules, and watch event chains cascade during playback.  Encourages experimentation: on failure, resets to editing so the kid can try different rules. After 3 failures, shows a progressive hint.",
-      "suggestedFor": [
-        "event",
-        "handler",
-        "board",
-        "event handler board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `objects` / `triggerEvents` / `goalEvent` etc. off the row; the editable puzzle objects are themselves `EntityRow`s carried under `objects`.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "stepDurationMs": {
-          "types": [
-            "number"
-          ],
-          "description": "Playback speed in ms per event",
-          "default": 800
-        },
-        "playEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playEvent}",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{completeEvent} with { success }",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            }
-          ]
-        },
-        "editRuleEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{editRuleEvent} with { objectId, rules } — model updates @entity.objects",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "objectId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "rules",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} to reset the model",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
         }
       }
     },
     "event-log": {
       "type": "event-log",
       "category": "game",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "game",
       "dimension": "2d",
       "description": "EventLog Component  Scrolling log of events during playback in the Event Handler tier. Shows the chain reaction as events cascade through objects.",
@@ -33374,264 +32163,10 @@
         }
       }
     },
-    "negotiator-board": {
-      "type": "negotiator-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "NegotiatorBoard  Turn-based decision matrix game. The player makes choices over multiple rounds against an AI opponent. Each round both sides pick an action, and payoffs are determined by the combination.  Good for: ethics, business, game theory, economics stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
-      "suggestedFor": [
-        "negotiator",
-        "board",
-        "negotiator board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `score` / `round` / `result` / `targetScore` / `maxRounds` plus the `actions` / `payoffMatrix` arrays and title/description/hint off the row. Score accumulation + win/lose are owned by the gameplay machine.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "score",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "playRoundEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playRoundEvent} with the picked action + the UI-resolved payoff.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "playerAction",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "payoff",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "finishEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{finishEvent} with {} when all rounds are spent.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/arrow).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
     "action-palette": {
       "type": "action-palette",
       "category": "game",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "game",
       "dimension": "2d",
       "description": "ActionPalette Component  Grid of draggable ActionTile components for the Sequencer tier. Kids pick from these to build their sequence.",
@@ -33826,7 +32361,7 @@
     "action-tile": {
       "type": "action-tile",
       "category": "game",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "game",
       "dimension": "2d",
       "description": "ActionTile Component  A draggable action tile for the Sequencer tier (ages 5-8). Kids drag these from the ActionPalette into SequenceBar slots. Sets SlotItemData on dataTransfer for TraitSlot compatibility.",
@@ -34093,7 +32628,7 @@
     "sequence-bar": {
       "type": "sequence-bar",
       "category": "game",
-      "tier": "organisms",
+      "tier": "molecules",
       "family": "game",
       "dimension": "2d",
       "description": "SequenceBar Component  A row of TraitSlot components forming the action sequence for the Sequencer tier (ages 5-8). Kids drag ActionTiles from the palette into these slots to build their sequence.",
@@ -34224,8 +32759,7 @@
           "types": [
             "function"
           ],
-          "description": "Called when an item is dropped into slot at index",
-          "required": true,
+          "description": "Called when an item is dropped into slot at index (callback path)",
           "kind": "callback",
           "callbackArgs": [
             {
@@ -34344,13 +32878,45 @@
           "types": [
             "function"
           ],
-          "description": "Called when a slot is cleared",
-          "required": true,
+          "description": "Called when a slot is cleared (callback path)",
           "kind": "callback",
           "callbackArgs": [
             {
               "name": "index",
               "type": "number"
+            }
+          ]
+        },
+        "slotDropEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{slotDropEvent} with { slotNumber, itemId } when an item is dropped (declarative path)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "slotNumber",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "itemId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "slotRemoveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{slotRemoveEvent} with { slotNumber } when a slot is cleared (declarative path)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "slotNumber",
+              "type": "number",
+              "required": true
             }
           ]
         },
@@ -34427,743 +32993,6 @@
             "string"
           ],
           "description": "Additional CSS classes"
-        }
-      }
-    },
-    "sequencer-board": {
-      "type": "sequencer-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "SequencerBoard Organism  Contains ALL game logic for the Sequencer tier (ages 5-8). Manages the action sequence, validates it, and animates Kekec executing each step on the puzzle scene.  Feedback-first UX: - On failure: slots stay in place, each slot gets a green or red ring showing exactly which steps are correct and which need to change. - Modifying a slot clears its individual feedback so the kid can re-try. - After 3 failures a persistent hint appears above the sequence bar. - \"Reset\" clears everything including attempts / hint.  TraitStateViewer states use indexed labels (\"1. Walk\", \"2. Jump\") so that repeated actions are correctly highlighted during playback.",
-      "suggestedFor": [
-        "sequencer",
-        "board",
-        "sequencer board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `availableActions` / `maxSlots` / `solutions` etc. off the row. `availableActions` carries `SlotItemData[]` (a UI drag-DTO, not entity data — it holds a non-FieldValue `stateMachine` member).",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "categoryColors": {
-          "types": [
-            "object"
-          ],
-          "description": "Category → color mapping",
-          "mapValue": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "bg": {
-                "types": [
-                  "string"
-                ]
-              },
-              "border": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "required": [
-              "bg",
-              "border"
-            ]
-          }
-        },
-        "stepDurationMs": {
-          "types": [
-            "number"
-          ],
-          "description": "Playback speed in ms per step",
-          "default": 1000
-        },
-        "playEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playEvent} with { sequence: string[] }",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "sequence",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{completeEvent} with { success: boolean }",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "sequence",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "placeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{placeEvent} with { slotIndex, actionId } when an action is dropped into a slot",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "slotIndex",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "actionId",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "removeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{removeEvent} with { slotIndex } when an action is removed from a slot",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "slotIndex",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with { sequence } when the player submits the sequence",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "sequence",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on reset",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "stepEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{stepEvent} with { step } during playback animation advancement",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "step",
-              "type": "number",
-              "required": true
-            }
-          ]
-        }
-      }
-    },
-    "simulator-board": {
-      "type": "simulator-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "SimulatorBoard  Parameter-slider game board. The player adjusts parameters and observes real-time output. Correct parameter values must bring the output within a target range to win.  Good for: physics, economics, system design stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
-      "suggestedFor": [
-        "simulator",
-        "board",
-        "simulator board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads the `parameters` slider descriptors plus the machine-owned `paramA`/`paramB`/ `output`/`target`/`tolerance`/`attempts`/`result` fields off the row.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "attempts",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "setAEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{setAEvent} with { value } when parameter A's slider changes.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "value",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "setBEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{setBEvent} with { value } when parameter B's slider changes.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "value",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with {} on simulate / check.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on reset / play again.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/play/reset).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "state-architect-board": {
-      "type": "state-architect-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "StateArchitectBoard Organism  Contains ALL game logic for the State Architect tier (ages 13+). Kids design state machines via a visual graph editor, then run them to see if the behavior matches the puzzle goal.",
-      "suggestedFor": [
-        "state",
-        "architect",
-        "board",
-        "state architect board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `variables` / `states` / `transitions` / `testCases` etc. off the row.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "stepDurationMs": {
-          "types": [
-            "number"
-          ],
-          "description": "Playback speed",
-          "default": 600
-        },
-        "testEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{testEvent}",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{completeEvent} with { success, passedTests }",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "passedTests",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "addTransitionEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{addTransitionEvent} — lolo handles ADD_TRANSITION",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "id",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "from",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "to",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "event",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "removeTransitionEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{removeTransitionEvent} — lolo handles REMOVE_TRANSITION",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "id",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} — lolo handles PLAY_AGAIN",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
         }
       }
     },
@@ -37303,602 +35132,6 @@
         }
       }
     },
-    "card-battler-board": {
-      "type": "card-battler-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "CardBattlerBoard component",
-      "suggestedFor": [
-        "card",
-        "battler",
-        "board",
-        "card battler board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "className prop"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "entity prop",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "deck": {
-          "types": [
-            "array"
-          ],
-          "description": "Cards remaining in the draw deck (count-only view).",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "id": {
-                "types": [
-                  "string"
-                ]
-              },
-              "iconKey": {
-                "types": [
-                  "string"
-                ]
-              },
-              "title": {
-                "types": [
-                  "string"
-                ]
-              },
-              "cost": {
-                "types": [
-                  "number"
-                ]
-              },
-              "attack": {
-                "types": [
-                  "number"
-                ]
-              },
-              "defense": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "id"
-            ]
-          }
-        },
-        "hand": {
-          "types": [
-            "array"
-          ],
-          "description": "Cards currently in the player's hand.",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "id": {
-                "types": [
-                  "string"
-                ]
-              },
-              "iconKey": {
-                "types": [
-                  "string"
-                ]
-              },
-              "title": {
-                "types": [
-                  "string"
-                ]
-              },
-              "cost": {
-                "types": [
-                  "number"
-                ]
-              },
-              "attack": {
-                "types": [
-                  "number"
-                ]
-              },
-              "defense": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "id"
-            ]
-          }
-        },
-        "board": {
-          "types": [
-            "array"
-          ],
-          "description": "Cards played onto the board this match.",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "id": {
-                "types": [
-                  "string"
-                ]
-              },
-              "iconKey": {
-                "types": [
-                  "string"
-                ]
-              },
-              "title": {
-                "types": [
-                  "string"
-                ]
-              },
-              "cost": {
-                "types": [
-                  "number"
-                ]
-              },
-              "attack": {
-                "types": [
-                  "number"
-                ]
-              },
-              "defense": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "id"
-            ]
-          }
-        },
-        "mana": {
-          "types": [
-            "number"
-          ],
-          "description": "mana prop"
-        },
-        "maxMana": {
-          "types": [
-            "number"
-          ],
-          "description": "maxMana prop"
-        },
-        "turn": {
-          "types": [
-            "number"
-          ],
-          "description": "turn prop"
-        },
-        "result": {
-          "types": [
-            "string"
-          ],
-          "description": "result prop",
-          "enumValues": [
-            "none",
-            "won",
-            "lost"
-          ]
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Base-url + per-iconKey card sprite map (organism owns asset choice)."
-        },
-        "playCardEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "playCardEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "cardId",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "endTurnEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "playAgainEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "gameEndEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "result",
-              "type": "string",
-              "required": true
-            }
-          ]
-        }
-      }
-    },
-    "visual-novel-board": {
-      "type": "visual-novel-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "VisualNovelBoard component",
-      "suggestedFor": [
-        "visual",
-        "novel",
-        "board",
-        "visual novel board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "className prop"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "entity prop",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "nodes": {
-          "types": [
-            "array"
-          ],
-          "description": "Full dialogue graph.",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "id": {
-                "types": [
-                  "string"
-                ]
-              },
-              "speaker": {
-                "types": [
-                  "string"
-                ]
-              },
-              "text": {
-                "types": [
-                  "string"
-                ]
-              },
-              "backgroundKey": {
-                "types": [
-                  "string"
-                ]
-              },
-              "portraitKey": {
-                "types": [
-                  "string"
-                ]
-              },
-              "choices": {
-                "types": [
-                  "array"
-                ],
-                "items": {
-                  "types": [
-                    "object"
-                  ],
-                  "properties": {
-                    "label": {
-                      "types": [
-                        "string"
-                      ]
-                    },
-                    "nextId": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "required": [
-                    "label",
-                    "nextId"
-                  ]
-                }
-              }
-            },
-            "required": [
-              "id",
-              "speaker",
-              "text"
-            ]
-          }
-        },
-        "currentNodeId": {
-          "types": [
-            "string"
-          ],
-          "description": "Id of the node currently displayed."
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Asset base-url + scene/portrait sprite maps (organism owns asset choice)."
-        },
-        "typewriterSpeed": {
-          "types": [
-            "number"
-          ],
-          "description": "Typewriter speed in ms per character (0 = instant).",
-          "default": 30
-        },
-        "portraitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Portrait draw-size multiplier.",
-          "default": 1
-        },
-        "chooseEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "chooseEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "choiceIndex",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "advanceEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "advanceEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "restartEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "restartEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        }
-      }
-    },
     "chat-bar": {
       "type": "chat-bar",
       "category": "display",
@@ -38747,6 +35980,13 @@
           "propertyRequired": [
             "fps"
           ]
+        },
+        "interpolateUnits": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Opt-in: smooth-interpolate unit positions between LOLO tick snapshots via a `requestAnimationFrame` loop (same fixed-timestep technique `SideView` already uses for the player), instead of the default tick-rate-cadence redraw. DEFAULT OFF — for continuous-movement boards only; tile-snapped boards see no behavior change.",
+          "default": false
         },
         "debug": {
           "types": [
@@ -39807,6 +37047,19 @@
             "lg"
           ],
           "default": "md"
+        },
+        "animState": {
+          "types": [
+            "string"
+          ],
+          "description": "One-shot pose LOLO drives on a transition (`DRAW`/`PLAY`), auto-reverted to `'idle'` by a short tick — same idiom as `HealthBar.animated`, plain CSS transform driven off a prop, no internal timer here.",
+          "enumValues": [
+            "idle",
+            "drawn",
+            "played",
+            "flipped"
+          ],
+          "default": "idle"
         },
         "onClick": {
           "types": [
@@ -43727,6 +40980,2384 @@
             "string"
           ],
           "description": "Additional class names"
+        }
+      }
+    },
+    "builder-board": {
+      "type": "builder-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "dimension": "2d",
+      "description": "BuilderBoard  Component-snapping game board. The player places components onto slots in a blueprint. Correct placement completes the build.  Good for: architecture, circuits, molecules, system design stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
+      "suggestedFor": [
+        "builder",
+        "board",
+        "builder board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Puzzle board-state entity (single row or array). The board reads `components` / `slots` arrays plus `attempts` / `result` off the row — the state machine is the single source of truth for placements.",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "completeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "completeEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "required": true
+            },
+            {
+              "name": "attempts",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "PUZZLE_COMPLETE"
+        },
+        "placeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{placeEvent} with { slotId, componentId } on component placement.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "slotId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "componentId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "checkEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{checkEvent} with {} when the player checks the build.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/build).",
+          "properties": {
+            "ui": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "classifier-board": {
+      "type": "classifier-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "dimension": "2d",
+      "description": "ClassifierBoard  Drag-and-drop classification game. The player sorts items into the correct category buckets. All items must be correctly classified to win.  Good for: taxonomy, pattern recognition, sorting stories.  Gameplay events are emitted onto the bus so the bound Orbital trait (ui-classifier-board.lolo: menu -> playing -> complete) owns the state: assignEvent (ASSIGN), checkEvent (CHECK), playAgainEvent (PLAY_AGAIN), plus completeEvent (default UI:PUZZLE_COMPLETE). When the entity carries per-item `assignedCategory` / `result` / `attempts`, the board renders from those; otherwise it self-manages with local state.",
+      "suggestedFor": [
+        "classifier",
+        "board",
+        "classifier board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Puzzle board-state entity (single row or array). The board reads `items` / `categories` arrays plus title/description/hint off the row. Items may carry `assignedCategory`; the row may carry `result` and `attempts` — all machine-owned.",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "completeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "completeEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "required": true
+            },
+            {
+              "name": "attempts",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "PUZZLE_COMPLETE"
+        },
+        "assignEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{assignEvent} with { itemId, categoryId } when an item is sorted.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "itemId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "categoryId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "checkEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{checkEvent} with {} when the player submits/checks.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on reset / play again.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/send).",
+          "properties": {
+            "ui": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "debugger-board": {
+      "type": "debugger-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "dimension": "2d",
+      "description": "DebuggerBoard  Error-finding game board. The player reviews a code/system listing and identifies lines or elements that contain bugs.  Good for: programming, logic, troubleshooting stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
+      "suggestedFor": [
+        "debugger",
+        "board",
+        "debugger board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Puzzle board-state entity (single row or array). The board reads `lines` array (each with `isFlagged`), `result`, `attempts`, plus title/description/bugCount/hint off the row.",
+          "kind": "entity",
+          "cardinality": "collection",
+          "properties": {
+            "lines": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "content": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "isBug": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "isFlagged": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "explanation": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "content",
+                  "isBug"
+                ]
+              }
+            },
+            "result": {
+              "types": [
+                "string"
+              ]
+            },
+            "attempts": {
+              "types": [
+                "number"
+              ]
+            },
+            "title": {
+              "types": [
+                "string"
+              ]
+            },
+            "description": {
+              "types": [
+                "string"
+              ]
+            },
+            "bugCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "hint": {
+              "types": [
+                "string"
+              ]
+            },
+            "headerImage": {
+              "types": [
+                "string"
+              ]
+            },
+            "theme": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "background": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "accentColor": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "successMessage": {
+              "types": [
+                "string"
+              ]
+            }
+          }
+        },
+        "completeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "completeEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "required": true
+            },
+            {
+              "name": "attempts",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "PUZZLE_COMPLETE"
+        },
+        "toggleFlagEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{toggleFlagEvent} with { lineId } when a line's bug-flag is toggled.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "lineId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "checkEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{checkEvent} with {} when the player checks/submits.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/bug/send).",
+          "properties": {
+            "ui": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "event-handler-board": {
+      "type": "event-handler-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "dimension": "2d",
+      "description": "EventHandlerBoard Organism  Contains ALL game logic for the Event Handler tier (ages 9-12). Kids click on world objects, set WHEN/THEN rules, and watch event chains cascade during playback.  Encourages experimentation: on failure, resets to editing so the kid can try different rules. After 3 failures, shows a progressive hint.",
+      "suggestedFor": [
+        "event",
+        "handler",
+        "board",
+        "event handler board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Puzzle board-state entity (single row or array). The board reads `objects` / `triggerEvents` / `goalEvent` etc. off the row; the editable puzzle objects are themselves `EntityRow`s carried under `objects`.",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "stepDurationMs": {
+          "types": [
+            "number"
+          ],
+          "description": "Playback speed in ms per event",
+          "default": 800
+        },
+        "playEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playEvent}",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "completeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{completeEvent} with { success }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "required": true
+            }
+          ]
+        },
+        "editRuleEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{editRuleEvent} with { objectId, rules } — model updates @entity.objects",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "objectId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "rules",
+              "type": "array",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} to reset the model",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        }
+      }
+    },
+    "negotiator-board": {
+      "type": "negotiator-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "dimension": "2d",
+      "description": "NegotiatorBoard  Turn-based decision matrix game. The player makes choices over multiple rounds against an AI opponent. Each round both sides pick an action, and payoffs are determined by the combination.  Good for: ethics, business, game theory, economics stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
+      "suggestedFor": [
+        "negotiator",
+        "board",
+        "negotiator board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Puzzle board-state entity (single row or array). The board reads `score` / `round` / `result` / `targetScore` / `maxRounds` plus the `actions` / `payoffMatrix` arrays and title/description/hint off the row. Score accumulation + win/lose are owned by the gameplay machine.",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "completeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "completeEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "required": true
+            },
+            {
+              "name": "score",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "PUZZLE_COMPLETE"
+        },
+        "playRoundEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playRoundEvent} with the picked action + the UI-resolved payoff.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "playerAction",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "payoff",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "finishEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{finishEvent} with {} when all rounds are spent.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Optional per-semantic-key asset overrides for icons (correct/arrow).",
+          "properties": {
+            "ui": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "sequencer-board": {
+      "type": "sequencer-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "dimension": "2d",
+      "description": "SequencerBoard Organism  Contains ALL game logic for the Sequencer tier (ages 5-8). Manages the action sequence, validates it, and animates Kekec executing each step on the puzzle scene.  Feedback-first UX: - On failure: slots stay in place, each slot gets a green or red ring showing exactly which steps are correct and which need to change. - Modifying a slot clears its individual feedback so the kid can re-try. - After 3 failures a persistent hint appears above the sequence bar. - \"Reset\" clears everything including attempts / hint.  TraitStateViewer states use indexed labels (\"1. Walk\", \"2. Jump\") so that repeated actions are correctly highlighted during playback.",
+      "suggestedFor": [
+        "sequencer",
+        "board",
+        "sequencer board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Puzzle board-state entity (single row or array). The board reads `availableActions` / `maxSlots` / `solutions` etc. off the row. `availableActions` carries `SlotItemData[]` (a UI drag-DTO, not entity data — it holds a non-FieldValue `stateMachine` member).",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "categoryColors": {
+          "types": [
+            "object"
+          ],
+          "description": "Category → color mapping",
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "bg": {
+                "types": [
+                  "string"
+                ]
+              },
+              "border": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "bg",
+              "border"
+            ]
+          }
+        },
+        "stepDurationMs": {
+          "types": [
+            "number"
+          ],
+          "description": "Playback speed in ms per step",
+          "default": 1000
+        },
+        "playEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playEvent} with { sequence: string[] }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "sequence",
+              "type": "array",
+              "required": true
+            }
+          ]
+        },
+        "completeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{completeEvent} with { success: boolean }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "required": true
+            },
+            {
+              "name": "sequence",
+              "type": "array",
+              "required": true
+            }
+          ]
+        },
+        "placeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{placeEvent} with { slotIndex, actionId } when an action is dropped into a slot",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "slotIndex",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "actionId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "removeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{removeEvent} with { slotIndex } when an action is removed from a slot",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "slotIndex",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "checkEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{checkEvent} with { sequence } when the player submits the sequence",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "sequence",
+              "type": "array",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on reset",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "stepEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{stepEvent} with { step } during playback animation advancement",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "step",
+              "type": "number",
+              "required": true
+            }
+          ]
+        }
+      }
+    },
+    "simulator-board": {
+      "type": "simulator-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "dimension": "2d",
+      "description": "SimulatorBoard  Parameter-slider game board. The player adjusts two parameters (A and B) and observes the machine-derived output. Correct parameter values must bring the output within tolerance of the target to win.  Good for: physics, economics, system design stories.  Controlled-only: params, output, attempts, and result are owned by the gameplay machine and read off the bound entity. Slider/check/play-again interactions are emitted as events; the machine recomputes and re-renders.",
+      "suggestedFor": [
+        "simulator",
+        "board",
+        "simulator board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Puzzle board-state entity (single row or array). The board reads the `parameters` slider descriptors plus the machine-owned `paramA`/`paramB`/ `output`/`target`/`tolerance`/`attempts`/`result` fields off the row.",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "completeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "completeEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "required": true
+            },
+            {
+              "name": "attempts",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "PUZZLE_COMPLETE"
+        },
+        "setAEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{setAEvent} with { value } when parameter A's slider changes.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "setBEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{setBEvent} with { value } when parameter B's slider changes.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "checkEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{checkEvent} with {} on simulate / check.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} with {} on reset / play again.",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/play/reset).",
+          "properties": {
+            "ui": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "state-architect-board": {
+      "type": "state-architect-board",
+      "category": "game",
+      "tier": "organisms",
+      "family": "game",
+      "dimension": "2d",
+      "description": "StateArchitectBoard Organism  Contains ALL game logic for the State Architect tier (ages 13+). Kids design state machines via a visual graph editor, then run them to see if the behavior matches the puzzle goal.",
+      "suggestedFor": [
+        "state",
+        "architect",
+        "board",
+        "state architect board"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state indicator"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state (UiError)",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort field"
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Current sort direction",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
+        },
+        "searchValue": {
+          "types": [
+            "string"
+          ],
+          "description": "Current search query value"
+        },
+        "page": {
+          "types": [
+            "number"
+          ],
+          "description": "Current page number"
+        },
+        "pageSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Number of items per page"
+        },
+        "totalCount": {
+          "types": [
+            "number"
+          ],
+          "description": "Total number of items"
+        },
+        "activeFilters": {
+          "types": [
+            "object"
+          ],
+          "description": "Active filters"
+        },
+        "selectedIds": {
+          "types": [
+            "array"
+          ],
+          "description": "Currently selected item IDs",
+          "items": {
+            "types": [
+              "string",
+              "number"
+            ]
+          }
+        },
+        "entity": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Puzzle board-state entity (single row or array). The board reads `variables` / `states` / `transitions` / `testCases` etc. off the row.",
+          "kind": "entity",
+          "cardinality": "collection"
+        },
+        "stepDurationMs": {
+          "types": [
+            "number"
+          ],
+          "description": "Playback speed",
+          "default": 600
+        },
+        "testEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{testEvent}",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "completeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{completeEvent} with { success, passedTests }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "success",
+              "type": "boolean",
+              "required": true
+            },
+            {
+              "name": "passedTests",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "addTransitionEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{addTransitionEvent} — lolo handles ADD_TRANSITION",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "from",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "event",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "removeTransitionEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{removeTransitionEvent} — lolo handles REMOVE_TRANSITION",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "playAgainEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{playAgainEvent} — lolo handles PLAY_AGAIN",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        }
+      }
+    },
+    "state-graph": {
+      "type": "state-graph",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "dimension": "2d",
+      "description": "StateGraph (molecule)  Dumb visual renderer for a state-machine graph: lays states out on a circle, draws the player's transitions as SVG arrows, and emits a node-click event. All state (which transitions exist, the pending \"from\" selection, test results) lives in the .lolo FSM — this molecule only renders and reports clicks.",
+      "suggestedFor": [
+        "state",
+        "graph",
+        "state graph"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "states": {
+          "types": [
+            "array"
+          ],
+          "description": "All states in the machine (node labels).",
+          "required": true,
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "transitions": {
+          "types": [
+            "array"
+          ],
+          "description": "Player-built transitions rendered as arrows.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "from": {
+                "types": [
+                  "string"
+                ]
+              },
+              "to": {
+                "types": [
+                  "string"
+                ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ]
+              },
+              "guardHint": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "event"
+            ]
+          },
+          "default": []
+        },
+        "currentState": {
+          "types": [
+            "string"
+          ],
+          "description": "State highlighted as current (test playback / initial)."
+        },
+        "selectedState": {
+          "types": [
+            "string"
+          ],
+          "description": "State the player has selected (first click)."
+        },
+        "addingFrom": {
+          "types": [
+            "string"
+          ],
+          "description": "When set, the graph is in \"pick a target\" mode from this state."
+        },
+        "initialState": {
+          "types": [
+            "string"
+          ],
+          "description": "The machine's initial state (ring-marked)."
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Graph canvas width.",
+          "default": 500
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "Graph canvas height.",
+          "default": 400
+        },
+        "nodeClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{nodeClickEvent} with { stateId } when a node is clicked.",
+          "kind": "event"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "object-rule-panel": {
+      "type": "object-rule-panel",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "dimension": "2d",
+      "description": "ObjectRulePanel Component  Shows the rules panel for a selected world object in the Event Handler tier. Displays object info, its current state (via TraitStateViewer), and a list of WHEN/THEN rules the kid has set.",
+      "suggestedFor": [
+        "object",
+        "rule",
+        "panel",
+        "object rule panel"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "object": {
+          "types": [
+            "object"
+          ],
+          "description": "The selected puzzle-object row (`EntityRow` carrying the editable object data)",
+          "required": true,
+          "kind": "entity",
+          "cardinality": "record"
+        },
+        "onRulesChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when rules change (callback path)",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "objectId",
+              "type": "string"
+            },
+            {
+              "name": "rules",
+              "type": "array"
+            }
+          ]
+        },
+        "rulesChangeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{rulesChangeEvent} with { objectId, rules } when rules change (declarative path)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "objectId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "rules",
+              "type": "array",
+              "required": true
+            }
+          ]
+        },
+        "disabled": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether editing is disabled",
+          "default": false
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "state-json-view": {
+      "type": "state-json-view",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "dimension": "2d",
+      "description": "StateJsonView Component  Shows a state machine's definition as an expandable code block, so the learner sees the declarative schema behind the visual graph. Dumb molecule: takes the machine as plain typed fields (name/states/initialState/transitions) — the .lolo organism owns the entity and the molecule renders + stringifies it.",
+      "suggestedFor": [
+        "state",
+        "json",
+        "view",
+        "state json view"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "name": {
+          "types": [
+            "string"
+          ],
+          "description": "Machine name",
+          "required": true
+        },
+        "initialState": {
+          "types": [
+            "string"
+          ],
+          "description": "Initial state",
+          "required": true
+        },
+        "states": {
+          "types": [
+            "array"
+          ],
+          "description": "All state names",
+          "required": true,
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "transitions": {
+          "types": [
+            "array"
+          ],
+          "description": "The player's wired transitions",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "from": {
+                "types": [
+                  "string"
+                ]
+              },
+              "to": {
+                "types": [
+                  "string"
+                ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to",
+              "event"
+            ]
+          }
+        },
+        "label": {
+          "types": [
+            "string"
+          ],
+          "description": "Header label"
+        },
+        "defaultExpanded": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether the code block is expanded by default",
+          "default": false
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "variable-panel": {
+      "type": "variable-panel",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "dimension": "2d",
+      "description": "VariablePanel Component  Shows a machine's variables and their current values during State Architect playback. Dumb molecule: takes a plain typed list of { name, value } — the .lolo organism owns the entity data and passes it already flattened.",
+      "suggestedFor": [
+        "variable",
+        "panel",
+        "variable panel"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "entityName": {
+          "types": [
+            "string"
+          ],
+          "description": "Entity name shown in the header",
+          "required": true
+        },
+        "variables": {
+          "types": [
+            "array"
+          ],
+          "description": "Variable rows to display",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "value"
+            ]
+          }
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
         }
       }
     }
