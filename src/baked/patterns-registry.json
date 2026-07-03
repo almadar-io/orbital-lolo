@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-02T06:39:01.426Z",
+  "exportedAt": "2026-07-02T16:12:39.531Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -12711,14 +12711,32 @@
           "types": [
             "string"
           ],
-          "description": "Application / game title shown in the HUD bar",
+          "description": "Application / game title shown as a floating chip",
           "default": "Game"
         },
         "hud": {
           "types": [
             "node"
           ],
-          "description": "Optional HUD content rendered above the main area"
+          "description": "Stat chips row — floats along the top edge"
+        },
+        "addons": {
+          "types": [
+            "node"
+          ],
+          "description": "Action cluster — floats bottom-right (End Turn, Fire, Reset, …)"
+        },
+        "controls": {
+          "types": [
+            "node"
+          ],
+          "description": "Movement controls — floats bottom-left (d-pad / control-grid)."
+        },
+        "overlay": {
+          "types": [
+            "node"
+          ],
+          "description": "Centered overlay layer (victory/defeat banners, dialogs)."
         },
         "className": {
           "types": [
@@ -12730,20 +12748,20 @@
           "types": [
             "boolean"
           ],
-          "description": "Whether to show the minimal top bar (default: true)",
+          "description": "Whether to show the title chip (default: true)",
           "default": true
         },
         "children": {
           "types": [
             "node"
           ],
-          "description": "Game content rendered inside the full-screen area"
+          "description": "Game content — fills the whole surface underneath the overlays"
         },
         "backgroundAsset": {
           "types": [
             "object"
           ],
-          "description": "Background image for the shell/main area (e.g. Kenny panel frame). Falls back to CSS #0a0a0f.",
+          "description": "Pattern slice tiled at low opacity across the surface (never cover-stretched).",
           "properties": {
             "url": {
               "types": [
@@ -12804,7 +12822,7 @@
           "types": [
             "object"
           ],
-          "description": "Background image for the HUD bar. Falls back to CSS #12121f surface color.",
+          "description": "9-sliced panel skin for the HUD chips row + title chip.",
           "properties": {
             "url": {
               "types": [
@@ -12860,6 +12878,13 @@
           "propertyRequired": [
             "url"
           ]
+        },
+        "fontFamily": {
+          "types": [
+            "string"
+          ],
+          "description": "Game font key (future | future-narrow | pixel | blocks | mini) or a CSS font-family.",
+          "default": "future"
         }
       }
     },
@@ -35696,6 +35721,16 @@
               "types": [
                 "boolean"
               ]
+            },
+            "animation": {
+              "types": [
+                "string"
+              ]
+            },
+            "frame": {
+              "types": [
+                "number"
+              ]
             }
           },
           "propertyRequired": [
@@ -36033,7 +36068,7 @@
           "types": [
             "function"
           ],
-          "description": "Resolve feature sprite URL from feature type key",
+          "description": "Resolve feature sprite from feature type key — a bare URL or an Asset.",
           "kind": "callback",
           "callbackArgs": [
             {
@@ -36047,7 +36082,7 @@
           "types": [
             "function"
           ],
-          "description": "Resolve unit static sprite URL",
+          "description": "Resolve unit static sprite — a bare URL or an Asset.",
           "kind": "callback",
           "callbackArgs": [
             {
@@ -37885,6 +37920,563 @@
             "number"
           ],
           "description": "Board zoom/group scale. Applied to the scene group. Default 0.45."
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keydown `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: \"LEFT\", Space: \"JUMP\" }`. The input layer emits `UI:<event>` so the FSM stays device-agnostic — keyboard and d-pad converge.",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keyup `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: \"STOP\" }`.",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "player": {
+          "types": [
+            "object"
+          ],
+          "description": "Side-view player (pixel coords, LOLO-owned physics) — presence switches to side-scroller rendering.",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "width": {
+              "types": [
+                "number"
+              ]
+            },
+            "height": {
+              "types": [
+                "number"
+              ]
+            },
+            "vx": {
+              "types": [
+                "number"
+              ]
+            },
+            "vy": {
+              "types": [
+                "number"
+              ]
+            },
+            "grounded": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "facingRight": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "animation": {
+              "types": [
+                "string"
+              ]
+            },
+            "frame": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ]
+        },
+        "platforms": {
+          "types": [
+            "array"
+          ],
+          "description": "Side-view level geometry (pixel AABBs, same contract as Canvas2D).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ground",
+                  "platform",
+                  "hazard",
+                  "goal"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ]
+          },
+          "default": []
+        },
+        "worldWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Side-view world size in pixels."
+        },
+        "worldHeight": {
+          "types": [
+            "number"
+          ],
+          "description": "Side-view world size in pixels.",
+          "default": 400
+        },
+        "pixelsPerUnit": {
+          "types": [
+            "number"
+          ],
+          "description": "Pixel→world-unit divisor for side view (default 32 = one 2D tile per 3D cell).",
+          "default": 32
+        },
+        "playerSprite": {
+          "types": [
+            "object"
+          ],
+          "description": "Player model — named for 2D parity; in 3D the Asset's url is a GLB.",
+          "properties": {
+            "url": {
+              "types": [
+                "asset"
+              ]
+            },
+            "role": {
+              "types": [
+                "string"
+              ]
+            },
+            "category": {
+              "types": [
+                "string"
+              ]
+            },
+            "animations": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "style": {
+              "types": [
+                "string"
+              ]
+            },
+            "dimension": {
+              "types": [
+                "string"
+              ]
+            },
+            "aspect": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "thumbnailUrl": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "url"
+          ]
+        },
+        "tileSprites": {
+          "types": [
+            "object"
+          ],
+          "description": "Platform-type → model map — named for 2D parity; values are GLB Assets.",
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "url": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "role": {
+                "types": [
+                  "string"
+                ]
+              },
+              "category": {
+                "types": [
+                  "string"
+                ]
+              },
+              "animations": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "style": {
+                "types": [
+                  "string"
+                ]
+              },
+              "dimension": {
+                "types": [
+                  "string"
+                ]
+              },
+              "aspect": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "thumbnailUrl": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "url"
+            ]
+          }
+        },
+        "assetManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Per-role model manifest; resolves tiles/units/features without explicit modelUrl/assetUrl.",
+          "properties": {
+            "terrains": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "units": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "features": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            },
+            "effects": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              }
+            }
+          }
+        },
+        "interpolateUnits": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Opt-in: smooth-lerp unit positions between LOLO tick snapshots. DEFAULT OFF.",
+          "default": false
         }
       }
     },
@@ -43358,6 +43950,608 @@
             "string"
           ],
           "description": "Additional CSS classes"
+        }
+      }
+    },
+    "algorithm-canvas": {
+      "type": "algorithm-canvas",
+      "category": "learning",
+      "tier": "molecules",
+      "family": "learning",
+      "description": "AlgorithmCanvas component",
+      "suggestedFor": [
+        "algorithm",
+        "canvas",
+        "algorithm canvas"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 600
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 400
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "title prop"
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "backgroundColor prop"
+        },
+        "bars": {
+          "types": [
+            "array"
+          ],
+          "description": "Sorting/histogram bars; laid out left-to-right, height proportional to value.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "value"
+            ]
+          },
+          "default": []
+        },
+        "cells": {
+          "types": [
+            "array"
+          ],
+          "description": "Grid/array/DP cells; laid out on a row/col lattice sized to the extent.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "row": {
+                "types": [
+                  "number"
+                ]
+              },
+              "col": {
+                "types": [
+                  "number"
+                ]
+              },
+              "value": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "row",
+              "col"
+            ]
+          },
+          "default": []
+        },
+        "pointers": {
+          "types": [
+            "array"
+          ],
+          "description": "Index cursors (i/j/lo/hi/mid); drawn as markers beneath the referenced bar/cell column.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "index": {
+                "types": [
+                  "number"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "index"
+            ]
+          },
+          "default": []
+        },
+        "shapes": {
+          "types": [
+            "array"
+          ],
+          "description": "Extra declarative shapes in canvas pixel coordinates.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "line",
+                  "arrow",
+                  "circle",
+                  "rect",
+                  "polygon",
+                  "path",
+                  "text",
+                  "axis",
+                  "grid"
+                ]
+              },
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "x1": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y1": {
+                "types": [
+                  "number"
+                ]
+              },
+              "x2": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y2": {
+                "types": [
+                  "number"
+                ]
+              },
+              "radius": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "points": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "x": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "y": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ]
+                }
+              },
+              "path": {
+                "types": [
+                  "string"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fontSize": {
+                "types": [
+                  "number"
+                ]
+              },
+              "align": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "left",
+                  "center",
+                  "right"
+                ]
+              },
+              "axis": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "x",
+                  "y"
+                ]
+              },
+              "min": {
+                "types": [
+                  "number"
+                ]
+              },
+              "max": {
+                "types": [
+                  "number"
+                ]
+              },
+              "step": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fill": {
+                "types": [
+                  "string"
+                ]
+              },
+              "lineWidth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "default": []
+        },
+        "interactive": {
+          "types": [
+            "boolean"
+          ],
+          "description": "interactive prop",
+          "default": false
+        },
+        "animate": {
+          "types": [
+            "boolean"
+          ],
+          "description": "animate prop",
+          "default": false
+        },
+        "onShapeClick": {
+          "types": [
+            "function"
+          ],
+          "description": "onShapeClick prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "payload",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "type": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "index": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "index"
+                ]
+              }
+            }
+          ]
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "isLoading prop"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "error prop",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        }
+      }
+    },
+    "atlas-image": {
+      "type": "atlas-image",
+      "category": "component",
+      "tier": "atoms",
+      "family": "core",
+      "description": "AtlasImage component",
+      "suggestedFor": [
+        "atlas",
+        "image",
+        "atlas image"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "asset": {
+          "types": [
+            "object"
+          ],
+          "description": "asset prop",
+          "properties": {
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "category": {
+              "types": [
+                "string"
+              ]
+            }
+          }
+        },
+        "size": {
+          "types": [
+            "number"
+          ],
+          "description": "Square pixel size (icon usage). Ignored when `fill`."
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop"
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop"
+        },
+        "fill": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Absolutely fill the nearest positioned ancestor (background usage).",
+          "default": false
+        },
+        "fit": {
+          "types": [
+            "string"
+          ],
+          "description": "fit prop",
+          "enumValues": [
+            "contain",
+            "cover",
+            "fill"
+          ],
+          "default": "contain"
+        },
+        "alt": {
+          "types": [
+            "string"
+          ],
+          "description": "alt prop"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "style": {
+          "types": [
+            "object"
+          ],
+          "description": "style prop"
+        },
+        "'aria-hidden'": {
+          "types": [
+            "boolean"
+          ],
+          "description": "'aria-hidden' prop"
+        }
+      }
+    },
+    "atlas-panel": {
+      "type": "atlas-panel",
+      "category": "component",
+      "tier": "atoms",
+      "family": "core",
+      "description": "AtlasPanel component",
+      "suggestedFor": [
+        "atlas",
+        "panel",
+        "atlas panel"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "asset": {
+          "types": [
+            "object"
+          ],
+          "description": "asset prop",
+          "properties": {
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "category": {
+              "types": [
+                "string"
+              ]
+            }
+          }
+        },
+        "borderSlice": {
+          "types": [
+            "number"
+          ],
+          "description": "Border thickness (source pixels) for the 9-slice cut.",
+          "default": 16
+        },
+        "borderWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Rendered border width in CSS px.",
+          "default": 16
+        },
+        "mode": {
+          "types": [
+            "string"
+          ],
+          "description": "'nineSlice' scales edges crisp (panels/buttons); 'repeat' tiles the slice (pattern fills).",
+          "enumValues": [
+            "nineSlice",
+            "repeat"
+          ],
+          "default": "nineSlice"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "style": {
+          "types": [
+            "object"
+          ],
+          "description": "style prop"
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "children prop"
+        },
+        "'aria-hidden'": {
+          "types": [
+            "boolean"
+          ],
+          "description": "'aria-hidden' prop"
         }
       }
     }

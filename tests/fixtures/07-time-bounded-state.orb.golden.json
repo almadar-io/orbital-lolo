@@ -33,7 +33,8 @@
             "states": [
               {
                 "isInitial": true,
-                "name": "confirming"
+                "name": "confirming",
+                "timeBoundMs": 30000
               },
               {
                 "name": "confirmed"

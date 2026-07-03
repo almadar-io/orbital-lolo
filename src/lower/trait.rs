@@ -161,6 +161,7 @@ pub(crate) fn lower_trait(
             is_initial: if is_initial { Some(true) } else { None },
             is_terminal: None,
             description: None,
+            time_bound_ms: state.time_bound,
         });
 
         for tr in &state.transitions {
@@ -183,10 +184,11 @@ pub(crate) fn lower_trait(
         // Time-bound: auto-generate TIMEOUT transition that targets whatever
         // explicit TIMEOUT transition the user wrote (if any). If none, the
         // TIMEOUT transition stays self-targeted (matches the spec example).
-        if let Some(_dur) = state.time_bound {
-            // The duration is recorded in metadata; the runtime owns the timer.
-            // We do NOT add a synthetic TIMEOUT transition here unless the user
-            // omitted one. The user typically writes one explicitly.
+        if state.time_bound.is_some() {
+            // The duration is carried on this state's `time_bound_ms` (set
+            // above). We do NOT add a synthetic TIMEOUT transition here
+            // unless the user omitted one. The user typically writes one
+            // explicitly.
             //
             // Per spec: "for <duration> on a state declaration auto-generates
             // a TIMEOUT transition that fires after the duration if no other

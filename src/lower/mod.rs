@@ -367,6 +367,7 @@ fn lower_orbital(
                     is_initial: Some(true),
                     is_terminal: None,
                     description: None,
+                    time_bound_ms: None,
                 }],
                 events: Some(vec![EventDefinition {
                     key: "INIT".to_string(),
@@ -532,6 +533,17 @@ mod tests {
             .iter()
             .find(|tr| tr.event == "TIMEOUT");
         assert!(timeout.is_some(), "expected synthesized TIMEOUT transition");
+        let state_s = t
+            .state_machine
+            .states
+            .iter()
+            .find(|st| st.name == "s")
+            .expect("expected state 's'");
+        assert_eq!(
+            state_s.time_bound_ms,
+            Some(30_000),
+            "expected the 30s duration to survive lowering onto the state, not be discarded"
+        );
     }
 
     #[test]
