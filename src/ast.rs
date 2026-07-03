@@ -207,6 +207,9 @@ pub struct Entity {
     pub type_annotation: Option<TypeAnnotation>,
     pub persistence: Option<Persistence>,
     pub collection: Option<String>,
+    /// `shared` header tag — orthogonal to persistence: entity state shared
+    /// across all bound traits vs copied per-trait.
+    pub shared: bool,
     pub fields: Vec<EntityField>,
     pub span: Span,
 }
@@ -216,9 +219,6 @@ pub struct Entity {
 pub enum Persistence {
     Persistent,
     Runtime,
-    Singleton,
-    Local,
-    Instance,
 }
 
 /// One field on an entity.

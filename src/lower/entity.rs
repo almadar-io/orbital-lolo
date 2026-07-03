@@ -12,9 +12,6 @@ pub(crate) fn lower_entity(
     let persistence = match &entity.persistence {
         Some(Persistence::Persistent) => Some(CorePersistence::Persistent),
         Some(Persistence::Runtime) => Some(CorePersistence::Runtime),
-        Some(Persistence::Singleton) => Some(CorePersistence::Singleton),
-        Some(Persistence::Instance) => Some(CorePersistence::Instance),
-        Some(Persistence::Local) => Some(CorePersistence::Runtime),
         None => None,
     };
     Ok(EntityDefinition {
@@ -23,6 +20,7 @@ pub(crate) fn lower_entity(
         persistence,
         fields,
         instances: None,
+        shared: entity.shared,
     })
 }
 

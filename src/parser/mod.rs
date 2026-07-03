@@ -496,6 +496,50 @@ mod tests {
     }
 
     #[test]
+    fn parse_shared_composes_with_runtime() {
+        let prog =
+            p("orbital Foo {\n  entity Bar [runtime, shared] {\n    id : string!\n  }\n}");
+        let ent = prog.orbitals[0].entity.as_ref().unwrap();
+        assert_eq!(ent.persistence, Some(Persistence::Runtime));
+        assert!(ent.shared);
+    }
+
+    #[test]
+    fn parse_shared_composes_with_persistent_collection() {
+        let prog = p(
+            "orbital Foo {\n  entity Bar [persistent: users, shared] {\n    id : string!\n  }\n}",
+        );
+        let ent = prog.orbitals[0].entity.as_ref().unwrap();
+        assert_eq!(ent.persistence, Some(Persistence::Persistent));
+        assert_eq!(ent.collection, Some("users".to_string()));
+        assert!(ent.shared);
+    }
+
+    #[test]
+    fn parse_shared_alone() {
+        let prog = p("orbital Foo {\n  entity Bar [shared] {\n    id : string!\n  }\n}");
+        let ent = prog.orbitals[0].entity.as_ref().unwrap();
+        assert_eq!(ent.persistence, None);
+        assert!(ent.shared);
+    }
+
+    #[test]
+    fn parse_shared_order_independent() {
+        let prog =
+            p("orbital Foo {\n  entity Bar [shared, runtime] {\n    id : string!\n  }\n}");
+        let ent = prog.orbitals[0].entity.as_ref().unwrap();
+        assert_eq!(ent.persistence, Some(Persistence::Runtime));
+        assert!(ent.shared);
+    }
+
+    #[test]
+    fn parse_entity_without_tags_is_not_shared() {
+        let prog = p("orbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
+        let ent = prog.orbitals[0].entity.as_ref().unwrap();
+        assert!(!ent.shared);
+    }
+
+    #[test]
     fn parse_trait_with_state() {
         let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @x 1)\n    }\n  }\n}";
         let prog = p(src);

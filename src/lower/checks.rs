@@ -7,10 +7,20 @@ use super::*;
 /// time. Skipped by the caller when the trait has no `linkedEntity`.
 /// `@intrinsic` fields are EXEMPT — they are machinery the trait/runtime owns
 /// and may be read without a local setter.
+///
+/// `entity_shared` defers this check entirely on a `[shared]` entity: several
+/// bound traits co-mutate one shared instance, so a sibling trait may own the
+/// setter for a field this trait only reads. The genuine "no trait in the
+/// whole shared group ever sets X" case is caught post-inline at L2, which
+/// sees every trait bound to the shared entity, not just this one.
 pub(crate) fn check_entity_fields_have_setters(
     t: &Trait,
     intrinsic_fields: &HashSet<String>,
+    entity_shared: bool,
 ) -> Result<(), LowerError> {
+    if entity_shared {
+        return Ok(());
+    }
     let mut referenced_fields: HashMap<String, String> = HashMap::new();
     let mut set_fields: HashSet<String> = HashSet::new();
 

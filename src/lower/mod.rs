@@ -70,9 +70,19 @@ pub fn lower_to_orb(ast: &Program) -> Result<OrbitalSchema, LowerError> {
     // to a `cardinality: Many` Relation field (entity) or a regular array of
     // an inline object schema (struct alias).
     let mut file_entity_names: HashSet<String> = HashSet::new();
+    // Entities declared `[shared]` — several bound traits co-mutate one shared
+    // instance, so the per-trait explicit-binding check (a read with no LOCAL
+    // setter) would false-positive when a sibling trait owns the setter.
+    // `TypeBody::Entity` (type-alias-declared entities) carries no `shared`
+    // flag today, so only inline `entity Name [shared] { ... }` blocks
+    // contribute here.
+    let mut file_shared_entity_names: HashSet<String> = HashSet::new();
     for orb in &ast.orbitals {
         if let Some(e) = &orb.entity {
             file_entity_names.insert(e.name.clone());
+            if e.shared {
+                file_shared_entity_names.insert(e.name.clone());
+            }
         }
     }
     for ta in &ast.type_aliases {
@@ -117,6 +127,7 @@ pub fn lower_to_orb(ast: &Program) -> Result<OrbitalSchema, LowerError> {
             &local_entities,
             &local_entity_names,
             &local_events,
+            &file_shared_entity_names,
         )?);
     }
 
@@ -265,6 +276,7 @@ fn lower_orbital(
     entities: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
     entity_names: &HashSet<String>,
     event_aliases: &BTreeMap<String, EventTypeResolved>,
+    shared_entity_names: &HashSet<String>,
 ) -> Result<CoreOrbital, LowerError> {
     let entity = orb.entity.as_ref().ok_or(LowerError::MissingEntity)?;
     let entity_def = lower_entity(entity, aliases, entity_names)?;
@@ -335,6 +347,7 @@ fn lower_orbital(
             entity_names,
             event_aliases,
             &intrinsic_fields,
+            shared_entity_names,
         )?);
     }
 
@@ -444,6 +457,57 @@ mod tests {
             _ => panic!("expected inline entity"),
         };
         assert_eq!(ent.persistence, Some(CorePersistence::Runtime));
+    }
+
+    fn lowered_entity(src: &str) -> EntityDefinition {
+        let s = lower(src);
+        match &s.orbitals[0].entity {
+            EntityRef::Inline(e) => e.clone(),
+            _ => panic!("expected inline entity"),
+        }
+    }
+
+    #[test]
+    fn lower_shared_with_runtime() {
+        let ent = lowered_entity("orbital Foo { entity Bar [runtime, shared] { id : string! } }");
+        assert!(ent.shared);
+        assert_eq!(ent.persistence, Some(CorePersistence::Runtime));
+    }
+
+    #[test]
+    fn lower_shared_with_persistent() {
+        let ent =
+            lowered_entity("orbital Foo { entity Bar [persistent, shared] { id : string! } }");
+        assert!(ent.shared);
+        assert_eq!(ent.persistence, Some(CorePersistence::Persistent));
+    }
+
+    #[test]
+    fn lower_shared_alone_defaults_persistence_none() {
+        let ent = lowered_entity("orbital Foo { entity Bar [shared] { id : string! } }");
+        assert!(ent.shared);
+        assert_eq!(ent.persistence, None);
+    }
+
+    #[test]
+    fn lower_runtime_alone_is_not_shared() {
+        let ent = lowered_entity("orbital Foo { entity Bar [runtime] { id : string! } }");
+        assert!(!ent.shared);
+        assert_eq!(ent.persistence, Some(CorePersistence::Runtime));
+    }
+
+    #[test]
+    fn lower_shared_tag_order_independent() {
+        let ent = lowered_entity("orbital Foo { entity Bar [shared, runtime] { id : string! } }");
+        assert!(ent.shared);
+        assert_eq!(ent.persistence, Some(CorePersistence::Runtime));
+    }
+
+    #[test]
+    fn unknown_entity_tag_errors_at_parse() {
+        let err = crate::parser::parse_str("orbital Foo { entity Bar [bogus] { id : string! } }")
+            .expect_err("expected parse to reject unknown entity tag");
+        assert!(matches!(err, crate::error::ParseError::InvalidPersistenceMode { .. }));
     }
 
     #[test]
@@ -625,6 +689,83 @@ mod tests {
             }
             other => panic!(
                 "expected EntityFieldNeverSet for currentPage, got: {:?}",
+                other
+            ),
+        }
+    }
+
+    #[test]
+    fn lower_shared_entity_defers_setter_check_to_sibling_trait() {
+        // Entity is [shared]: trait Reader reads @entity.count but never sets
+        // it locally; sibling trait Writer owns the setter. The per-trait L1
+        // check must defer (not false-positive) — L2 checks the whole shared
+        // group post-inline.
+        let src = "
+            orbital O {
+                entity E [shared] {
+                    id : string!
+                    count : number = 0
+                }
+                trait Reader -> E [interaction, instance] {
+                    state s {
+                        INIT -> s
+                            (render-ui main { type: \"text\", value: \"@entity.count\" })
+                    }
+                }
+                trait Writer -> E [interaction, instance] {
+                    state s {
+                        INCREMENT -> s
+                            (set @entity.count 1)
+                    }
+                }
+            }
+        ";
+        let ast = parse_str(src).expect("parse");
+        let result = lower_to_orb(&ast);
+        assert!(
+            result.is_ok(),
+            "a [shared] entity should defer the setter check to L2: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn lower_non_shared_entity_still_errors_on_read_without_local_setter() {
+        // Same shape as above (a sibling trait sets the field) but the entity
+        // is NOT [shared] — each trait gets an isolated per-trait copy, so
+        // Reader's read is genuinely never backed by a local setter and must
+        // still hard-error.
+        let src = "
+            orbital O {
+                entity E {
+                    id : string!
+                    count : number = 0
+                }
+                trait Reader -> E [interaction, instance] {
+                    state s {
+                        INIT -> s
+                            (render-ui main { type: \"text\", value: \"@entity.count\" })
+                    }
+                }
+                trait Writer -> E [interaction, instance] {
+                    state s {
+                        INCREMENT -> s
+                            (set @entity.count 1)
+                    }
+                }
+            }
+        ";
+        let ast = parse_str(src).expect("parse");
+        let result = lower_to_orb(&ast);
+        match result {
+            Err(LowerError::EntityFieldNeverSet {
+                trait_name, field, ..
+            }) => {
+                assert_eq!(trait_name, "Reader");
+                assert_eq!(field, "count");
+            }
+            other => panic!(
+                "expected EntityFieldNeverSet for count on non-shared entity, got: {:?}",
                 other
             ),
         }

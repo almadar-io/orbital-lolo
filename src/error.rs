@@ -53,6 +53,9 @@ pub enum ParseError {
     #[error("unknown keyword {keyword:?} at {}:{}", span.line, span.col)]
     UnknownKeyword { keyword: String, span: Span },
 
+    #[error("invalid persistence mode {value:?} at {}:{}: expected 'persistent', 'runtime', or 'shared'", span.line, span.col)]
+    InvalidPersistenceMode { value: String, span: Span },
+
     #[error("invalid type expression at {}:{}: {message}", span.line, span.col)]
     InvalidType { message: String, span: Span },
 
@@ -75,6 +78,7 @@ impl ParseError {
             ParseError::Lex(e) => e.span(),
             ParseError::UnexpectedToken { span, .. }
             | ParseError::UnknownKeyword { span, .. }
+            | ParseError::InvalidPersistenceMode { span, .. }
             | ParseError::InvalidType { span, .. }
             | ParseError::InvalidSExpr { span, .. }
             | ParseError::InvalidDuration { span, .. }

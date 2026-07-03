@@ -9,6 +9,7 @@ pub(crate) fn lower_trait_decl(
     entity_names: &HashSet<String>,
     event_aliases: &BTreeMap<String, EventTypeResolved>,
     intrinsic_fields: &HashSet<String>,
+    shared_entity_names: &HashSet<String>,
 ) -> Result<TraitReference, LowerError> {
     if let Some(ref_data) = &t.reference {
         Ok(lower_trait_reference(t, ref_data))
@@ -20,6 +21,7 @@ pub(crate) fn lower_trait_decl(
             entity_names,
             event_aliases,
             intrinsic_fields,
+            shared_entity_names,
         )?))
     }
 }
@@ -140,6 +142,7 @@ pub(crate) fn lower_trait(
     entity_names: &HashSet<String>,
     event_aliases: &BTreeMap<String, EventTypeResolved>,
     intrinsic_fields: &HashSet<String>,
+    shared_entity_names: &HashSet<String>,
 ) -> Result<TraitDefinition, LowerError> {
     // Build the state machine: states (with isInitial), events (collected
     // from transitions), transitions (one per Transition AST node, plus
@@ -456,7 +459,11 @@ pub(crate) fn lower_trait(
     // validator runs the same check post-inline; this gives faster feedback
     // at parse time. Skipped when the trait has no linkedEntity.
     if t.linked_entity.is_some() {
-        check_entity_fields_have_setters(t, intrinsic_fields)?;
+        let entity_shared = t
+            .linked_entity
+            .as_deref()
+            .is_some_and(|name| shared_entity_names.contains(name));
+        check_entity_fields_have_setters(t, intrinsic_fields, entity_shared)?;
         check_set_value_types(t, entities)?;
     }
 

@@ -11,10 +11,10 @@ impl Parser {
         // Optional `:: TypeName [args]` annotation above the body.
         let type_annotation = self.try_parse_type_annotation()?;
 
-        let (persistence, collection) = if matches!(self.peek(), TokenKind::LBracket) {
+        let (persistence, collection, shared) = if matches!(self.peek(), TokenKind::LBracket) {
             self.parse_persistence_tag()?
         } else {
-            (None, None)
+            (None, None, false)
         };
 
         let brace_form = matches!(self.peek(), TokenKind::LBrace);
@@ -59,6 +59,7 @@ impl Parser {
             type_annotation,
             persistence,
             collection,
+            shared,
             fields,
             span,
         })
@@ -79,44 +80,68 @@ impl Parser {
         }
     }
 
+    /// Parses the entity header bracket: a comma-separated, order-independent
+    /// list of tags. At most one persistence mode (`persistent` — optionally
+    /// `: collection` — or `runtime`) plus the orthogonal `shared` flag, e.g.
+    /// `[runtime, shared]`, `[persistent: bars]`, `[shared]`.
     pub(crate) fn parse_persistence_tag(
         &mut self,
-    ) -> Result<(Option<Persistence>, Option<String>), ParseError> {
-        // `[persistent: name]` or `[runtime]` or `[singleton]` or `[local]` or `[instance]`.
+    ) -> Result<(Option<Persistence>, Option<String>, bool), ParseError> {
         self.expect_kind(&TokenKind::LBracket, "[")?;
-        let kind = self.expect_ident()?;
-        let collection = if matches!(self.peek(), TokenKind::Colon) {
-            self.advance();
-            // Could be an identifier or a string literal.
-            match self.peek().clone() {
-                TokenKind::Identifier(s) => {
-                    self.advance();
-                    Some(s)
+        let mut persistence: Option<Persistence> = None;
+        let mut collection: Option<String> = None;
+        let mut shared = false;
+        loop {
+            let tag_span = self.peek_span();
+            let kind = self.expect_ident()?;
+            match kind.as_str() {
+                "shared" => shared = true,
+                "persistent" | "runtime" => {
+                    let mode = if kind == "persistent" {
+                        Persistence::Persistent
+                    } else {
+                        Persistence::Runtime
+                    };
+                    if let Some(existing) = &persistence {
+                        if *existing != mode {
+                            return Err(ParseError::InvalidPersistenceMode {
+                                value: kind,
+                                span: tag_span,
+                            });
+                        }
+                    }
+                    persistence = Some(mode);
+                    if matches!(self.peek(), TokenKind::Colon) {
+                        self.advance();
+                        // Could be an identifier or a string literal.
+                        collection = match self.peek().clone() {
+                            TokenKind::Identifier(s) => {
+                                self.advance();
+                                Some(s)
+                            }
+                            TokenKind::String(s) => {
+                                self.advance();
+                                Some(s)
+                            }
+                            _ => None,
+                        };
+                    }
                 }
-                TokenKind::String(s) => {
-                    self.advance();
-                    Some(s)
+                _ => {
+                    return Err(ParseError::InvalidPersistenceMode {
+                        value: kind,
+                        span: tag_span,
+                    })
                 }
-                _ => None,
             }
-        } else {
-            None
-        };
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+                continue;
+            }
+            break;
+        }
         self.expect_kind(&TokenKind::RBracket, "]")?;
-        let persistence = match kind.as_str() {
-            "persistent" => Some(Persistence::Persistent),
-            "runtime" => Some(Persistence::Runtime),
-            "singleton" => Some(Persistence::Singleton),
-            "local" => Some(Persistence::Local),
-            "instance" => Some(Persistence::Instance),
-            _ => {
-                return Err(ParseError::UnknownKeyword {
-                    keyword: kind,
-                    span: self.peek_span(),
-                })
-            }
-        };
-        Ok((persistence, collection))
+        Ok((persistence, collection, shared))
     }
 
     pub(crate) fn parse_field_decl(&mut self) -> Result<EntityField, ParseError> {

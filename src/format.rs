@@ -168,6 +168,7 @@ impl Formatter {
                 self.fmt_persistence_tag(
                     persistence.as_ref(),
                     collection.as_ref().map(|s| s.as_str()),
+                    false,
                 );
                 self.output.push_str(" {");
                 if !fields.is_empty() {
@@ -347,29 +348,26 @@ impl Formatter {
         }
     }
 
-    fn fmt_persistence_tag(&mut self, persistence: Option<&Persistence>, collection: Option<&str>) {
+    fn fmt_persistence_tag(
+        &mut self,
+        persistence: Option<&Persistence>,
+        collection: Option<&str>,
+        shared: bool,
+    ) {
+        let mut tags = Vec::new();
         match (persistence, collection) {
-            (Some(Persistence::Persistent), Some(c)) => {
-                self.output.push_str(" [persistent: ");
-                self.output.push_str(c);
-                self.output.push(']');
-            }
-            (Some(Persistence::Persistent), None) => {
-                self.output.push_str(" [persistent]");
-            }
-            (Some(Persistence::Runtime), _) => {
-                self.output.push_str(" [runtime]");
-            }
-            (Some(Persistence::Singleton), _) => {
-                self.output.push_str(" [singleton]");
-            }
-            (Some(Persistence::Local), _) => {
-                self.output.push_str(" [local]");
-            }
-            (Some(Persistence::Instance), _) => {
-                self.output.push_str(" [instance]");
-            }
+            (Some(Persistence::Persistent), Some(c)) => tags.push(format!("persistent: {c}")),
+            (Some(Persistence::Persistent), None) => tags.push("persistent".to_string()),
+            (Some(Persistence::Runtime), _) => tags.push("runtime".to_string()),
             (None, _) => {}
+        }
+        if shared {
+            tags.push("shared".to_string());
+        }
+        if !tags.is_empty() {
+            self.output.push_str(" [");
+            self.output.push_str(&tags.join(", "));
+            self.output.push(']');
         }
     }
 
@@ -505,6 +503,7 @@ impl Formatter {
         self.fmt_persistence_tag(
             entity.persistence.as_ref(),
             entity.collection.as_ref().map(|s| s.as_str()),
+            entity.shared,
         );
         self.output.push_str(" {");
         if !entity.fields.is_empty() {
