@@ -981,7 +981,7 @@ fn check_one_emit_literal(
                 });
             }
             Some(expected) => {
-                if let Some(actual) = primitive_type_of_emit_value(value) {
+                if let Some(actual) = orbital_core::literal_value_type(value) {
                     if !emit_primitive_compatible(expected, actual) {
                         return Err(LowerError::EmitPayloadFieldTypeMismatch {
                             orbital: orbital_name.to_string(),
@@ -999,26 +999,11 @@ fn check_one_emit_literal(
     Ok(())
 }
 
-/// Primitive type of a literal emit-payload value. `None` for bindings
-/// (`@payload.X`, `@entity.X`, etc.) and other compound expressions
-/// whose type comes from the F3 binding resolver at L2 — those are
-/// outside L1's scope and reported separately.
-fn primitive_type_of_emit_value(value: &SExpression) -> Option<&'static str> {
-    match value {
-        SExpression::Number(_) => Some("number"),
-        SExpression::Bool(_) => Some("boolean"),
-        SExpression::String(s) => {
-            if s.starts_with('@') || s.contains('@') {
-                None
-            } else {
-                Some("string")
-            }
-        }
-        SExpression::Null => None,
-        SExpression::Object(_) => Some("object"),
-        SExpression::Array(_) => Some("array"),
-    }
-}
+// The shallow literal-type classifier is `orbital_core::literal_value_type` —
+// the single upstream source both this L1 check and the compiler L2 emit-payload
+// backstop call, so they never drift. It correctly defers operator applications
+// (`(array/find …)`, `(object/get …)`) to the expression inferencer instead of
+// mis-typing them as `"array"` (CG-EMIT-PAYLOAD-SEXPR).
 
 /// Parse-time checks for `uses`-imported trait/page references against the
 /// baked behavior-contract slice (`crate::registry`): unknown trait/page refs
@@ -1110,7 +1095,7 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                             // (annotation-only re-declarations are valid).
                             if let Some(v) = cf.default.as_ref() {
                                 if let (Some(expected), Some(got)) =
-                                    (tc.config.get(k), primitive_type_of_emit_value(v))
+                                    (tc.config.get(k), orbital_core::literal_value_type(v))
                                 {
                                     if !config_type_compatible(got, expected) {
                                         return Err(LowerError::ConfigTypeMismatch {

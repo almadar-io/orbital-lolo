@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-02T16:12:39.531Z",
+  "exportedAt": "2026-07-03T06:49:26.289Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1536,18 +1536,11 @@
                 "types": [
                   "string"
                 ]
-              },
-              "name": {
-                "types": [
-                  "string"
-                ]
-              },
-              "label": {
-                "types": [
-                  "string"
-                ]
               }
-            }
+            },
+            "required": [
+              "key"
+            ]
           }
         },
         "fieldNames": {
@@ -15453,13 +15446,15 @@
           "types": [
             "object"
           ],
-          "description": "Full schema — extracts first trait's state machine"
+          "description": "Full schema — extracts first trait's state machine",
+          "nonAuthorable": true
         },
         "trait": {
           "types": [
             "object"
           ],
-          "description": "Or pass a single trait directly"
+          "description": "Or pass a single trait directly",
+          "nonAuthorable": true
         },
         "traitIndex": {
           "types": [
@@ -37397,9 +37392,11 @@
           ],
           "description": "Camera mode",
           "enumValues": [
-            "pan-zoom",
+            "isometric",
+            "perspective",
+            "top-down",
             "follow",
-            "fixed"
+            "chase"
           ],
           "default": "isometric"
         },
