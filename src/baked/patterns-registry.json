@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-03T06:49:26.289Z",
+  "exportedAt": "2026-07-03T18:38:08.190Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -175,11 +175,7 @@
                   "function"
                 ]
               }
-            },
-            "required": [
-              "key",
-              "header"
-            ]
+            }
           }
         },
         "columns": {
@@ -227,11 +223,7 @@
                   "function"
                 ]
               }
-            },
-            "required": [
-              "key",
-              "header"
-            ]
+            }
           }
         },
         "itemActions": {
@@ -3729,6 +3721,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -3749,16 +3753,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -3852,6 +3873,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -3872,16 +3905,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -6828,6 +6878,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -6848,16 +6910,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -6992,6 +7071,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -7012,16 +7103,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -12576,6 +12684,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -12596,16 +12716,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -12764,6 +12901,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -12784,16 +12933,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -12825,6 +12991,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -12845,16 +13023,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -16348,9 +16543,10 @@
               "object"
             ],
             "properties": {
-              "label": {
+              "date": {
                 "types": [
-                  "string"
+                  "string",
+                  "date"
                 ]
               },
               "value": {
@@ -16358,14 +16554,13 @@
                   "number"
                 ]
               },
-              "color": {
+              "label": {
                 "types": [
                   "string"
                 ]
               }
             },
             "required": [
-              "label",
               "value"
             ]
           }
@@ -25685,6 +25880,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -25705,16 +25912,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -25856,6 +26080,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -25876,16 +26112,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -25988,6 +26241,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -26008,16 +26273,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -26103,6 +26385,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -26123,16 +26417,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -26278,6 +26589,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -26298,16 +26621,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -26409,6 +26749,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -26429,16 +26781,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -26595,6 +26964,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -26615,16 +26996,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -26656,6 +27054,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -26676,16 +27086,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -26733,6 +27160,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -26753,16 +27192,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -27033,6 +27489,18 @@
               "role": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "npc",
+                  "item",
+                  "tile",
+                  "projectile",
+                  "effect",
+                  "ui",
+                  "decoration",
+                  "vehicle"
                 ]
               },
               "category": {
@@ -27053,16 +27521,33 @@
               "style": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "pixel",
+                  "vector",
+                  "hd",
+                  "1-bit",
+                  "isometric"
                 ]
               },
               "dimension": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "2d",
+                  "3d"
                 ]
               },
               "aspect": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "1:1",
+                  "16:9",
+                  "5:7",
+                  "8:1"
                 ]
               },
               "name": {
@@ -27099,6 +27584,18 @@
               "role": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "npc",
+                  "item",
+                  "tile",
+                  "projectile",
+                  "effect",
+                  "ui",
+                  "decoration",
+                  "vehicle"
                 ]
               },
               "category": {
@@ -27119,16 +27616,33 @@
               "style": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "pixel",
+                  "vector",
+                  "hd",
+                  "1-bit",
+                  "isometric"
                 ]
               },
               "dimension": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "2d",
+                  "3d"
                 ]
               },
               "aspect": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "1:1",
+                  "16:9",
+                  "5:7",
+                  "8:1"
                 ]
               },
               "name": {
@@ -27177,6 +27691,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -27197,16 +27723,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -27315,6 +27858,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -27335,16 +27890,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -27443,6 +28015,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -27463,16 +28047,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -27642,6 +28243,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -27662,16 +28275,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -27800,6 +28430,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -27820,16 +28462,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -27985,6 +28644,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -28005,16 +28676,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -28062,6 +28750,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -28082,16 +28782,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -28183,6 +28900,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -28203,16 +28932,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -29949,6 +30695,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -29969,16 +30727,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -30274,6 +31049,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -30294,16 +31081,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -30378,6 +31182,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -30398,16 +31214,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -30565,6 +31398,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -30585,16 +31430,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -30681,6 +31543,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -30701,16 +31575,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -30742,6 +31633,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -30762,16 +31665,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -31380,6 +32300,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -31400,16 +32332,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -31441,6 +32390,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -31461,16 +32422,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -31555,6 +32533,18 @@
                 "role": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "player",
+                    "enemy",
+                    "npc",
+                    "item",
+                    "tile",
+                    "projectile",
+                    "effect",
+                    "ui",
+                    "decoration",
+                    "vehicle"
                   ]
                 },
                 "category": {
@@ -31575,16 +32565,33 @@
                 "style": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "pixel",
+                    "vector",
+                    "hd",
+                    "1-bit",
+                    "isometric"
                   ]
                 },
                 "dimension": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "2d",
+                    "3d"
                   ]
                 },
                 "aspect": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "1:1",
+                    "16:9",
+                    "5:7",
+                    "8:1"
                   ]
                 },
                 "name": {
@@ -31694,6 +32701,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -31714,16 +32733,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -31837,6 +32873,18 @@
                       "role": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy",
+                          "npc",
+                          "item",
+                          "tile",
+                          "projectile",
+                          "effect",
+                          "ui",
+                          "decoration",
+                          "vehicle"
                         ]
                       },
                       "category": {
@@ -31857,16 +32905,33 @@
                       "style": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "pixel",
+                          "vector",
+                          "hd",
+                          "1-bit",
+                          "isometric"
                         ]
                       },
                       "dimension": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "2d",
+                          "3d"
                         ]
                       },
                       "aspect": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "1:1",
+                          "16:9",
+                          "5:7",
+                          "8:1"
                         ]
                       },
                       "name": {
@@ -31959,6 +33024,18 @@
                       "role": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy",
+                          "npc",
+                          "item",
+                          "tile",
+                          "projectile",
+                          "effect",
+                          "ui",
+                          "decoration",
+                          "vehicle"
                         ]
                       },
                       "category": {
@@ -31979,16 +33056,33 @@
                       "style": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "pixel",
+                          "vector",
+                          "hd",
+                          "1-bit",
+                          "isometric"
                         ]
                       },
                       "dimension": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "2d",
+                          "3d"
                         ]
                       },
                       "aspect": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "1:1",
+                          "16:9",
+                          "5:7",
+                          "8:1"
                         ]
                       },
                       "name": {
@@ -32246,6 +33340,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -32266,16 +33372,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -32538,6 +33661,18 @@
                 "role": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "player",
+                    "enemy",
+                    "npc",
+                    "item",
+                    "tile",
+                    "projectile",
+                    "effect",
+                    "ui",
+                    "decoration",
+                    "vehicle"
                   ]
                 },
                 "category": {
@@ -32558,16 +33693,33 @@
                 "style": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "pixel",
+                    "vector",
+                    "hd",
+                    "1-bit",
+                    "isometric"
                   ]
                 },
                 "dimension": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "2d",
+                    "3d"
                   ]
                 },
                 "aspect": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "1:1",
+                    "16:9",
+                    "5:7",
+                    "8:1"
                   ]
                 },
                 "name": {
@@ -32708,6 +33860,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -32728,16 +33892,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -32832,6 +34013,18 @@
                       "role": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "player",
+                          "enemy",
+                          "npc",
+                          "item",
+                          "tile",
+                          "projectile",
+                          "effect",
+                          "ui",
+                          "decoration",
+                          "vehicle"
                         ]
                       },
                       "category": {
@@ -32852,16 +34045,33 @@
                       "style": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "pixel",
+                          "vector",
+                          "hd",
+                          "1-bit",
+                          "isometric"
                         ]
                       },
                       "dimension": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "2d",
+                          "3d"
                         ]
                       },
                       "aspect": {
                         "types": [
                           "string"
+                        ],
+                        "enumValues": [
+                          "1:1",
+                          "16:9",
+                          "5:7",
+                          "8:1"
                         ]
                       },
                       "name": {
@@ -35747,6 +36957,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -35767,16 +36989,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -36149,6 +37388,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -36169,16 +37420,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -36214,6 +37482,18 @@
               "role": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "npc",
+                  "item",
+                  "tile",
+                  "projectile",
+                  "effect",
+                  "ui",
+                  "decoration",
+                  "vehicle"
                 ]
               },
               "category": {
@@ -36234,16 +37514,33 @@
               "style": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "pixel",
+                  "vector",
+                  "hd",
+                  "1-bit",
+                  "isometric"
                 ]
               },
               "dimension": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "2d",
+                  "3d"
                 ]
               },
               "aspect": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "1:1",
+                  "16:9",
+                  "5:7",
+                  "8:1"
                 ]
               },
               "name": {
@@ -36306,6 +37603,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -36326,16 +37635,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -36371,6 +37697,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -36391,16 +37729,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -36436,6 +37791,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -36456,16 +37823,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -36501,6 +37885,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -36521,16 +37917,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -36617,6 +38030,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -36637,16 +38062,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -36811,6 +38253,18 @@
               "role": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "npc",
+                  "item",
+                  "tile",
+                  "projectile",
+                  "effect",
+                  "ui",
+                  "decoration",
+                  "vehicle"
                 ]
               },
               "category": {
@@ -36831,16 +38285,33 @@
               "style": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "pixel",
+                  "vector",
+                  "hd",
+                  "1-bit",
+                  "isometric"
                 ]
               },
               "dimension": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "2d",
+                  "3d"
                 ]
               },
               "aspect": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "1:1",
+                  "16:9",
+                  "5:7",
+                  "8:1"
                 ]
               },
               "name": {
@@ -36926,6 +38397,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -36946,16 +38429,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -36987,6 +38487,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -37007,16 +38519,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -37154,6 +38683,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -37174,16 +38715,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -38087,6 +39645,18 @@
             "role": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
               ]
             },
             "category": {
@@ -38107,16 +39677,33 @@
             "style": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
               ]
             },
             "dimension": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
               ]
             },
             "aspect": {
               "types": [
                 "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
               ]
             },
             "name": {
@@ -38152,6 +39739,18 @@
               "role": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "player",
+                  "enemy",
+                  "npc",
+                  "item",
+                  "tile",
+                  "projectile",
+                  "effect",
+                  "ui",
+                  "decoration",
+                  "vehicle"
                 ]
               },
               "category": {
@@ -38172,16 +39771,33 @@
               "style": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "pixel",
+                  "vector",
+                  "hd",
+                  "1-bit",
+                  "isometric"
                 ]
               },
               "dimension": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "2d",
+                  "3d"
                 ]
               },
               "aspect": {
                 "types": [
                   "string"
+                ],
+                "enumValues": [
+                  "1:1",
+                  "16:9",
+                  "5:7",
+                  "8:1"
                 ]
               },
               "name": {
@@ -38223,6 +39839,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -38243,16 +39871,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -38288,6 +39933,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -38308,16 +39965,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -38353,6 +40027,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -38373,16 +40059,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -38418,6 +40121,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -38438,16 +40153,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -41774,6 +43506,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -41794,16 +43538,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -42028,6 +43789,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -42048,16 +43821,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -42378,6 +44168,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -42398,16 +44200,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -42815,6 +44634,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -42835,16 +44666,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
@@ -43340,6 +45188,18 @@
                   "role": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
                     ]
                   },
                   "category": {
@@ -43360,16 +45220,33 @@
                   "style": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
                     ]
                   },
                   "dimension": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
                     ]
                   },
                   "aspect": {
                     "types": [
                       "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
                     ]
                   },
                   "name": {
