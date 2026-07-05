@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-05T07:17:50.779Z",
+  "exportedAt": "2026-07-05T07:34:26.154Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -47244,6 +47244,127 @@
               "type",
               "position",
               "asset"
+            ]
+          }
+        }
+      },
+      "drawable": true
+    },
+    "draw-text-layer": {
+      "type": "draw-text-layer",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "description": "DrawTextLayer component",
+      "suggestedFor": [
+        "draw",
+        "text",
+        "layer",
+        "draw text layer"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "items prop",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "unknown"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "scenePos": true,
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "z": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "anchor": {
+                "types": [
+                  "object"
+                ]
+              },
+              "offsetX": {
+                "types": [
+                  "number"
+                ]
+              },
+              "offsetY": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "font": {
+                "types": [
+                  "string"
+                ]
+              },
+              "align": {
+                "types": [
+                  "object"
+                ]
+              },
+              "baseline": {
+                "types": [
+                  "object"
+                ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "text",
+              "position",
+              "color"
             ]
           }
         }
