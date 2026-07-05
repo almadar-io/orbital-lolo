@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-03T18:38:08.190Z",
+  "exportedAt": "2026-07-05T07:17:50.779Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -36831,6 +36831,18 @@
             ]
           }
         },
+        "drawables": {
+          "types": [
+            "array"
+          ],
+          "description": "Neutral drawable descriptors (the Drawable Canvas path). When present, the host walks these via `paintDrawable` instead of the data-prop passes above — the retirement target. Delivered as `render-ui children` once `drawHost` lands (P5).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "drawableSlot": true
+          }
+        },
         "platforms": {
           "types": [
             "array"
@@ -36945,9 +36957,10 @@
         },
         "backgroundImage": {
           "types": [
+            "asset",
             "object"
           ],
-          "description": "Background image (tiled behind iso/hex/flat/free; stretched in side).",
+          "description": "Background image (tiled behind iso/hex/flat/free; stretched in side). A bare URL string is accepted as shorthand for a standalone backdrop.",
           "properties": {
             "url": {
               "types": [
@@ -37254,7 +37267,7 @@
           "types": [
             "boolean"
           ],
-          "description": "Opt-in: smooth-interpolate unit positions between LOLO tick snapshots via a `requestAnimationFrame` loop (same fixed-timestep technique `SideView` already uses for the player), instead of the default tick-rate-cadence redraw. DEFAULT OFF — for continuous-movement boards only; tile-snapped boards see no behavior change.",
+          "description": "Opt-in: smooth-interpolate unit positions between LOLO tick snapshots via a `requestAnimationFrame` loop (same fixed-timestep technique `SideCanvas2D` already uses for the player), instead of the default tick-rate-cadence redraw. DEFAULT OFF — for continuous-movement boards only; tile-snapped boards see no behavior change.",
           "default": false
         },
         "debug": {
@@ -37563,8 +37576,7 @@
           "types": [
             "string"
           ],
-          "description": "Background color for `side` (when no backgroundImage).",
-          "default": "#5c94fc"
+          "description": "Background color for `side` (when no backgroundImage)."
         },
         "worldWidth": {
           "types": [
@@ -37964,7 +37976,8 @@
             }
           }
         }
-      }
+      },
+      "drawHost": true
     },
     "control-grid": {
       "type": "control-grid",
@@ -38820,6 +38833,18 @@
           ],
           "description": "Children to render inside the 3D canvas (e.g., physics objects, custom meshes)"
         },
+        "drawables": {
+          "types": [
+            "array"
+          ],
+          "description": "Neutral drawable descriptors — the same `children` vocabulary as Canvas2D. The host maps each through `Drawable3D` to a mesh (NEVER passes a raw descriptor to `<group>{children}` — R3F throws). This is the draw-host interface; data props (tiles/units/features) remain as a fallback until the P6 migration deletes them.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "drawableSlot": true
+          }
+        },
         "isLoading": {
           "types": [
             "boolean"
@@ -39002,8 +39027,7 @@
           "types": [
             "string"
           ],
-          "description": "Background color",
-          "default": "#1a1a2e"
+          "description": "Background color"
         },
         "onTileClick": {
           "types": [
@@ -40207,7 +40231,8 @@
           "description": "Opt-in: smooth-lerp unit positions between LOLO tick snapshots. DEFAULT OFF.",
           "default": false
         }
-      }
+      },
+      "drawHost": true
     },
     "game-board-3d": {
       "type": "game-board-3d",
@@ -46428,6 +46453,802 @@
           "description": "'aria-hidden' prop"
         }
       }
+    },
+    "draw-shape": {
+      "type": "draw-shape",
+      "category": "game",
+      "tier": "atoms",
+      "family": "game",
+      "description": "DrawShape component",
+      "suggestedFor": [
+        "draw",
+        "shape",
+        "draw shape"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "shape": {
+          "types": [
+            "string"
+          ],
+          "description": "shape prop",
+          "required": true,
+          "enumValues": [
+            "cell",
+            "rect",
+            "ellipse",
+            "poly"
+          ]
+        },
+        "position": {
+          "types": [
+            "object"
+          ],
+          "description": "Logical scene position; the projector maps it to pixels / world.",
+          "required": true,
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ],
+          "scenePos": true
+        },
+        "anchor": {
+          "types": [
+            "object"
+          ],
+          "description": "How the shape aligns to its projected position. Default varies by `shape`."
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Rect width in px."
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "Rect height in px."
+        },
+        "radiusX": {
+          "types": [
+            "number"
+          ],
+          "description": "Ellipse horizontal radius in px."
+        },
+        "radiusY": {
+          "types": [
+            "number"
+          ],
+          "description": "Ellipse vertical radius in px; omitted → `radiusX` (a circle)."
+        },
+        "offsetX": {
+          "types": [
+            "number"
+          ],
+          "description": "Fine px nudge from the anchor point (e.g. a disc drawn at `groundY - 8*scale`)."
+        },
+        "offsetY": {
+          "types": [
+            "number"
+          ],
+          "description": "offsetY prop"
+        },
+        "points": {
+          "types": [
+            "array"
+          ],
+          "description": "Poly vertices as px offsets relative to the cell's projected top-left.",
+          "items": {
+            "types": [
+              "object"
+            ]
+          }
+        },
+        "fill": {
+          "types": [
+            "string"
+          ],
+          "description": "fill prop"
+        },
+        "stroke": {
+          "types": [
+            "string"
+          ],
+          "description": "stroke prop"
+        },
+        "strokeWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "strokeWidth prop"
+        },
+        "opacity": {
+          "types": [
+            "number"
+          ],
+          "description": "0..1 opacity."
+        }
+      },
+      "drawable": true
+    },
+    "draw-sprite": {
+      "type": "draw-sprite",
+      "category": "game",
+      "tier": "atoms",
+      "family": "game",
+      "description": "DrawSprite component",
+      "suggestedFor": [
+        "draw",
+        "sprite",
+        "draw sprite"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "position": {
+          "types": [
+            "object"
+          ],
+          "description": "Logical scene position; the projector maps it to pixels / world.",
+          "required": true,
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ],
+          "scenePos": true
+        },
+        "asset": {
+          "types": [
+            "object"
+          ],
+          "description": "The image / atlas reference to blit.",
+          "required": true,
+          "properties": {
+            "url": {
+              "types": [
+                "asset"
+              ]
+            },
+            "role": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
+              ]
+            },
+            "category": {
+              "types": [
+                "string"
+              ]
+            },
+            "animations": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "style": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
+              ]
+            },
+            "dimension": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
+              ]
+            },
+            "aspect": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "thumbnailUrl": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "url"
+          ]
+        },
+        "anchor": {
+          "types": [
+            "object"
+          ],
+          "description": "How the sprite aligns to its projected position. Default `'top-left'`."
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Draw width in px (2D) / world units (3D); omitted → resolved source width."
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "Draw height in px (2D) / world units (3D); omitted → resolved source height."
+        },
+        "frame": {
+          "types": [
+            "object"
+          ],
+          "description": "Explicit atlas sub-rect override (px); omitted → resolved from `asset.atlas`/`asset.sprite`."
+        },
+        "flipX": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Mirror horizontally (facing)."
+        },
+        "rotation": {
+          "types": [
+            "number"
+          ],
+          "description": "Rotation in radians about the sprite's center."
+        },
+        "opacity": {
+          "types": [
+            "number"
+          ],
+          "description": "0..1 opacity."
+        },
+        "shadow": {
+          "types": [
+            "object"
+          ],
+          "description": "Drop shadow (e.g. a team-colored glow)."
+        }
+      },
+      "drawable": true
+    },
+    "draw-text": {
+      "type": "draw-text",
+      "category": "game",
+      "tier": "atoms",
+      "family": "game",
+      "description": "DrawText component",
+      "suggestedFor": [
+        "draw",
+        "text",
+        "draw text"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "text": {
+          "types": [
+            "string"
+          ],
+          "description": "text prop",
+          "required": true
+        },
+        "position": {
+          "types": [
+            "object"
+          ],
+          "description": "Logical scene position; the projector maps it to pixels / world.",
+          "required": true,
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ],
+          "scenePos": true
+        },
+        "anchor": {
+          "types": [
+            "object"
+          ],
+          "description": "anchor prop"
+        },
+        "offsetX": {
+          "types": [
+            "number"
+          ],
+          "description": "offsetX prop"
+        },
+        "offsetY": {
+          "types": [
+            "number"
+          ],
+          "description": "offsetY prop"
+        },
+        "color": {
+          "types": [
+            "string"
+          ],
+          "description": "color prop",
+          "required": true
+        },
+        "font": {
+          "types": [
+            "string"
+          ],
+          "description": "font prop"
+        },
+        "align": {
+          "types": [
+            "object"
+          ],
+          "description": "align prop"
+        },
+        "baseline": {
+          "types": [
+            "object"
+          ],
+          "description": "baseline prop"
+        },
+        "opacity": {
+          "types": [
+            "number"
+          ],
+          "description": "opacity prop"
+        }
+      },
+      "drawable": true
+    },
+    "draw-shape-layer": {
+      "type": "draw-shape-layer",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "description": "DrawShapeLayer component",
+      "suggestedFor": [
+        "draw",
+        "shape",
+        "layer",
+        "draw shape layer"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "items prop",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "unknown"
+                ]
+              },
+              "shape": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "cell",
+                  "rect",
+                  "ellipse",
+                  "poly"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "scenePos": true,
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "z": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "anchor": {
+                "types": [
+                  "object"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "radiusX": {
+                "types": [
+                  "number"
+                ]
+              },
+              "radiusY": {
+                "types": [
+                  "number"
+                ]
+              },
+              "offsetX": {
+                "types": [
+                  "number"
+                ]
+              },
+              "offsetY": {
+                "types": [
+                  "number"
+                ]
+              },
+              "points": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ]
+                }
+              },
+              "fill": {
+                "types": [
+                  "string"
+                ]
+              },
+              "stroke": {
+                "types": [
+                  "string"
+                ]
+              },
+              "strokeWidth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "shape",
+              "position"
+            ]
+          }
+        }
+      },
+      "drawable": true
+    },
+    "draw-sprite-layer": {
+      "type": "draw-sprite-layer",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "description": "DrawSpriteLayer component",
+      "suggestedFor": [
+        "draw",
+        "sprite",
+        "layer",
+        "draw sprite layer"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "Sprites painted in array order; z-ordering is the caller's responsibility.",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "unknown"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "scenePos": true,
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "z": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "asset": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "player",
+                      "enemy",
+                      "npc",
+                      "item",
+                      "tile",
+                      "projectile",
+                      "effect",
+                      "ui",
+                      "decoration",
+                      "vehicle"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url"
+                ]
+              },
+              "anchor": {
+                "types": [
+                  "object"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "frame": {
+                "types": [
+                  "object"
+                ]
+              },
+              "flipX": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "rotation": {
+                "types": [
+                  "number"
+                ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              },
+              "shadow": {
+                "types": [
+                  "object"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "position",
+              "asset"
+            ]
+          }
+        }
+      },
+      "drawable": true
     }
   },
   "categories": [
