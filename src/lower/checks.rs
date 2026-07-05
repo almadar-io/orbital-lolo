@@ -717,6 +717,9 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
 /// skipped — those are imported from std behaviors and resolved by the
 /// inline phase. The L2 validator's `cross_orbital.rs` picks up post-
 /// inline reachability for those.
+///
+/// External URLs (`http://...` / `https://...`) are allowed: the client
+/// runtime/shell opens them directly, so no declared page is required.
 pub(crate) fn check_navigate_targets(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
     let mut canonical_pages: HashSet<String> = HashSet::new();
     for orbital in orbitals {
@@ -758,6 +761,10 @@ pub(crate) fn check_navigate_targets(orbitals: &[CoreOrbital]) -> Result<(), Low
 /// Recursively walk an SExpression and validate every `["navigate", path]`
 /// call site. Descends into `(if ...)`, `(do ...)`, and similar control-
 /// flow operators that wrap effects.
+fn is_external_url(path: &str) -> bool {
+    path.starts_with("http://") || path.starts_with("https://")
+}
+
 fn check_navigate_recursive(
     expr: &SExpression,
     canonical_pages: &HashSet<String>,
@@ -770,13 +777,15 @@ fn check_navigate_recursive(
             if let Some(SExpression::String(op)) = arr.first() {
                 if op == "navigate" {
                     if let Some(SExpression::String(path)) = arr.get(1) {
-                        let canonical = canonicalise_route(path);
-                        if !canonical_pages.contains(&canonical) {
-                            return Err(LowerError::NavigateTargetUnreachable {
-                                orbital: orbital_name.to_string(),
-                                trait_name: trait_name.to_string(),
-                                path: path.clone(),
-                            });
+                        if !is_external_url(path) {
+                            let canonical = canonicalise_route(path);
+                            if !canonical_pages.contains(&canonical) {
+                                return Err(LowerError::NavigateTargetUnreachable {
+                                    orbital: orbital_name.to_string(),
+                                    trait_name: trait_name.to_string(),
+                                    path: path.clone(),
+                                });
+                            }
                         }
                     }
                 }
