@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-05T07:34:26.154Z",
+  "exportedAt": "2026-07-05T19:37:28.037Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -12587,7 +12587,6 @@
       "category": "game",
       "tier": "templates",
       "family": "game",
-      "dimension": "2d",
       "description": "GameTemplate  A presentational template for game applications. Includes a main game canvas/area, HUD overlay, and an optional debug sidebar. **Atomic Design**: Composed using Box, Typography, and Layout molecules/atoms.",
       "suggestedFor": [
         "game",
@@ -12828,7 +12827,6 @@
       "category": "game",
       "tier": "templates",
       "family": "game",
-      "dimension": "2d",
       "description": "GameShell  A full-screen layout wrapper for game applications. Replaces DashboardLayout for game clients — no sidebar nav, just full-viewport rendering with an optional HUD overlay bar.  Used as a React Router layout route element: <Route element={<GameShell appName=\"TraitWars\" />}> <Route index element={<WorldMapPage />} /> ... </Route>",
       "suggestedFor": [
         "game",
@@ -25857,7 +25855,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "ActionButton component",
       "suggestedFor": [
         "action",
@@ -26043,7 +26040,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "ChoiceButton component",
       "suggestedFor": [
         "choice",
@@ -26218,7 +26214,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "ComboCounter component",
       "suggestedFor": [
         "combo",
@@ -26362,7 +26357,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "ControlButton component",
       "suggestedFor": [
         "control",
@@ -26566,7 +26560,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "DamageNumber component",
       "suggestedFor": [
         "damage",
@@ -26711,7 +26704,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "DialogueBubble component",
       "suggestedFor": [
         "dialogue",
@@ -26868,7 +26860,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "HealthBar component",
       "suggestedFor": [
         "health",
@@ -27137,7 +27128,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "ItemSlot component",
       "suggestedFor": [
         "item",
@@ -27323,7 +27313,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "MiniMap component",
       "suggestedFor": [
         "mini",
@@ -27668,7 +27657,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "ResourceCounter component",
       "suggestedFor": [
         "resource",
@@ -27835,7 +27823,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "ScoreDisplay component",
       "suggestedFor": [
         "score",
@@ -27993,7 +27980,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "Sprite component",
       "suggestedFor": [
         "sprite"
@@ -28220,7 +28206,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "StateIndicator Component  Displays a visual indicator for a game entity's current state. Generic — not tied to any specific game. Projects can extend the state styles via the `stateStyles` prop.",
       "suggestedFor": [
         "state",
@@ -28407,7 +28392,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "StatusEffect component",
       "suggestedFor": [
         "status",
@@ -28570,7 +28554,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "TimerDisplay component",
       "suggestedFor": [
         "timer",
@@ -28727,7 +28710,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "TurnIndicator component",
       "suggestedFor": [
         "turn",
@@ -28877,7 +28859,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "WaypointMarker component",
       "suggestedFor": [
         "waypoint",
@@ -30574,7 +30555,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "GameHud component",
       "suggestedFor": [
         "game",
@@ -30816,7 +30796,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "GameMenu component",
       "suggestedFor": [
         "game",
@@ -31138,7 +31117,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "InventoryGrid component",
       "suggestedFor": [
         "inventory",
@@ -31359,7 +31337,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "ResourceBar component",
       "suggestedFor": [
         "resource",
@@ -31520,7 +31497,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "StatBadge component",
       "suggestedFor": [
         "stat",
@@ -32221,7 +32197,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "GameAudioToggle component",
       "suggestedFor": [
         "game",
@@ -32473,7 +32448,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "Event Contract: Emits: UI:CLICK Emits: UI:REMOVE",
       "suggestedFor": [
         "trait",
@@ -33195,7 +33169,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "EventLog Component  Scrolling log of events during playback in the Event Handler tier. Shows the chain reaction as events cascade through objects.",
       "suggestedFor": [
         "event",
@@ -33282,7 +33255,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "ActionPalette Component  Grid of draggable ActionTile components for the Sequencer tier. Kids pick from these to build their sequence.",
       "suggestedFor": [
         "action",
@@ -33506,7 +33478,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "ActionTile Component  A draggable action tile for the Sequencer tier (ages 5-8). Kids drag these from the ActionPalette into SequenceBar slots. Sets SlotItemData on dataTransfer for TraitSlot compatibility.",
       "suggestedFor": [
         "action",
@@ -33802,7 +33773,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "SequenceBar Component  A row of TraitSlot components forming the action sequence for the Sequencer tier (ages 5-8). Kids drag ActionTiles from the palette into these slots to build their sequence.",
       "suggestedFor": [
         "sequence",
@@ -36720,7 +36690,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "Canvas2D component",
       "suggestedFor": [
         "canvas2",
@@ -36787,55 +36756,11 @@
           ],
           "default": "isometric"
         },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "--- Layer data (each an optional render pass) ---",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "units": {
-          "types": [
-            "array"
-          ],
-          "description": "Units on the board",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Features (resources, portals, buildings, etc.)",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "effects": {
-          "types": [
-            "array"
-          ],
-          "description": "Active visual effects, drawn after units",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
         "drawables": {
           "types": [
             "array"
           ],
-          "description": "Neutral drawable descriptors (the Drawable Canvas path). When present, the host walks these via `paintDrawable` instead of the data-prop passes above — the retirement target. Delivered as `render-ui children` once `drawHost` lands (P5).",
+          "description": "--- Scene ---",
           "items": {
             "types": [
               "object"
@@ -36843,124 +36768,12 @@
             "drawableSlot": true
           }
         },
-        "platforms": {
-          "types": [
-            "array"
-          ],
-          "description": "Side-view platforms (AABB). `projection:'side'` only.",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "y": {
-                "types": [
-                  "number"
-                ]
-              },
-              "width": {
-                "types": [
-                  "number"
-                ]
-              },
-              "height": {
-                "types": [
-                  "number"
-                ]
-              },
-              "type": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "ground",
-                  "platform",
-                  "hazard",
-                  "goal"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "y",
-              "width",
-              "height"
-            ]
-          }
-        },
-        "player": {
-          "types": [
-            "object"
-          ],
-          "description": "Side-view player. `projection:'side'` only.",
-          "properties": {
-            "x": {
-              "types": [
-                "number"
-              ]
-            },
-            "y": {
-              "types": [
-                "number"
-              ]
-            },
-            "width": {
-              "types": [
-                "number"
-              ]
-            },
-            "height": {
-              "types": [
-                "number"
-              ]
-            },
-            "vx": {
-              "types": [
-                "number"
-              ]
-            },
-            "vy": {
-              "types": [
-                "number"
-              ]
-            },
-            "grounded": {
-              "types": [
-                "boolean"
-              ]
-            },
-            "facingRight": {
-              "types": [
-                "boolean"
-              ]
-            },
-            "animation": {
-              "types": [
-                "string"
-              ]
-            },
-            "frame": {
-              "types": [
-                "number"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "x",
-            "y"
-          ]
-        },
         "backgroundImage": {
           "types": [
             "asset",
             "object"
           ],
-          "description": "Background image (tiled behind iso/hex/flat/free; stretched in side). A bare URL string is accepted as shorthand for a standalone backdrop.",
+          "description": "Background image (tiled behind iso/hex/flat/free; cover-scaled for atlas slices). A bare URL string is accepted as shorthand for a standalone backdrop.",
           "properties": {
             "url": {
               "types": [
@@ -37045,92 +36858,6 @@
           "propertyRequired": [
             "url"
           ]
-        },
-        "selectedUnitId": {
-          "types": [
-            "string"
-          ],
-          "description": "--- Interaction state (LOLO-owned, passed in) ---",
-          "default": null
-        },
-        "validMoves": {
-          "types": [
-            "array"
-          ],
-          "description": "Valid move positions (pulsing green highlights)",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "y": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "y"
-            ]
-          },
-          "default": []
-        },
-        "attackTargets": {
-          "types": [
-            "array"
-          ],
-          "description": "Attack target positions (pulsing red highlights)",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "y": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "y"
-            ]
-          },
-          "default": []
-        },
-        "hoveredTile": {
-          "types": [
-            "object"
-          ],
-          "description": "Hovered tile position",
-          "properties": {
-            "x": {
-              "types": [
-                "number"
-              ]
-            },
-            "y": {
-              "types": [
-                "number"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "x",
-            "y"
-          ],
-          "default": null
         },
         "tileClickEvent": {
           "types": [
@@ -37155,7 +36882,7 @@
           "types": [
             "string"
           ],
-          "description": "Emits UI:{unitClickEvent} with { unitId } on unit click",
+          "description": "Unit-click event. The neutral drawable host cannot resolve a click to a per-entity id (descriptors carry only a `ScenePos`, no id), so this prop is accepted but not yet emitted — the id-hit-test is a tracked fork (docs/Almadar_Std_Game_V2_PLAN.md).",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -37169,7 +36896,7 @@
           "types": [
             "string"
           ],
-          "description": "Emits UI:{tileHoverEvent} with { x, y } on tile hover",
+          "description": "Emits UI:{tileHoverEvent} with the unprojected scene { x, y } on hover.",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -37188,7 +36915,7 @@
           "types": [
             "string"
           ],
-          "description": "Emits UI:{tileLeaveEvent} with {} on tile leave",
+          "description": "Emits UI:{tileLeaveEvent} with {} on pointer leave.",
           "kind": "event-ref",
           "emitPayloadSchema": []
         },
@@ -37196,7 +36923,7 @@
           "types": [
             "object"
           ],
-          "description": "Maps a keydown `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: \"LEFT\", KeyA: \"LEFT\", Space: \"JUMP\" }`. The input layer emits `UI:<event>` so the FSM stays device-agnostic — keyboard and d-pad converge on the same events.",
+          "description": "Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input).",
           "mapValue": {
             "types": [
               "string"
@@ -37207,7 +36934,7 @@
           "types": [
             "object"
           ],
-          "description": "Maps a keyup `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: \"STOP\" }`. Omit a key to ignore its release (e.g. jump).",
+          "description": "Maps a keyup `e.code` → the board's SEMANTIC event.",
           "mapValue": {
             "types": [
               "string"
@@ -37230,15 +36957,8 @@
           "types": [
             "number"
           ],
-          "description": "Render scale (0.4 = 40% zoom).",
+          "description": "Render scale (0.4 = 40% zoom). Ignored by `free`/`side` (world-pixel-direct).",
           "default": 0.4
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Extra scale multiplier for unit draw size. 1 = default.",
-          "default": 1
         },
         "showMinimap": {
           "types": [
@@ -37247,736 +36967,42 @@
           "description": "Toggle minimap overlay.",
           "default": true
         },
-        "animate": {
+        "followTarget": {
           "types": [
             "object"
           ],
-          "description": "Opt-in internal RAF clock. DEFAULT OFF — the LOLO state machine drives the clock.",
+          "description": "Follow-camera target in scene space (the neutral core `Camera.target`). When `camera:'follow'` the host lerps to keep this point centered.",
           "properties": {
-            "fps": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
               "types": [
                 "number"
               ]
             }
           },
           "propertyRequired": [
-            "fps"
-          ]
-        },
-        "interpolateUnits": {
-          "types": [
-            "boolean"
+            "x",
+            "y"
           ],
-          "description": "Opt-in: smooth-interpolate unit positions between LOLO tick snapshots via a `requestAnimationFrame` loop (same fixed-timestep technique `SideCanvas2D` already uses for the player), instead of the default tick-rate-cadence redraw. DEFAULT OFF — for continuous-movement boards only; tile-snapped boards see no behavior change.",
-          "default": false
-        },
-        "debug": {
-          "types": [
-            "boolean"
-          ],
-          "description": "--- Tuning (iso/hex/flat/free) ---",
-          "default": false
-        },
-        "spriteHeightRatio": {
-          "types": [
-            "number"
-          ],
-          "description": "Ratio of unit draw height to scaledFloorHeight. Default 1.5.",
-          "default": 1.5
-        },
-        "spriteMaxWidthRatio": {
-          "types": [
-            "number"
-          ],
-          "description": "Max unit draw width as a ratio of scaledTileWidth. Default 0.6.",
-          "default": 0.6
-        },
-        "diamondTopY": {
-          "types": [
-            "number"
-          ],
-          "description": "Override for the diamond-top Y offset within the tile sprite."
-        },
-        "getTerrainSprite": {
-          "types": [
-            "function"
-          ],
-          "description": "--- Asset resolution (project-agnostic) ---",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "terrain",
-              "type": "string"
-            }
-          ],
-          "renderCallback": true
-        },
-        "getFeatureSprite": {
-          "types": [
-            "function"
-          ],
-          "description": "Resolve feature sprite from feature type key — a bare URL or an Asset.",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "featureType",
-              "type": "string"
-            }
-          ],
-          "renderCallback": true
-        },
-        "getUnitSprite": {
-          "types": [
-            "function"
-          ],
-          "description": "Resolve unit static sprite — a bare URL or an Asset.",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "unit",
-              "type": "object"
-            }
-          ],
-          "renderCallback": true
-        },
-        "resolveUnitFrame": {
-          "types": [
-            "function"
-          ],
-          "description": "Resolve animated sprite sheet frame for a unit",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "unitId",
-              "type": "string"
-            }
-          ],
-          "renderCallback": true
-        },
-        "effectSpriteUrls": {
-          "types": [
-            "array"
-          ],
-          "description": "Additional sprite URLs to preload (e.g., effect sprites)",
-          "items": {
-            "types": [
-              "string"
-            ]
-          },
-          "default": []
-        },
-        "onDrawEffects": {
-          "types": [
-            "function"
-          ],
-          "description": "Draw canvas effects after units (canvas-specific: cannot be declarative)",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "ctx",
-              "type": "object"
-            },
-            {
-              "name": "animTime",
-              "type": "number"
-            },
-            {
-              "name": "getImage",
-              "type": "function"
-            }
-          ],
-          "nonEmittable": true
-        },
-        "playerSprite": {
-          "types": [
-            "object"
-          ],
-          "description": "--- Side-view sprite resolution (projection:'side') ---",
-          "properties": {
-            "url": {
-              "types": [
-                "asset"
-              ]
-            },
-            "role": {
-              "types": [
-                "string"
-              ],
-              "enumValues": [
-                "player",
-                "enemy",
-                "npc",
-                "item",
-                "tile",
-                "projectile",
-                "effect",
-                "ui",
-                "decoration",
-                "vehicle"
-              ]
-            },
-            "category": {
-              "types": [
-                "string"
-              ]
-            },
-            "animations": {
-              "types": [
-                "array"
-              ],
-              "items": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "style": {
-              "types": [
-                "string"
-              ],
-              "enumValues": [
-                "pixel",
-                "vector",
-                "hd",
-                "1-bit",
-                "isometric"
-              ]
-            },
-            "dimension": {
-              "types": [
-                "string"
-              ],
-              "enumValues": [
-                "2d",
-                "3d"
-              ]
-            },
-            "aspect": {
-              "types": [
-                "string"
-              ],
-              "enumValues": [
-                "1:1",
-                "16:9",
-                "5:7",
-                "8:1"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "thumbnailUrl": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "url"
-          ]
-        },
-        "tileSprites": {
-          "types": [
-            "object"
-          ],
-          "description": "Platform-type → tile sprite URL map for `side`.",
-          "mapValue": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "url": {
-                "types": [
-                  "asset"
-                ]
-              },
-              "role": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "player",
-                  "enemy",
-                  "npc",
-                  "item",
-                  "tile",
-                  "projectile",
-                  "effect",
-                  "ui",
-                  "decoration",
-                  "vehicle"
-                ]
-              },
-              "category": {
-                "types": [
-                  "string"
-                ]
-              },
-              "animations": {
-                "types": [
-                  "array"
-                ],
-                "items": {
-                  "types": [
-                    "string"
-                  ]
-                }
-              },
-              "style": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "pixel",
-                  "vector",
-                  "hd",
-                  "1-bit",
-                  "isometric"
-                ]
-              },
-              "dimension": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "2d",
-                  "3d"
-                ]
-              },
-              "aspect": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "1:1",
-                  "16:9",
-                  "5:7",
-                  "8:1"
-                ]
-              },
-              "name": {
-                "types": [
-                  "string"
-                ]
-              },
-              "thumbnailUrl": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "required": [
-              "url"
-            ]
-          }
+          "scenePos": true
         },
         "bgColor": {
           "types": [
             "string"
           ],
-          "description": "Background color for `side` (when no backgroundImage)."
-        },
-        "worldWidth": {
-          "types": [
-            "number"
-          ],
-          "description": "World dimensions for `side` follow-camera clamp.",
-          "default": 800
-        },
-        "worldHeight": {
-          "types": [
-            "number"
-          ],
-          "description": "worldHeight prop",
-          "default": 400
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "--- Remote asset loading ---",
-          "properties": {
-            "terrains": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            },
-            "units": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            },
-            "features": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            },
-            "effects": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
+          "description": "Solid backdrop colour (drawn when no `backgroundImage`)."
         }
       },
+      "drawable": true,
       "drawHost": true
     },
     "control-grid": {
@@ -37984,7 +37010,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "ControlGrid component",
       "suggestedFor": [
         "control",
@@ -38374,7 +37399,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "GameCard component",
       "suggestedFor": [
         "game",
@@ -38673,7 +37697,6 @@
       "category": "game",
       "tier": "atoms",
       "family": "game",
-      "dimension": "2d",
       "description": "GameIcon component",
       "suggestedFor": [
         "game",
@@ -38825,7 +37848,7 @@
           "types": [
             "string"
           ],
-          "description": "--- Closed-circuit props (MANDATORY) ---"
+          "description": "--- Closed-circuit ---"
         },
         "children": {
           "types": [
@@ -38837,7 +37860,7 @@
           "types": [
             "array"
           ],
-          "description": "Neutral drawable descriptors — the same `children` vocabulary as Canvas2D. The host maps each through `Drawable3D` to a mesh (NEVER passes a raw descriptor to `<group>{children}` — R3F throws). This is the draw-host interface; data props (tiles/units/features) remain as a fallback until the P6 migration deletes them.",
+          "description": "Neutral drawable descriptors — the same `children` vocabulary as Canvas2D. The host maps each through `Drawable3D` to a mesh.",
           "items": {
             "types": [
               "object"
@@ -38857,96 +37880,11 @@
           ],
           "description": "Error state"
         },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Array of tiles to render",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "units": {
-          "types": [
-            "array"
-          ],
-          "description": "Array of units to render",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Array of features to render",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "events": {
-          "types": [
-            "array"
-          ],
-          "description": "Array of events to display",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "id": {
-                "types": [
-                  "string"
-                ]
-              },
-              "type": {
-                "types": [
-                  "string"
-                ]
-              },
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              },
-              "y": {
-                "types": [
-                  "number"
-                ]
-              },
-              "message": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "required": [
-              "id",
-              "type",
-              "x"
-            ]
-          },
-          "default": []
-        },
         "fogOfWar": {
           "types": [
             "array"
           ],
-          "description": "Fog of war data",
+          "description": "Fog of war data (accepted for API parity; presentation-only).",
           "items": {
             "types": [
               "array"
@@ -38962,7 +37900,7 @@
           "types": [
             "string"
           ],
-          "description": "Map orientation",
+          "description": "Map orientation (data attribute).",
           "enumValues": [
             "standard",
             "rotated"
@@ -38983,6 +37921,34 @@
           ],
           "default": "isometric"
         },
+        "followTarget": {
+          "types": [
+            "object"
+          ],
+          "description": "Follow-camera target in scene space (the neutral core `Camera.target`).",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ],
+          "scenePos": true
+        },
         "showGrid": {
           "types": [
             "boolean"
@@ -38994,21 +37960,19 @@
           "types": [
             "boolean"
           ],
-          "description": "Show coordinates overlay",
-          "default": false
+          "description": "Show coordinates overlay (accepted for API parity)."
         },
         "showTileInfo": {
           "types": [
             "boolean"
           ],
-          "description": "Show tile information",
-          "default": false
+          "description": "Show tile information (accepted for API parity)."
         },
         "overlay": {
           "types": [
             "string"
           ],
-          "description": "Overlay control mode",
+          "description": "Overlay control mode (data attribute).",
           "enumValues": [
             "default",
             "hidden",
@@ -39029,156 +37993,13 @@
           ],
           "description": "Background color"
         },
-        "onTileClick": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when a tile is clicked",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "tile",
-              "type": "object"
-            },
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onUnitClick": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when a unit is clicked",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "unit",
-              "type": "object"
-            },
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onFeatureClick": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when a feature is clicked",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "feature",
-              "type": "object"
-            },
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onCanvasClick": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when canvas is clicked (background)",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onTileHover": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback when mouse moves over a tile",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "tile",
-              "type": "object"
-            },
-            {
-              "name": "event",
-              "type": "object"
-            }
-          ]
-        },
-        "onUnitAnimation": {
-          "types": [
-            "function"
-          ],
-          "description": "Callback for unit animation state change",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "unitId",
-              "type": "string"
-            },
-            {
-              "name": "state",
-              "type": "string"
-            }
-          ]
-        },
-        "assetLoader": {
-          "types": [
-            "object"
-          ],
-          "description": "Asset loader instance (uses global singleton if not provided)",
-          "nonAuthorable": true
-        },
-        "tileRenderer": {
-          "types": [
-            "object"
-          ],
-          "description": "Custom tile renderer component",
-          "nonAuthorable": true
-        },
-        "unitRenderer": {
-          "types": [
-            "object"
-          ],
-          "description": "Custom unit renderer component",
-          "nonAuthorable": true
-        },
-        "featureRenderer": {
-          "types": [
-            "object"
-          ],
-          "description": "Custom feature renderer component",
-          "nonAuthorable": true
-        },
-        "preloadAssets": {
-          "types": [
-            "array"
-          ],
-          "description": "URLs to preload",
-          "items": {
-            "types": [
-              "string"
-            ]
-          },
-          "default": []
-        },
         "tileClickEvent": {
           "types": [
             "string"
           ],
-          "description": "Declarative event: tile click",
+          "description": "Declarative event: tile click. Emitted from a ground-plane raycast → scene cell `{ x, z }` (the FSM validates the cell). `tileId` is optional — the neutral host has no per-tile id, and the board FSMs key off the coordinate.",
           "kind": "event-ref",
           "emitPayloadSchema": [
-            {
-              "name": "tileId",
-              "type": "string",
-              "required": true
-            },
             {
               "name": "x",
               "type": "number",
@@ -39188,6 +38009,11 @@
               "name": "z",
               "type": "number",
               "required": true
+            },
+            {
+              "name": "tileId",
+              "type": "string",
+              "required": false
             },
             {
               "name": "type",
@@ -39210,7 +38036,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event: unit click",
+          "description": "Declarative event: unit click. Emitted `{ unitId, x, z }` when the raycast lands on a cell whose descriptor carries an `id` (a tagged unit sprite).",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -39264,7 +38090,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event: feature click",
+          "description": "Declarative event: feature click. Accepted; not yet emitted (see `tileClickEvent`).",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -39298,7 +38124,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event: canvas click",
+          "description": "Declarative event: canvas (background) click.",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -39322,7 +38148,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event: tile hover",
+          "description": "Declarative event: tile hover. Accepted; not yet emitted (see `tileClickEvent`).",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -39351,7 +38177,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event: tile leave",
+          "description": "Declarative event: tile leave.",
           "kind": "event-ref",
           "emitPayloadSchema": []
         },
@@ -39359,7 +38185,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event: unit animation",
+          "description": "Declarative event: unit animation.",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -39383,7 +38209,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event: camera change",
+          "description": "Declarative event: camera change.",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
@@ -39405,106 +38231,23 @@
           "description": "Loading message",
           "default": "Loading 3D Scene..."
         },
-        "useInstancing": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Whether to use instancing for tiles",
-          "default": true
-        },
-        "validMoves": {
-          "types": [
-            "array"
-          ],
-          "description": "Valid move positions",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          },
-          "default": []
-        },
-        "attackTargets": {
-          "types": [
-            "array"
-          ],
-          "description": "Attack target positions",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "z": {
-                "types": [
-                  "number"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "z"
-            ]
-          },
-          "default": []
-        },
-        "selectedTileIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Selected tile IDs",
-          "items": {
-            "types": [
-              "string"
-            ]
-          },
-          "default": []
-        },
-        "selectedUnitId": {
-          "types": [
-            "string"
-          ],
-          "description": "Selected unit ID",
-          "default": null
-        },
         "unitScale": {
           "types": [
             "number"
           ],
-          "description": "Unit draw-size multiplier. 1 = default tile-proportional size.",
-          "default": 1
+          "description": "Unit draw-size multiplier (accepted for API parity; sizing is drawable-authored)."
         },
         "scale": {
           "types": [
             "number"
           ],
-          "description": "Board zoom/group scale. Applied to the scene group. Default 0.45."
+          "description": "Board zoom (accepted for API parity; 3D zoom is camera-driven, not group-scaled)."
         },
         "keyMap": {
           "types": [
             "object"
           ],
-          "description": "Maps a keydown `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: \"LEFT\", Space: \"JUMP\" }`. The input layer emits `UI:<event>` so the FSM stays device-agnostic — keyboard and d-pad converge.",
+          "description": "Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input).",
           "mapValue": {
             "types": [
               "string"
@@ -39515,1434 +38258,34 @@
           "types": [
             "object"
           ],
-          "description": "Maps a keyup `e.code` → the board's SEMANTIC event, e.g. `{ ArrowLeft: \"STOP\" }`.",
+          "description": "Maps a keyup `e.code` → the board's SEMANTIC event.",
           "mapValue": {
             "types": [
               "string"
             ]
           }
         },
-        "player": {
-          "types": [
-            "object"
-          ],
-          "description": "Side-view player (pixel coords, LOLO-owned physics) — presence switches to side-scroller rendering.",
-          "properties": {
-            "x": {
-              "types": [
-                "number"
-              ]
-            },
-            "y": {
-              "types": [
-                "number"
-              ]
-            },
-            "width": {
-              "types": [
-                "number"
-              ]
-            },
-            "height": {
-              "types": [
-                "number"
-              ]
-            },
-            "vx": {
-              "types": [
-                "number"
-              ]
-            },
-            "vy": {
-              "types": [
-                "number"
-              ]
-            },
-            "grounded": {
-              "types": [
-                "boolean"
-              ]
-            },
-            "facingRight": {
-              "types": [
-                "boolean"
-              ]
-            },
-            "animation": {
-              "types": [
-                "string"
-              ]
-            },
-            "frame": {
-              "types": [
-                "number"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "x",
-            "y"
-          ]
-        },
-        "platforms": {
-          "types": [
-            "array"
-          ],
-          "description": "Side-view level geometry (pixel AABBs, same contract as Canvas2D).",
-          "items": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "x": {
-                "types": [
-                  "number"
-                ]
-              },
-              "y": {
-                "types": [
-                  "number"
-                ]
-              },
-              "width": {
-                "types": [
-                  "number"
-                ]
-              },
-              "height": {
-                "types": [
-                  "number"
-                ]
-              },
-              "type": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "ground",
-                  "platform",
-                  "hazard",
-                  "goal"
-                ]
-              }
-            },
-            "required": [
-              "x",
-              "y",
-              "width",
-              "height"
-            ]
-          },
-          "default": []
-        },
         "worldWidth": {
           "types": [
             "number"
           ],
-          "description": "Side-view world size in pixels."
+          "description": "Side-view world size in pixels (accepted for API parity)."
         },
         "worldHeight": {
           "types": [
             "number"
           ],
-          "description": "Side-view world size in pixels.",
-          "default": 400
+          "description": "Side-view world size in pixels (accepted for API parity)."
         },
         "pixelsPerUnit": {
           "types": [
             "number"
           ],
-          "description": "Pixel→world-unit divisor for side view (default 32 = one 2D tile per 3D cell).",
-          "default": 32
-        },
-        "playerSprite": {
-          "types": [
-            "object"
-          ],
-          "description": "Player model — named for 2D parity; in 3D the Asset's url is a GLB.",
-          "properties": {
-            "url": {
-              "types": [
-                "asset"
-              ]
-            },
-            "role": {
-              "types": [
-                "string"
-              ],
-              "enumValues": [
-                "player",
-                "enemy",
-                "npc",
-                "item",
-                "tile",
-                "projectile",
-                "effect",
-                "ui",
-                "decoration",
-                "vehicle"
-              ]
-            },
-            "category": {
-              "types": [
-                "string"
-              ]
-            },
-            "animations": {
-              "types": [
-                "array"
-              ],
-              "items": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "style": {
-              "types": [
-                "string"
-              ],
-              "enumValues": [
-                "pixel",
-                "vector",
-                "hd",
-                "1-bit",
-                "isometric"
-              ]
-            },
-            "dimension": {
-              "types": [
-                "string"
-              ],
-              "enumValues": [
-                "2d",
-                "3d"
-              ]
-            },
-            "aspect": {
-              "types": [
-                "string"
-              ],
-              "enumValues": [
-                "1:1",
-                "16:9",
-                "5:7",
-                "8:1"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "thumbnailUrl": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "url"
-          ]
-        },
-        "tileSprites": {
-          "types": [
-            "object"
-          ],
-          "description": "Platform-type → model map — named for 2D parity; values are GLB Assets.",
-          "mapValue": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "url": {
-                "types": [
-                  "asset"
-                ]
-              },
-              "role": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "player",
-                  "enemy",
-                  "npc",
-                  "item",
-                  "tile",
-                  "projectile",
-                  "effect",
-                  "ui",
-                  "decoration",
-                  "vehicle"
-                ]
-              },
-              "category": {
-                "types": [
-                  "string"
-                ]
-              },
-              "animations": {
-                "types": [
-                  "array"
-                ],
-                "items": {
-                  "types": [
-                    "string"
-                  ]
-                }
-              },
-              "style": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "pixel",
-                  "vector",
-                  "hd",
-                  "1-bit",
-                  "isometric"
-                ]
-              },
-              "dimension": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "2d",
-                  "3d"
-                ]
-              },
-              "aspect": {
-                "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "1:1",
-                  "16:9",
-                  "5:7",
-                  "8:1"
-                ]
-              },
-              "name": {
-                "types": [
-                  "string"
-                ]
-              },
-              "thumbnailUrl": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "required": [
-              "url"
-            ]
-          }
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Per-role model manifest; resolves tiles/units/features without explicit modelUrl/assetUrl.",
-          "properties": {
-            "terrains": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            },
-            "units": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            },
-            "features": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            },
-            "effects": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        },
-        "interpolateUnits": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Opt-in: smooth-lerp unit positions between LOLO tick snapshots. DEFAULT OFF.",
-          "default": false
+          "description": "Pixel→world-unit divisor for side view (accepted for API parity)."
         }
       },
+      "drawable": true,
       "drawHost": true
-    },
-    "game-board-3d": {
-      "type": "game-board-3d",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "3d",
-      "description": "GameBoard3D component",
-      "suggestedFor": [
-        "game",
-        "board3",
-        "game board3 d"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Entity row carrying all gameplay state (controlled).",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Static tile data (config default).",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Static feature data (config default).",
-          "items": {
-            "types": [
-              "object"
-            ]
-          },
-          "default": []
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "Camera mode forwarded to GameCanvas3D.",
-          "enumValues": [
-            "pan-zoom",
-            "follow",
-            "fixed"
-          ],
-          "default": "perspective"
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color forwarded to GameCanvas3D.",
-          "default": "#2a1a1a"
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier forwarded to GameCanvas3D. Default 1.",
-          "default": 1
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale forwarded to GameCanvas3D. Default 0.45.",
-          "default": 0.45
-        },
-        "tileClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative tile click event emitted to the model.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "tileId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "x",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "z",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Declarative unit click event emitted to the model.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "unitId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "x",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "z",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "attackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{attackEvent} with { attackerId, targetId, damage } on attack.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "attackerId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "targetId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "damage",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{endTurnEvent} with {} on end turn.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "cancelEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{cancelEvent} with {} on cancel.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{gameEndEvent} with { result } when win/loss is detected.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "result",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS class."
-        }
-      }
-    },
-    "game-canvas-3d-battle-template": {
-      "type": "game-canvas-3d-battle-template",
-      "category": "game",
-      "tier": "templates",
-      "family": "game",
-      "dimension": "3d",
-      "description": "GameCanvas3DBattleTemplate  Declarative template for 3D battle/tactical combat. Delegates all interaction state (selectedUnitId, validMoves, attackTargets) to <GameBoard3D> so the model (not this template) owns gameplay state.  Page: Battle3DPage Entity: Battle3D / GameBoard3DItem ViewType: detail  Events Emitted: - TILE_CLICK - When a tile is clicked - UNIT_CLICK - When a unit is clicked - END_TURN   - When ending turn - EXIT_BATTLE - When exiting battle",
-      "suggestedFor": [
-        "game",
-        "canvas3",
-        "battle",
-        "template",
-        "game canvas3 d battle template"
-      ],
-      "typicalSize": "full",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object"
-          ],
-          "description": "Entity data, the sole source of runtime state",
-          "required": true
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "External styling override"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback feature data when no entity is present",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template)."
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "3D camera mode - defaults to perspective for dramatic effect",
-          "enumValues": [
-            "isometric",
-            "perspective",
-            "top-down"
-          ],
-          "default": "perspective"
-        },
-        "showGrid": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show grid helper"
-        },
-        "shadows": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable shadows"
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color - darker for battle atmosphere",
-          "default": "#2a1a1a"
-        },
-        "tileClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for tile clicks — forwarded to the model"
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for unit clicks — forwarded to the model"
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for ending turn"
-        },
-        "cancelEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for cancel/deselect"
-        },
-        "attackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for attack emission"
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for play again / reset"
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for game end detection"
-        },
-        "exitEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for exiting battle"
-        },
-        "showTurnIndicator": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show turn indicator overlay"
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
-        }
-      }
-    },
-    "game-canvas-3d-castle-template": {
-      "type": "game-canvas-3d-castle-template",
-      "category": "game",
-      "tier": "templates",
-      "family": "game",
-      "dimension": "3d",
-      "description": "GameCanvas3DCastleTemplate  Declarative template for 3D castle/settlement view. Delegates interaction state (selectedUnitId, validMoves, attackTargets) to <GameBoard3D> so the model owns all gameplay state.  Page: Castle3DPage, Settlement3DPage Entity: Castle3D / GameBoard3DItem ViewType: detail  Events Emitted: - BUILDING_SELECTED - When a building is clicked - UNIT_SELECTED     - When a garrison unit is clicked - BUILD             - When building/upgrading - RECRUIT           - When recruiting units - EXIT              - When exiting castle view",
-      "suggestedFor": [
-        "game",
-        "canvas3",
-        "castle",
-        "template",
-        "game canvas3 d castle template"
-      ],
-      "typicalSize": "full",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object"
-          ],
-          "description": "Entity data, the sole source of runtime state",
-          "required": true
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "External styling override"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback feature data when no entity is present",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template)."
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "3D camera mode",
-          "enumValues": [
-            "isometric",
-            "perspective",
-            "top-down"
-          ],
-          "default": "isometric"
-        },
-        "showGrid": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show grid helper"
-        },
-        "shadows": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable shadows"
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color",
-          "default": "#1e1e2e"
-        },
-        "buildingClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for building (feature) clicks"
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for unit clicks"
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for ending turn"
-        },
-        "cancelEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for cancel/deselect"
-        },
-        "attackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for attack emission"
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for play again / reset"
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for game end detection"
-        },
-        "buildEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for build action"
-        },
-        "recruitEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for recruit action"
-        },
-        "exitEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for exit"
-        },
-        "showHeader": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show castle name header",
-          "default": true
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
-        }
-      }
-    },
-    "game-canvas-3d-world-map-template": {
-      "type": "game-canvas-3d-world-map-template",
-      "category": "game",
-      "tier": "templates",
-      "family": "game",
-      "dimension": "3d",
-      "description": "GameCanvas3DWorldMapTemplate  Declarative template for 3D world map. Delegates interaction state (selectedUnitId, validMoves, attackTargets) to <GameBoard3D> so the model owns all gameplay state.  Page: WorldMap3DPage Entity: WorldMap3D / GameBoard3DItem ViewType: detail  Events Emitted: - TILE_CLICK    - When a tile is clicked ({ tileId, x, z, type }) - UNIT_CLICK    - When a unit is clicked ({ unitId, x, z, name }) - FEATURE_CLICK - When a feature is clicked ({ featureId, x, z, type }) - TILE_HOVER    - When hovering over a tile ({ tileId, x, z }) - TILE_LEAVE    - When leaving a tile ({}) - CAMERA_CHANGE - When camera position changes ({ position })",
-      "suggestedFor": [
-        "game",
-        "canvas3",
-        "world",
-        "map",
-        "template",
-        "game canvas3 d world map template"
-      ],
-      "typicalSize": "full",
-      "propsSchema": {
-        "entity": {
-          "types": [
-            "object"
-          ],
-          "description": "Entity data, the sole source of runtime state",
-          "required": true
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "External styling override"
-        },
-        "tiles": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback tile data when no entity is present (layout only — model URLs resolve from assetManifest)",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "features": {
-          "types": [
-            "array"
-          ],
-          "description": "Fallback feature data when no entity is present",
-          "items": {
-            "types": [
-              "object"
-            ]
-          }
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "GLB model URLs keyed by terrain — owns all asset choice (no hardcoded URLs in this template)."
-        },
-        "cameraMode": {
-          "types": [
-            "string"
-          ],
-          "description": "3D camera mode",
-          "enumValues": [
-            "isometric",
-            "perspective",
-            "top-down"
-          ],
-          "default": "isometric"
-        },
-        "showGrid": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show grid helper"
-        },
-        "showCoordinates": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show coordinate overlay"
-        },
-        "showTileInfo": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Show tile info on hover"
-        },
-        "shadows": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Enable shadows"
-        },
-        "backgroundColor": {
-          "types": [
-            "string"
-          ],
-          "description": "Background color",
-          "default": "#1a1a2e"
-        },
-        "tileClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for tile clicks — forwarded to the model"
-        },
-        "unitClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for unit clicks — forwarded to the model"
-        },
-        "endTurnEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for ending turn"
-        },
-        "cancelEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for cancel/deselect"
-        },
-        "attackEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for attack emission"
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for play again / reset"
-        },
-        "gameEndEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for game end detection"
-        },
-        "featureClickEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for feature clicks"
-        },
-        "tileHoverEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for tile hover"
-        },
-        "tileLeaveEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for tile leave"
-        },
-        "cameraChangeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Event name for camera changes"
-        },
-        "exitEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Exit/back event name"
-        },
-        "unitScale": {
-          "types": [
-            "number"
-          ],
-          "description": "Unit draw-size multiplier forwarded to GameBoard3D. Default 1."
-        },
-        "scale": {
-          "types": [
-            "number"
-          ],
-          "description": "Board zoom/group scale forwarded to GameBoard3D. Default 0.45."
-        }
-      }
     },
     "vstack": {
       "type": "vstack",
@@ -43329,2189 +40672,11 @@
         }
       }
     },
-    "builder-board": {
-      "type": "builder-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "BuilderBoard  Component-snapping game board. The player places components onto slots in a blueprint. Correct placement completes the build.  Good for: architecture, circuits, molecules, system design stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
-      "suggestedFor": [
-        "builder",
-        "board",
-        "builder board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `components` / `slots` arrays plus `attempts` / `result` off the row — the state machine is the single source of truth for placements.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "attempts",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "placeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{placeEvent} with { slotId, componentId } on component placement.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "slotId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "componentId",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with {} when the player checks the build.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/build).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "classifier-board": {
-      "type": "classifier-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "ClassifierBoard  Drag-and-drop classification game. The player sorts items into the correct category buckets. All items must be correctly classified to win.  Good for: taxonomy, pattern recognition, sorting stories.  Gameplay events are emitted onto the bus so the bound Orbital trait (ui-classifier-board.lolo: menu -> playing -> complete) owns the state: assignEvent (ASSIGN), checkEvent (CHECK), playAgainEvent (PLAY_AGAIN), plus completeEvent (default UI:PUZZLE_COMPLETE). When the entity carries per-item `assignedCategory` / `result` / `attempts`, the board renders from those; otherwise it self-manages with local state.",
-      "suggestedFor": [
-        "classifier",
-        "board",
-        "classifier board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `items` / `categories` arrays plus title/description/hint off the row. Items may carry `assignedCategory`; the row may carry `result` and `attempts` — all machine-owned.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "attempts",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "assignEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{assignEvent} with { itemId, categoryId } when an item is sorted.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "itemId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "categoryId",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with {} when the player submits/checks.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on reset / play again.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/send).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "debugger-board": {
-      "type": "debugger-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "DebuggerBoard  Error-finding game board. The player reviews a code/system listing and identifies lines or elements that contain bugs.  Good for: programming, logic, troubleshooting stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
-      "suggestedFor": [
-        "debugger",
-        "board",
-        "debugger board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `lines` array (each with `isFlagged`), `result`, `attempts`, plus title/description/bugCount/hint off the row.",
-          "kind": "entity",
-          "cardinality": "collection",
-          "properties": {
-            "lines": {
-              "types": [
-                "array"
-              ],
-              "items": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "id": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "content": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "isBug": {
-                    "types": [
-                      "boolean"
-                    ]
-                  },
-                  "isFlagged": {
-                    "types": [
-                      "boolean"
-                    ]
-                  },
-                  "explanation": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "id",
-                  "content",
-                  "isBug"
-                ]
-              }
-            },
-            "result": {
-              "types": [
-                "string"
-              ]
-            },
-            "attempts": {
-              "types": [
-                "number"
-              ]
-            },
-            "title": {
-              "types": [
-                "string"
-              ]
-            },
-            "description": {
-              "types": [
-                "string"
-              ]
-            },
-            "bugCount": {
-              "types": [
-                "number"
-              ]
-            },
-            "hint": {
-              "types": [
-                "string"
-              ]
-            },
-            "headerImage": {
-              "types": [
-                "string"
-              ]
-            },
-            "theme": {
-              "types": [
-                "object"
-              ],
-              "properties": {
-                "background": {
-                  "types": [
-                    "string"
-                  ]
-                },
-                "accentColor": {
-                  "types": [
-                    "string"
-                  ]
-                }
-              }
-            },
-            "successMessage": {
-              "types": [
-                "string"
-              ]
-            }
-          }
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "attempts",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "toggleFlagEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{toggleFlagEvent} with { lineId } when a line's bug-flag is toggled.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "lineId",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with {} when the player checks/submits.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/reset/bug/send).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "event-handler-board": {
-      "type": "event-handler-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "EventHandlerBoard Organism  Contains ALL game logic for the Event Handler tier (ages 9-12). Kids click on world objects, set WHEN/THEN rules, and watch event chains cascade during playback.  Encourages experimentation: on failure, resets to editing so the kid can try different rules. After 3 failures, shows a progressive hint.",
-      "suggestedFor": [
-        "event",
-        "handler",
-        "board",
-        "event handler board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `objects` / `triggerEvents` / `goalEvent` etc. off the row; the editable puzzle objects are themselves `EntityRow`s carried under `objects`.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "stepDurationMs": {
-          "types": [
-            "number"
-          ],
-          "description": "Playback speed in ms per event",
-          "default": 800
-        },
-        "playEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playEvent}",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{completeEvent} with { success }",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            }
-          ]
-        },
-        "editRuleEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{editRuleEvent} with { objectId, rules } — model updates @entity.objects",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "objectId",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "rules",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} to reset the model",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        }
-      }
-    },
-    "negotiator-board": {
-      "type": "negotiator-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "NegotiatorBoard  Turn-based decision matrix game. The player makes choices over multiple rounds against an AI opponent. Each round both sides pick an action, and payoffs are determined by the combination.  Good for: ethics, business, game theory, economics stories.  Events emitted via completeEvent (default UI:PUZZLE_COMPLETE).",
-      "suggestedFor": [
-        "negotiator",
-        "board",
-        "negotiator board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `score` / `round` / `result` / `targetScore` / `maxRounds` plus the `actions` / `payoffMatrix` arrays and title/description/hint off the row. Score accumulation + win/lose are owned by the gameplay machine.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "score",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "playRoundEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playRoundEvent} with the picked action + the UI-resolved payoff.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "playerAction",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "payoff",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "finishEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{finishEvent} with {} when all rounds are spent.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on play again / reset.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/arrow).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "sequencer-board": {
-      "type": "sequencer-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "SequencerBoard Organism  Contains ALL game logic for the Sequencer tier (ages 5-8). Manages the action sequence, validates it, and animates Kekec executing each step on the puzzle scene.  Feedback-first UX: - On failure: slots stay in place, each slot gets a green or red ring showing exactly which steps are correct and which need to change. - Modifying a slot clears its individual feedback so the kid can re-try. - After 3 failures a persistent hint appears above the sequence bar. - \"Reset\" clears everything including attempts / hint.  TraitStateViewer states use indexed labels (\"1. Walk\", \"2. Jump\") so that repeated actions are correctly highlighted during playback.",
-      "suggestedFor": [
-        "sequencer",
-        "board",
-        "sequencer board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `availableActions` / `maxSlots` / `solutions` etc. off the row. `availableActions` carries `SlotItemData[]` (a UI drag-DTO, not entity data — it holds a non-FieldValue `stateMachine` member).",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "categoryColors": {
-          "types": [
-            "object"
-          ],
-          "description": "Category → color mapping",
-          "mapValue": {
-            "types": [
-              "object"
-            ],
-            "properties": {
-              "bg": {
-                "types": [
-                  "string"
-                ]
-              },
-              "border": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "required": [
-              "bg",
-              "border"
-            ]
-          }
-        },
-        "stepDurationMs": {
-          "types": [
-            "number"
-          ],
-          "description": "Playback speed in ms per step",
-          "default": 1000
-        },
-        "playEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playEvent} with { sequence: string[] }",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "sequence",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{completeEvent} with { success: boolean }",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "sequence",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "placeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{placeEvent} with { slotIndex, actionId } when an action is dropped into a slot",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "slotIndex",
-              "type": "number",
-              "required": true
-            },
-            {
-              "name": "actionId",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "removeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{removeEvent} with { slotIndex } when an action is removed from a slot",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "slotIndex",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with { sequence } when the player submits the sequence",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "sequence",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on reset",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "stepEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{stepEvent} with { step } during playback animation advancement",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "step",
-              "type": "number",
-              "required": true
-            }
-          ]
-        }
-      }
-    },
-    "simulator-board": {
-      "type": "simulator-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "SimulatorBoard  Parameter-slider game board. The player adjusts two parameters (A and B) and observes the machine-derived output. Correct parameter values must bring the output within tolerance of the target to win.  Good for: physics, economics, system design stories.  Controlled-only: params, output, attempts, and result are owned by the gameplay machine and read off the bound entity. Slider/check/play-again interactions are emitted as events; the machine recomputes and re-renders.",
-      "suggestedFor": [
-        "simulator",
-        "board",
-        "simulator board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads the `parameters` slider descriptors plus the machine-owned `paramA`/`paramB`/ `output`/`target`/`tolerance`/`attempts`/`result` fields off the row.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "completeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "attempts",
-              "type": "number",
-              "required": true
-            }
-          ],
-          "default": "PUZZLE_COMPLETE"
-        },
-        "setAEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{setAEvent} with { value } when parameter A's slider changes.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "value",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "setBEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{setBEvent} with { value } when parameter B's slider changes.",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "value",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "checkEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{checkEvent} with {} on simulate / check.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} with {} on reset / play again.",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "assetManifest": {
-          "types": [
-            "object"
-          ],
-          "description": "Optional per-semantic-key asset overrides for icons (correct/incorrect/play/reset).",
-          "properties": {
-            "ui": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "url": {
-                    "types": [
-                      "asset"
-                    ]
-                  },
-                  "role": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "player",
-                      "enemy",
-                      "npc",
-                      "item",
-                      "tile",
-                      "projectile",
-                      "effect",
-                      "ui",
-                      "decoration",
-                      "vehicle"
-                    ]
-                  },
-                  "category": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "animations": {
-                    "types": [
-                      "array"
-                    ],
-                    "items": {
-                      "types": [
-                        "string"
-                      ]
-                    }
-                  },
-                  "style": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "pixel",
-                      "vector",
-                      "hd",
-                      "1-bit",
-                      "isometric"
-                    ]
-                  },
-                  "dimension": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "2d",
-                      "3d"
-                    ]
-                  },
-                  "aspect": {
-                    "types": [
-                      "string"
-                    ],
-                    "enumValues": [
-                      "1:1",
-                      "16:9",
-                      "5:7",
-                      "8:1"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "thumbnailUrl": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "url"
-                ]
-              }
-            }
-          }
-        }
-      }
-    },
-    "state-architect-board": {
-      "type": "state-architect-board",
-      "category": "game",
-      "tier": "organisms",
-      "family": "game",
-      "dimension": "2d",
-      "description": "StateArchitectBoard Organism  Contains ALL game logic for the State Architect tier (ages 13+). Kids design state machines via a visual graph editor, then run them to see if the behavior matches the puzzle goal.",
-      "suggestedFor": [
-        "state",
-        "architect",
-        "board",
-        "state architect board"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
-        },
-        "isLoading": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Loading state indicator"
-        },
-        "error": {
-          "types": [
-            "object"
-          ],
-          "description": "Error state (UiError)",
-          "properties": {
-            "message": {
-              "types": [
-                "string"
-              ]
-            },
-            "name": {
-              "types": [
-                "string"
-              ]
-            },
-            "code": {
-              "types": [
-                "string"
-              ]
-            },
-            "stack": {
-              "types": [
-                "string"
-              ]
-            }
-          },
-          "propertyRequired": [
-            "message"
-          ]
-        },
-        "sortBy": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort field"
-        },
-        "sortDirection": {
-          "types": [
-            "string"
-          ],
-          "description": "Current sort direction",
-          "enumValues": [
-            "asc",
-            "desc"
-          ]
-        },
-        "searchValue": {
-          "types": [
-            "string"
-          ],
-          "description": "Current search query value"
-        },
-        "page": {
-          "types": [
-            "number"
-          ],
-          "description": "Current page number"
-        },
-        "pageSize": {
-          "types": [
-            "number"
-          ],
-          "description": "Number of items per page"
-        },
-        "totalCount": {
-          "types": [
-            "number"
-          ],
-          "description": "Total number of items"
-        },
-        "activeFilters": {
-          "types": [
-            "object"
-          ],
-          "description": "Active filters"
-        },
-        "selectedIds": {
-          "types": [
-            "array"
-          ],
-          "description": "Currently selected item IDs",
-          "items": {
-            "types": [
-              "string",
-              "number"
-            ]
-          }
-        },
-        "entity": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Puzzle board-state entity (single row or array). The board reads `variables` / `states` / `transitions` / `testCases` etc. off the row.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "stepDurationMs": {
-          "types": [
-            "number"
-          ],
-          "description": "Playback speed",
-          "default": 600
-        },
-        "testEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{testEvent}",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        },
-        "completeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{completeEvent} with { success, passedTests }",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "success",
-              "type": "boolean",
-              "required": true
-            },
-            {
-              "name": "passedTests",
-              "type": "number",
-              "required": true
-            }
-          ]
-        },
-        "addTransitionEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{addTransitionEvent} — lolo handles ADD_TRANSITION",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "id",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "from",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "to",
-              "type": "string",
-              "required": true
-            },
-            {
-              "name": "event",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "removeTransitionEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{removeTransitionEvent} — lolo handles REMOVE_TRANSITION",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "id",
-              "type": "string",
-              "required": true
-            }
-          ]
-        },
-        "playAgainEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "Emits UI:{playAgainEvent} — lolo handles PLAY_AGAIN",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
-        }
-      }
-    },
     "state-graph": {
       "type": "state-graph",
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "StateGraph (molecule)  Dumb visual renderer for a state-machine graph: lays states out on a circle, draws the player's transitions as SVG arrows, and emits a node-click event. All state (which transitions exist, the pending \"from\" selection, test results) lives in the .lolo FSM — this molecule only renders and reports clicks.",
       "suggestedFor": [
         "state",
@@ -45629,7 +40794,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "ObjectRulePanel Component  Shows the rules panel for a selected world object in the Event Handler tier. Displays object info, its current state (via TraitStateViewer), and a list of WHEN/THEN rules the kid has set.",
       "suggestedFor": [
         "object",
@@ -45704,7 +40868,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "StateJsonView Component  Shows a state machine's definition as an expandable code block, so the learner sees the declarative schema behind the visual graph. Dumb molecule: takes the machine as plain typed fields (name/states/initialState/transitions) — the .lolo organism owns the entity and the molecule renders + stringifies it.",
       "suggestedFor": [
         "state",
@@ -45800,7 +40963,6 @@
       "category": "game",
       "tier": "molecules",
       "family": "game",
-      "dimension": "2d",
       "description": "VariablePanel Component  Shows a machine's variables and their current values during State Architect playback. Dumb molecule: takes a plain typed list of { name, value } — the .lolo organism owns the entity data and passes it already flattened.",
       "suggestedFor": [
         "variable",
@@ -46467,6 +41629,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
         "type": {
           "types": [
             "unknown"
@@ -46609,6 +41777,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
         "type": {
           "types": [
             "unknown"
@@ -46800,6 +41974,12 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
         "type": {
           "types": [
             "unknown"
@@ -46909,6 +42089,12 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
         "type": {
           "types": [
             "unknown"
@@ -47060,6 +42246,12 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
         "type": {
           "types": [
             "unknown"
@@ -47264,6 +42456,12 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
         "type": {
           "types": [
             "unknown"
@@ -47370,6 +42568,348 @@
         }
       },
       "drawable": true
+    },
+    "canvas": {
+      "type": "canvas",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "description": "Canvas component",
+      "suggestedFor": [
+        "canvas"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "mode": {
+          "types": [
+            "string"
+          ],
+          "description": "Painter: 2D sprite/shape/text raster, or 3D mesh. Default '2d'.",
+          "enumValues": [
+            "2d",
+            "3d"
+          ],
+          "default": "2d"
+        },
+        "drawables": {
+          "types": [
+            "array"
+          ],
+          "description": "Neutral drawable descriptors — the `draw-*` children. Routed to the host's painter.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "drawableSlot": true
+          }
+        },
+        "camera": {
+          "types": [
+            "object"
+          ],
+          "description": "Neutral camera pose. Mapped to the underlying host's framing + zoom.",
+          "freeform": true
+        },
+        "projection": {
+          "types": [
+            "string"
+          ],
+          "description": "2D grid layout (2D mode only): isometric / hex / flat / free / side.",
+          "enumValues": [
+            "isometric",
+            "hex",
+            "flat",
+            "free",
+            "side"
+          ]
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "--- Shared view config ---"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "isLoading prop"
+        },
+        "unitScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Unit draw-size multiplier (both painters)."
+        },
+        "showMinimap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Minimap overlay (2D)."
+        },
+        "backgroundImage": {
+          "types": [
+            "asset",
+            "object"
+          ],
+          "description": "Backdrop image (2D iso/hex/flat/free/side).",
+          "properties": {
+            "url": {
+              "types": [
+                "asset"
+              ]
+            },
+            "role": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "player",
+                "enemy",
+                "npc",
+                "item",
+                "tile",
+                "projectile",
+                "effect",
+                "ui",
+                "decoration",
+                "vehicle"
+              ]
+            },
+            "category": {
+              "types": [
+                "string"
+              ]
+            },
+            "animations": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "style": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
+              ]
+            },
+            "dimension": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
+              ]
+            },
+            "aspect": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "thumbnailUrl": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "url"
+          ]
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Solid backdrop colour — 2D `side` fill and 3D scene clear colour."
+        },
+        "worldWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Side/free world bounds (2D `side`) and 3D world extent."
+        },
+        "worldHeight": {
+          "types": [
+            "number"
+          ],
+          "description": "worldHeight prop"
+        },
+        "pixelsPerUnit": {
+          "types": [
+            "number"
+          ],
+          "description": "3D world-unit → pixel scale (perspective/side depth). 3D only."
+        },
+        "showGrid": {
+          "types": [
+            "boolean"
+          ],
+          "description": "3D-only presentation."
+        },
+        "shadows": {
+          "types": [
+            "boolean"
+          ],
+          "description": "shadows prop"
+        },
+        "showCoordinates": {
+          "types": [
+            "boolean"
+          ],
+          "description": "showCoordinates prop"
+        },
+        "showTileInfo": {
+          "types": [
+            "boolean"
+          ],
+          "description": "showTileInfo prop"
+        },
+        "fogOfWar": {
+          "types": [
+            "array"
+          ],
+          "description": "fogOfWar prop",
+          "items": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "boolean"
+              ]
+            }
+          }
+        },
+        "tileClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "--- Shared interaction (LOLO-owned). The painter emitted at runtime depends on",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "_payload",
+              "type": "object",
+              "required": false
+            }
+          ]
+        },
+        "unitClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "unitClickEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "_payload",
+              "type": "object",
+              "required": false
+            }
+          ]
+        },
+        "tileHoverEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "tileHoverEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "_payload",
+              "type": "object",
+              "required": false
+            }
+          ]
+        },
+        "tileLeaveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "tileLeaveEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
+        },
+        "featureClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Feature-click event (3D only).",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "featureId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "z",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "elevation",
+              "type": "number",
+              "required": false
+            }
+          ]
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "keyMap prop",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "keyUpMap prop",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        }
+      },
+      "drawHost": true
     }
   },
   "categories": [
