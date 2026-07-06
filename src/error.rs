@@ -32,6 +32,18 @@ impl LexError {
             | LexError::UnterminatedBlockComment { line, col } => Span::new(*line, *col, 1),
         }
     }
+
+    /// Human-readable teaching hint for the most common lexer mistakes.
+    /// Returns `(suggestion, fix_guidance)`.
+    pub fn hint(&self) -> (Option<String>, Option<String>) {
+        match self {
+            LexError::UnexpectedChar { ch: ';', .. } => (
+                Some(".lolo does not use `;` for comments".to_string()),
+                Some("remove the `;` and any trailing text on that line".to_string()),
+            ),
+            _ => (None, None),
+        }
+    }
 }
 
 /// Parser error.
@@ -85,6 +97,36 @@ impl ParseError {
             | ParseError::InvalidSigil { span, .. }
             | ParseError::ExpectedIdentifier { span } => *span,
             ParseError::UnexpectedEof { .. } => Span::new(0, 0, 0),
+        }
+    }
+
+    /// Human-readable teaching hint for the most common parser mistakes.
+    /// Returns `(suggestion, fix_guidance)`. Delegates to [`LexError::hint`]
+    /// for lexer errors so the teaching logic lives next to the error types.
+    pub fn hint(&self) -> (Option<String>, Option<String>) {
+        match self {
+            ParseError::Lex(e) => e.hint(),
+            ParseError::InvalidSExpr { message, .. } if message.contains("Comma") => (
+                Some(".lolo arrays and objects are whitespace-separated, not comma-separated".to_string()),
+                Some("remove the `,` and keep a space or newline between items".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected == "]" && got == "Bang" =>
+            (
+                Some("array type syntax is `[ElementType]`; put `!` on the field, not inside the array type".to_string()),
+                Some("change `[string!]` to `[string]` and make the field required as `field : [string]!`".to_string()),
+            ),
+            ParseError::UnexpectedToken { got, .. } if got.contains("Identifier(\"when\")") => (
+                Some("`when` is not a `.lolo` keyword for transition guards".to_string()),
+                Some("write the guard in parentheses on the same arm: `EVENT -> nextState (guard-expr)`".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, .. }
+                if expected.contains("state, initial, emits, listens, ticks, or config") =>
+            (
+                Some("inside a `state { ... }` body each arm must start with `EVENT -> nextState` or an effect like `(set ...)`".to_string()),
+                Some("remove or rewrite the stray token so the state body matches the grammar".to_string()),
+            ),
+            _ => (None, None),
         }
     }
 }
