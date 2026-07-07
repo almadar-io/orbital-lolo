@@ -1,0 +1,118 @@
+app op-control-flow "1.0.0"
+"Stress-tests if let do when fn nesting, multi-arg fns, and complex guard expressions with and/or/not."
+orbital OpControlFlowOrbital {
+  type Point = {
+    x : number!
+    y : number!
+  }
+
+  entity OpControlFlowData [runtime, shared] {
+    id : string!
+    value : number = 0
+    points : [Point] = []
+    label : string = ""
+    active : boolean = true
+  }
+
+  trait OpControlFlow -> @rebindable OpControlFlowData [lifecycle] {
+    initial: active
+
+    state active {
+      INIT -> active
+        (set @entity.value @config.seedValue)
+        (set @entity.points @config.seedPoints)
+        (set @entity.label "")
+        (set @entity.active true)
+
+      NESTED_LET_IF_DO -> active when @config.running
+        (let ((threshold 50) (multiplier 2))
+          (let ((scaled (if (> @entity.value @threshold)
+            (do
+              (set @entity.label "high")
+              (* @entity.value @multiplier))
+            (do
+              (set @entity.label "low")
+              @entity.value))))
+            (do
+              (set @entity.value @scaled)
+              (emit NESTED_RESULT { value: @scaled, label: @entity.label }))))
+
+      LET_WITH_FNS -> active when @config.running
+        (let ((factor @config.factor))
+          (let ((doubled (array/map @entity.points (fn pt (* (object/get @pt x) @factor)))))
+            (let ((filtered (array/filter @entity.points (fn pt (and (> (object/get @pt x) 0) (> (object/get @pt y) 0))))))
+              (let ((sumX (array/reduce @entity.points 0 (fn acc pt (+ @acc (object/get @pt x))))))
+                (let ((sumY (array/reduce @entity.points 0 (fn acc pt (+ @acc (object/get @pt y))))))
+                  (emit FN_RESULT { sumX: @sumX, sumY: @sumY, doubledCount: (array/len @doubled), filteredCount: (array/len @filtered) }))))))
+
+      COMPLEX_GUARD -> active when (and (or (and (> @entity.value 10) (not (== @entity.label ""))) (and (<= @entity.value 10) (> (array/len @entity.points) 0))) (not (== @entity.id "")) (or @entity.active (!= @entity.value -1)))
+        (emit GUARD_RESULT { value: @entity.value, label: @entity.label, id: @entity.id })
+
+      WHEN_TEST -> active when @config.running
+        (when (> @entity.value 0)
+          (do
+            (set @entity.label "positive")
+            (set @entity.value (math/floor (/ @entity.value 2)))
+            (emit WHEN_FIRED { value: @entity.value })))
+
+      DEEPLY_NESTED -> active when @config.running
+        (let ((x (if (and (> ?a 0) (or (< ?b 10) (!= ?c 0))) (do (let ((tmp (* ?a ?b))) (math/max @tmp (- ?c 5)))) 0)))
+          (let ((results (array/map @entity.points (fn pt (let ((y (* (object/get @pt x) @x))) (let ((clamped (math/clamp @y 0 100))) (math/min @clamped (* @entity.value 2))))))))
+            (let ((final (array/reduce @results 0 (fn acc v (+ @acc @v)))))
+              (do
+                (set @entity.value @final)
+                (emit DEEP_NEST_RESULT { x: @x, final: @final, count: (array/len @results) })))))
+
+      GUARD_OR_CHAIN -> active when (or (and (> @entity.value 100) (< @entity.value 200)) (and (== @entity.label "max") (>= (array/len @entity.points) 5)) (not @entity.active))
+        (emit OR_CHAIN_RESULT { value: @entity.value, label: @entity.label })
+    }
+
+    emits {
+      NESTED_RESULT -> external {
+        value : number!
+        label : string!
+      }
+      FN_RESULT -> external {
+        sumX : number!
+        sumY : number!
+        doubledCount : number!
+        filteredCount : number!
+      }
+      GUARD_RESULT -> external {
+        value : number!
+        label : string!
+        id : string!
+      }
+      WHEN_FIRED -> external {
+        value : number!
+      }
+      DEEP_NEST_RESULT -> external {
+        x : number!
+        final : number!
+        count : number!
+      }
+      OR_CHAIN_RESULT -> external {
+        value : number!
+        label : string!
+      }
+    }
+
+    listens {
+      INIT {}
+      LET_WITH_FNS {}
+      COMPLEX_GUARD {}
+      WHEN_TEST {}
+      DEEPLY_NESTED { a : number!, b : number!, c : number! }
+      GUARD_OR_CHAIN {}
+    }
+
+    config {
+      running : boolean = true
+      seedValue : number = 42
+      seedPoints : [Point] = []
+      factor : number = 2
+    }
+  }
+
+  page "/op-control-flow" as OpControlFlowPage -> OpControlFlow
+}

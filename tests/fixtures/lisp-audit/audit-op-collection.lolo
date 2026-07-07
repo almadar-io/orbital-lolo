@@ -1,0 +1,125 @@
+app op-collection "1.0.0"
+"Stress-tests array/map array/filter array/find array/reduce array/sum array/includes array/len array/concat and str ops on entity collection fields."
+orbital OpCollectionOrbital {
+  type LineItem = {
+    price : number!
+    qty : number!
+    name : string!
+  }
+
+  entity OpCollectionData [runtime, shared] {
+    id : string!
+    items : [LineItem] = []
+    tags : [string] = []
+    total : number = 0
+  }
+
+  trait OpCollection -> @rebindable OpCollectionData [lifecycle] {
+    initial: active
+
+    state active {
+      INIT -> active
+        (set @entity.items @config.seedItems)
+        (set @entity.tags @config.seedTags)
+        (set @entity.total 0)
+
+      CALC_TOTAL -> active when (and @config.running (> (array/len @entity.items) 0))
+        (let ((gross (array/sum (array/map @entity.items (fn it (* (object/get @it price) (object/get @it qty)))))))
+          (let ((expensiveCount (array/len (array/filter @entity.items (fn it (> (object/get @it price) 10))))))
+            (let ((discount (if (> @expensiveCount 2) (math/floor (* @gross 0.1)) 0)))
+              (let ((net (- @gross @discount)))
+                (do
+                  (set @entity.total @net)
+                  (emit TOTAL_CALCULATED { gross: @gross, discount: @discount, net: @net, itemCount: (array/len @entity.items) }))))))
+
+      FIND_ITEM -> active when @config.running
+        (let ((found (array/find @entity.items (fn it (== (object/get @it name) ?targetName)))))
+          (if (!= @found null)
+            (emit ITEM_FOUND { item: @found })
+            (emit ITEM_NOT_FOUND { target: ?targetName })))
+
+      SUM_QTY -> active when @config.running
+        (let ((totalQty (array/reduce @entity.items 0 (fn acc it (+ @acc (object/get @it qty))))))
+          (emit QTY_SUMMED { total: @totalQty }))
+
+      COUNT_EXPENSIVE -> active when @config.running
+        (let ((expensive (array/filter @entity.items (fn it (and (> (object/get @it price) ?threshold) (>= (object/get @it qty) 1))))))
+          (emit EXPENSIVE_COUNTED { count: (array/len @expensive) }))
+
+      MERGE_TAGS -> active when @config.running
+        (let ((upper (array/map @entity.tags (fn t (str/upper @t)))))
+          (let ((hasUrgent (array/includes @upper "URGENT")))
+            (let ((merged (array/concat @upper @config.extraTags)))
+              (let ((summary (str/concat "Order: " @entity.id " items=" (if @hasUrgent "urgent" "normal"))))
+                (do
+                  (set @entity.tags @merged)
+                  (emit TAGS_MERGED { summary: @summary, urgent: @hasUrgent }))))))
+
+      PRICE_STATS -> active when @config.running
+        (let ((prices (array/map @entity.items (fn it (object/get @it price)))))
+          (let ((totalPrice (array/reduce @prices 0 (fn acc x (+ @acc @x)))))
+            (let ((count (array/len @prices)))
+              (let ((avg (/ @totalPrice @count)))
+                (emit PRICE_STATS { min: 0, max: @totalPrice, avg: @avg })))))
+
+      TAG_SEARCH -> active when @config.running
+        (let ((lowerTags (array/map @entity.tags (fn t (str/lower @t)))))
+          (let ((matched (array/filter @lowerTags (fn t (str/includes @t ?searchTerm)))))
+            (let ((joined (array/reduce @matched "" (fn acc t (if (== @acc "") @t (str/concat @acc "," @t))))))
+              (emit TAG_SEARCH_RESULT { results: @joined, count: (array/len @matched) }))))
+    }
+
+    emits {
+      TOTAL_CALCULATED -> external {
+        gross : number!
+        discount : number!
+        net : number!
+        itemCount : number!
+      }
+      ITEM_FOUND -> external {
+        item : LineItem!
+      }
+      ITEM_NOT_FOUND -> external {
+        target : string!
+      }
+      QTY_SUMMED -> external {
+        total : number!
+      }
+      EXPENSIVE_COUNTED -> external {
+        count : number!
+      }
+      TAGS_MERGED -> external {
+        summary : string!
+        urgent : boolean!
+      }
+      PRICE_STATS -> external {
+        min : number!
+        max : number!
+        avg : number!
+      }
+      TAG_SEARCH_RESULT -> external {
+        results : string!
+        count : number!
+      }
+    }
+
+    listens {
+      CALC_TOTAL {}
+      FIND_ITEM { targetName : string! }
+      SUM_QTY {}
+      COUNT_EXPENSIVE { threshold : number! }
+      MERGE_TAGS {}
+      PRICE_STATS {}
+      TAG_SEARCH { searchTerm : string! }
+    }
+
+    config {
+      running : boolean = true
+      seedItems : [LineItem] = []
+      seedTags : [string] = []
+      extraTags : [string] = ["NEW"]
+    }
+  }
+
+  page "/op-collection" as OpCollectionPage -> OpCollection
+}

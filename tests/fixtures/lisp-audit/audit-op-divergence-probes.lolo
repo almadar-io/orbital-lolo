@@ -1,0 +1,167 @@
+app op-divergence-probes "1.0.0"
+"Probes namespaced operators suspected of broken TS emit — each used in a real guard or effect to maximize validator coverage."
+orbital OpDivergenceProbesOrbital {
+  type Rect = {
+    x : number!
+    y : number!
+    w : number!
+    h : number!
+  }
+  type Item = {
+    price : number!
+    qty : number!
+    name : string!
+    category : string!
+  }
+
+  entity OpDivergenceProbesData [runtime, shared] {
+    id : string!
+    x : number = 0
+    y : number = 0
+    hp : number = 100
+    gold : number = 0
+    items : [Item] = []
+    tags : [string] = []
+    createdAt : string = ""
+  }
+
+  trait OpDivergenceProbes -> @rebindable OpDivergenceProbesData [lifecycle] {
+    initial: active
+
+    state active {
+      INIT -> active
+        (set @entity.hp 100)
+        (set @entity.gold 0)
+        (set @entity.x 0)
+        (set @entity.y 0)
+        (set @entity.items @config.seedItems)
+        (set @entity.tags @config.seedTags)
+        (set @entity.createdAt (time/format (time/now) "yyyy-MM-dd"))
+
+      PROBE_GROUP_BY -> active when @config.running
+        (let ((groups (array/groupBy @entity.items (fn it (object/get @it category)))))
+          (emit PROBE_RESULT { key: "groupBy", value: "ok" }))
+
+      PROBE_FIND_INDEX -> active when @config.running
+        (let ((idx (array/findIndex @entity.items (fn it (== (object/get @it name) ?itemName)))))
+          (emit PROBE_RESULT { key: "findIndex", value: "ok" }))
+
+      PROBE_INDEX_OF -> active when @config.running
+        (let ((idx (array/indexOf @entity.tags ?targetTag)))
+          (emit PROBE_RESULT { key: "indexOf", value: "ok" }))
+
+      PROBE_HYPOT -> active when @config.running
+        (let ((dist (math/hypot ?dx ?dy)))
+          (emit PROBE_RESULT { key: "hypot", value: "ok" }))
+
+      PROBE_WRAP -> active when @config.running
+        (let ((wrapped (math/wrap @entity.x 0 @config.maxX)))
+          (do
+            (set @entity.x @wrapped)
+            (emit PROBE_RESULT { key: "wrap", value: "ok" })))
+
+      PROBE_APPROACH -> active when @config.running
+        (let ((approached (math/approach @entity.x ?target @config.speed)))
+          (do
+            (set @entity.x @approached)
+            (emit PROBE_RESULT { key: "approach", value: "ok" })))
+
+      PROBE_RANDOM_INT -> active when @config.running
+        (let ((roll (math/randomInt @config.minRoll @config.maxRoll)))
+          (do
+            (set @entity.gold (+ @entity.gold @roll))
+            (emit PROBE_RESULT { key: "randomInt", value: "ok" })))
+
+      PROBE_REPLACE_ALL -> active when @config.running
+        (let ((clean (str/replaceAll ?input ?old ?new)))
+          (emit PROBE_RESULT { key: "replaceAll", value: @clean }))
+
+      PROBE_STARTS_WITH -> active when (and @config.running (str/startsWith @entity.id ?prefix))
+        (emit PROBE_RESULT { key: "startsWith", value: "yes" })
+
+      PROBE_ENDS_WITH -> active when (and @config.running (str/endsWith @entity.id ?suffix))
+        (emit PROBE_RESULT { key: "endsWith", value: "yes" })
+
+      PROBE_PAD_START -> active when @config.running
+        (let ((padded (str/padStart @entity.id ?targetLen ?padChar)))
+          (emit PROBE_RESULT { key: "padStart", value: @padded }))
+
+      PROBE_DEEP_MERGE -> active when @config.running
+        (let ((merged (object/deepMerge @entity ?overrides)))
+          (emit PROBE_RESULT { key: "deepMerge", value: "ok" }))
+
+      PROBE_MAP_VALUES -> active when @config.running
+        (let ((mapped (object/mapValues ?obj (fn v (str/upper @v)))))
+          (emit PROBE_RESULT { key: "mapValues", value: "ok" }))
+
+      PROBE_AABB_OVERLAP -> active when @config.running
+        (let ((overlaps (geo/aabb-overlap ?rectA ?rectB)))
+          (emit PROBE_RESULT { key: "aabb-overlap", value: (if @overlaps "yes" "no") }))
+
+      PROBE_POINT_IN_RECT -> active when @config.running
+        (let ((inside (geo/point-in-rect ?point ?rect)))
+          (emit PROBE_RESULT { key: "point-in-rect", value: (if @inside "yes" "no") }))
+
+      PROBE_IS_BEFORE -> active when (and @config.running (time/isBefore @entity.createdAt ?compareDate))
+        (emit PROBE_RESULT { key: "isBefore", value: "yes" })
+
+      PROBE_IS_AFTER -> active when (and @config.running (time/isAfter @entity.createdAt ?compareDate))
+        (emit PROBE_RESULT { key: "isAfter", value: "yes" })
+
+      PROBE_VALIDATE_REQUIRED -> active when @config.running
+        (let ((valid (validate/required @entity.id)))
+          (emit PROBE_RESULT { key: "validateRequired", value: (if @valid "pass" "fail") }))
+
+      PROBE_VALIDATE_PATTERN -> active when @config.running
+        (let ((matches (validate/pattern @entity.id ?regex)))
+          (emit PROBE_RESULT { key: "validatePattern", value: (if @matches "pass" "fail") }))
+
+      PROBE_FORMAT_NUMBER -> active when @config.running
+        (let ((formatted (format/number @entity.gold ?decimals)))
+          (emit PROBE_RESULT { key: "formatNumber", value: @formatted }))
+    }
+
+    emits {
+      PROBE_RESULT -> external {
+        key : string!
+        value : string!
+      }
+    }
+
+    listens {
+      INIT {}
+      PROBE_GROUP_BY {}
+      PROBE_FIND_INDEX { itemName : string! }
+      PROBE_INDEX_OF { targetTag : string! }
+      PROBE_HYPOT { dx : number!, dy : number! }
+      PROBE_WRAP {}
+      PROBE_APPROACH { target : number! }
+      PROBE_RANDOM_INT {}
+      PROBE_REPLACE_ALL { input : string!, old : string!, new : string! }
+      PROBE_STARTS_WITH { prefix : string! }
+      PROBE_ENDS_WITH { suffix : string! }
+      PROBE_PAD_START { targetLen : number!, padChar : string! }
+      PROBE_DEEP_MERGE { overrides : object! }
+      PROBE_MAP_VALUES { obj : object! }
+      PROBE_AABB_OVERLAP { rectA : Rect!, rectB : Rect! }
+      PROBE_POINT_IN_RECT { point : object!, rect : Rect! }
+      PROBE_IS_BEFORE { compareDate : string! }
+      PROBE_IS_AFTER { compareDate : string! }
+      PROBE_VALIDATE_REQUIRED {}
+      PROBE_VALIDATE_PATTERN { regex : string! }
+      PROBE_FORMAT_NUMBER { decimals : number! }
+    }
+
+    config {
+      running : boolean = true
+      maxX : number = 100
+      speed : number = 2
+      minRoll : number = 1
+      maxRoll : number = 6
+      seedItems : [Item] = []
+      seedTags : [string] = []
+    }
+  }
+
+  page "/op-divergence-probes" as OpDivergenceProbesPage -> OpDivergenceProbes
+}

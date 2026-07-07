@@ -1,0 +1,129 @@
+app op-symbolic-math "1.0.0"
+"Stress-tests symbolic + - * / % == != < <= > >= and or not plus namespaced math/vector ops in guards and effects."
+orbital OpSymbolicMathOrbital {
+  entity OpSymbolicMathData [runtime, shared] {
+    id : string!
+    hp : number = 100
+    maxHp : number = 100
+    x : number = 50
+    y : number = 50
+    vx : number = 0
+    vy : number = 0
+    targetX : number = 100
+    defense : number = 5
+    score : number = 0
+    checkpoint : number = 0
+  }
+
+  trait OpSymbolicMath -> @rebindable OpSymbolicMathData [lifecycle] {
+    initial: active
+
+    state active {
+      INIT -> active
+        (set @entity.hp @config.startHp)
+        (set @entity.maxHp @config.startHp)
+        (set @entity.x @config.startX)
+        (set @entity.y @config.startY)
+        (set @entity.defense @config.startDefense)
+        (set @entity.score 0)
+        (set @entity.checkpoint 0)
+        (set @entity.targetX @config.maxX)
+
+      HIT -> active when (and @config.running (> @entity.hp 0) (not (== ?amount 0)))
+        (let ((rawDmg ?amount) (defense @entity.defense))
+          (let ((dmg (math/max (- @rawDmg @defense) 0)))
+            (do
+              (set @entity.hp (math/max 0 (- @entity.hp @dmg)))
+              (set @entity.score (+ @entity.score (math/floor (/ @dmg 2))))
+              (emit DAMAGED { hp: @entity.hp, damage: @dmg }))))
+
+      MOVE -> active when (and @config.running (> @entity.hp 0) (or (> ?dx 0) (< ?dx 0) (> ?dy 0) (< ?dy 0)))
+        (let ((newX (math/clamp (+ @entity.x ?dx) 0 @config.maxX)))
+          (let ((newY (math/clamp (+ @entity.y ?dy) 0 @config.maxY)))
+            (let ((ddx (- @newX @entity.x)) (ddy (- @newY @entity.y)))
+              (let ((dist (math/sqrt (+ (* @ddx @ddx) (* @ddy @ddy)))))
+                (let ((lerpedX (math/lerp @entity.x @entity.targetX @config.alpha)))
+                  (do
+                    (set @entity.x @newX)
+                    (set @entity.y @newY)
+                    (set @entity.vx @ddx)
+                    (set @entity.vy @ddy)
+                    (if (and (> @dist @config.minMoveThreshold) (<= @dist @config.maxMoveThreshold))
+                      (set @entity.score (+ @entity.score (math/floor (* @dist @config.scoreMultiplier))))
+                      true)))))))
+
+      VECTOR_ADD -> active when (and @config.running (> @entity.hp 0) (not (and (== ?ax 0) (== ?ay 0))))
+        (let ((scaled (vec/scale { x: ?ax, y: ?ay } @config.vecScale)))
+          (let ((sum (vec/add { x: @entity.x, y: @entity.y } @scaled)))
+            (do
+              (set @entity.x (math/clamp (object/get @sum x) 0 @config.maxX))
+              (set @entity.y (math/clamp (object/get @sum y) 0 @config.maxY)))))
+
+      CHECKPOINT -> active when (and @config.running (> @entity.hp 0))
+        (let ((count (array/len @config.checkpoints)))
+          (let ((next (math/mod (+ @entity.checkpoint 1) @count)))
+            (do
+              (set @entity.checkpoint @next)
+              (if (== @next 0)
+                (do
+                  (set @entity.score (+ @entity.score @config.lapBonus))
+                  (emit LAP_COMPLETE { score: @entity.score }))
+                true))))
+
+      HEAL -> active when (and @config.running (>= @entity.hp 1) (< @entity.hp @entity.maxHp))
+        (let ((missing (- @entity.maxHp @entity.hp)))
+          (let ((actual (math/min ?amount @missing)))
+            (do
+              (set @entity.hp (+ @entity.hp @actual))
+              (if (== @entity.hp @entity.maxHp) (emit FULL_HP { hp: @entity.hp }) true))))
+
+      GUARD_STRESS -> active when (and (or (and (> @entity.hp 50) (not (== @entity.score 0))) (and (<= @entity.hp 50) (> @entity.score 100))) (>= @entity.x 0) (>= @entity.y 0) (<= @entity.x @config.maxX) (<= @entity.y @config.maxY) (!= @entity.checkpoint -1))
+        (emit GUARD_PASSED { hp: @entity.hp, score: @entity.score })
+    }
+
+    emits {
+      DAMAGED -> external {
+        hp : number!
+        damage : number!
+      }
+      LAP_COMPLETE -> external {
+        score : number!
+      }
+      FULL_HP -> external {
+        hp : number!
+      }
+      GUARD_PASSED -> external {
+        hp : number!
+        score : number!
+      }
+    }
+
+    listens {
+      HIT { amount : number! }
+      MOVE { dx : number!, dy : number! }
+      VECTOR_ADD { ax : number!, ay : number! }
+      CHECKPOINT {}
+      HEAL { amount : number! }
+      GUARD_STRESS {}
+    }
+
+    config {
+      running : boolean = true
+      startHp : number = 100
+      startX : number = 50
+      startY : number = 50
+      startDefense : number = 5
+      maxX : number = 200
+      maxY : number = 200
+      alpha : number = 0.1
+      minMoveThreshold : number = 0
+      maxMoveThreshold : number = 100
+      scoreMultiplier : number = 1
+      vecScale : number = 1.5
+      checkpoints : [string] = ["a" "b" "c"]
+      lapBonus : number = 500
+    }
+  }
+
+  page "/op-symbolic-math" as OpSymbolicMathPage -> OpSymbolicMath
+}

@@ -1,0 +1,71 @@
+app guard-raw-truthiness "1.0.0"
+"Raw truthiness guards (no == true wrapping) — gap candidates if validator rejects."
+orbital GuardRawOrbital {
+  type RawResult = Event { probe : string, fired : boolean } "Probe result."
+
+  entity RawRecord [runtime] {
+    id : string!
+    flag : boolean = true
+    num : number = 42
+    zeroNum : number = 0
+    probeTag : string = ""
+  }
+
+  trait GuardRawTruthiness -> RawRecord [interaction, instance] {
+    initial: idle
+
+    state idle {
+      INIT -> idle
+        (render-ui main { type: stack, children: [{ type: typography, content: "guard-raw-truthiness idle", variant: h2 }] })
+        (set @entity.flag true)
+        (set @entity.num 42)
+        (set @entity.zeroNum 0)
+
+      ;; raw boolean in guard — should pass if flag is true
+      RawBool -> idle when @entity.flag
+        (set @entity.probeTag "raw-bool")
+        (emit RawResult { probe: "raw-bool", fired: true })
+
+      ;; raw comparison in guard — number > 0 returns boolean-like
+      RawCompare -> idle when (> @entity.num 0)
+        (set @entity.probeTag "raw-compare")
+        (emit RawResult { probe: "raw-compare", fired: true })
+
+      ;; raw and in guard
+      RawAnd -> idle when (and (> @entity.num 0) @entity.flag)
+        (set @entity.probeTag "raw-and")
+        (emit RawResult { probe: "raw-and", fired: true })
+
+      ;; raw or in guard
+      RawOr -> idle when (or (> @entity.zeroNum 0) @entity.flag)
+        (set @entity.probeTag "raw-or")
+        (emit RawResult { probe: "raw-or", fired: true })
+
+      ;; raw not in guard
+      RawNot -> idle when (not (> @entity.zeroNum 0))
+        (set @entity.probeTag "raw-not")
+        (emit RawResult { probe: "raw-not", fired: true })
+    }
+
+    emits {
+      RawResult -> external {
+        probe : string
+        fired : boolean
+      }
+    }
+
+    listens {
+      RawBool { }
+      RawCompare { }
+      RawAnd { }
+      RawOr { }
+      RawNot { }
+    }
+
+    config {
+      threshold : number = 0
+    }
+  }
+
+  page "/guard-raw-truthiness" as GuardRawTruthinessPage -> GuardRawTruthiness
+}

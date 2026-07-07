@@ -1,0 +1,147 @@
+app guard-truthiness "1.0.0"
+"Guard truthiness edge cases: boolean, number, string, array, object, null, short-circuit, missing field."
+orbital GuardTruthinessOrbital {
+  type GuardResult = Event { probe : string, passed : boolean } "Each probe reports whether it fired."
+
+  entity TruthRecord [runtime] {
+    id : string!
+    flag : boolean = true
+    a : number = 42
+    b : number = 0
+    arr : [string] = ["x"]
+    obj : object = {}
+    missing : string
+    emptyArr : [string] = []
+    emptyObj : object = {}
+    probeTag : string = ""
+  }
+
+  trait GuardTruthiness -> TruthRecord [interaction, instance] {
+    initial: idle
+
+    state idle {
+      INIT -> idle
+        (render-ui main { type: stack, children: [{ type: typography, content: "guard-truthiness idle", variant: h2 }] })
+        (set @entity.flag true)
+        (set @entity.a 42)
+        (set @entity.b 0)
+        (set @entity.arr ["x"])
+        (set @entity.obj { k: 1 })
+        (set @entity.emptyArr [])
+        (set @entity.emptyObj {})
+        (set @entity.missing "")
+
+      ;; probe: boolean truthiness — true should pass
+      BoolTrue -> idle when (== @entity.flag true)
+        (set @entity.probeTag "bool-true")
+        (emit GuardResult { probe: "bool-true", passed: true })
+
+      ;; probe: boolean truthiness — false should block
+      BoolFalse -> idle when (== @entity.flag false)
+        (set @entity.probeTag "bool-false")
+        (emit GuardResult { probe: "bool-false", passed: true })
+
+      ;; probe: number truthiness via == — non-zero
+      NumNonZero -> idle when (== (> @entity.a 0) true)
+        (set @entity.probeTag "num-nonzero")
+        (emit GuardResult { probe: "num-nonzero", passed: true })
+
+      ;; probe: number truthiness — zero
+      NumZero -> idle when (== (== @entity.b 0) true)
+        (set @entity.probeTag "num-zero")
+        (emit GuardResult { probe: "num-zero", passed: true })
+
+      ;; probe: array truthiness — non-empty
+      ArrNonEmpty -> idle when (> (array/len @entity.arr) 0)
+        (set @entity.probeTag "arr-nonempty")
+        (emit GuardResult { probe: "arr-nonempty", passed: true })
+
+      ;; probe: array truthiness — empty
+      ArrEmpty -> idle when (== (array/len @entity.emptyArr) 0)
+        (set @entity.probeTag "arr-empty")
+        (emit GuardResult { probe: "arr-empty", passed: true })
+
+      ;; probe: object truthiness — non-empty
+      ObjNonEmpty -> idle when (> (array/len (object/keys @entity.obj)) 0)
+        (set @entity.probeTag "obj-nonempty")
+        (emit GuardResult { probe: "obj-nonempty", passed: true })
+
+      ;; probe: object truthiness — empty
+      ObjEmpty -> idle when (== (array/len (object/keys @entity.emptyObj)) 0)
+        (set @entity.probeTag "obj-empty")
+        (emit GuardResult { probe: "obj-empty", passed: true })
+
+      ;; probe: null/empty comparison — unset field is empty string
+      NullCheck -> idle when (== (str/len @entity.missing) 0)
+        (set @entity.probeTag "null-check")
+        (emit GuardResult { probe: "null-check", passed: true })
+
+      ;; probe: and short-circuit — both truthy
+      AndBoth -> idle when (== (and (> @entity.a 0) (> (array/len @entity.arr) 0)) true)
+        (set @entity.probeTag "and-both")
+        (emit GuardResult { probe: "and-both", passed: true })
+
+      ;; probe: and short-circuit — first falsy
+      AndFirst -> idle when (== (and (> @entity.b 0) (> @entity.a 0)) true)
+        (set @entity.probeTag "and-first-falsy")
+        (emit GuardResult { probe: "and-first-falsy", passed: true })
+
+      ;; probe: or — first truthy short-circuits
+      OrFirst -> idle when (== (or (> @entity.a 0) (> @entity.b 0)) true)
+        (set @entity.probeTag "or-first-truthy")
+        (emit GuardResult { probe: "or-first-truthy", passed: true })
+
+      ;; probe: or — both falsy
+      OrBoth -> idle when (== (or (> @entity.b 0) (> (array/len @entity.emptyArr) 0)) true)
+        (set @entity.probeTag "or-both-falsy")
+        (emit GuardResult { probe: "or-both-falsy", passed: true })
+
+      ;; probe: not on truthy
+      NotTrue -> idle when (== (not (> @entity.a 0)) false)
+        (set @entity.probeTag "not-truthy")
+        (emit GuardResult { probe: "not-truthy", passed: true })
+
+      ;; probe: not on falsy
+      NotFalse -> idle when (== (not (> @entity.b 0)) true)
+        (set @entity.probeTag "not-falsy")
+        (emit GuardResult { probe: "not-falsy", passed: true })
+
+      ;; probe: string truthiness via len
+      StrNonEmpty -> idle when (> (str/len @entity.id) 0)
+        (set @entity.probeTag "str-nonempty")
+        (emit GuardResult { probe: "str-nonempty", passed: true })
+    }
+
+    emits {
+      GuardResult -> external {
+        probe : string
+        passed : boolean
+      }
+    }
+
+    listens {
+      BoolTrue { }
+      BoolFalse { }
+      NumNonZero { }
+      NumZero { }
+      ArrNonEmpty { }
+      ArrEmpty { }
+      ObjNonEmpty { }
+      ObjEmpty { }
+      NullCheck { }
+      AndBoth { }
+      AndFirst { }
+      OrFirst { }
+      OrBoth { }
+      NotTrue { }
+      NotFalse { }
+      StrNonEmpty { }
+    }
+
+    config {
+      threshold : number = 0
+    }
+  }
+
+  page "/guard-truthiness" as GuardTruthinessPage -> GuardTruthiness
+}

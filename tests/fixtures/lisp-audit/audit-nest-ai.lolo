@@ -1,0 +1,79 @@
+app nest-ai "1.0.0"
+"Deep-nested AI: enemies find nearest player via reduce over filtered array with double object/get access, then clamp-stepped toward target."
+orbital NestAiOrbital {
+  type Unit = {
+    id : string!
+    team : string
+    health : number
+    position : { x : number!  y : number! }
+  }
+  type Tile = {
+    x : number!
+    y : number!
+    passable : boolean
+  }
+  type Fx = {
+    id : string!
+    kind : string!
+    x : number!
+    y : number
+    message : string
+    ttl : number!
+  }
+
+  entity NestAiData [runtime] {
+    id : string!
+    units : [Unit] = []
+    tick : number = 0
+  }
+
+  trait NestAi -> @rebindable NestAiData [lifecycle] {
+    initial: active
+
+    state active {
+      INIT -> active
+        (set @entity.units @config.units)
+    }
+
+    ticks {
+      aiTick every 1s
+        when @config.running
+        (emit BURST { particles: (array/map (array/filter @entity.units (fn u (and (== @u.team "player") (> @u.health 0)))) (fn u { id: (str/concat "fx-" @u.id), kind: "scan", x: (object/get (object/get @u position) x), y: (object/get (object/get @u position) y), message: "?", ttl: 2 })) })
+        (set @entity.units (array/map @entity.units (fn u (if (and (== @u.team "enemy") (> @u.health 0)) (let ((target (array/reduce (array/filter @entity.units (fn p (and (== @p.team "player") (> @p.health 0)))) null (fn nearest p (if (or (== @nearest null) (< (grid/manhattan-distance (object/get @u position) (object/get @p position)) (grid/manhattan-distance (object/get @u position) (object/get @nearest position)))) @p @nearest))))) (if (== @target null) @u (let ((nx (math/clamp (+ (object/get (object/get @u position) x) (math/sign (- (object/get (object/get @target position) x) (object/get (object/get @u position) x)))) 0 (- @config.gridW 1)))) (object/merge @u { position: { x: @nx, y: (object/get (object/get @u position) y) } })))) @u))))
+        (set @entity.units (array/map @entity.units (fn u (if (and (== @u.team "player") (> @u.health 0)) (if (> (array/len (array/filter @entity.units (fn e (and (== @e.team "enemy") (> @e.health 0) (== (grid/manhattan-distance (object/get @e position) (object/get @u position)) 1))))) 0) (object/merge @u { health: (math/max 0 (- @u.health 1)) }) @u) @u))))
+        (set @entity.tick (+ @entity.tick 1))
+        (emit STATUS { tick: @entity.tick, alive: (array/len (array/filter @entity.units (fn u (> @u.health 0)))) })
+    }
+
+    emits {
+      BURST -> external {
+        particles : [Fx]
+      }
+        @description "Scan effect per living player each tick"
+        @tier "domain"
+      STATUS -> external {
+        tick : number
+        alive : number
+      }
+        @description "Summary counts after AI step"
+        @tier "domain"
+    }
+
+    config {
+      running : boolean = true
+        @label "Running"
+        @description "Toggle AI tick"
+        @tier "domain"
+      units : [Unit] = []
+        @label "Initial Units"
+        @description "Seed units array"
+        @tier "domain"
+      gridW : number = 10
+        @label "Grid Width"
+        @description "Column count for x clamp"
+        @tier "domain"
+    }
+  }
+
+  page "/nest-ai" as NestAiPage -> NestAi
+}

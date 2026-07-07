@@ -1,0 +1,59 @@
+app bind-matrix "1.0.0"
+"Stress every @-binding in one transition: entity, payload, config, now, state, let, fn param."
+orbital BindMatrixOrbital {
+  type Logged = Event { amount : number, at : number, via : string } "Computed log entry."
+
+  entity BindRecord [runtime] {
+    id : string!
+    status : string = "active"
+    count : number = 0
+    total : number = 0
+    tags : [string] = ["a", "bb", "ccc"]
+    lastUpdate : number = 0
+    tagSum : number = 0
+    upperTags : [string] = []
+  }
+
+  trait BindMatrix -> BindRecord [interaction, instance] {
+    initial: idle
+
+    state idle {
+      INIT -> idle
+        (set @entity.tags ["a", "bb", "ccc"])
+        (render-ui main { type: stack, children: [{ type: typography, content: "bind-matrix idle", variant: h2 }] })
+      Inc -> idle when (and (== state "active") (> ?amount 0))
+        (render-ui main { type: stack, children: [{ type: typography, content: "bind-matrix counted", variant: h2 }] })
+        (let ((newCount (+ @entity.count ?amount)))
+          (let ((upperTags (array/map @entity.tags (fn t (str/upper t)))))
+            (do
+              (set @entity.count newCount)
+              (set @entity.total (* newCount @config.unitPrice))
+              (set @entity.lastUpdate now)
+              (set @entity.tagSum (array/sum @entity.tags))
+              (set @entity.upperTags upperTags)
+              (emit Logged { amount: ?amount, at: now, via: @config.channel })
+            )
+          )
+        )
+    }
+
+    emits {
+      Logged -> external {
+        amount : number
+        at : number
+        via : string
+      }
+    }
+
+    listens {
+      Inc { amount : number }
+    }
+
+    config {
+      unitPrice : number = 10
+      channel : string = "direct"
+    }
+  }
+
+  page "/bind-matrix" as BindMatrixPage -> BindMatrix
+}

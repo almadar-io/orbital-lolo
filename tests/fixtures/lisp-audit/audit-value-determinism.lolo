@@ -1,0 +1,53 @@
+app value-determinism "1.0.0"
+"Pure deterministic value computations for cross-path runtime-vs-compiled comparison."
+orbital ValueDeterminismOrbital {
+  type Computed = Event { n : number, s : string } "Emits computed pure values."
+
+  entity ValueRecord [runtime] {
+    id : string!
+    n : number = 0
+    s : string = ""
+    arr : [number] = [1, 2, 3, 6, 8, 10]
+    obj : object = {}
+  }
+
+  trait ValueDeterminism -> ValueRecord [interaction, instance] {
+    initial: idle
+
+    state idle {
+      INIT -> idle
+        (render-ui main { type: stack, children: [{ type: typography, content: "value-determinism idle", variant: h2 }] })
+        (set @entity.arr [1, 2, 3, 6, 8, 10])
+        (set @entity.obj { label: "init" })
+      Compute -> idle when (== (math/max 3 7) 7)
+        (render-ui main { type: stack, children: [{ type: typography, content: "value-determinism computed", variant: h2 }] })
+        ;; expect: 16
+        (set @entity.n (+ (* 3 4) (- 10 6)))
+        ;; expect: "abc"
+        (set @entity.s (str/concat "a" "b" "c"))
+        ;; expect: [36, 64, 100]
+        (set @entity.arr (array/map (array/filter @entity.arr (fn x (> x 5))) (fn x (* x x))))
+        ;; expect: { label: "init", updated: <timestamp> }
+        (set @entity.obj (object/merge @entity.obj { updated: now }))
+        (emit Computed { n: @entity.n, s: @entity.s })
+    }
+
+    emits {
+      Computed -> external {
+        n : number
+        s : string
+      }
+    }
+
+    listens {
+      Compute { }
+    }
+
+    config {
+      base : number = 10
+      label : string = "base"
+    }
+  }
+
+  page "/value-determinism" as ValueDeterminismPage -> ValueDeterminism
+}

@@ -1,0 +1,229 @@
+app long-state-machine "1.0.0"
+"Order fulfillment lifecycle with 15 states, 31 transitions, 5 tick timers, and cancel/refund/return branching."
+orbital LongStateMachineOrbital {
+  type OrderItem = {
+    sku : string!
+    qty : number!
+    price : number!
+  }
+
+  entity OrderFulfillment [runtime] {
+    id : string!
+    items : [OrderItem] = []
+    total : number = 0
+    paymentRef : string = ""
+    carrier : string = ""
+    trackingCode : string = ""
+    reason : string = ""
+    refundAmount : number = 0
+    timer : number = 0
+  }
+
+  trait OrderLifecycle -> @rebindable OrderFulfillment [lifecycle] {
+    initial: created
+
+    state created {
+      INIT -> created
+        (set @entity.total 0)
+        (set @entity.paymentRef "")
+        (set @entity.carrier "")
+        (set @entity.trackingCode "")
+        (set @entity.reason "")
+        (set @entity.refundAmount 0)
+        (set @entity.timer 0)
+      SUBMIT -> pending
+        (set @entity.total @config.total)
+        (set @entity.items @config.items)
+      CANCEL -> cancelled
+        (set @entity.reason @config.cancelReason)
+    }
+
+    state pending {
+      PAY -> paid
+        (set @entity.paymentRef @payload.paymentRef)
+      TIMEOUT -> expired
+        (set @entity.reason "payment-timeout")
+      CANCEL -> cancelled
+        (set @entity.reason @config.cancelReason)
+    }
+
+    state paid {
+      CONFIRM -> confirmed
+        (set @entity.timer 0)
+      CANCEL -> refunding
+        (set @entity.refundAmount @entity.total)
+        (set @entity.reason "buyer-remorse")
+    }
+
+    state confirmed {
+      PICK -> picked
+        (set @entity.timer 0)
+      CANCEL -> refunding
+        (set @entity.refundAmount @entity.total)
+        (set @entity.reason "pre-shipment-cancel")
+    }
+
+    state picked {
+      PACK -> packed
+        (set @entity.timer 0)
+    }
+
+    state packed {
+      SHIP -> shipped
+        (set @entity.carrier @payload.carrier)
+        (set @entity.trackingCode @payload.trackingCode)
+    }
+
+    state shipped {
+      DELIVER -> delivered
+        (set @entity.carrier @payload.carrier)
+        (set @entity.trackingCode @payload.trackingCode)
+      RETURN_REQ -> returning
+        (set @entity.reason @config.returnReason)
+    }
+
+    state delivered {
+      COMPLETE -> completed
+        (set @entity.timer 0)
+      RETURN_REQ -> returning
+        (set @entity.reason @config.returnReason)
+    }
+
+    state returning {
+      RECEIVE_RET -> returned
+        (set @entity.timer 0)
+    }
+
+    state refunding {
+      REFUND_DONE -> refunded
+        (set @entity.refundAmount @config.refundAmt)
+        (set @entity.timer 0)
+    }
+
+    state expired {
+      ARCHIVE -> archived
+        (set @entity.timer 0)
+    }
+
+    state cancelled {
+      ARCHIVE -> archived
+        (set @entity.timer 0)
+    }
+
+    state refunded {
+      ARCHIVE -> archived
+        (set @entity.timer 0)
+    }
+
+    state returned {
+      REFUND_DONE -> refunded
+        (set @entity.refundAmount @entity.total)
+    }
+
+    state completed {
+      ARCHIVE -> archived
+        (set @entity.timer 0)
+    }
+
+    state archived {
+      INIT -> archived
+    }
+
+    ticks {
+      idleTick every 1s
+        when (== @entity.timer 0)
+        (set @entity.timer 0)
+      countdownTick every 1s
+        when (> @entity.timer 0)
+        (set @entity.timer (- @entity.timer 1))
+        (if (== @entity.timer 0) (emit TIMER_EXPIRED { dummy: "" }) null)
+      pendingReminder every 10s
+        when (== @entity.timer 0)
+        (set @entity.timer 0)
+      packingProgress every 2s
+        when (> @entity.timer 0)
+        (set @entity.timer (- @entity.timer 1))
+      shippingProgress every 5s
+        when (> @entity.timer 0)
+        (set @entity.timer (- @entity.timer 1))
+        (if (== @entity.timer 0) (emit TIMER_EXPIRED { dummy: "" }) null)
+    }
+
+    listens {
+      TIMER_EXPIRED {
+        dummy : string
+      }
+      ORDER_CANCEL {
+        orderId : string!
+      }
+      ORDER_REFUND {
+        orderId : string!
+      }
+    }
+
+    emits {
+      TIMER_EXPIRED -> external {
+        dummy : string
+      }
+        @description "Fired when countdown timer reaches zero"
+        @tier "domain"
+      ORDER_CANCEL -> external {
+        orderId : string!
+      }
+        @description "External cancel signal"
+        @tier "domain"
+      ORDER_REFUND -> external {
+        orderId : string!
+      }
+        @description "External refund signal"
+        @tier "domain"
+      ORDER_COMPLETE -> external {
+        orderId : string!
+      }
+        @description "Order completed successfully"
+        @tier "domain"
+      PAY -> external {
+        paymentRef : string
+      }
+        @description "Payment received with reference"
+        @tier "domain"
+      SHIP -> external {
+        carrier : string
+        trackingCode : string
+      }
+        @description "Shipment with carrier and tracking"
+        @tier "domain"
+      DELIVER -> external {
+        carrier : string
+        trackingCode : string
+      }
+        @description "Delivery confirmation"
+        @tier "domain"
+    }
+
+    config {
+      total : number = 0
+        @label "Total"
+        @description "Order total amount"
+        @tier "domain"
+      items : [OrderItem] = []
+        @label "Items"
+        @description "Order line items"
+        @tier "domain"
+      cancelReason : string = ""
+        @label "Cancel Reason"
+        @description "Reason for cancellation"
+        @tier "domain"
+      returnReason : string = ""
+        @label "Return Reason"
+        @description "Reason for return request"
+        @tier "domain"
+      refundAmt : number = 0
+        @label "Refund Amount"
+        @description "Refund amount to process"
+        @tier "domain"
+    }
+  }
+
+  page "/long-state-machine" as LongStateMachinePage -> OrderLifecycle
+}

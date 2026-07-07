@@ -247,9 +247,14 @@ impl Parser {
         // Read the dotted reference path: `Alias.traits.Upstream`.
         let reference = self.parse_dotted_ident()?;
 
-        // Optional `-> Entity` linkedEntity override.
+        // Optional `-> [@rebindable] Entity` linkedEntity override.
+        let mut entity_rebindable = false;
         let linked_entity = if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
             self.advance();
+            if matches!(self.peek(), TokenKind::Sigil(ref s) if s == "rebindable") {
+                self.advance();
+                entity_rebindable = true;
+            }
             Some(self.expect_ident()?)
         } else {
             None
@@ -442,7 +447,7 @@ impl Parser {
             name,
             type_annotation,
             linked_entity,
-            entity_rebindable: false,
+            entity_rebindable,
             entity_binding_description: None,
             entity_binding_synonyms: None,
             category: None,

@@ -1,0 +1,98 @@
+app nest-deeplet "1.0.0"
+"Deep-let physics step: 21-level nested let chain with clamped velocity, AABB collision, hazard/goal detection, and a deep if-ladder."
+orbital NestDeepLetOrbital {
+  type Platform = {
+    x : number!
+    y : number!
+    width : number!
+    height : number!
+    kind : "ground" | "platform" | "hazard" | "goal"
+  }
+  type Particle = {
+    id : string!
+    kind : string!
+    x : number!
+    y : number!
+    message : string
+    ttl : number!
+  }
+  type PlayerBody = {
+    x : number!
+    y : number!
+    width : number!
+    height : number!
+    vx : number
+    vy : number
+    grounded : boolean
+  }
+
+  entity DeepLetState [runtime] {
+    id : string!
+    score : number = 0
+    lives : number = 3
+    outcome : "none" | "won" | "lost" = none
+    player : PlayerBody = { x: 10, y: 300, width: 28, height: 40, vx: 0, vy: 0, grounded: false }
+    particles : [Particle] = []
+    worldW : number = 800
+    worldH : number = 400
+  }
+
+  trait NestDeepLet -> @rebindable DeepLetState [lifecycle] {
+    initial: playing
+
+    state playing {
+      INIT -> playing
+        (set @entity.score 0)
+        (set @entity.lives 3)
+        (set @entity.outcome "none")
+        (set @entity.particles [])
+        (set @entity.player { x: 10, y: 300, width: 28, height: 40, vx: 0, vy: 0, grounded: false })
+        (set @entity.worldW @config.worldW)
+        (set @entity.worldH @config.worldH)
+    }
+
+    ticks {
+      physicsTick every 16ms
+        when (== @entity.outcome "none")
+        (let ((vy1 (math/clamp (+ @entity.player.vy @config.gravity) (- 0 @config.jumpStr) @config.maxFall)) (px1 (math/clamp (+ @entity.player.x @entity.player.vx) 0 (- @entity.worldW @entity.player.width))) (pw @entity.player.width) (ph @entity.player.height)) (let ((py1 (+ @entity.player.y @vy1))) (let ((rect { x: @px1, y: @py1, w: @pw, h: @ph })) (let ((platHit (array/find @config.platforms (fn p (and (!= (object/get @p kind) "goal") (geo/aabb-overlap @rect { x: @p.x, y: @p.y, w: @p.width, h: @p.height })))))) (let ((hazardHit (array/find @config.platforms (fn p (and (== (object/get @p kind) "hazard") (geo/aabb-overlap @rect { x: @p.x, y: @p.y, w: @p.width, h: @p.height })))))) (let ((goalHit (array/find @config.platforms (fn p (and (== (object/get @p kind) "goal") (geo/aabb-overlap @rect { x: @p.x, y: @p.y, w: @p.width, h: @p.height })))))) (let ((hitY (object/get @platHit y @entity.worldH))) (let ((landed (and (!= @platHit null) (> @vy1 0)))) (let ((py2 (if @landed (- @hitY @ph) @py1))) (let ((vy2 (if @landed 0 @vy1))) (let ((atFloor (>= (+ @py2 @ph) @entity.worldH))) (let ((py3 (if @atFloor (- @entity.worldH @ph) @py2))) (let ((vy3 (if @atFloor 0 @vy2))) (let ((grounded (or @landed @atFloor))) (let ((fell (and @atFloor (== @landed false)))) (let ((damaged (or (!= @hazardHit null) @fell))) (let ((livesLeft (- @entity.lives 1))) (let ((newOutcome (if (!= @goalHit null) "won" (if (and @damaged (<= @livesLeft 0)) "lost" "none")))) (let ((dmgFx (if (and @damaged (== @newOutcome "none")) [{ id: (str/concat "dmg-" @entity.lives), kind: "damage", x: @px1, y: @py3, message: "-1", ttl: 15 }] []))) (let ((winFx (if (== @newOutcome "won") [{ id: "win-0", kind: "win", x: @px1, y: @py3, message: "GOAL!", ttl: 30 }] []))) (let ((mergedFx (array/concat @entity.particles (array/concat @dmgFx @winFx)))) (do (set @entity.player (object/merge @entity.player { x: @px1, y: @py3, vy: @vy3, grounded: @grounded })) (set @entity.outcome @newOutcome) (set @entity.score (+ @entity.score (if (!= @goalHit null) 200 0))) (set @entity.lives (if (and @damaged (== @newOutcome "none")) @livesLeft @entity.lives)) (set @entity.particles @mergedFx)))))))))))))))))))))))
+        (if (!= @entity.outcome "none") (emit GAME_OVER { result: @entity.outcome }) null)
+    }
+
+    emits {
+      GAME_OVER -> external {
+        result : string!
+      }
+        @description "Emitted when outcome becomes won or lost"
+        @tier "domain"
+    }
+
+    config {
+      gravity : number = 0.5
+        @label "Gravity"
+        @description "vy delta per tick"
+        @tier "domain"
+      jumpStr : number = 10
+        @label "Jump Strength"
+        @description "vy impulse magnitude"
+        @tier "domain"
+      maxFall : number = 16
+        @label "Max Fall Speed"
+        @description "Terminal velocity"
+        @tier "domain"
+      worldW : number = 800
+        @label "World Width"
+        @description "World width in pixels"
+        @tier "domain"
+      worldH : number = 400
+        @label "World Height"
+        @description "World height in pixels"
+        @tier "domain"
+      platforms : [Platform] = [{ x: 0, y: 368, width: 800, height: 32, kind: ground }, { x: 300, y: 280, width: 120, height: 16, kind: platform }, { x: 600, y: 200, width: 100, height: 16, kind: hazard }, { x: 700, y: 140, width: 60, height: 28, kind: goal }]
+        @label "Platforms"
+        @description "Static platform list for collision checks"
+        @tier "domain"
+    }
+  }
+
+  page "/nest-deeplet" as NestDeepLetPage -> NestDeepLet
+}
