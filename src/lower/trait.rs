@@ -427,6 +427,15 @@ pub(crate) fn lower_trait(
     } else {
         let mut map: HashMap<String, SchemaConfigField> = HashMap::new();
         for cf in &t.config {
+            // Same-key self-reference guard (L1-only; see LowerError docs).
+            if let Some(SExpression::String(s)) = &cf.default {
+                if s.strip_prefix("@config.") == Some(cf.name.as_str()) {
+                    return Err(LowerError::ConfigDefaultSelfReferential {
+                        trait_name: t.name.clone(),
+                        key: cf.name.clone(),
+                    });
+                }
+            }
             // Run the structural lowerer alongside the string-tag lowerer.
             // `lower_type_expr` resolves named aliases (e.g. `[MetricSpec]`)
             // into `FieldType::Array` + `items: Box<FieldDefinition>` with the

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-06T09:07:37.838Z",
+  "exportedAt": "2026-07-07T08:18:42.433Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -6100,6 +6100,12 @@
           ],
           "description": "Additional CSS classes applied to the root element."
         },
+        "data-theme": {
+          "types": [
+            "string"
+          ],
+          "description": "Data-theme attribute applied to the root element for CSS theme scoping (e.g. almadar-website-dark)."
+        },
         "padding": {
           "types": [
             "string"
@@ -6980,7 +6986,7 @@
           ],
           "description": "Disable the button (greys out, blocks click events)"
         },
-        "'data-testid'": {
+        "data-testid": {
           "types": [
             "string"
           ],
@@ -37956,11 +37962,11 @@
           ],
           "description": "style prop"
         },
-        "'aria-hidden'": {
+        "aria-hidden": {
           "types": [
             "boolean"
           ],
-          "description": "'aria-hidden' prop"
+          "description": "aria-hidden prop"
         }
       }
     },
@@ -38038,11 +38044,11 @@
           ],
           "description": "children prop"
         },
-        "'aria-hidden'": {
+        "aria-hidden": {
           "types": [
             "boolean"
           ],
-          "description": "'aria-hidden' prop"
+          "description": "aria-hidden prop"
         }
       }
     },

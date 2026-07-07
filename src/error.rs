@@ -208,6 +208,17 @@ pub enum LowerError {
         event: String,
     },
 
+    /// A trait's own `config { key : T = @config.key }` declaration
+    /// defaults to itself — resolving the key would recurse forever.
+    /// L1-only: after lowering, a call-site rebind's same-name forward
+    /// (`cols: @config.cols`, wiring the composing atom's key into a
+    /// wrapper) becomes textually identical, so L2 cannot check this.
+    #[error(
+        "config key {key:?} in trait {trait_name:?} defaults to @config.{key} — \
+         a self-referential default; use a concrete literal"
+    )]
+    ConfigDefaultSelfReferential { trait_name: String, key: String },
+
     /// Button rendered in trait A with action X targets sibling trait B
     /// (same orbital) which has a transition on X, but B has no
     /// `listens { A X -> ... }` entry. Detects the inverse of
