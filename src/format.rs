@@ -1136,10 +1136,11 @@ impl Formatter {
             self.output.push_str(rest);
             return;
         }
-        // Sigils (clean dotted paths only) and bare atoms print unquoted. Anything
-        // else — including a sigil with an array index like `@config.x[0].y`, which
-        // the sigil reader can't consume bare — must be quoted to round-trip.
-        if is_bare_sigil(s) || is_bare_atom(s) {
+        // Sigils (clean dotted paths only), bare atoms, and symbolic operator
+        // heads (`==`, `+`, `<=`, …) print unquoted. Anything else — including
+        // a sigil with an array index like `@config.x[0].y`, which the sigil
+        // reader can't consume bare — must be quoted to round-trip.
+        if is_bare_sigil(s) || is_bare_atom(s) || is_operator_symbol(s) {
             self.output.push_str(s);
             return;
         }
@@ -1288,7 +1289,18 @@ fn is_bare_atom(s: &str) -> bool {
 }
 
 fn is_call_array(arr: &[SExpression]) -> bool {
-    matches!(&arr.first(), Some(SExpression::String(s)) if is_bare_atom(s))
+    matches!(&arr.first(), Some(SExpression::String(s)) if is_bare_atom(s) || is_operator_symbol(s))
+}
+
+/// True if `s` is a symbolic operator head (the `OP_SYMBOL` set from the
+/// grammar). These start with a non-alphabetic char so `is_bare_atom`
+/// rejects them; without this, `[- a b]` / `["==", a, b]` would leak as
+/// JSON-array literals instead of printing as `(- a b)` / `(== a b)`.
+fn is_operator_symbol(s: &str) -> bool {
+    matches!(
+        s,
+        "+" | "-" | "*" | "/" | "%" | "=" | "==" | "!=" | "<" | ">" | "<=" | ">="
+    )
 }
 
 fn is_simple_value(expr: &SExpression) -> bool {

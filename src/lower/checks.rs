@@ -140,6 +140,7 @@ pub(crate) fn check_set_value_types(
                     &listen_payloads,
                     &emit_payloads,
                     &config_fields,
+                    &HashSet::new(),
                 )?;
             }
         }
@@ -154,6 +155,7 @@ pub(crate) fn check_set_value_types(
                 &listen_payloads,
                 &emit_payloads,
                 &config_fields,
+                &HashSet::new(),
             )?;
         }
     }
@@ -172,8 +174,35 @@ fn check_set_in_expr(
     listen_payloads: &HashMap<&str, &[EventField]>,
     emit_payloads: &HashMap<&str, &[EventField]>,
     config_fields: &HashMap<&str, &TypeExpr>,
+    let_bindings: &HashSet<String>,
 ) -> Result<(), LowerError> {
     if let SExpression::Array(arr) = expr {
+        // `(let ((name init)…) body)` — record the bound names so a later
+        // `(set @entity.X name)` defers to L2 instead of being mis-typed as a
+        // string literal. Recurse into the body with the augmented set; the
+        // initializer expressions are checked with the original set.
+        let is_let = matches!(&arr.first(), Some(SExpression::String(s)) if s == "let")
+            && arr.len() == 3;
+        if is_let {
+            if let SExpression::Array(bindings) = &arr[1] {
+                let mut nested = let_bindings.clone();
+                for binding in bindings.iter() {
+                    if let SExpression::Array(pair) = binding {
+                        if let Some(SExpression::String(name)) = pair.first() {
+                            nested.insert(name.clone());
+                        }
+                    }
+                }
+                check_set_in_expr(
+                    &arr[1], event, t, entity_fields, listen_payloads, emit_payloads,
+                    config_fields, let_bindings,
+                )?;
+                return check_set_in_expr(
+                    &arr[2], event, t, entity_fields, listen_payloads, emit_payloads,
+                    config_fields, &nested,
+                );
+            }
+        }
         if arr.len() >= 3 {
             if let (SExpression::String(op), SExpression::String(target)) = (&arr[0], &arr[1]) {
                 if op == "set" && target.starts_with("@entity.") {
@@ -197,6 +226,7 @@ fn check_set_in_expr(
                                 emit_payloads,
                                 config_fields,
                                 entity_fields,
+                                let_bindings,
                             )?;
                         }
                     }
@@ -212,6 +242,7 @@ fn check_set_in_expr(
                 listen_payloads,
                 emit_payloads,
                 config_fields,
+                let_bindings,
             )?;
         }
     } else if let SExpression::Object(obj) = expr {
@@ -224,6 +255,7 @@ fn check_set_in_expr(
                 listen_payloads,
                 emit_payloads,
                 config_fields,
+                let_bindings,
             )?;
         }
     }
@@ -245,6 +277,7 @@ fn check_one_set_value(
     emit_payloads: &HashMap<&str, &[EventField]>,
     config_fields: &HashMap<&str, &TypeExpr>,
     entity_fields: &HashMap<&str, &TypeExpr>,
+    let_bindings: &HashSet<String>,
 ) -> Result<(), LowerError> {
     // ENUM-UNENFORCED (Gap G-LOLO-ENUM-UNENFORCED): when the field declares an
     // enum (an inline `"a" | "b"` union) and the value is a plain string
@@ -319,7 +352,15 @@ fn check_one_set_value(
                 // etc.) defer to L2.
                 None
             } else {
-                Some(("string".to_string(), "literal".to_string()))
+                // A bare identifier that is bound by an enclosing `(let …)`
+                // has its type determined by the binding's initializer, which
+                // L1 can't reliably infer (often an operator call). Defer to
+                // L2 rather than false-classifying it as a string literal.
+                if let_bindings.contains(s) {
+                    None
+                } else {
+                    Some(("string".to_string(), "literal".to_string()))
+                }
             }
         }
     };
