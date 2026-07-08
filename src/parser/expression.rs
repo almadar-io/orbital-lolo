@@ -227,6 +227,7 @@ impl Parser {
                 config: body.config,
                 emits_scope: body.emits_scope,
             }),
+            is_inline_synthetic: true,
         });
 
         Ok(SExpression::String(format!("@trait.{}", name)))

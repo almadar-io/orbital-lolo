@@ -300,10 +300,24 @@ fn fixture_31_event_type_anonymous_payload() {
 
 #[test]
 fn fixture_32_inline_trait_ref() {
-    // The `@(...)` sugar is desugared at parse time, so formatting emits the
-    // expanded `trait Inline_<X>_n = …` + `@trait.Inline_<X>_n` form.
-    // Re-parsing that must lower to the same schema (semantics-preserving).
+    // The formatter must preserve `@(...)` inline trait-reference sugar rather
+    // than expanding it into synthesized top-level `trait` declarations.
+    // Re-parsing the formatted output must still lower to the same schema
+    // (semantics-preserving).
     assert_round_trip("32-inline-trait-ref");
+
+    let dir = fixtures_dir();
+    let source = fs::read_to_string(dir.join("32-inline-trait-ref.lolo")).expect("read lolo");
+    let ast = parse_str(&source).expect("parse");
+    let formatted = format_program(&ast);
+    assert!(
+        formatted.contains("@("),
+        "formatter must preserve inline @(…) syntax; got:\n{formatted}"
+    );
+    assert!(
+        !formatted.contains("trait Inline"),
+        "formatter must not emit synthesized inline trait declarations; got:\n{formatted}"
+    );
 }
 
 /// Consistency cleanup (docs/Almadar_LOLO_Audit.md): the permissive forms —

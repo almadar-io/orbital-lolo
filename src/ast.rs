@@ -358,6 +358,11 @@ pub struct Trait {
     /// reference's `linkedEntity`, `listens`, and (via `emits_scope`)
     /// `emitsScope` overrides.
     pub reference: Option<TraitRefData>,
+    /// When `true`, this trait declaration was synthesized by the parser from
+    /// an inline `@(...)` reference. The formatter uses this marker to
+    /// reconstruct the original sugar instead of emitting a top-level `trait`
+    /// declaration.
+    pub is_inline_synthetic: bool,
 }
 
 /// Parsed body of a trait-reference call site — the `{ events {} fields {}

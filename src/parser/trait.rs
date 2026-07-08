@@ -211,6 +211,7 @@ impl Parser {
             config,
             span,
             reference: None,
+            is_inline_synthetic: false,
         })
     }
 
@@ -281,6 +282,7 @@ impl Parser {
                 config: body.config,
                 emits_scope: body.emits_scope,
             }),
+            is_inline_synthetic: false,
         })
     }
 
