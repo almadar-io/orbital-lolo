@@ -319,7 +319,11 @@ impl Parser {
         // the runtime mounts it. After this, the orbital is identical to one
         // authored by hand with the two-step form.
         let pending = std::mem::take(&mut self.pending_inline_traits);
-        self.inline_ref_counter = 0;
+        // NOTE: `inline_ref_counter` is intentionally NOT reset here. It must
+        // stay file-global so synthesized names (`InlineX<n>`) are unique
+        // across ALL orbitals in the file — the validator forbids the same
+        // trait name in two orbitals (`ORB_T_DUPLICATE_NAME`). Resetting per
+        // orbital made both orbitals emit `InlineTypographyRender1` etc.
         if !pending.is_empty() {
             let names: Vec<String> = pending.iter().map(|t| t.name.clone()).collect();
             traits.extend(pending);
