@@ -12,7 +12,7 @@ pub(crate) fn lower_trait_decl(
     shared_entity_names: &HashSet<String>,
 ) -> Result<TraitReference, LowerError> {
     if let Some(ref_data) = &t.reference {
-        Ok(lower_trait_reference(t, ref_data))
+        lower_trait_reference(t, ref_data)
     } else {
         Ok(TraitReference::Inline(lower_trait(
             t,
@@ -27,7 +27,7 @@ pub(crate) fn lower_trait_decl(
 }
 
 /// Build a `TraitReference::Reference` from a parsed `trait Name = Alias.X { ... }`.
-pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> TraitReference {
+pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Result<TraitReference, LowerError> {
     let events = if ref_data.events.is_empty() {
         None
     } else {
@@ -74,6 +74,21 @@ pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Trait
     } else {
         let mut map: HashMap<String, SchemaConfigField> = HashMap::new();
         for cf in &ref_data.config {
+            // Same self-referential guard as atom-level config (above): a
+            // call-site override `key: @config.key` lowers to the knob's
+            // default being the literal string "@config.key", which the
+            // runtime then resolves to that string (not a value) — crashing
+            // any component that expects an array/object. The earlier
+            // L1-only ruling assumed this was a legitimate "wrapper
+            // forward", but it never resolves to a real value, so reject it.
+            if let Some(SExpression::String(s)) = &cf.default {
+                if s.strip_prefix("@config.") == Some(cf.name.as_str()) {
+                    return Err(LowerError::ConfigDefaultSelfReferential {
+                        trait_name: t.name.clone(),
+                        key: cf.name.clone(),
+                    });
+                }
+            }
             let is_plain_wiring = matches!(&cf.type_expr, crate::ast::TypeExpr::Primitive(s) if s == "unknown")
                 && cf.label.is_none()
                 && cf.description.is_none()
@@ -123,7 +138,7 @@ pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Trait
         )
     };
 
-    TraitReference::Reference {
+    Ok(TraitReference::Reference {
         reference: Some(ref_data.reference.clone()),
         name: Some(t.name.clone()),
         linked_entity: t.linked_entity.clone(),
@@ -132,7 +147,7 @@ pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Trait
         fields,
         listens,
         emits_scope,
-    }
+    })
 }
 
 pub(crate) fn lower_trait(
