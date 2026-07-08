@@ -54,6 +54,11 @@ pub enum TokenKind {
     /// `&` — type-composition operator. Used in `type T = A & B` to compose
     /// two shape aliases of the same kind.
     Ampersand,
+    /// `@(` — start of an inline trait reference (sugar). Pairs with a trailing
+    /// `)`. The body between is `Alias.traits.Upstream [-> Entity] { … }`,
+    /// identical to a `trait Name = …` reference body. Desugared by the
+    /// lowerer into a synthesized `trait` declaration + an `@trait.<Name>` ref.
+    AtParen,
 
     // ----- Atoms -----
     Identifier(String),
@@ -278,6 +283,16 @@ impl Lexer {
                 }
                 '@' => {
                     self.advance();
+                    // `@(` — inline trait-reference sugar. Emit a dedicated
+                    // token so the expression parser can hoist the body.
+                    if self.peek() == Some('(') {
+                        self.advance();
+                        self.tokens.push(Token {
+                            kind: TokenKind::AtParen,
+                            span: Span::new(line, col, 2),
+                        });
+                        continue;
+                    }
                     let start_col = col + 1;
                     let name = self.read_dotted_ident();
                     self.tokens.push(Token {

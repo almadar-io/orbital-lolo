@@ -45,11 +45,24 @@ pub fn parse(source: &str) -> Result<Program, ParseError> {
 struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    /// Inline `@(Alias.traits.Upstream { … })` references collected during
+    /// expression parsing. Flushed into the current orbital's `traits[]` (and
+    /// onto each inline page's trait list) at the end of `parse_orbital`.
+    /// Each carries a synthesized, collision-free `name` so the emitted
+    /// `@trait.<name>` string resolves in the inline/validation phases.
+    pending_inline_traits: Vec<crate::ast::Trait>,
+    /// Monotonic counter for synthesized inline-ref names, scoped per orbital.
+    inline_ref_counter: usize,
 }
 
 impl Parser {
     fn new(tokens: Vec<Token>) -> Self {
-        Self { tokens, pos: 0 }
+        Self {
+            tokens,
+            pos: 0,
+            pending_inline_traits: Vec::new(),
+            inline_ref_counter: 0,
+        }
     }
 
     // ----- Token cursor helpers -----
@@ -296,6 +309,31 @@ impl Parser {
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
                 });
+            }
+        }
+
+        // Flush inline `@(…)` references collected while parsing expressions
+        // (render-ui children / config values). Each becomes a real
+        // `trait Name = Alias.traits.X { … }` declaration appended to the
+        // orbital, and its name is auto-registered on every inline page so
+        // the runtime mounts it. After this, the orbital is identical to one
+        // authored by hand with the two-step form.
+        let pending = std::mem::take(&mut self.pending_inline_traits);
+        self.inline_ref_counter = 0;
+        if !pending.is_empty() {
+            let names: Vec<String> = pending.iter().map(|t| t.name.clone()).collect();
+            traits.extend(pending);
+            for page in pages.iter_mut() {
+                // Only inline pages own their trait roster; a reference page's
+                // `traits` are call-site overrides, not a mount list.
+                if page.reference.is_some() {
+                    continue;
+                }
+                for name in &names {
+                    if !page.traits.iter().any(|t| t == name) {
+                        page.traits.push(name.clone());
+                    }
+                }
             }
         }
 

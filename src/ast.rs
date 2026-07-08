@@ -360,6 +360,19 @@ pub struct Trait {
     pub reference: Option<TraitRefData>,
 }
 
+/// Parsed body of a trait-reference call site — the `{ events {} fields {}
+/// config {} listens {} emitsScope {} }` shared between the `trait Name =
+/// Alias.traits.X { … }` declaration form and the inline `@(Alias.traits.X {
+/// … })` sugar. Produced by `Parser::parse_trait_ref_body`.
+#[derive(Debug, Clone, Default)]
+pub struct TraitRefBody {
+    pub events: Vec<(String, String)>,
+    pub fields: Vec<(String, String)>,
+    pub config: Vec<ConfigField>,
+    pub listens: Vec<Listen>,
+    pub emits_scope: Option<String>,
+}
+
 /// Override payload for a `trait Name = Alias.traits.Upstream { ... }` form.
 #[derive(Debug, Clone, Default)]
 pub struct TraitRefData {

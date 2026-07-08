@@ -298,6 +298,14 @@ fn fixture_31_event_type_anonymous_payload() {
     assert_round_trip("31-event-type-anonymous-payload");
 }
 
+#[test]
+fn fixture_32_inline_trait_ref() {
+    // The `@(...)` sugar is desugared at parse time, so formatting emits the
+    // expanded `trait Inline_<X>_n = …` + `@trait.Inline_<X>_n` form.
+    // Re-parsing that must lower to the same schema (semantics-preserving).
+    assert_round_trip("32-inline-trait-ref");
+}
+
 /// Consistency cleanup (docs/Almadar_LOLO_Audit.md): the permissive forms —
 /// optional colon after block keywords (`initial idle`, `emits:`/`listens:`),
 /// optional comma in trait-modifier (`[interaction collection]`) and page-trait

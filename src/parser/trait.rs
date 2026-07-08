@@ -255,6 +255,43 @@ impl Parser {
             None
         };
 
+        let body = self.parse_trait_ref_body()?;
+
+        Ok(Trait {
+            name,
+            type_annotation,
+            linked_entity,
+            entity_rebindable: false,
+            entity_binding_description: None,
+            entity_binding_synonyms: None,
+            category: None,
+            scope: None,
+            capabilities: Vec::new(),
+            initial_state: None,
+            states: Vec::new(),
+            emits: Vec::new(),
+            listens: body.listens,
+            ticks: Vec::new(),
+            config: Vec::new(),
+            span,
+            reference: Some(TraitRefData {
+                reference,
+                events: body.events,
+                fields: body.fields,
+                config: body.config,
+                emits_scope: body.emits_scope,
+            }),
+        })
+    }
+
+    /// Parsed body of a trait-reference call site (`{ events {} fields {}
+    /// config {} listens {} emitsScope {} }`). Shared by the `trait Name =
+    /// Alias.traits.X { … }` declaration form and the inline `@(Alias.traits.X
+    /// { … })` sugar. On entry the leading `{` has NOT been consumed; on exit
+    /// the closing `}` has been consumed.
+    pub(crate) fn parse_trait_ref_body(
+        &mut self,
+    ) -> Result<TraitRefBody, ParseError> {
         // Body must be brace-form.
         self.expect_kind(&TokenKind::LBrace, "{")?;
         self.skip_newlines();
@@ -438,30 +475,12 @@ impl Parser {
             }
         }
 
-        Ok(Trait {
-            name,
-            type_annotation,
-            linked_entity,
-            entity_rebindable: false,
-            entity_binding_description: None,
-            entity_binding_synonyms: None,
-            category: None,
-            scope: None,
-            capabilities: Vec::new(),
-            initial_state: None,
-            states: Vec::new(),
-            emits: Vec::new(),
+        Ok(TraitRefBody {
+            events: events_renames,
+            fields: fields_renames,
+            config: config_values,
             listens,
-            ticks: Vec::new(),
-            config: Vec::new(),
-            span,
-            reference: Some(TraitRefData {
-                reference,
-                events: events_renames,
-                fields: fields_renames,
-                config: config_values,
-                emits_scope,
-            }),
+            emits_scope,
         })
     }
 

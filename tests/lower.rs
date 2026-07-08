@@ -279,6 +279,15 @@ fn fixture_24_trait_binding() {
 }
 
 #[test]
+fn fixture_32_inline_trait_ref() {
+    // Inline `@(Alias.traits.Upstream -> Entity { config {} })` sugar.
+    // Lowers byte-identically to the hand-written `trait Name = …` +
+    // `@trait.Name` two-step form (modulo the synthesized `Inline_<X>_n`
+    // name). See `docs/Almadar_Compiler_Trait_Reference.md`.
+    assert_lowering_matches("32-inline-trait-ref");
+}
+
+#[test]
 fn fixture_25_emit_config() {
     // Positive fixture for `emit:` config on all six operator shapes:
     //   fetch, persist, set, call-service, ref, os/watch-http.

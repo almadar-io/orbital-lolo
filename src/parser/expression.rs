@@ -84,6 +84,7 @@ impl Parser {
     /// Parse one s-expression argument: an atom, a paren list, an object literal, or an array literal.
     pub(crate) fn parse_sexpr_or_value(&mut self) -> Result<SExpression, ParseError> {
         match self.peek().clone() {
+            TokenKind::AtParen => self.parse_inline_trait_ref(),
             TokenKind::LParen => self.parse_sexpr(),
             TokenKind::LBrace => self.parse_object_literal(),
             TokenKind::LBracket => self.parse_array_literal(),
@@ -136,6 +137,99 @@ impl Parser {
                 span: self.peek_span(),
             }),
         }
+    }
+
+    /// Parse an inline trait-reference sugar `@(Alias.traits.Upstream [->
+    /// Entity] { …body… })` in an s-expression value position. Hoists the
+    /// body into a synthesized top-level `trait <Name> = Alias.traits.Upstream
+    /// { … }` declaration (appended to the current orbital at the end of
+    /// `parse_orbital`) and returns a `@trait.<Name>` string in its place, so
+    /// the rest of the pipeline is byte-identical to the hand-written two-step
+    /// form. Nested `@(…)` inside the body are handled naturally because the
+    /// shared body parser recurses through `parse_sexpr_or_value`.
+    ///
+    /// On entry the next token is `AtParen`; on exit the matching `)` is
+    /// consumed.
+    pub(crate) fn parse_inline_trait_ref(&mut self) -> Result<SExpression, ParseError> {
+        let span = self.peek_span();
+        self.advance(); // consume `@(`
+
+        let reference = self.parse_dotted_ident()?;
+
+        // Optional `-> Entity` linkedEntity override.
+        let linked_entity = if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
+            self.advance();
+            Some(self.expect_ident()?)
+        } else {
+            None
+        };
+
+        let body = self.parse_trait_ref_body()?;
+
+        // Closing `)` of the `@(...)` wrapper.
+        self.expect_kind(&TokenKind::RParen, ")")?;
+
+        // Deterministic, collision-free synthesized name. Uses the upstream
+        // short name (last segment of the dotted path) for readability plus a
+        // per-orbital sequence. The `Inline_` prefix reserves a namespace the
+        // validator forbids for hand-authored trait names.
+        // Synthesized name must be PascalCase (`^[A-Z][a-zA-Z0-9]*$`) to
+        // pass the trait-name validator — no underscores. The `Inline`
+        // prefix reserves a namespace; the validator can forbid hand-authored
+        // names starting with `Inline`.
+        let short = reference
+            .rsplit('.')
+            .next()
+            .filter(|s| !s.is_empty())
+            .unwrap_or("Ref");
+        let short = {
+            let mut c = short.chars();
+            match c.next() {
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                None => String::from("Ref"),
+            }
+        };
+        let name = loop {
+            self.inline_ref_counter += 1;
+            let candidate = format!("Inline{}{}", short, self.inline_ref_counter);
+            // Guard against colliding with a hand-authored trait name or an
+            // earlier synthesis in this orbital.
+            let collides = self
+                .pending_inline_traits
+                .iter()
+                .any(|t| t.name == candidate);
+            if !collides {
+                break candidate;
+            }
+        };
+
+        self.pending_inline_traits.push(Trait {
+            name: name.clone(),
+            type_annotation: None,
+            linked_entity,
+            entity_rebindable: false,
+            entity_binding_description: None,
+            entity_binding_synonyms: None,
+            category: None,
+            scope: None,
+            capabilities: Vec::new(),
+            initial_state: None,
+            states: Vec::new(),
+            emits: Vec::new(),
+            listens: body.listens,
+            ticks: Vec::new(),
+            config: Vec::new(),
+            span,
+            reference: Some(TraitRefData {
+                reference,
+                events: body.events,
+                fields: body.fields,
+                config: body.config,
+                emits_scope: body.emits_scope,
+            }),
+        });
+
+        Ok(SExpression::String(format!("@trait.{}", name)))
     }
 
     pub(crate) fn parse_object_literal(&mut self) -> Result<SExpression, ParseError> {
