@@ -6,6 +6,7 @@
 //! line before the node that follows them (re-indented to the output).
 
 use orbital_core::schema::SExpression;
+use std::collections::HashMap;
 
 use crate::ast::{
     AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst, Listen,
@@ -25,6 +26,11 @@ struct Formatter {
     output: String,
     comments: Vec<Comment>,
     next_comment: usize,
+    /// Synthesized inline trait references in the orbital currently being
+    /// formatted, keyed by trait name (without the `@trait.` prefix). Used to
+    /// reconstruct `@(...)` sugar and to suppress the desugared top-level
+    /// `trait` declarations.
+    inline_traits: HashMap<String, Trait>,
 }
 
 impl Formatter {
@@ -34,6 +40,7 @@ impl Formatter {
             output: String::new(),
             comments,
             next_comment: 0,
+            inline_traits: HashMap::new(),
         }
     }
 
@@ -409,6 +416,16 @@ impl Formatter {
     }
 
     fn fmt_orbital(&mut self, orbital: &Orbital) {
+        // Collect synthesized inline trait references so `@trait.InlineXxxN`
+        // strings can be reprinted as `@(...)` sugar and the desugared trait
+        // declarations are hidden.
+        self.inline_traits = orbital
+            .traits
+            .iter()
+            .filter(|t| t.is_inline_synthetic)
+            .map(|t| (t.name.clone(), t.clone()))
+            .collect();
+
         self.write_indent();
         self.output.push_str("orbital ");
         self.output.push_str(&orbital.name);
@@ -452,6 +469,9 @@ impl Formatter {
             self.write_newline();
         }
         for t in &orbital.traits {
+            if t.is_inline_synthetic {
+                continue;
+            }
             if !first {
                 self.write_newline();
             }
@@ -1042,9 +1062,14 @@ impl Formatter {
             self.output.push_str(" = ");
             self.output.push_str(reference);
         }
-        if !page.traits.is_empty() || page.primary_entity.is_some() {
+        let visible_traits: Vec<&String> = page
+            .traits
+            .iter()
+            .filter(|t| !self.inline_traits.contains_key(t.as_str()))
+            .collect();
+        if !visible_traits.is_empty() || page.primary_entity.is_some() {
             self.output.push_str(" -> ");
-            for (i, t) in page.traits.iter().enumerate() {
+            for (i, t) in visible_traits.iter().enumerate() {
                 if i > 0 {
                     self.output.push_str(", ");
                 }
@@ -1126,6 +1151,15 @@ impl Formatter {
     }
 
     fn fmt_sexpr_string(&mut self, s: &str) {
+        // Reconstruct `@(...)` inline trait references from their synthesized
+        // `@trait.InlineXxxN` form. This must run before the generic sigil
+        // handling so the formatter preserves the original sugar.
+        if let Some(name) = s.strip_prefix("@trait.") {
+            if let Some(tr) = self.inline_traits.get(name).cloned() {
+                self.fmt_inline_trait_ref(&tr);
+                return;
+            }
+        }
         // Canonical payload sigil form
         if s == "@payload" {
             self.output.push('?');
@@ -1146,6 +1180,148 @@ impl Formatter {
         }
         // Otherwise quote it
         self.write_quoted_string(s);
+    }
+
+    fn fmt_inline_trait_ref(&mut self, tr: &Trait) {
+        self.output.push_str("@(");
+        if let Some(ref_data) = &tr.reference {
+            self.output.push_str(&ref_data.reference);
+        }
+        if let Some(le) = &tr.linked_entity {
+            self.output.push_str(" -> ");
+            self.output.push_str(le);
+        }
+        self.output.push(' ');
+        self.fmt_inline_trait_ref_body(tr);
+        self.output.push(')');
+    }
+
+    fn fmt_inline_trait_ref_body(&mut self, tr: &Trait) {
+        let ref_data = tr
+            .reference
+            .as_ref()
+            .expect("inline synthetic trait must carry a reference");
+
+        // Complex bodies (listens, emitsScope, or annotated config fields) are
+        // emitted multi-line using the same layout as a top-level trait-ref
+        // declaration so annotations and nested blocks stay readable.
+        let needs_multiline = !tr.listens.is_empty()
+            || ref_data.emits_scope.is_some()
+            || ref_data.config.iter().any(|cf| {
+                !matches!(&cf.type_expr, TypeExpr::Primitive(s) if s == "unknown")
+                    || cf.label.is_some()
+                    || cf.description.is_some()
+                    || cf.synonyms.is_some()
+                    || cf.tier.is_some()
+            });
+
+        if needs_multiline {
+            self.output.push_str("{");
+            self.write_newline();
+            self.indent();
+            self.fmt_trait_ref_overrides(ref_data);
+            // `listens` live on the Trait, not on TraitRefData, so the
+            // overrides helper does not emit them — append them here.
+            if !tr.listens.is_empty() {
+                let had_overrides = !ref_data.events.is_empty()
+                    || !ref_data.fields.is_empty()
+                    || !ref_data.config.is_empty()
+                    || ref_data.emits_scope.is_some();
+                if had_overrides {
+                    self.write_newline();
+                }
+                self.write_indent();
+                self.output.push_str("listens {");
+                self.write_newline();
+                self.indent();
+                for listen in &tr.listens {
+                    self.write_indent();
+                    self.fmt_listen(listen);
+                    self.write_newline();
+                }
+                self.dedent();
+                self.write_indent();
+                self.output.push('}');
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            return;
+        }
+
+        // Compact form for the common config-only case.
+        self.output.push_str("{");
+        let mut first = true;
+        if !ref_data.events.is_empty() {
+            first = false;
+            self.output.push_str(" events { ");
+            for (i, (k, v)) in ref_data.events.iter().enumerate() {
+                if i > 0 {
+                    self.output.push_str(", ");
+                }
+                self.output.push_str(k);
+                self.output.push_str(": ");
+                self.output.push_str(v);
+            }
+            self.output.push_str(" }");
+        }
+        if !ref_data.fields.is_empty() {
+            if !first {
+                self.output.push_str(", ");
+            }
+            first = false;
+            self.output.push_str(" fields { ");
+            for (i, (k, v)) in ref_data.fields.iter().enumerate() {
+                if i > 0 {
+                    self.output.push_str(", ");
+                }
+                self.output.push_str(k);
+                self.output.push_str(": ");
+                self.write_quoted_string(v);
+            }
+            self.output.push_str(" }");
+        }
+        if !ref_data.config.is_empty() {
+            if !first {
+                self.output.push_str(", ");
+            }
+            first = false;
+            self.output.push_str(" config { ");
+            for (i, cf) in ref_data.config.iter().enumerate() {
+                if i > 0 {
+                    self.output.push_str(", ");
+                }
+                self.output.push_str(&cf.name);
+                self.output.push_str(": ");
+                if let Some(v) = &cf.default {
+                    self.fmt_sexpr(v);
+                }
+            }
+            self.output.push_str(" }");
+        }
+        if !tr.listens.is_empty() {
+            if !first {
+                self.output.push_str(", ");
+            }
+            first = false;
+            self.output.push_str(" listens { ");
+            for (i, listen) in tr.listens.iter().enumerate() {
+                if i > 0 {
+                    self.output.push_str(", ");
+                }
+                self.fmt_listen(listen);
+            }
+            self.output.push_str(" }");
+        }
+        if let Some(scope) = &ref_data.emits_scope {
+            if !first {
+                self.output.push_str(", ");
+            }
+            self.output.push_str("emitsScope ");
+            self.output.push_str(scope);
+        }
+        self.output.push_str(" }");
     }
 
     fn fmt_sexpr_array(&mut self, arr: &[SExpression], force_paren: bool) {
