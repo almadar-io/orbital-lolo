@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-08T07:01:26.740Z",
+  "exportedAt": "2026-07-09T14:00:32.936Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -34293,6 +34293,34 @@
             "object"
           ],
           "description": "Follow-camera target in scene space (the neutral core `Camera.target`). When `camera:'follow'` the host lerps to keep this point centered.",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ],
+          "scenePos": true
+        },
+        "cameraPos": {
+          "types": [
+            "object"
+          ],
+          "description": "Initial camera position in scene space (the neutral core `Camera.pos`). The host projects this to screen space and centers the viewport on it for the first render; ignored once the user pans or a follow target takes over.",
           "properties": {
             "x": {
               "types": [
