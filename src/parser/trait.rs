@@ -392,7 +392,14 @@ impl Parser {
                     let span = self.peek_span();
                     let key = self.expect_ident()?;
                     self.expect_kind(&TokenKind::Colon, ":")?;
-                    let field = if self.has_equals_before_entry_end() {
+                    // A JSX element value (`<Tag …>`) starts with `<` and its
+                    // attributes contain `=`, which would falsely trigger the
+                    // declaration-form heuristic below. A JSX element is never
+                    // a type expression, so when the value starts with `<` we
+                    // always take the plain-wiring branch and let
+                    // `parse_sexpr_or_value` desugar it.
+                    let is_jsx_value = matches!(self.peek(), TokenKind::Identifier(s) if s == "<");
+                    let field = if !is_jsx_value && self.has_equals_before_entry_end() {
                         // Declaration form: `key : type = default [@annotations]`
                         let type_expr = self.parse_type_expr()?;
                         let default = if matches!(self.peek(), TokenKind::Equals) {

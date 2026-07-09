@@ -812,7 +812,7 @@ impl Formatter {
                     self.output.push_str(&cf.name);
                     self.output.push_str(": ");
                     if let Some(v) = &cf.default {
-                        self.fmt_sexpr(v);
+                        self.fmt_object_value(&cf.name, v);
                     }
                 } else {
                     // Full declaration form with type and/or annotations.
@@ -992,7 +992,7 @@ impl Formatter {
         self.fmt_type_expr(&cfg.type_expr);
         if let Some(def) = &cfg.default {
             self.output.push_str(" = ");
-            self.fmt_sexpr(def);
+            self.fmt_object_value(&cfg.name, def);
         }
         if let Some(label) = &cfg.label {
             self.write_newline();
@@ -1295,7 +1295,7 @@ impl Formatter {
                 self.output.push_str(&cf.name);
                 self.output.push_str(": ");
                 if let Some(v) = &cf.default {
-                    self.fmt_sexpr(v);
+                    self.fmt_object_value(&cf.name, v);
                 }
             }
             self.output.push_str(" }");
@@ -1337,17 +1337,20 @@ impl Formatter {
     // Anything else falls through to ordinary s-expression formatting.
 
     fn fmt_render_pattern(&mut self, expr: &SExpression) {
+        // A render tree converts to JSX only if it is *recursively*
+        // JSX-renderable: static-typed pattern objects with array (or no)
+        // children, and inline trait refs without `listens`. Any subtree that
+        // can't be JSX (single-object `children`, dynamic `type`, `listens`, a
+        // non-array children config) makes the whole block fall back to
+        // object-literal / `@(...)` formatting so the lowered `.orb` is
+        // preserved exactly and no bare `{...}` leaks into a JSX child slot.
+        if !self.is_jsx_renderable(expr) {
+            self.fmt_sexpr(expr);
+            return;
+        }
         match expr {
             SExpression::Object(map) => {
-                let is_pattern = matches!(
-                    map.get("type"),
-                    Some(SExpression::String(s)) if is_static_pattern_type(s)
-                );
-                if is_pattern {
-                    self.fmt_jsx_pattern(map);
-                } else {
-                    self.fmt_sexpr_object(map);
-                }
+                self.fmt_jsx_pattern(map);
             }
             SExpression::String(s) if s.starts_with("@trait.") => {
                 let name = &s["@trait.".len()..];
@@ -1381,6 +1384,71 @@ impl Formatter {
         }
     }
 
+    /// True when `expr` (and, recursively, every nested child) can be emitted
+    /// as JSX without changing the lowered `.orb`. The blockers are:
+    ///   - a pattern object whose `type` is not a static lowercase name
+    ///     (e.g. `@config.detailPattern`);
+    ///   - `children` that is a single object (JSX only has array children);
+    ///   - an inline trait ref carrying a `listens` override, or a non-array
+    ///     `children` config.
+    /// When this returns false the whole subtree stays object-literal / `@(...)`.
+    fn is_jsx_renderable(&self, expr: &SExpression) -> bool {
+        match expr {
+            SExpression::Object(map) => {
+                let static_type = matches!(
+                    map.get("type"),
+                    Some(SExpression::String(s)) if is_static_pattern_type(s)
+                );
+                if !static_type {
+                    return false;
+                }
+                // `children` may be an array, a single object (normalized to a
+                // one-element array by the emitter), or absent.
+                match map.get("children") {
+                    None => true,
+                    Some(SExpression::Array(arr)) => {
+                        arr.iter().all(|c| self.is_jsx_renderable(c))
+                    }
+                    Some(single) => self.is_jsx_renderable(single),
+                }
+            }
+            SExpression::String(s) if s.starts_with("@trait.") => {
+                let name = &s["@trait.".len()..];
+                if let Some(tr) = self.inline_traits.get(name) {
+                    // An inline trait *reference* only remaps events from the
+                    // referenced atom, so its `listens` is inherently Shape A
+                    // (`Source.EVENT -> TRIGGER`). It is JSX-renderable iff
+                    // every listen carries a trigger; any trigger-less
+                    // (Shape B) entry — a payload declaration that a reference
+                    // shouldn't own — falls back to `@(...)`.
+                    let listens_ok = tr
+                        .listens
+                        .iter()
+                        .all(|l| l.triggers.is_some());
+                    listens_ok
+                        && {
+                            let child_cfg = tr
+                                .reference
+                                .as_ref()
+                                .and_then(|r| r.config.iter().find(|c| c.name == "children"))
+                                .and_then(|c| c.default.as_ref());
+                            match child_cfg {
+                                None => true,
+                                Some(SExpression::Array(arr)) => {
+                                    arr.iter().all(|c| self.is_jsx_renderable(c))
+                                }
+                                Some(single) => self.is_jsx_renderable(single),
+                            }
+                        }
+                } else {
+                    true
+                }
+            }
+            SExpression::Array(arr) => arr.iter().all(|c| self.is_jsx_renderable(c)),
+            _ => true,
+        }
+    }
+
     /// Format an anonymous pattern object as `<Type attrs>children</Type>`
     /// (or `<Type attrs />` when childless). The `type` key becomes the tag
     /// name (PascalCased); `children` becomes nested JSX; every other key is
@@ -1392,9 +1460,18 @@ impl Formatter {
         };
         let tag = pascal_case(&type_str);
 
-        let children = match map.get("children") {
-            Some(SExpression::Array(arr)) => Some(arr),
-            _ => None,
+        // Normalize children to an array: a single-object child
+        // (`children: { … }`) is treated as a one-element array so JSX — which
+        // only has sequence children — can represent it as `<Tag><Child/></Tag>`.
+        let children_owned: Vec<SExpression> = match map.get("children") {
+            Some(SExpression::Array(arr)) => arr.clone(),
+            Some(single) => vec![single.clone()],
+            None => Vec::new(),
+        };
+        let children = if children_owned.is_empty() {
+            None
+        } else {
+            Some(children_owned)
         };
 
         let mut attr_keys: Vec<&String> = map
@@ -1414,7 +1491,7 @@ impl Formatter {
                 self.output.push('>');
                 self.write_newline();
                 self.indent();
-                for child in arr {
+                for child in &arr {
                     self.write_indent();
                     self.fmt_render_pattern(child);
                     self.write_newline();
@@ -1439,12 +1516,22 @@ impl Formatter {
             .expect("inline synthetic trait must carry a reference");
         let reference = &ref_data.reference;
 
-        let children = ref_data
-            .config
-            .iter()
-            .find(|c| c.name == "children")
-            .and_then(|c| c.default.as_ref())
-            .and_then(|v| v.as_array());
+        let children_config = ref_data.config.iter().find(|c| c.name == "children");
+        // Normalize children to an array (single object → one-element array),
+        // matching `fmt_jsx_pattern`.
+        let children_owned: Vec<SExpression> = match children_config {
+            Some(cf) => match &cf.default {
+                Some(SExpression::Array(arr)) => arr.clone(),
+                Some(single) => vec![single.clone()],
+                None => Vec::new(),
+            },
+            None => Vec::new(),
+        };
+        let children = if children_owned.is_empty() {
+            None
+        } else {
+            Some(children_owned)
+        };
 
         let mut attr_keys: Vec<&str> = ref_data
             .config
@@ -1458,7 +1545,7 @@ impl Formatter {
         self.output.push('<');
         self.output.push_str(reference);
         if let Some(le) = &tr.linked_entity {
-            self.output.push_str(" entity={");
+            self.output.push_str(" linkedEntity={");
             self.output.push_str(le);
             self.output.push('}');
         }
@@ -1477,7 +1564,9 @@ impl Formatter {
                 if i > 0 {
                     self.output.push_str(", ");
                 }
-                self.output.push_str(&l.event);
+                // Quote the key: cross-orbital sources are dotted
+                // (`Source.EVENT`) which aren't valid bare object keys.
+                self.write_quoted_string(&l.event);
                 self.output.push_str(": ");
                 self.output.push_str(l.triggers.as_deref().unwrap_or(""));
             }
@@ -1489,7 +1578,7 @@ impl Formatter {
                 self.output.push('>');
                 self.write_newline();
                 self.indent();
-                for child in arr {
+                for child in &arr {
                     self.write_indent();
                     self.fmt_render_pattern(child);
                     self.write_newline();
@@ -1622,7 +1711,7 @@ impl Formatter {
                 }
                 self.output.push_str(k);
                 self.output.push_str(": ");
-                self.fmt_sexpr_inner(&map[*k], false);
+                self.fmt_object_value(k, &map[*k]);
             }
             self.output.push_str(" }");
         } else {
@@ -1633,13 +1722,53 @@ impl Formatter {
                 self.write_indent();
                 self.output.push_str(k);
                 self.output.push_str(": ");
-                self.fmt_sexpr_inner(&map[k], false);
+                self.fmt_object_value(k, &map[k]);
                 self.write_newline();
             }
             self.dedent();
             self.write_indent();
             self.output.push('}');
         }
+    }
+
+    /// Format one object-literal / config-field value. `children` arrays and
+    /// any `@trait.*` value are render elements, so they format as JSX — this
+    /// covers render trees expressed as config overrides on trait references
+    /// (`config { children: […] }`, `contentTrait: @(...)`, `idleContent: @(...)`)
+    /// regardless of the knob name, since `@trait.*` is always a render element.
+    fn fmt_object_value(&mut self, key: &str, value: &SExpression) {
+        if key == "children" {
+            if let SExpression::Array(arr) = value {
+                self.fmt_render_children_array(arr);
+                return;
+            }
+        }
+        if let SExpression::String(s) = value {
+            if s.starts_with("@trait.") {
+                self.fmt_render_pattern(value);
+                return;
+            }
+        }
+        self.fmt_sexpr_inner(value, false);
+    }
+
+    /// Format a `children:` array as a multi-line list of JSX render patterns.
+    fn fmt_render_children_array(&mut self, arr: &[SExpression]) {
+        if arr.is_empty() {
+            self.output.push_str("[]");
+            return;
+        }
+        self.output.push('[');
+        self.write_newline();
+        self.indent();
+        for child in arr {
+            self.write_indent();
+            self.fmt_render_pattern(child);
+            self.write_newline();
+        }
+        self.dedent();
+        self.write_indent();
+        self.output.push(']');
     }
 
     fn write_quoted_string(&mut self, s: &str) {

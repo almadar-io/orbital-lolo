@@ -222,6 +222,13 @@ impl Parser {
                     self.expect_kind(&TokenKind::RBrace, "}")?;
                     children.push(v);
                 }
+                // An inline `@(...)` trait reference is itself a render
+                // element, so it's a valid JSX child (the formatter emits it
+                // for inline refs that carry a `listens` override, which JSX
+                // can't express).
+                TokenKind::AtParen => {
+                    children.push(self.parse_inline_trait_ref()?);
+                }
                 other => {
                     return Err(ParseError::InvalidSExpr {
                         message: format!(
@@ -306,13 +313,13 @@ impl Parser {
 
         for (key, value) in attrs {
             match key.as_str() {
-                "entity" => {
+                "linkedEntity" => {
                     linked_entity = match &value {
                         SExpression::String(s) => Some(s.clone()),
                         other => {
                             return Err(ParseError::InvalidSExpr {
                                 message: format!(
-                                    "JSX `entity=` must be an entity name (e.g. `entity=\"ApBill\"` or `entity={{ApBill}}`), got {other:?}"
+                                    "JSX `linkedEntity=` must be an entity name (e.g. `linkedEntity=\"ApBill\"` or `linkedEntity={{ApBill}}`), got {other:?}"
                                 ),
                                 span,
                             });
@@ -585,7 +592,7 @@ mod tests {
     #[test]
     fn inline_trait_ref_with_entity_and_children() {
         let v = parse_value(
-            "<UiButton.traits.ButtonRender entity=\"ApBill\" action={PAY_BILL} label=\"Back\">\n  <trait.FileTextIcon />\n</UiButton.traits.ButtonRender>",
+            "<UiButton.traits.ButtonRender linkedEntity=\"ApBill\" action={PAY_BILL} label=\"Back\">\n  <trait.FileTextIcon />\n</UiButton.traits.ButtonRender>",
         );
         // Desugars to an @trait.Inline… string; the synthetic trait is hoisted.
         let s = v.as_str().expect("@trait string");

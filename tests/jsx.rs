@@ -38,7 +38,7 @@ fn jsx_authored_file_formats_and_roundtrips() {
       INIT -> idle
         (render-ui main
           <Stack direction="vertical" gap="md">
-            <UiButton.traits.ButtonRender entity="Bill" action={PAY} label="Pay">
+            <UiButton.traits.ButtonRender linkedEntity="Bill" action={PAY} label="Pay">
               <trait.Icon />
               <trait.Label />
             </UiButton.traits.ButtonRender>
