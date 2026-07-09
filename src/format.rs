@@ -1324,6 +1324,215 @@ impl Formatter {
         self.output.push_str(" }");
     }
 
+    // ------------------------------------------------------------------
+    // JSX render-tree formatting
+    // ------------------------------------------------------------------
+    //
+    // Render element trees (the pattern argument to `render-ui` and any
+    // `children` nested within) format as JSX — the canonical authoring
+    // surface. Three element kinds, mirroring the parser's desugar:
+    //   - Object with a string `type` key        → `<Type …>` pattern element
+    //   - `"@trait.<Name>"` (synthetic inline)    → `<Alias.traits.X …>` element
+    //   - `"@trait.<Name>"` (named reference)     → `<trait.Name />`
+    // Anything else falls through to ordinary s-expression formatting.
+
+    fn fmt_render_pattern(&mut self, expr: &SExpression) {
+        match expr {
+            SExpression::Object(map) => {
+                let is_pattern = matches!(
+                    map.get("type"),
+                    Some(SExpression::String(s)) if is_static_pattern_type(s)
+                );
+                if is_pattern {
+                    self.fmt_jsx_pattern(map);
+                } else {
+                    self.fmt_sexpr_object(map);
+                }
+            }
+            SExpression::String(s) if s.starts_with("@trait.") => {
+                let name = &s["@trait.".len()..];
+                if let Some(tr) = self.inline_traits.get(name).cloned() {
+                    self.fmt_jsx_inline_trait(&tr);
+                } else {
+                    self.output.push_str("<trait.");
+                    self.output.push_str(name);
+                    self.output.push_str(" />");
+                }
+            }
+            SExpression::Array(arr) => {
+                // A bare children-list in render position (rare).
+                if arr.is_empty() {
+                    self.output.push_str("[]");
+                } else {
+                    self.output.push('[');
+                    self.write_newline();
+                    self.indent();
+                    for item in arr {
+                        self.write_indent();
+                        self.fmt_render_pattern(item);
+                        self.write_newline();
+                    }
+                    self.dedent();
+                    self.write_indent();
+                    self.output.push(']');
+                }
+            }
+            other => self.fmt_sexpr(other),
+        }
+    }
+
+    /// Format an anonymous pattern object as `<Type attrs>children</Type>`
+    /// (or `<Type attrs />` when childless). The `type` key becomes the tag
+    /// name (PascalCased); `children` becomes nested JSX; every other key is
+    /// a sorted attribute.
+    fn fmt_jsx_pattern(&mut self, map: &std::collections::HashMap<String, SExpression>) {
+        let type_str = match map.get("type") {
+            Some(SExpression::String(s)) => s.clone(),
+            _ => return self.fmt_sexpr_object(map),
+        };
+        let tag = pascal_case(&type_str);
+
+        let children = match map.get("children") {
+            Some(SExpression::Array(arr)) => Some(arr),
+            _ => None,
+        };
+
+        let mut attr_keys: Vec<&String> = map
+            .keys()
+            .filter(|k| *k != "type" && *k != "children")
+            .collect();
+        attr_keys.sort();
+
+        self.output.push('<');
+        self.output.push_str(&tag);
+        for k in &attr_keys {
+            self.fmt_jsx_attr(k, &map[*k]);
+        }
+
+        match children {
+            Some(arr) if !arr.is_empty() => {
+                self.output.push('>');
+                self.write_newline();
+                self.indent();
+                for child in arr {
+                    self.write_indent();
+                    self.fmt_render_pattern(child);
+                    self.write_newline();
+                }
+                self.dedent();
+                self.write_indent();
+                self.output.push_str("</");
+                self.output.push_str(&tag);
+                self.output.push('>');
+            }
+            _ => self.output.push_str(" />"),
+        }
+    }
+
+    /// Format a hoisted synthetic inline-trait reference as
+    /// `<Alias.traits.X entity={E} attrs>children</Alias.traits.X>`. Reuses the
+    /// same attribute/children formatting as pattern elements.
+    fn fmt_jsx_inline_trait(&mut self, tr: &Trait) {
+        let ref_data = tr
+            .reference
+            .as_ref()
+            .expect("inline synthetic trait must carry a reference");
+        let reference = &ref_data.reference;
+
+        let children = ref_data
+            .config
+            .iter()
+            .find(|c| c.name == "children")
+            .and_then(|c| c.default.as_ref())
+            .and_then(|v| v.as_array());
+
+        let mut attr_keys: Vec<&str> = ref_data
+            .config
+            .iter()
+            .filter(|c| c.name != "children")
+            .map(|c| c.name.as_str())
+            .collect();
+        attr_keys.sort();
+        attr_keys.dedup();
+
+        self.output.push('<');
+        self.output.push_str(reference);
+        if let Some(le) = &tr.linked_entity {
+            self.output.push_str(" entity={");
+            self.output.push_str(le);
+            self.output.push('}');
+        }
+        for key in &attr_keys {
+            if let Some(cf) = ref_data.config.iter().find(|c| c.name == *key) {
+                if let Some(v) = &cf.default {
+                    self.fmt_jsx_attr(key, v);
+                }
+            }
+        }
+        if !tr.listens.is_empty() {
+            self.output.push_str(" listens={{ ");
+            let mut sorted: Vec<&Listen> = tr.listens.iter().collect();
+            sorted.sort_by(|a, b| a.event.cmp(&b.event));
+            for (i, l) in sorted.iter().enumerate() {
+                if i > 0 {
+                    self.output.push_str(", ");
+                }
+                self.output.push_str(&l.event);
+                self.output.push_str(": ");
+                self.output.push_str(l.triggers.as_deref().unwrap_or(""));
+            }
+            self.output.push_str(" }}");
+        }
+
+        match children {
+            Some(arr) if !arr.is_empty() => {
+                self.output.push('>');
+                self.write_newline();
+                self.indent();
+                for child in arr {
+                    self.write_indent();
+                    self.fmt_render_pattern(child);
+                    self.write_newline();
+                }
+                self.dedent();
+                self.write_indent();
+                self.output.push_str("</");
+                self.output.push_str(reference);
+                self.output.push('>');
+            }
+            _ => self.output.push_str(" />"),
+        }
+    }
+
+    /// Format one JSX attribute: bare `key` for `true`, otherwise
+    /// `key={value}`. String values use the same bare/quoted rule as the rest
+    /// of the formatter so round-tripping is deterministic.
+    fn fmt_jsx_attr(&mut self, key: &str, value: &SExpression) {
+        self.output.push(' ');
+        self.output.push_str(key);
+        if let SExpression::Bool(true) = value {
+            return;
+        }
+        self.output.push('=');
+        match value {
+            SExpression::String(s) if is_bare_atom(s) || s.starts_with('@') => {
+                self.output.push('{');
+                self.fmt_sexpr_string(s);
+                self.output.push('}');
+            }
+            SExpression::String(s) => {
+                self.output.push('{');
+                self.write_quoted_string(s);
+                self.output.push('}');
+            }
+            other => {
+                self.output.push('{');
+                self.fmt_sexpr_inner(other, false);
+                self.output.push('}');
+            }
+        }
+    }
+
     fn fmt_sexpr_array(&mut self, arr: &[SExpression], force_paren: bool) {
         if arr.is_empty() {
             if force_paren {
@@ -1331,6 +1540,28 @@ impl Formatter {
             } else {
                 self.output.push_str("[]");
             }
+            return;
+        }
+
+        // `(render-ui slot pattern …)` — the pattern argument (index 2) is the
+        // root of a render element tree. Format it (and, recursively, its
+        // `children`) as JSX so the canonical authoring surface for render
+        // trees is JSX. Any trailing args (resolved props, priority) are
+        // compiler-injected and never authored, so they format normally.
+        if arr.len() >= 3
+            && matches!(&arr[0], SExpression::String(s) if s == "render-ui")
+        {
+            self.output.push('(');
+            self.fmt_sexpr_inner(&arr[0], false);
+            self.output.push(' ');
+            self.fmt_sexpr_inner(&arr[1], false);
+            self.output.push(' ');
+            self.fmt_render_pattern(&arr[2]);
+            for item in &arr[3..] {
+                self.output.push(' ');
+                self.fmt_sexpr_inner(item, false);
+            }
+            self.output.push(')');
             return;
         }
 
@@ -1477,6 +1708,32 @@ fn is_operator_symbol(s: &str) -> bool {
         s,
         "+" | "-" | "*" | "/" | "%" | "=" | "==" | "!=" | "<" | ">" | "<=" | ">="
     )
+}
+
+/// Inverse of `kebab_case`: kebab-case pattern `type` → PascalCase JSX tag.
+/// `stack` → `Stack`, `data-grid` → `DataGrid`, `ui-spinner` → `UiSpinner`.
+fn pascal_case(kebab: &str) -> String {
+    kebab.split('-')
+        .map(|seg| {
+            let mut c = seg.chars();
+            match c.next() {
+                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
+                None => String::new(),
+            }
+        })
+        .collect()
+}
+
+/// True when `s` is a static (literal) pattern name: lowercase kebab-case
+/// (`stack`, `data-grid`, `form-section`). Dynamic `type` bindings such as
+/// `@config.detailPattern` are NOT static, so their host object falls back to
+/// object-literal formatting instead of becoming an invalid JSX tag.
+fn is_static_pattern_type(s: &str) -> bool {
+    s.chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_lowercase())
+        && s.chars()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }
 
 fn is_simple_value(expr: &SExpression) -> bool {

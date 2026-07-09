@@ -310,9 +310,15 @@ fn fixture_32_inline_trait_ref() {
     let source = fs::read_to_string(dir.join("32-inline-trait-ref.lolo")).expect("read lolo");
     let ast = parse_str(&source).expect("parse");
     let formatted = format_program(&ast);
+    // JSX is now the canonical render surface: inline trait refs format as
+    // `<Alias.traits.X …>` and named `@trait.X` refs as `<trait.X />`.
     assert!(
-        formatted.contains("@("),
-        "formatter must preserve inline @(…) syntax; got:\n{formatted}"
+        formatted.contains("<UiSpinner.traits.SpinnerRender"),
+        "formatter must emit JSX for inline trait refs; got:\n{formatted}"
+    );
+    assert!(
+        formatted.contains("<Stack"),
+        "formatter must emit JSX for render pattern objects; got:\n{formatted}"
     );
     assert!(
         !formatted.contains("trait Inline"),

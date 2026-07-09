@@ -24,6 +24,7 @@ use std::collections::HashMap;
 
 mod entity;
 mod expression;
+mod jsx;
 mod page;
 mod r#trait;
 mod r#type;

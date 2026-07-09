@@ -121,6 +121,12 @@ impl Parser {
                 }
             }
             TokenKind::Identifier(name) => {
+                if name == "<" {
+                    // JSX element start (the comparison operator `<` only
+                    // appears as an s-expression head, never in value
+                    // position). Desugar to the existing render forms.
+                    return self.parse_jsx_element();
+                }
                 self.advance();
                 // Bare identifiers in argument position are atoms (event names,
                 // entity names, slot names, mode names). Special atoms `now`
