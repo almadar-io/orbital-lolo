@@ -141,7 +141,7 @@ const MULTI_PARTY_LOLO: &str = r#"orbital PartyOrbital {
         (set @entity.parties [])
         (render-ui main {
           type: data-list
-          items: @entity.parties
+          entity: @entity.parties
           renderItem: (fn party
             <Stack direction="vertical" gap="sm">
               <UIBadge.traits.BadgeRender label={@party.title} />
@@ -224,8 +224,8 @@ fn multi_party_party_binding_outside_lambda_still_rejected() {
     // Pin: the splice must not blanket-legalize lambda-param roots. `@party`
     // OUTSIDE any lambda stays an unknown binding root.
     let src = MULTI_PARTY_LOLO.replace(
-        "          items: @entity.parties",
-        "          items: @entity.parties\n          header: @party.title",
+        "          entity: @entity.parties",
+        "          entity: @entity.parties\n          header: @party.title",
     );
     let schema = compile_and_inline(&src).expect("inline must succeed");
     let result = validate(&schema);
@@ -267,7 +267,7 @@ const STATEFUL_IN_LAMBDA_LOLO: &str = r#"orbital TogglerOrbital {
         (set @entity.parties [])
         (render-ui list {
           type: data-list
-          items: @entity.parties
+          entity: @entity.parties
           renderItem: (fn party
             <Stack>
               <trait.Toggler />
