@@ -74,21 +74,16 @@ pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Resul
     } else {
         let mut map: HashMap<String, SchemaConfigField> = HashMap::new();
         for cf in &ref_data.config {
-            // Same self-referential guard as atom-level config (above): a
-            // call-site override `key: @config.key` lowers to the knob's
-            // default being the literal string "@config.key", which the
-            // runtime then resolves to that string (not a value) — crashing
-            // any component that expects an array/object. The earlier
-            // L1-only ruling assumed this was a legitimate "wrapper
-            // forward", but it never resolves to a real value, so reject it.
-            if let Some(SExpression::String(s)) = &cf.default {
-                if s.strip_prefix("@config.") == Some(cf.name.as_str()) {
-                    return Err(LowerError::ConfigDefaultSelfReferential {
-                        trait_name: t.name.clone(),
-                        key: cf.name.clone(),
-                    });
-                }
-            }
+            // NOTE: unlike the atom-level declared-config guard below (a knob
+            // defaulting to its own value IS self-referential), a call-site
+            // override `key: @config.key` on a trait Reference is a legitimate
+            // wrapper-forward: it forwards the consuming orbital's `key` knob
+            // into the imported trait. The consumer's config resolution folds
+            // it to the effective value — the resolve/inline Reference arm
+            // (`apply_overrides_to_trait`) on the compiled path and
+            // `buildResolvedTraitConfigs` on the runtime path. Rejecting it
+            // here (the earlier L1 ruling) broke knob-forwarding atoms such as
+            // std-browse's `DataGrid1 { config { fields: @config.fields } }`.
             let is_plain_wiring = matches!(&cf.type_expr, crate::ast::TypeExpr::Primitive(s) if s == "unknown")
                 && cf.label.is_none()
                 && cf.description.is_none()
