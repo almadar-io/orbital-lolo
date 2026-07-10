@@ -599,6 +599,78 @@ mod tests {
         assert!(s.starts_with("@trait.InlineButtonRender"));
     }
 
+    /// Inline-ref props carrying binding expressions (`@entity.X`, a lambda
+    /// param like `@party.X`) desugar to the documented form: a hoisted
+    /// synthetic `TraitReference::Reference` whose config-field DEFAULTS hold
+    /// the author's expressions verbatim, plus the `@trait.InlineN` string at
+    /// the authoring site.
+    #[test]
+    fn inline_ref_binding_props_desugar_to_hoisted_config_defaults() {
+        let src = r#"orbital O {
+  entity E [runtime] {
+    id : string!
+    displayIndex : number
+    rows : [object]
+  }
+  trait T -> E {
+    state s {
+      INIT -> s
+        (set @entity.rows [])
+        (set @entity.displayIndex 0)
+        (render-ui main {
+          type: data-list
+          items: @entity.rows
+          renderItem: (fn party
+            <UiBadge.traits.BadgeRender linkedEntity="E" amount={@entity.displayIndex} label={@party.title} />)
+        })
+    }
+  }
+}"#;
+        let schema = crate::parse_and_lower_str(src).expect("lower");
+        let orbital = &schema.orbitals[0];
+
+        let (name, linked, config) = orbital
+            .traits
+            .iter()
+            .find_map(|t| match t {
+                orbital_core::schema::TraitReference::Reference {
+                    reference: Some(r),
+                    name,
+                    linked_entity,
+                    config,
+                    ..
+                } if r == "UiBadge.traits.BadgeRender" => {
+                    Some((name.clone(), linked_entity.clone(), config.clone()))
+                }
+                _ => None,
+            })
+            .expect("hoisted synthetic trait reference must exist");
+
+        assert!(
+            name.as_deref().unwrap_or("").starts_with("InlineBadgeRender"),
+            "synthetic name must be InlineBadgeRenderN, got {name:?}"
+        );
+        assert_eq!(linked.as_deref(), Some("E"));
+        let config = config.expect("config map");
+        assert_eq!(
+            config.get("amount").and_then(|f| f.default.as_ref()),
+            Some(&SExpression::String("@entity.displayIndex".to_string())),
+            "@entity prop expression must land verbatim in the config default"
+        );
+        assert_eq!(
+            config.get("label").and_then(|f| f.default.as_ref()),
+            Some(&SExpression::String("@party.title".to_string())),
+            "lambda-param prop expression must land verbatim in the config default"
+        );
+
+        // The authoring site inside the lambda holds the @trait.InlineN string.
+        let json = serde_json::to_string(&schema).expect("serialize");
+        assert!(
+            json.contains("@trait.InlineBadgeRender"),
+            "render tree must reference the hoisted synthetic: {json}"
+        );
+    }
+
     #[test]
     fn expression_container_attrs() {
         let v = parse_value("<StatDisplay value={@entity.amountTotal} label=\"Total\" />");
