@@ -750,6 +750,25 @@ mod tests {
     }
 
     #[test]
+    fn parse_emits_config_ref_event_name() {
+        // Option B: `@config.<knob>` as the declared emit event name.
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E {\n    state s { EVT -> s }\n    emits {\n      @config.action -> external { id: string! }\n    }\n    config {\n      action : string = \"ACTION\"\n    }\n  }\n}";
+        let prog = p(src);
+        let t = &prog.orbitals[0].traits[0];
+        assert_eq!(t.emits.len(), 1);
+        assert_eq!(t.emits[0].event, "@config.action");
+        assert_eq!(t.emits[0].scope, Some("external".to_string()));
+    }
+
+    #[test]
+    fn config_ref_knob_shapes() {
+        assert_eq!(config_ref_knob("config.action"), Some("action"));
+        assert_eq!(config_ref_knob("config."), None);
+        assert_eq!(config_ref_knob("config.a.b"), None);
+        assert_eq!(config_ref_knob("entity.action"), None);
+    }
+
+    #[test]
     fn parse_page() {
         let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" -> T [view: list, initial]\n}";
         let prog = p(src);
