@@ -12,7 +12,7 @@ pub(crate) fn lower_trait_decl(
     shared_entity_names: &HashSet<String>,
 ) -> Result<TraitReference, LowerError> {
     if let Some(ref_data) = &t.reference {
-        lower_trait_reference(t, ref_data)
+        lower_trait_reference(t, ref_data, aliases, entity_names)
     } else {
         Ok(TraitReference::Inline(lower_trait(
             t,
@@ -27,7 +27,12 @@ pub(crate) fn lower_trait_decl(
 }
 
 /// Build a `TraitReference::Reference` from a parsed `trait Name = Alias.X { ... }`.
-pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Result<TraitReference, LowerError> {
+pub(crate) fn lower_trait_reference(
+    t: &Trait,
+    ref_data: &TraitRefData,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+) -> Result<TraitReference, LowerError> {
     let events = if ref_data.events.is_empty() {
         None
     } else {
@@ -103,8 +108,13 @@ pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Resul
                     required: None,
                 }
             } else {
+                // Declaration-form entries (an alias trait declaring its OWN
+                // typed knob) lower with the real alias/entity context — the
+                // same path atom config declarations take — so named struct
+                // aliases (e.g. `[StepCard]`) resolve to full `items`/
+                // `properties` schemas instead of the string fallback.
                 let (_, _, items, properties, _) =
-                    lower_type_expr(&cf.type_expr, &Default::default(), &Default::default());
+                    lower_type_expr(&cf.type_expr, aliases, entity_names);
                 SchemaConfigField {
                     field_type: type_expr_to_config_string(&cf.type_expr),
                     default: cf.default.clone(),
