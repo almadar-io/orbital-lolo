@@ -990,6 +990,9 @@ impl Formatter {
         self.output.push_str(&cfg.name);
         self.output.push_str(" : ");
         self.fmt_type_expr(&cfg.type_expr);
+        if cfg.required {
+            self.output.push('!');
+        }
         if let Some(def) = &cfg.default {
             self.output.push_str(" = ");
             self.fmt_object_value(&cfg.name, def);

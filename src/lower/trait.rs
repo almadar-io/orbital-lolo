@@ -100,6 +100,7 @@ pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Resul
                     values: None,
                     items: None,
                     properties: None,
+                    required: None,
                 }
             } else {
                 let (_, _, items, properties, _) =
@@ -114,6 +115,7 @@ pub(crate) fn lower_trait_reference(t: &Trait, ref_data: &TraitRefData) -> Resul
                     values: type_expr_to_config_values(&cf.type_expr),
                     items,
                     properties,
+                    required: None,
                 }
             };
             map.insert(cf.name.clone(), schema_field);
@@ -467,6 +469,7 @@ pub(crate) fn lower_trait(
                     values: type_expr_to_config_values(&cf.type_expr),
                     items,
                     properties,
+                    required: if cf.required { Some(true) } else { None },
                 },
             );
         }

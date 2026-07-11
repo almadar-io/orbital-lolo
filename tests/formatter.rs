@@ -239,6 +239,11 @@ fn fixture_15_agent_invocation() {
 }
 
 #[test]
+fn fixture_16_config_required() {
+    assert_round_trip("16-config-required");
+}
+
+#[test]
 fn fixture_17_type_entity_decl() {
     assert_round_trip("17-type-entity-decl");
 }

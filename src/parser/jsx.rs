@@ -337,6 +337,7 @@ impl Parser {
                     description: None,
                     synonyms: None,
                     tier: None,
+                    required: false,
                     span,
                 }),
             }
@@ -351,6 +352,7 @@ impl Parser {
                 description: None,
                 synonyms: None,
                 tier: None,
+                required: false,
                 span,
             });
         }

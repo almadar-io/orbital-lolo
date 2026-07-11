@@ -344,3 +344,73 @@ fn error_09_type_composition_conflict() {
 fn error_10_type_annotation_mismatch() {
     assert_parse_error("10-type-annotation-mismatch");
 }
+
+// `!` required marker on config knobs — mirrors the entity-field / event-field
+// `!` → `required: bool` pattern. `required` may coexist with a `default`
+// (the default serves the atom's own standalone demo; call sites must still
+// supply the key — enforced by the L2 ORB_T_CONFIG_MISSING_REQUIRED_KEY rule).
+#[test]
+fn config_field_required_without_default() {
+    let source = r#"
+orbital W {
+  entity Widget [persistent: widgets] {
+    id : string!
+  }
+  trait WidgetView -> Widget [interaction] {
+    config {
+      title : string!
+    }
+    state idle {
+      LOAD -> idle
+        (fetch Widget { id: ?id })
+    }
+  }
+}
+"#;
+    let schema = parse_and_lower_str(source).expect("lower");
+    let orbital_core::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
+    else {
+        panic!("expected inline trait");
+    };
+    let field = trait_def
+        .config
+        .as_ref()
+        .and_then(|c| c.get("title"))
+        .expect("title config field");
+    assert_eq!(field.required, Some(true));
+    assert!(field.default.is_none());
+}
+
+#[test]
+fn config_field_required_with_default() {
+    let source = r#"
+orbital W {
+  entity Widget [persistent: widgets] {
+    id : string!
+  }
+  trait WidgetView -> Widget [interaction] {
+    config {
+      title : string! = "Untitled"
+      icon : string = "layout-panel-top"
+    }
+    state idle {
+      LOAD -> idle
+        (fetch Widget { id: ?id })
+    }
+  }
+}
+"#;
+    let schema = parse_and_lower_str(source).expect("lower");
+    let orbital_core::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
+    else {
+        panic!("expected inline trait");
+    };
+    let config = trait_def.config.as_ref().expect("declared config");
+    let title = config.get("title").expect("title config field");
+    assert_eq!(title.required, Some(true));
+    assert!(title.default.is_some(), "required knob keeps its default");
+    // Non-required knob stays untagged (omitted, not `Some(false)`) so
+    // published .orb JSON doesn't churn for every existing atom.
+    let icon = config.get("icon").expect("icon config field");
+    assert_eq!(icon.required, None);
+}

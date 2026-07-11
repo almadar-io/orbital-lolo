@@ -421,6 +421,7 @@ impl Parser {
                             description,
                             synonyms,
                             tier,
+                            required: false,
                             span,
                         }
                     } else {
@@ -437,6 +438,7 @@ impl Parser {
                             description: None,
                             synonyms: None,
                             tier: None,
+                            required: false,
                             span,
                         }
                     };
@@ -1038,6 +1040,12 @@ impl Parser {
                 }
                 self.expect_kind(&TokenKind::Colon, ":")?;
                 let type_expr = self.parse_type_expr()?;
+                let required = if matches!(self.peek(), TokenKind::Bang) {
+                    self.advance();
+                    true
+                } else {
+                    false
+                };
                 let mut default = None;
                 if matches!(self.peek(), TokenKind::Equals) {
                     self.advance();
@@ -1079,6 +1087,7 @@ impl Parser {
                     description,
                     synonyms,
                     tier,
+                    required,
                     span,
                 });
             } else {

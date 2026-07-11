@@ -525,6 +525,11 @@ pub struct ConfigField {
     /// presentation polish). The L2 validator
     /// (`ORB_T_CONFIG_TIER_INVALID`) rejects any other value.
     pub tier: Option<String>,
+    /// `!` required marker — `fields : [FieldSpec]! = [...]`. Declares
+    /// this knob must be supplied by every call site referencing the
+    /// owning trait (the atom's own page binding is exempt). May
+    /// coexist with a `default` (the default serves the demo page).
+    pub required: bool,
     pub span: Span,
 }
 
