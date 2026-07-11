@@ -678,7 +678,7 @@ impl Parser {
         // braces is the most common case (alias lookup at lower-time).
         // The legacy `EVENT scope`/`EVENT :: TypeName` forms are gone.
         let span = self.peek_span();
-        let event = self.expect_ident()?;
+        let event = self.expect_event_name_or_config_ref()?;
         let scope = if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
             self.advance();
             let s = self.expect_ident()?;

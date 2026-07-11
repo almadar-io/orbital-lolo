@@ -129,6 +129,27 @@ impl Parser {
         }
     }
 
+    /// An emit/listen event name: either a plain `EVENT` identifier or the
+    /// `@config.<knob>` reference sigil (Option B — the declared event name
+    /// resolves to a string-typed config knob's value at inline time).
+    /// Stores the reference as the literal `"@config.<knob>"` string; later
+    /// phases (lower, inline) treat that prefix as the resolution marker.
+    pub(crate) fn expect_event_name_or_config_ref(&mut self) -> Result<String, ParseError> {
+        match self.peek().clone() {
+            TokenKind::Identifier(name) if is_event_name(&name) => {
+                self.advance();
+                Ok(name)
+            }
+            TokenKind::Sigil(name) if config_ref_knob(&name).is_some() => {
+                self.advance();
+                Ok(format!("@{name}"))
+            }
+            _ => Err(ParseError::ExpectedIdentifier {
+                span: self.peek_span(),
+            }),
+        }
+    }
+
     pub(crate) fn expect_keyword(&mut self, kw: &str) -> Result<(), ParseError> {
         match self.peek().clone() {
             TokenKind::Identifier(name) if name == kw => {
@@ -490,11 +511,23 @@ pub(crate) fn is_event_name(name: &str) -> bool {
 }
 
 pub(crate) fn is_event_name_at_peek(kind: &TokenKind) -> bool {
-    if let TokenKind::Identifier(name) = kind {
-        is_event_name(name)
-    } else {
-        false
+    match kind {
+        TokenKind::Identifier(name) => is_event_name(name),
+        TokenKind::Sigil(name) => config_ref_knob(name).is_some(),
+        _ => false,
     }
+}
+
+/// `@config.<knob>` is the only legal reference form for an emit/listen event
+/// name (Option B: the declared event name resolves to a config knob's
+/// value). Returns the knob identifier when `name` (the lexer's dotted-sigil
+/// body, e.g. `config.action`) matches `config.<ident>`.
+pub(crate) fn config_ref_knob(name: &str) -> Option<&str> {
+    let knob = name.strip_prefix("config.")?;
+    if knob.is_empty() || knob.contains('.') {
+        return None;
+    }
+    Some(knob)
 }
 
 #[cfg(test)]
