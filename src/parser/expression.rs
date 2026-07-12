@@ -170,10 +170,20 @@ impl Parser {
             None
         };
 
-        let body = self.parse_trait_ref_body()?;
+        let mut body = self.parse_trait_ref_body()?;
 
         // Closing `)` of the `@(...)` wrapper.
         self.expect_kind(&TokenKind::RParen, ")")?;
+
+        // Call-site payload capture (mirrors JSX `desugar_inline_ref`): a
+        // `@payload.<field>` in this call-site config value is a reference to
+        // the COMPOSING effect's event payload — tag it
+        // `@callsitePayload.<field>` so it is resolved at the call site.
+        for field in body.config.iter_mut() {
+            if let Some(default) = field.default.as_mut() {
+                orbital_core::schema::capture_callsite_payload(default);
+            }
+        }
 
         // Deterministic, collision-free synthesized name. Uses the upstream
         // short name (last segment of the dotted path) for readability plus a

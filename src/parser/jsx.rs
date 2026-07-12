@@ -373,10 +373,19 @@ impl Parser {
         &mut self,
         reference: String,
         linked_entity: Option<String>,
-        config: Vec<ConfigField>,
+        mut config: Vec<ConfigField>,
         listens: Vec<Listen>,
         span: Span,
     ) -> SExpression {
+        // Call-site payload capture: a `@payload.<field>` in an inline-ref
+        // config value is, by position, a reference to the COMPOSING effect's
+        // event payload — tag it `@callsitePayload.<field>` so it is resolved
+        // at the call site and never in the child's own INIT scope.
+        for field in config.iter_mut() {
+            if let Some(default) = field.default.as_mut() {
+                orbital_core::schema::capture_callsite_payload(default);
+            }
+        }
         let short = reference
             .rsplit('.')
             .next()
@@ -670,6 +679,71 @@ mod tests {
         assert!(
             json.contains("@trait.InlineBadgeRender"),
             "render tree must reference the hoisted synthetic: {json}"
+        );
+    }
+
+    /// A `?field` (= `@payload.field`) prop on an inline-ref call site is a
+    /// capture from the COMPOSING effect's event — it desugars to the hoisted
+    /// synthetic's config default as `@callsitePayload.field`, NOT a raw
+    /// `@payload.field` (which would be evaluated in the child's own INIT
+    /// scope). Non-payload prop expressions are unaffected.
+    #[test]
+    fn inline_ref_payload_prop_captured_as_callsite() {
+        let src = r#"orbital O {
+  type Failed = Event { error : string } "e"
+  entity E [runtime] { id : string! }
+  trait T -> E {
+    state s {
+      INIT -> s
+        (render-ui main {
+          type: stack
+          children: [@trait.WidgetTitle]
+        })
+      Failed -> s
+        (render-ui main <Stack direction={vertical}>
+          <Typography.traits.TypographyRender content={?error} variant={body} />
+        </Stack>)
+    }
+    emits { Failed }
+  }
+  trait WidgetTitle = Typography.traits.TypographyRender -> E {
+    config { content: Widget }
+  }
+}"#;
+        let schema = crate::parse_and_lower_str(src).expect("lower");
+        let orbital = &schema.orbitals[0];
+        let config = orbital
+            .traits
+            .iter()
+            .find_map(|t| match t {
+                orbital_core::schema::TraitReference::Reference {
+                    reference: Some(r),
+                    name: Some(n),
+                    config,
+                    ..
+                } if r == "Typography.traits.TypographyRender"
+                    && n.starts_with("InlineTypographyRender") =>
+                {
+                    config.clone()
+                }
+                _ => None,
+            })
+            .expect("hoisted synthetic Typography reference must exist");
+        assert_eq!(
+            config
+                .get("content")
+                .and_then(|f| f.default.as_ref())
+                .and_then(|d| d.as_str()),
+            Some("@callsitePayload.error"),
+            "a `?error` capture prop must lower to @callsitePayload.error on the reference config"
+        );
+        assert_eq!(
+            config
+                .get("variant")
+                .and_then(|f| f.default.as_ref())
+                .and_then(|d| d.as_str()),
+            Some("body"),
+            "non-payload props are untouched"
         );
     }
 

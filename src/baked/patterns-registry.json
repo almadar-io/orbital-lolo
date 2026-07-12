@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-11T04:30:33.433Z",
+  "exportedAt": "2026-07-11T08:38:54.260Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -10349,6 +10349,144 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "placeholder": {
+          "types": [
+            "string"
+          ],
+          "description": "Placeholder text"
+        },
+        "value": {
+          "types": [
+            "string",
+            "number"
+          ],
+          "description": "Current value"
+        },
+        "disabled": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether input is disabled"
+        },
+        "action": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event name for trait dispatch",
+          "kind": "event"
+        },
+        "inputType": {
+          "types": [
+            "string"
+          ],
+          "description": "Input type - supports 'select' and 'textarea' in addition to standard types",
+          "enumValues": [
+            "text",
+            "email",
+            "password",
+            "number",
+            "tel",
+            "url",
+            "search",
+            "date",
+            "datetime-local",
+            "time",
+            "checkbox",
+            "select",
+            "textarea"
+          ]
+        },
+        "label": {
+          "types": [
+            "string"
+          ],
+          "description": "label prop"
+        },
+        "helperText": {
+          "types": [
+            "string"
+          ],
+          "description": "helperText prop"
+        },
+        "error": {
+          "types": [
+            "string"
+          ],
+          "description": "error prop"
+        },
+        "leftIcon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "leftIcon prop"
+        },
+        "rightIcon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "rightIcon prop"
+        },
+        "clearable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show clear button when input has value"
+        },
+        "onClear": {
+          "types": [
+            "function",
+            "string"
+          ],
+          "description": "Callback or declarative event key when clear button is clicked"
+        },
+        "options": {
+          "types": [
+            "array"
+          ],
+          "description": "Options for select type",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "value",
+              "label"
+            ]
+          }
+        },
+        "rows": {
+          "types": [
+            "number"
+          ],
+          "description": "Rows for textarea type"
+        },
+        "onChange": {
+          "types": [
+            "function",
+            "string"
+          ],
+          "description": "onChange handler or declarative event key for trait dispatch"
+        },
         "leftAddon": {
           "types": [
             "node",
@@ -10362,12 +10500,6 @@
             "icon"
           ],
           "description": "Right addon (icon, button, or text)"
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "Additional CSS classes"
         }
       }
     },
@@ -34892,7 +35024,159 @@
         "v stack"
       ],
       "typicalSize": "small",
-      "propsSchema": {}
+      "propsSchema": {
+        "gap": {
+          "types": [
+            "string"
+          ],
+          "description": "Gap between children",
+          "enumValues": [
+            "none",
+            "xs",
+            "sm",
+            "md",
+            "lg",
+            "xl",
+            "2xl"
+          ],
+          "default": "md"
+        },
+        "align": {
+          "types": [
+            "string"
+          ],
+          "description": "Align items on the cross axis",
+          "enumValues": [
+            "start",
+            "center",
+            "end",
+            "stretch",
+            "baseline"
+          ],
+          "default": "stretch"
+        },
+        "justify": {
+          "types": [
+            "string"
+          ],
+          "description": "Justify items on the main axis",
+          "enumValues": [
+            "start",
+            "center",
+            "end",
+            "between",
+            "around",
+            "evenly"
+          ],
+          "default": "start"
+        },
+        "wrap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Allow items to wrap",
+          "default": false
+        },
+        "reverse": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Reverse the order of children",
+          "default": false
+        },
+        "flex": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Fill available space (flex: 1)",
+          "default": false
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Custom class name"
+        },
+        "style": {
+          "types": [
+            "object"
+          ],
+          "description": "Inline styles"
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "Children elements"
+        },
+        "as": {
+          "types": [
+            "component"
+          ],
+          "description": "HTML element to render as"
+        },
+        "onClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Click handler",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "e",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "onKeyDown": {
+          "types": [
+            "function"
+          ],
+          "description": "Keyboard handler",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "e",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "role": {
+          "types": [
+            "string"
+          ],
+          "description": "Role for accessibility"
+        },
+        "tabIndex": {
+          "types": [
+            "number"
+          ],
+          "description": "Tab index for focus management"
+        },
+        "action": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "kind": "event"
+        },
+        "actionPayload": {
+          "types": [
+            "object"
+          ],
+          "description": "Payload to include with the action event",
+          "freeform": true
+        },
+        "responsive": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true, horizontal stacks flip to vertical below the md breakpoint (768px)",
+          "default": false
+        }
+      }
     },
     "hstack": {
       "type": "hstack",
@@ -34905,7 +35189,159 @@
         "h stack"
       ],
       "typicalSize": "small",
-      "propsSchema": {}
+      "propsSchema": {
+        "gap": {
+          "types": [
+            "string"
+          ],
+          "description": "Gap between children",
+          "enumValues": [
+            "none",
+            "xs",
+            "sm",
+            "md",
+            "lg",
+            "xl",
+            "2xl"
+          ],
+          "default": "md"
+        },
+        "align": {
+          "types": [
+            "string"
+          ],
+          "description": "Align items on the cross axis",
+          "enumValues": [
+            "start",
+            "center",
+            "end",
+            "stretch",
+            "baseline"
+          ],
+          "default": "stretch"
+        },
+        "justify": {
+          "types": [
+            "string"
+          ],
+          "description": "Justify items on the main axis",
+          "enumValues": [
+            "start",
+            "center",
+            "end",
+            "between",
+            "around",
+            "evenly"
+          ],
+          "default": "start"
+        },
+        "wrap": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Allow items to wrap",
+          "default": false
+        },
+        "reverse": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Reverse the order of children",
+          "default": false
+        },
+        "flex": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Fill available space (flex: 1)",
+          "default": false
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Custom class name"
+        },
+        "style": {
+          "types": [
+            "object"
+          ],
+          "description": "Inline styles"
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "Children elements"
+        },
+        "as": {
+          "types": [
+            "component"
+          ],
+          "description": "HTML element to render as"
+        },
+        "onClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Click handler",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "e",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "onKeyDown": {
+          "types": [
+            "function"
+          ],
+          "description": "Keyboard handler",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "e",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "role": {
+          "types": [
+            "string"
+          ],
+          "description": "Role for accessibility"
+        },
+        "tabIndex": {
+          "types": [
+            "number"
+          ],
+          "description": "Tab index for focus management"
+        },
+        "action": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "kind": "event"
+        },
+        "actionPayload": {
+          "types": [
+            "object"
+          ],
+          "description": "Payload to include with the action event",
+          "freeform": true
+        },
+        "responsive": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true, horizontal stacks flip to vertical below the md breakpoint (768px)",
+          "default": false
+        }
+      }
     },
     "form-layout": {
       "type": "form-layout",
