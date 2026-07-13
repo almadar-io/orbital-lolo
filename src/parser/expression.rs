@@ -23,6 +23,12 @@ impl Parser {
                 self.advance();
                 SExpression::String("=".to_string())
             }
+            TokenKind::Arrow | TokenKind::UnicodeArrow => {
+                return Err(ParseError::InvalidSExpr {
+                    message: "unexpected `->` inside an s-expression: transitions are written at state-block level as `EVENT -> target`, not inside parentheses; each effect under a transition is its own `(...)` line".to_string(),
+                    span,
+                })
+            }
             other => {
                 return Err(ParseError::InvalidSExpr {
                     message: format!("expected operator, got {other:?}"),
@@ -138,6 +144,10 @@ impl Parser {
                 };
                 Ok(SExpression::String(atom))
             }
+            TokenKind::Arrow | TokenKind::UnicodeArrow => Err(ParseError::InvalidSExpr {
+                message: "unexpected `->` inside an s-expression: transitions are written at state-block level as `EVENT -> target`, not inside parentheses; each effect under a transition is its own `(...)` line".to_string(),
+                span: self.peek_span(),
+            }),
             other => Err(ParseError::InvalidSExpr {
                 message: format!("unexpected token in s-expression: {other:?}"),
                 span: self.peek_span(),

@@ -414,3 +414,26 @@ orbital W {
     let icon = config.get("icon").expect("icon config field");
     assert_eq!(icon.required, None);
 }
+
+#[test]
+fn arrow_inside_sexpr_yields_transition_placement_hint() {
+    let src = r#"
+orbital Demo {
+  entity Item { name: string }
+  trait Flow {
+    state idle {
+      SUBMIT -> saving
+        (set @self.name (concat SUBMIT -> done))
+    }
+    state saving {}
+    state done {}
+  }
+}
+"#;
+    let err = parse_and_lower_str(src).expect_err("arrow in s-expression must fail");
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("transitions are written at state-block level"),
+        "expected placement hint, got: {msg}"
+    );
+}
