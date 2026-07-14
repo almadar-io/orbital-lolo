@@ -573,8 +573,7 @@ mod tests {
 
     #[test]
     fn parse_shared_composes_with_runtime() {
-        let prog =
-            p("orbital Foo {\n  entity Bar [runtime, shared] {\n    id : string!\n  }\n}");
+        let prog = p("orbital Foo {\n  entity Bar [runtime, shared] {\n    id : string!\n  }\n}");
         let ent = prog.orbitals[0].entity.as_ref().unwrap();
         assert_eq!(ent.persistence, Some(Persistence::Runtime));
         assert!(ent.shared);
@@ -601,8 +600,7 @@ mod tests {
 
     #[test]
     fn parse_shared_order_independent() {
-        let prog =
-            p("orbital Foo {\n  entity Bar [shared, runtime] {\n    id : string!\n  }\n}");
+        let prog = p("orbital Foo {\n  entity Bar [shared, runtime] {\n    id : string!\n  }\n}");
         let ent = prog.orbitals[0].entity.as_ref().unwrap();
         assert_eq!(ent.persistence, Some(Persistence::Runtime));
         assert!(ent.shared);

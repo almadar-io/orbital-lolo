@@ -154,6 +154,9 @@ pub(crate) fn lower_trait_reference(
         fields,
         listens,
         emits_scope,
+        event_ids: None,
+        linked_entity_id: None,
+        ref_id: None,
     })
 }
 
@@ -538,6 +541,8 @@ pub(crate) fn lower_trait(
         scope,
         source_behavior: None,
         source_entity_definition: None,
+        id: None,
+        linked_entity_id: None,
     })
 }
 

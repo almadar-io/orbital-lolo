@@ -181,8 +181,8 @@ fn check_set_in_expr(
         // `(set @entity.X name)` defers to L2 instead of being mis-typed as a
         // string literal. Recurse into the body with the augmented set; the
         // initializer expressions are checked with the original set.
-        let is_let = matches!(&arr.first(), Some(SExpression::String(s)) if s == "let")
-            && arr.len() == 3;
+        let is_let =
+            matches!(&arr.first(), Some(SExpression::String(s)) if s == "let") && arr.len() == 3;
         if is_let {
             if let SExpression::Array(bindings) = &arr[1] {
                 let mut nested = let_bindings.clone();
@@ -194,12 +194,24 @@ fn check_set_in_expr(
                     }
                 }
                 check_set_in_expr(
-                    &arr[1], event, t, entity_fields, listen_payloads, emit_payloads,
-                    config_fields, let_bindings,
+                    &arr[1],
+                    event,
+                    t,
+                    entity_fields,
+                    listen_payloads,
+                    emit_payloads,
+                    config_fields,
+                    let_bindings,
                 )?;
                 return check_set_in_expr(
-                    &arr[2], event, t, entity_fields, listen_payloads, emit_payloads,
-                    config_fields, &nested,
+                    &arr[2],
+                    event,
+                    t,
+                    entity_fields,
+                    listen_payloads,
+                    emit_payloads,
+                    config_fields,
+                    &nested,
                 );
             }
         }
@@ -495,12 +507,13 @@ pub(crate) fn check_listens_integrity(orbitals: &[CoreOrbital]) -> Result<(), Lo
             };
             for listen in listens {
                 let (source_orbital, source_trait) = match &listen.source {
-                    Some(ListenSource::Trait { trait_name }) => {
+                    Some(ListenSource::Trait { trait_name, .. }) => {
                         (orbital.name.clone(), trait_name.clone())
                     }
                     Some(ListenSource::Orbital {
                         orbital: o,
                         trait_name,
+                        ..
                     }) => (o.clone(), trait_name.clone()),
                     Some(ListenSource::Any) | None => continue,
                 };
@@ -655,12 +668,13 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
             if let Some(listens) = &td.listens {
                 for listen in listens {
                     let (source_orbital, source_trait) = match &listen.source {
-                        Some(ListenSource::Trait { trait_name }) => {
+                        Some(ListenSource::Trait { trait_name, .. }) => {
                             (orbital.name.clone(), trait_name.clone())
                         }
                         Some(ListenSource::Orbital {
                             orbital: o,
                             trait_name,
+                            ..
                         }) => (o.clone(), trait_name.clone()),
                         Some(ListenSource::Any) | None => continue,
                     };

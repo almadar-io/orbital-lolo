@@ -41,6 +41,7 @@ pub(crate) fn lower_emit(
                 tier: e.tier.clone(),
                 scope,
                 payload_schema: payload,
+                event_id: None,
             });
         }
         // No alias and no inline payload → payloadless emit.
@@ -55,6 +56,7 @@ pub(crate) fn lower_emit(
                 _ => None,
             }),
             payload_schema: None,
+            event_id: None,
         });
     }
     // Inline payload path: each field whose type_expr is `TypeExpr::Named`
@@ -127,6 +129,7 @@ pub(crate) fn lower_emit(
             _ => None,
         }),
         payload_schema: Some(fields),
+        event_id: None,
     })
 }
 
@@ -286,6 +289,8 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
         payload_mapping,
         guard: l.guard.clone(),
         source,
+        event_id: None,
+        triggers_id: None,
     }
 }
 
@@ -307,6 +312,7 @@ pub(crate) fn split_listen_source(
                     ev.to_string(),
                     Some(ListenSource::Trait {
                         trait_name: src.to_string(),
+                        trait_id: None,
                     }),
                 )
             }
@@ -320,6 +326,8 @@ pub(crate) fn split_listen_source(
                 Some(ListenSource::Orbital {
                     orbital,
                     trait_name: trait_name.to_string(),
+                    orbital_id: None,
+                    trait_id: None,
                 }),
             )
         }

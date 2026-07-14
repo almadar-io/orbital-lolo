@@ -4,10 +4,15 @@ use serde_json::Value;
 fn canon(v: Value) -> Value {
     match v {
         Value::Object(map) => {
-            let mut s: std::collections::BTreeMap<String, Value> = std::collections::BTreeMap::new();
-            for (k, v) in map { s.insert(k, canon(v)); }
+            let mut s: std::collections::BTreeMap<String, Value> =
+                std::collections::BTreeMap::new();
+            for (k, v) in map {
+                s.insert(k, canon(v));
+            }
             let mut out = serde_json::Map::new();
-            for (k, v) in s { out.insert(k, v); }
+            for (k, v) in s {
+                out.insert(k, v);
+            }
             Value::Object(out)
         }
         Value::Array(items) => Value::Array(items.into_iter().map(canon).collect()),
@@ -18,7 +23,12 @@ fn strip_nulls(v: Value) -> Value {
     match v {
         Value::Object(map) => {
             let mut out = serde_json::Map::new();
-            for (k, v) in map { let s = strip_nulls(v); if !s.is_null() { out.insert(k, s); } }
+            for (k, v) in map {
+                let s = strip_nulls(v);
+                if !s.is_null() {
+                    out.insert(k, s);
+                }
+            }
             Value::Object(out)
         }
         Value::Array(items) => Value::Array(items.into_iter().map(strip_nulls).collect()),
@@ -54,8 +64,14 @@ fn jsx_authored_file_formats_and_roundtrips() {
     let formatted = format_program(&ast);
     eprintln!("=== JSX FORMATTED ===\n{formatted}\n=== END ===");
     assert!(formatted.contains("<Stack"), "stack → <Stack>");
-    assert!(formatted.contains("<UiButton.traits.ButtonRender"), "inline ref → JSX");
-    assert!(formatted.contains("<trait.Icon"), "named ref → <trait.Icon />");
+    assert!(
+        formatted.contains("<UiButton.traits.ButtonRender"),
+        "inline ref → JSX"
+    );
+    assert!(
+        formatted.contains("<trait.Icon"),
+        "named ref → <trait.Icon />"
+    );
     assert!(formatted.contains("fields={"), "complex attr value");
 
     // Idempotent: re-format produces identical text.

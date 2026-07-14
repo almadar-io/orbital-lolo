@@ -59,7 +59,10 @@ impl Parser {
             let path = self.parse_dotted_tail(&first)?;
             // path is `trait.<member>`
             let member = path.strip_prefix("trait.").unwrap_or(&path).to_string();
-            (JsxTag::NamedRef(member.clone()), format!("trait.{}", member))
+            (
+                JsxTag::NamedRef(member.clone()),
+                format!("trait.{}", member),
+            )
         } else if dotted {
             let reference = self.parse_dotted_tail(&first)?;
             (JsxTag::InlineRef(reference.clone()), reference)
@@ -192,7 +195,9 @@ impl Parser {
                 Ok(false)
             }
             other => Err(ParseError::InvalidSExpr {
-                message: format!("expected `>` or `/>` to close the JSX opening tag, got {other:?}"),
+                message: format!(
+                    "expected `>` or `/>` to close the JSX opening tag, got {other:?}"
+                ),
                 span,
             }),
         }
@@ -244,11 +249,7 @@ impl Parser {
     }
 
     /// Consume `</open_text>` and verify the name matches the opening tag.
-    fn consume_jsx_closing_tag(
-        &mut self,
-        expected: &str,
-        span: Span,
-    ) -> Result<(), ParseError> {
+    fn consume_jsx_closing_tag(&mut self, expected: &str, span: Span) -> Result<(), ParseError> {
         if !matches!(self.peek(), TokenKind::Identifier(s) if s == "<") {
             return Err(ParseError::InvalidSExpr {
                 message: format!("expected JSX closing tag `</{expected}>`"),
@@ -357,13 +358,7 @@ impl Parser {
             });
         }
 
-        Ok(self.hoist_inline_trait(
-            reference.to_string(),
-            linked_entity,
-            config,
-            listens,
-            span,
-        ))
+        Ok(self.hoist_inline_trait(reference.to_string(), linked_entity, config, listens, span))
     }
 
     /// Hoist a synthetic inline `trait` declaration (shared by the `@(…)` and
@@ -566,9 +561,7 @@ mod tests {
 
     #[test]
     fn pattern_with_children() {
-        let v = parse_value(
-            "<Stack direction=\"vertical\">\n  <Badge label=\"x\" />\n</Stack>",
-        );
+        let v = parse_value("<Stack direction=\"vertical\">\n  <Badge label=\"x\" />\n</Stack>");
         let outer = match v {
             SExpression::Object(m) => m,
             other => panic!("expected object, got {other:?}"),
@@ -594,9 +587,8 @@ mod tests {
 
     #[test]
     fn named_trait_ref_rejects_props() {
-        let mut p = Parser::new(
-            crate::lexer::tokenize("<trait.FileTextIcon label=\"x\" />").unwrap(),
-        );
+        let mut p =
+            Parser::new(crate::lexer::tokenize("<trait.FileTextIcon label=\"x\" />").unwrap());
         assert!(p.parse_jsx_element().is_err());
     }
 
@@ -658,7 +650,9 @@ mod tests {
             .expect("hoisted synthetic trait reference must exist");
 
         assert!(
-            name.as_deref().unwrap_or("").starts_with("InlineBadgeRender"),
+            name.as_deref()
+                .unwrap_or("")
+                .starts_with("InlineBadgeRender"),
             "synthetic name must be InlineBadgeRenderN, got {name:?}"
         );
         assert_eq!(linked.as_deref(), Some("E"));
@@ -773,16 +767,13 @@ mod tests {
 
     #[test]
     fn raw_text_child_rejected() {
-        let mut p =
-            Parser::new(crate::lexer::tokenize("<Stack>raw text</Stack>").unwrap());
+        let mut p = Parser::new(crate::lexer::tokenize("<Stack>raw text</Stack>").unwrap());
         assert!(p.parse_jsx_element().is_err());
     }
 
     #[test]
     fn mismatched_closing_tag() {
-        let mut p = Parser::new(
-            crate::lexer::tokenize("<Stack>\n  <Badge />\n</Badge>").unwrap(),
-        );
+        let mut p = Parser::new(crate::lexer::tokenize("<Stack>\n  <Badge />\n</Badge>").unwrap());
         assert!(p.parse_jsx_element().is_err());
     }
 
@@ -833,6 +824,9 @@ mod tests {
 
         let a = lower_json(&obj);
         let b = lower_json(&jsx);
-        assert_eq!(a, b, "JSX must lower to identical .orb as object-literal form");
+        assert_eq!(
+            a, b,
+            "JSX must lower to identical .orb as object-literal form"
+        );
     }
 }

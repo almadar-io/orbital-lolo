@@ -207,8 +207,16 @@ fn multi_party_lambda_inline_refs_splice_into_host_scope() {
 
     // Both failure classes from the un-spliced form are gone by construction.
     let result = validate(&schema);
-    assert_no_issue(&result, ErrorCode::BindingTraitInvalidPosition, "renderItem");
-    assert_no_issue(&result, ErrorCode::BindingUnknownRoot, "lambda param @party");
+    assert_no_issue(
+        &result,
+        ErrorCode::BindingTraitInvalidPosition,
+        "renderItem",
+    );
+    assert_no_issue(
+        &result,
+        ErrorCode::BindingUnknownRoot,
+        "lambda param @party",
+    );
 
     // Emit path: the expanded nodes lower to OIR.
     let oir = resolve_to_oir(&schema).expect("OIR resolve must succeed");
@@ -230,7 +238,9 @@ fn multi_party_party_binding_outside_lambda_still_rejected() {
     let schema = compile_and_inline(&src).expect("inline must succeed");
     let result = validate(&schema);
     assert!(
-        result.all_issues().any(|e| e.code == ErrorCode::BindingUnknownRoot),
+        result
+            .all_issues()
+            .any(|e| e.code == ErrorCode::BindingUnknownRoot),
         "@party outside a lambda must still be rejected"
     );
 }

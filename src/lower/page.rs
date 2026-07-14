@@ -19,6 +19,9 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
                         fields: None,
                         listens: None,
                         emits_scope: None,
+                        event_ids: None,
+                        linked_entity_id: None,
+                        ref_id: None,
                     })
                     .collect(),
             )
@@ -28,6 +31,9 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
             path: Some(p.path.clone()),
             linked_entity: p.primary_entity.clone(),
             traits,
+            linked_entity_id: None,
+            ref_id: None,
+            trait_ref_ids: None,
         })
     } else {
         lower_page(p)
@@ -56,10 +62,14 @@ pub(crate) fn lower_page(p: &Page) -> PageRef {
                     fields: None,
                     listens: None,
                     emits_scope: None,
+                    event_ids: None,
+                    linked_entity_id: None,
+                    ref_id: None,
                 })
                 .collect(),
         ),
         sections: None,
+        id: None,
     })
 }
 

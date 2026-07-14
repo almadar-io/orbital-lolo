@@ -22,15 +22,14 @@ fn fixtures_dir() -> PathBuf {
 fn assert_audit_round_trip(name: &str) {
     let dir = fixtures_dir();
     let lolo_path = dir.join(format!("{name}.lolo"));
-    let source = std::fs::read_to_string(&lolo_path)
-        .unwrap_or_else(|e| panic!("read {lolo_path:?}: {e}"));
+    let source =
+        std::fs::read_to_string(&lolo_path).unwrap_or_else(|e| panic!("read {lolo_path:?}: {e}"));
 
     let ast = parse_str(&source).unwrap_or_else(|e| panic!("parse {name}: {e:?}"));
     let formatted = format_program(&ast);
 
     // Formatter must be idempotent: parse(formatted) then format again == formatted.
-    let ast2 =
-        parse_str(&formatted).unwrap_or_else(|e| panic!("re-parse formatted {name}: {e:?}"));
+    let ast2 = parse_str(&formatted).unwrap_or_else(|e| panic!("re-parse formatted {name}: {e:?}"));
     let formatted2 = format_program(&ast2);
     assert_eq!(
         formatted, formatted2,
@@ -40,8 +39,8 @@ fn assert_audit_round_trip(name: &str) {
     // Both the original and the formatted source must lower to a schema cleanly.
     let schema1 =
         parse_and_lower_str(&source).unwrap_or_else(|e| panic!("lower original {name}: {e:?}"));
-    let schema2 = parse_and_lower_str(&formatted)
-        .unwrap_or_else(|e| panic!("lower formatted {name}: {e:?}"));
+    let schema2 =
+        parse_and_lower_str(&formatted).unwrap_or_else(|e| panic!("lower formatted {name}: {e:?}"));
     assert_eq!(
         schema1.orbitals.len(),
         schema2.orbitals.len(),

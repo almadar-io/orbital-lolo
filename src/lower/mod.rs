@@ -150,6 +150,8 @@ pub fn lower_to_orb(ast: &Program) -> Result<OrbitalSchema, LowerError> {
         description: ast.app.description.clone(),
         orbitals,
         metadata: None,
+        ledger: None,
+        schema_version: None,
     };
 
     // Canonicalize flat `fn` lambdas to the grouped form so the emitted/baked
@@ -404,6 +406,8 @@ fn lower_orbital(
             scope: None,
             source_behavior: None,
             source_entity_definition: None,
+            id: None,
+            linked_entity_id: None,
         };
         traits.push(TraitReference::Inline(synth));
     }
@@ -428,6 +432,7 @@ fn lower_orbital(
         exposes: None,
         domain_context: None,
         design: None,
+        id: None,
     })
 }
 
@@ -507,7 +512,10 @@ mod tests {
     fn unknown_entity_tag_errors_at_parse() {
         let err = crate::parser::parse_str("orbital Foo { entity Bar [bogus] { id : string! } }")
             .expect_err("expected parse to reject unknown entity tag");
-        assert!(matches!(err, crate::error::ParseError::InvalidPersistenceMode { .. }));
+        assert!(matches!(
+            err,
+            crate::error::ParseError::InvalidPersistenceMode { .. }
+        ));
     }
 
     #[test]

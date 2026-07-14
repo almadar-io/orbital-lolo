@@ -1409,9 +1409,7 @@ impl Formatter {
                 // one-element array by the emitter), or absent.
                 match map.get("children") {
                     None => true,
-                    Some(SExpression::Array(arr)) => {
-                        arr.iter().all(|c| self.is_jsx_renderable(c))
-                    }
+                    Some(SExpression::Array(arr)) => arr.iter().all(|c| self.is_jsx_renderable(c)),
                     Some(single) => self.is_jsx_renderable(single),
                 }
             }
@@ -1424,25 +1422,21 @@ impl Formatter {
                     // every listen carries a trigger; any trigger-less
                     // (Shape B) entry — a payload declaration that a reference
                     // shouldn't own — falls back to `@(...)`.
-                    let listens_ok = tr
-                        .listens
-                        .iter()
-                        .all(|l| l.triggers.is_some());
-                    listens_ok
-                        && {
-                            let child_cfg = tr
-                                .reference
-                                .as_ref()
-                                .and_then(|r| r.config.iter().find(|c| c.name == "children"))
-                                .and_then(|c| c.default.as_ref());
-                            match child_cfg {
-                                None => true,
-                                Some(SExpression::Array(arr)) => {
-                                    arr.iter().all(|c| self.is_jsx_renderable(c))
-                                }
-                                Some(single) => self.is_jsx_renderable(single),
+                    let listens_ok = tr.listens.iter().all(|l| l.triggers.is_some());
+                    listens_ok && {
+                        let child_cfg = tr
+                            .reference
+                            .as_ref()
+                            .and_then(|r| r.config.iter().find(|c| c.name == "children"))
+                            .and_then(|c| c.default.as_ref());
+                        match child_cfg {
+                            None => true,
+                            Some(SExpression::Array(arr)) => {
+                                arr.iter().all(|c| self.is_jsx_renderable(c))
                             }
+                            Some(single) => self.is_jsx_renderable(single),
                         }
+                    }
                 } else {
                     true
                 }
@@ -1640,9 +1634,7 @@ impl Formatter {
         // `children`) as JSX so the canonical authoring surface for render
         // trees is JSX. Any trailing args (resolved props, priority) are
         // compiler-injected and never authored, so they format normally.
-        if arr.len() >= 3
-            && matches!(&arr[0], SExpression::String(s) if s == "render-ui")
-        {
+        if arr.len() >= 3 && matches!(&arr[0], SExpression::String(s) if s == "render-ui") {
             self.output.push('(');
             self.fmt_sexpr_inner(&arr[0], false);
             self.output.push(' ');
@@ -1845,7 +1837,8 @@ fn is_operator_symbol(s: &str) -> bool {
 /// Inverse of `kebab_case`: kebab-case pattern `type` → PascalCase JSX tag.
 /// `stack` → `Stack`, `data-grid` → `DataGrid`, `ui-spinner` → `UiSpinner`.
 fn pascal_case(kebab: &str) -> String {
-    kebab.split('-')
+    kebab
+        .split('-')
         .map(|seg| {
             let mut c = seg.chars();
             match c.next() {
@@ -1861,9 +1854,7 @@ fn pascal_case(kebab: &str) -> String {
 /// `@config.detailPattern` are NOT static, so their host object falls back to
 /// object-literal formatting instead of becoming an invalid JSX tag.
 fn is_static_pattern_type(s: &str) -> bool {
-    s.chars()
-        .next()
-        .is_some_and(|c| c.is_ascii_lowercase())
+    s.chars().next().is_some_and(|c| c.is_ascii_lowercase())
         && s.chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
 }

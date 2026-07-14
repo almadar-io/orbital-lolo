@@ -21,6 +21,7 @@ pub(crate) fn lower_entity(
         fields,
         instances: None,
         shared: entity.shared,
+        id: None,
     })
 }
 
@@ -93,6 +94,7 @@ pub(crate) fn lower_type_expr(
                     Some(RelationDefinition {
                         entity: name.clone(),
                         cardinality: Some(Cardinality::One),
+                        entity_id: None,
                     }),
                 )
             } else {
@@ -117,6 +119,7 @@ pub(crate) fn lower_type_expr(
                         Some(RelationDefinition {
                             entity: name.clone(),
                             cardinality: Some(Cardinality::Many),
+                            entity_id: None,
                         }),
                     );
                 }

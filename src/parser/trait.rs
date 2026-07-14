@@ -291,9 +291,7 @@ impl Parser {
     /// Alias.traits.X { … }` declaration form and the inline `@(Alias.traits.X
     /// { … })` sugar. On entry the leading `{` has NOT been consumed; on exit
     /// the closing `}` has been consumed.
-    pub(crate) fn parse_trait_ref_body(
-        &mut self,
-    ) -> Result<TraitRefBody, ParseError> {
+    pub(crate) fn parse_trait_ref_body(&mut self) -> Result<TraitRefBody, ParseError> {
         // Body must be brace-form.
         self.expect_kind(&TokenKind::LBrace, "{")?;
         self.skip_newlines();
@@ -1103,7 +1101,15 @@ impl Parser {
     /// and the call-site config parser (organism overrides).
     fn parse_config_annotations(
         &mut self,
-    ) -> Result<(Option<String>, Option<String>, Option<String>, Option<String>), ParseError> {
+    ) -> Result<
+        (
+            Option<String>,
+            Option<String>,
+            Option<String>,
+            Option<String>,
+        ),
+        ParseError,
+    > {
         let mut label = None;
         let mut description = None;
         let mut synonyms = None;
@@ -1158,10 +1164,9 @@ impl Parser {
         while i < len {
             match &self.tokens[i].kind {
                 TokenKind::Equals => return true,
-                TokenKind::Comma
-                | TokenKind::RBrace
-                | TokenKind::Newline
-                | TokenKind::Eof => return false,
+                TokenKind::Comma | TokenKind::RBrace | TokenKind::Newline | TokenKind::Eof => {
+                    return false
+                }
                 _ => i += 1,
             }
         }
