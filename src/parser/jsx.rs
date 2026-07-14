@@ -784,13 +784,21 @@ mod tests {
         let schema = crate::parse_and_lower_str(src).expect("lower");
         let v = serde_json::to_value(&schema).unwrap();
         // Canonicalize: sort object keys recursively so HashMap ordering
-        // differences don't cause false mismatches.
+        // differences don't cause false mismatches, and drop the V4 identity
+        // fields (opaque per-lowering ids + ledger) — this test asserts
+        // render-tree structural identity, not id identity.
         fn canon(v: serde_json::Value) -> serde_json::Value {
+            fn is_identity_key(k: &str) -> bool {
+                k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id")
+            }
             match v {
                 serde_json::Value::Object(map) => {
                     let mut sorted: std::collections::BTreeMap<String, serde_json::Value> =
                         std::collections::BTreeMap::new();
                     for (k, val) in map {
+                        if is_identity_key(&k) {
+                            continue;
+                        }
                         sorted.insert(k, canon(val));
                     }
                     let mut out = serde_json::Map::new();

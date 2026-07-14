@@ -200,10 +200,7 @@ fn stamp_orbital(orbital: &mut Orbital, synthetic_traits: &HashSet<String>, mint
 /// name, discovered from `@trait.<synthetic>` strings inside parent render
 /// effects. A synthetic referenced by 0 or >1 parents is left unmapped (it then
 /// mints normally rather than deriving from an ambiguous root).
-fn embed_parents(
-    orbital: &Orbital,
-    synthetic_traits: &HashSet<String>,
-) -> HashMap<String, String> {
+fn embed_parents(orbital: &Orbital, synthetic_traits: &HashSet<String>) -> HashMap<String, String> {
     let mut candidates: HashMap<String, Vec<String>> = HashMap::new();
     for tr in &orbital.traits {
         let TraitReference::Inline(td) = tr else {

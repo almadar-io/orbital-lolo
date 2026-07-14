@@ -2,11 +2,19 @@ use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use serde_json::Value;
 
 fn canon(v: Value) -> Value {
+    // Drop V4 identity fields (opaque per-lowering ids + ledger); this test
+    // asserts semantic preservation, not id identity.
+    fn is_identity_key(k: &str) -> bool {
+        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id")
+    }
     match v {
         Value::Object(map) => {
             let mut s: std::collections::BTreeMap<String, Value> =
                 std::collections::BTreeMap::new();
             for (k, v) in map {
+                if is_identity_key(&k) {
+                    continue;
+                }
                 s.insert(k, canon(v));
             }
             let mut out = serde_json::Map::new();

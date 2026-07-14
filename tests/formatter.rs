@@ -14,11 +14,20 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn canonicalize(value: Value) -> Value {
+    // Drop V4 identity fields: opaque per-lowering ids + ledger + schemaVersion.
+    // These tests assert *semantic* preservation across a reformat; ids are
+    // minted fresh each (independent) lowering and are not semantic content.
+    fn is_identity_key(k: &str) -> bool {
+        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id")
+    }
     match value {
         Value::Object(map) => {
             let mut sorted: std::collections::BTreeMap<String, Value> =
                 std::collections::BTreeMap::new();
             for (k, v) in map {
+                if is_identity_key(&k) {
+                    continue;
+                }
                 sorted.insert(k, canonicalize(v));
             }
             let mut new_map = serde_json::Map::new();

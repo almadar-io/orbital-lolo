@@ -16,13 +16,22 @@ fn fixtures_dir() -> PathBuf {
 }
 
 /// Recursively sort all object keys in a serde_json::Value so two values
-/// produced from `HashMap`-backed structs compare deterministically.
+/// produced from `HashMap`-backed structs compare deterministically. Also
+/// drops the V4 identity fields (opaque entropy-minted ids + ledger +
+/// schemaVersion): these snapshot goldens capture semantic structure, and an
+/// id minted fresh each lowering cannot be a stable golden value.
 fn canonicalize(value: Value) -> Value {
+    fn is_identity_key(k: &str) -> bool {
+        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id")
+    }
     match value {
         Value::Object(map) => {
             let mut sorted: std::collections::BTreeMap<String, Value> =
                 std::collections::BTreeMap::new();
             for (k, v) in map {
+                if is_identity_key(&k) {
+                    continue;
+                }
                 sorted.insert(k, canonicalize(v));
             }
             // Convert back to a Value::Object (which round-trips through

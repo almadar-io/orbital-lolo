@@ -88,15 +88,13 @@ fn id_map(schema: &OrbitalSchema) -> BTreeMap<String, String> {
                     out.insert(format!("trait:{}", td.name), id.clone());
                 }
                 for ev in td.state_machine.events.iter().flatten() {
-                    if let Some(m) = schema
-                        .ledger
-                        .as_ref()
-                        .and_then(|l| l.entries.values().find(|e| {
+                    if let Some(m) = schema.ledger.as_ref().and_then(|l| {
+                        l.entries.values().find(|e| {
                             e.kind == IdKind::Event
                                 && e.baked_name == ev.key
                                 && e.parent.as_deref() == td.id.as_deref()
-                        }))
-                    {
+                        })
+                    }) {
                         out.insert(format!("event:{}:{}", td.name, ev.key), m.id.clone());
                     }
                 }
