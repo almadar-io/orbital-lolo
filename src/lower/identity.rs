@@ -445,6 +445,19 @@ fn resolve_inline_trait_edges(td: &mut TraitDefinition, ids: &OrbitalIds) {
             }
         }
     }
+
+    // V4 event-dispatch layer: stamp each declared event's own id and each
+    // transition's triggering-event id from this trait's minted event ids. The
+    // transition→event edge is the id-keyed dispatch target the runtimes match
+    // on (id-primary, name fallback) once names are stripped.
+    if let Some(oe) = own_events {
+        for ev in td.state_machine.events.iter_mut().flatten() {
+            ev.id = oe.get(&ev.key).cloned();
+        }
+        for t in td.state_machine.transitions.iter_mut() {
+            t.event_id = oe.get(&t.event).cloned();
+        }
+    }
 }
 
 fn resolve_listen_source(source: &mut ListenSource, ids: &OrbitalIds) {
