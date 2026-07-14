@@ -69,6 +69,20 @@ pub fn lower_to_orb_with_prior(
     Ok(schema)
 }
 
+/// Stamp V4 identity directly onto an already-lowered `OrbitalSchema` that has
+/// no `.lolo`/AST behind it — e.g. a name-only factory `.orb`. Mints ids for
+/// every declaration, resolves in-file name refs to id edges, and writes the
+/// ledger + `schemaVersion`. `prior` anchors id reuse (zero churn on re-stamp).
+/// Factory schemas carry no parser-hoisted render-embed traits, so callers pass
+/// an empty `synthetic_traits` set. Same minting authority as the `.lolo` path.
+pub fn stamp_schema_identity(
+    schema: &mut OrbitalSchema,
+    prior: Option<&OrbitalSchema>,
+    synthetic_traits: &HashSet<String>,
+) {
+    identity::stamp_identity(schema, prior, synthetic_traits);
+}
+
 /// The name-only lowering (pre-identity). Kept private; the two public entry
 /// points wrap it.
 fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {

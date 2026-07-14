@@ -27,7 +27,7 @@ pub use ast::{Ast, Comment, EntityField, EventField, Span, TypeExpr};
 pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
 pub use format::format_program;
 pub use lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
-pub use lower::{lower_to_orb, lower_to_orb_with_prior};
+pub use lower::{lower_to_orb, lower_to_orb_with_prior, stamp_schema_identity};
 pub use parser::{parse, parse_str};
 
 use orbital_core::schema::OrbitalSchema;
