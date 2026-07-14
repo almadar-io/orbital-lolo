@@ -1,0 +1,70 @@
+//! Rabit V4 Phase 3 end-to-end: a real `.lolo` lowered through Phase-2 id
+//! stamping validates clean under the `ORB_ID_*` rule family, and corrupting a
+//! single dual-carry edge makes the matching rule fire.
+
+use orbital_compiler::validate_comprehensive;
+use orbital_core::schema::{OrbitalSchema, TraitReference};
+use orbital_lolo::parse_and_lower_str;
+
+const FIXTURE: &str = r#"
+    orbital Ledger {
+        entity Account {
+            id : string!
+            balance : number = 0
+        }
+        trait Deposit -> Account [interaction, instance] {
+            initial: idle
+            state idle {
+                DEPOSIT -> idle
+                    (set @entity.balance 1)
+                    (emit DEPOSITED { id: "x" })
+            }
+            emits {
+                DEPOSITED { id : string! }
+            }
+        }
+        page "/ledger" -> Deposit
+    }
+"#;
+
+fn id_diagnostics(schema: &OrbitalSchema) -> Vec<String> {
+    validate_comprehensive(schema)
+        .all_issues()
+        .filter(|e| e.code.category() == "identity")
+        .map(|e| format!("{}: {}", e.code, e.message))
+        .collect()
+}
+
+#[test]
+fn stamped_lolo_validates_clean() {
+    let schema = parse_and_lower_str(FIXTURE).expect("parse+lower");
+    assert_eq!(schema.schema_version, Some(1), "ids stamped by Phase 2");
+    let diags = id_diagnostics(&schema);
+    assert!(
+        diags.is_empty(),
+        "healthy stamped .orb must be ORB_ID_* clean: {diags:?}"
+    );
+}
+
+#[test]
+fn corrupting_a_dual_carry_edge_fires_unknown_ref() {
+    let mut schema = parse_and_lower_str(FIXTURE).expect("parse+lower");
+    // Point the Deposit trait's linked-entity edge at a well-formed but
+    // nonexistent entity id.
+    let td = schema.orbitals[0]
+        .traits
+        .iter_mut()
+        .find_map(|t| match t {
+            TraitReference::Inline(td) if td.name == "Deposit" => Some(td),
+            _ => None,
+        })
+        .expect("Deposit trait");
+    td.linked_entity_id = Some("ent_GHOST00000000000000000000".to_string());
+
+    let diags = id_diagnostics(&schema);
+    assert_eq!(diags.len(), 1, "exactly one ORB_ID_* diagnostic: {diags:?}");
+    assert!(
+        diags[0].starts_with("ORB_ID_UNKNOWN_REF"),
+        "dangling id edge must fire ORB_ID_UNKNOWN_REF: {diags:?}"
+    );
+}
