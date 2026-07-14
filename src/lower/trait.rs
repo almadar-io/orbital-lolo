@@ -200,6 +200,7 @@ pub(crate) fn lower_trait(
                 from: StringOrArray::Single(state.name.clone()),
                 to: tr.target.clone(),
                 event: tr.event.clone(),
+                event_id: None,
                 guard: tr.guard.clone(),
                 effects: if tr.effects.is_empty() {
                     None
@@ -231,6 +232,7 @@ pub(crate) fn lower_trait(
                     from: StringOrArray::Single(state.name.clone()),
                     to: state.name.clone(),
                     event: "TIMEOUT".to_string(),
+                    event_id: None,
                     guard: None,
                     effects: None,
                 });
@@ -377,6 +379,7 @@ pub(crate) fn lower_trait(
                     };
                     Ok(EventDefinition {
                         key: k,
+                        id: None,
                         name: Some(name),
                         description,
                         synonyms,

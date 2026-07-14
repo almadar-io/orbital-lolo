@@ -431,6 +431,7 @@ fn lower_orbital(
                 }],
                 events: Some(vec![EventDefinition {
                     key: "INIT".to_string(),
+                    id: None,
                     name: None,
                     description: None,
                     synonyms: None,
@@ -441,6 +442,7 @@ fn lower_orbital(
                     from: StringOrArray::Single("init".to_string()),
                     to: "init".to_string(),
                     event: "INIT".to_string(),
+                    event_id: None,
                     guard: None,
                     effects: Some(orb.body.clone()),
                 }],
