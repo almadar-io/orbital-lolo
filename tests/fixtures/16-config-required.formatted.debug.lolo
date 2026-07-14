@@ -1,0 +1,22 @@
+
+orbital ConfigRequiredOrbital {
+  entity Widget [persistent: widgets] {
+    id : string!
+  }
+
+  trait WidgetView -> Widget [interaction] {
+    state idle {
+      LOAD -> idle
+        (fetch Widget { id: ?id })
+    }
+
+    config {
+      title : string!
+        @label "Title"
+      subtitle : string! = "default subtitle"
+        @label "Subtitle"
+      icon : string = layout-panel-top
+        @label "Icon"
+    }
+  }
+}

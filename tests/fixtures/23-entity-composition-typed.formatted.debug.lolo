@@ -1,0 +1,45 @@
+
+;; Stage 2 fixture — entity composition via `&`.
+;; `type Patient = Auditable & Entity { ... }` merges fields from two
+;; composed entity shapes at resolution time. The resolver enforces:
+;; - all composed parts are Entity kind
+;; - no field collisions with differing types
+;; The `::` annotation on `entity Patient :: Patient` then checks the body
+;; has every required field from the merged shape.
+type Timestamped = Entity {
+  id : string!
+  createdAt : string
+  updatedAt : string
+}
+type Auditable = Timestamped & Entity {
+  createdBy : string
+  updatedBy : string
+}
+type Patient = Auditable & Entity [persistent: patients] {
+  name : string
+  dateOfBirth : string
+  phone : string
+}
+orbital PatientOrbital {
+  entity Patient :: Patient [persistent: patients] {
+    id : string!
+    createdAt : string
+    updatedAt : string
+    createdBy : string
+    updatedBy : string
+    name : string
+    dateOfBirth : string
+    phone : string
+    notes : string
+  }
+
+  trait PatientManage -> Patient [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Patient)
+        (render-ui main <DataList entity={Patient} fields={[{ label: Name, name: name }]} />)
+    }
+  }
+
+  page "/patients" -> PatientManage
+}

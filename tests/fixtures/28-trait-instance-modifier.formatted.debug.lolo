@@ -1,0 +1,27 @@
+
+;; Stage 2 fixture — trait modifier list accepts `instance` / `collection`.
+;; The AST carries the scope; today the modifier is informational and does not
+;; change the lowered .orb (Phase 4 of the V2 plan adds the type-checker).
+orbital TaskOrbital {
+  entity Task [persistent: tasks] {
+    id : string!
+    title : string
+    status : string
+  }
+
+  trait TaskBrowse -> Task [interaction, collection] {
+    state browsing {
+      INIT -> browsing
+        (fetch Task)
+    }
+  }
+
+  trait TaskEdit -> Task [interaction, instance] {
+    state editing {
+      SAVE -> editing
+        (persist update Task @entity)
+    }
+  }
+
+  page "/tasks" -> TaskBrowse, TaskEdit
+}

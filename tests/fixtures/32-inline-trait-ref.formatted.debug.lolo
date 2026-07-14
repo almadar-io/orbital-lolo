@@ -1,0 +1,23 @@
+
+orbital WidgetOrbital {
+  uses UiSpinner from "std/behaviors/ui-spinner"
+
+  uses UiButton from "std/behaviors/ui-button"
+
+  entity Widget [persistent: widgets] {
+    id : string!
+    label : string
+  }
+
+  trait WidgetView -> Widget [interaction] {
+    state idle {
+      INIT -> idle
+        (render-ui main <Stack direction={vertical} gap={md}>
+          <UiSpinner.traits.SpinnerRender linkedEntity={Widget} size={sm} />
+          <UiButton.traits.ButtonRender linkedEntity={Widget} label={Click} variant={primary} />
+        </Stack>)
+    }
+  }
+
+  page "/widgets" as WidgetPage -> WidgetView
+}

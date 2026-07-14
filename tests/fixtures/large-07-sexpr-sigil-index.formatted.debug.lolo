@@ -1,0 +1,117 @@
+app std-feature-detail-page "1.0.0"
+"Feature detail page molecule for marketing sites. Composes hero, alternating split sections, and CTA as a vertical stack of individual marketing patterns. Pick for product deep-dives and capability explainers."
+orbital FeatureDetailPageItemOrbital {
+    type SectionCard = { title : string!, description : string!, bullets : [string], image : { src : string!, alt : string! }, imagePosition : "left" | "right" }
+
+    type ActionCard = { label : string!, href : string! }
+
+    type FooterLink = { label : string!, href : string! }
+
+    type FooterColumn = { title : string!, items : [FooterLink] }
+
+  entity FeatureDetailPageItem [runtime] {
+    id : string
+  }
+
+  trait FeatureDetailPageItemLayout -> FeatureDetailPageItem [interaction, instance] {
+    initial: composing
+
+    state composing {
+      INIT -> composing
+        (render-ui main <Stack direction={vertical} gap={none}>
+          <HeroSection align={@config.heroAlign} background={@config.heroBackground} primaryAction={{ href: @config.heroPrimaryActionHref, label: @config.heroPrimaryActionLabel }} secondaryAction={{ href: @config.heroSecondaryActionHref, label: @config.heroSecondaryActionLabel }} subtitle={@config.heroSubtitle} tag={@config.heroTag} title={@config.heroTitle} titleAccent={@config.heroTitleAccent} />
+          <SplitSection bullets={"@config.sections[0].bullets"} description={"@config.sections[0].description"} image={"@config.sections[0].image"} imagePosition={"@config.sections[0].imagePosition"} title={"@config.sections[0].title"} />
+          <SplitSection bullets={"@config.sections[1].bullets"} description={"@config.sections[1].description"} image={"@config.sections[1].image"} imagePosition={"@config.sections[1].imagePosition"} title={"@config.sections[1].title"} />
+          <SplitSection bullets={"@config.sections[2].bullets"} description={"@config.sections[2].description"} image={"@config.sections[2].image"} imagePosition={"@config.sections[2].imagePosition"} title={"@config.sections[2].title"} />
+          <CtaBanner primaryAction={@config.ctaAction} title={@config.ctaTitle} />
+          <MarketingFooter columns={@config.footerColumns} copyright={@config.footerCopyright} />
+        </Stack>)
+    }
+
+    config {
+      heroTag : string = Feature
+      heroTitle : string = "Everything you need to ship"
+      heroTitleAccent : string = ""
+      heroSubtitle : string = "From design to deployment, Almadar handles the entire stack."
+      heroPrimaryActionLabel : string = "Get Started"
+      heroPrimaryActionHref : string = "/signup"
+      heroSecondaryActionLabel : string = "Watch Demo"
+      heroSecondaryActionHref : string = "#"
+      heroBackground : string = gradient
+      heroAlign : string = center
+      sections : [SectionCard] = [{
+        bullets: ["No-code visual editor", "AI-assisted schema generation", "Real-time preview"]
+        description: "Describe what you want. Almadar translates your words into a complete application schema."
+        image: {
+          alt: "Design interface"
+          src: ""
+        }
+        imagePosition: right
+        title: "Design in Natural Language"
+      }, {
+        bullets: ["Type-safe APIs", "Auto-generated database schema", "Instant deployments"]
+        description: "Get a production-ready TypeScript backend and React frontend in seconds."
+        image: {
+          alt: "Generated code"
+          src: ""
+        }
+        imagePosition: left
+        title: "Full-Stack Generation"
+      }, {
+        bullets: ["SOC-2 ready", "RBAC & SSO", "End-to-end encryption"]
+        description: "Built-in auth, audit logs, and compliance from day one."
+        image: {
+          alt: "Security dashboard"
+          src: ""
+        }
+        imagePosition: right
+        title: "Enterprise-Grade Security"
+      }]
+      ctaTitle : string = "Ready to experience the future?"
+      ctaAction : ActionCard = {
+        href: "/signup"
+        label: "Get Started"
+      }
+      footerColumns : [FooterColumn] = [{
+        items: [{
+          href: "#"
+          label: Features
+        }, {
+          href: "#"
+          label: Pricing
+        }, {
+          href: "#"
+          label: Changelog
+        }]
+        title: Product
+      }, {
+        items: [{
+          href: "#"
+          label: About
+        }, {
+          href: "#"
+          label: Careers
+        }, {
+          href: "#"
+          label: Blog
+        }]
+        title: Company
+      }, {
+        items: [{
+          href: "#"
+          label: Docs
+        }, {
+          href: "#"
+          label: Community
+        }, {
+          href: "#"
+          label: Support
+        }]
+        title: Resources
+      }]
+      footerCopyright : string = "© 2026 Almadar. All rights reserved."
+    }
+  }
+
+  page "/features" as FeatureDetailPage -> FeatureDetailPageItemLayout
+}

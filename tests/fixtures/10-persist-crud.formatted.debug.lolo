@@ -1,0 +1,18 @@
+
+orbital UserOrbital {
+  entity User [persistent: users] {
+    id : string!
+    name : string
+  }
+
+  trait UserCrud -> User [interaction] {
+    state listing {
+      CREATE -> listing
+        (persist create User ?data)
+      UPDATE -> listing
+        (persist update User ?data)
+      DELETE -> listing
+        (persist delete User ?id)
+    }
+  }
+}

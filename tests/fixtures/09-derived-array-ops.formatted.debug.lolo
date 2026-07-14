@@ -1,0 +1,16 @@
+
+orbital InventoryOrbital {
+  entity Inventory [runtime] {
+    id : string!
+    items : [string]
+    itemCount : int = derived (array/length @items)
+    isEmpty : bool = derived (== (array/length @items) 0)
+  }
+
+  trait InventoryActions -> Inventory [interaction] {
+    state idle {
+      ADD -> idle
+        (set @items (array/append @items ?item))
+    }
+  }
+}

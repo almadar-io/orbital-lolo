@@ -1,0 +1,41 @@
+
+orbital PatientOrbital {
+  entity Patient [persistent: patients] {
+    id : string!
+    status : string
+  }
+
+  trait PatientLoader -> Patient [interaction] {
+    state idle {
+      LOAD -> idle
+        (fetch Patient {
+          emit: { failure: PATIENT_LOAD_FAILED, success: PATIENT_LOADED }
+          id: ?id
+        })
+    }
+
+    state loading {
+      SAVE -> loading
+        (persist update Patient @entity {
+          emit: { failure: PATIENT_SAVE_FAILED, success: PATIENT_SAVED }
+        })
+      MARK_DONE -> loading
+        (set @entity.status done {
+          emit: { success: STATUS_CHANGED }
+        })
+      SEND_EMAIL -> loading
+        (call-service notify sendEmail ? {
+          emit: { failure: EMAIL_FAILED, success: EMAIL_SENT }
+        })
+      SUBSCRIBE -> loading
+        (ref Patient {
+          emit: { on_change: PATIENT_UPDATED }
+          id: @entity.id
+        })
+      WATCH_PUSH -> loading
+        (os/watch-http "wss://push" {
+          emit: { on_message: PUSH_RECEIVED }
+        })
+    }
+  }
+}

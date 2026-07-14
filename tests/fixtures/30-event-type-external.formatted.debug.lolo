@@ -1,0 +1,26 @@
+
+;; Phase 10 fixture — bare-name alias lookup with `[external]` scope on the
+;; alias. The `.orb` output carries `scope: "external"` on the emit entry.
+orbital OrderOrbital {
+    type OrderShipped = Event Order [external]
+
+  entity Order [persistent: orders] {
+    id : string!
+    total : number
+  }
+
+  trait OrderShipper -> Order [interaction, instance] {
+    state pending {
+      SHIP -> shipped
+        (persist update Order ?data)
+    }
+
+    state shipped {}
+
+    emits {
+      OrderShipped
+    }
+  }
+
+  page "/orders" -> OrderShipper
+}

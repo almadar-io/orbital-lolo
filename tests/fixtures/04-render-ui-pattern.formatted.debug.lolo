@@ -1,0 +1,15 @@
+
+orbital TaskOrbital {
+  entity Task [persistent: tasks] {
+    id : string!
+    title : string
+  }
+
+  trait TaskList -> Task [interaction] {
+    state listing {
+      INIT -> listing
+        (ref Task)
+        (render-ui main <DataGrid columns={[{ label: Title, name: title }]} entity={Task} />)
+    }
+  }
+}

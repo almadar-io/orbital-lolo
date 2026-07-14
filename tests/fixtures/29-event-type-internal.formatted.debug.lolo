@@ -1,0 +1,28 @@
+
+;; Phase 10 fixture — bare-name reference to a `type X = Event<T>` alias
+;; from inside the unified `emits {}` block. The lowerer resolves the alias
+;; and flattens the payload entity fields into the .orb emit entry.
+orbital BrowseItemOrbital {
+    type BrowseItemLoaded = Event BrowseItem
+
+  entity BrowseItem [runtime] {
+    id : string!
+    name : string
+    description : string
+  }
+
+  trait BrowseItemBrowse -> BrowseItem [interaction, collection] {
+    state browsing {
+      INIT -> browsing
+        (fetch BrowseItem {
+          emit: { success: BrowseItemLoaded }
+        })
+    }
+
+    emits {
+      BrowseItemLoaded
+    }
+  }
+
+  page "/browseitems" -> BrowseItemBrowse
+}

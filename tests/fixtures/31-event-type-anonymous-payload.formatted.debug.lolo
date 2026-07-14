@@ -1,0 +1,23 @@
+
+;; Phase 10 fixture — bare-name alias whose payload is an anonymous record.
+;; The record fields flatten verbatim into the .orb emit's payload array.
+orbital ErrorReporterOrbital {
+    type ReportFailed = Event { message : string, code : number } [external]
+
+  entity ErrorReport [runtime] {
+    id : string!
+  }
+
+  trait ErrorReporter -> ErrorReport [interaction, instance] {
+    state idle {
+      FAIL -> idle
+        (emit ReportFailed)
+    }
+
+    emits {
+      ReportFailed
+    }
+  }
+
+  page "/errors" -> ErrorReporter
+}

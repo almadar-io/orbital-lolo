@@ -1,0 +1,32 @@
+
+orbital OrderOrbital {
+  entity Order [persistent: orders] {
+    id : string!
+    status : string
+  }
+
+  trait OrderLifecycle -> Order [interaction] {
+    initial: pending
+
+    state pending {
+      CONFIRM -> confirmed
+        (set @status confirmed)
+      CANCEL -> cancelled
+        (set @status cancelled)
+    }
+
+    state confirmed {
+      SHIP -> shipped
+        (set @status shipped)
+    }
+
+    state shipped {
+      DELIVER -> delivered
+        (set @status delivered)
+    }
+
+    state delivered {}
+
+    state cancelled {}
+  }
+}

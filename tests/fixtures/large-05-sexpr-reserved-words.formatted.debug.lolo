@@ -1,0 +1,387 @@
+app std-trade-order "1.0.0"
+"std-trade-order — trade-order lifecycle (pending → working → filled) with position limits, VaR ceilings, and pre-trade risk-check knobs."
+type FieldSpec = { name : string!, label : string, variant : string, icon : string, format : string, key : string, header : string }
+type ItemAction = { label : string!, event : string!, variant : string, icon : string }
+orbital TradeOrderOrbital {
+    type TradeOrderLoaded = Event { data : [TradeOrder] } "Fired when the trade order collection finishes loading"
+
+    type TradeOrderLoadFailed = Event { error : string, code : string } "Fired when the trade order collection fails to load"
+
+    type TradeOrderUpdated = Event { row : TradeOrder } "Fired after a trade order row's status persists"
+
+    type TradeOrderUpdateFailed = Event { error : string, code : string } "Fired when a trade order row's status update fails to persist"
+
+  entity TradeOrder [persistent: trade_orders] {
+    id : string!
+    instrument : string! @description "Identifies the underlying asset or security." @synonyms "ticker, symbol, asset, security"
+    side : "buy" | "sell" @description "Indicates whether the order is to buy or sell." @synonyms "direction, type" = buy
+    orderType : "market" | "limit" | "stop" | "stop-limit" | "trailing" @description "Specifies the type of order being placed." @synonyms "order kind, order mode, order specification" = market
+    quantity : number @description "The number of units being traded." @synonyms "size, amount, volume" = 0
+    price : number @description "The monetary value associated with the order." @synonyms "cost, value, amount" = 0
+    limitPrice : number @description "The maximum price acceptable for the order." @synonyms "maxPrice, upperLimit, ceiling" = 0
+    stopPrice : number @description "The price at which an order becomes triggered." @synonyms "triggerPrice, stopLoss, stopLimit" = 0
+    status : "pending" | "working" | "filled" | "partially-filled" | "cancelled" | "rejected" @description "Current stage of the process." @synonyms "state, condition, phase" = pending
+    venue : string @description "The exchange or market where the order is placed." @synonyms "market, exchange, location" = ""
+    filledAt : string @description "Timestamp indicating when the order was filled." @synonyms "completionTime, executionTime, fillDate" = ""
+    createdAt : string = ""
+  }
+
+  trait TradeOrderManage -> @rebindable TradeOrder [interaction, collection] {
+    initial: loading
+
+    state loading {
+      INIT -> loading
+        (fetch TradeOrder {
+          emit: { failure: TradeOrderLoadFailed, success: TradeOrderLoaded }
+        })
+        (render-ui main <Stack align={center} className={py-12} direction={vertical} gap={md}>
+          <Spinner />
+          <Typography color={muted} content={"Loading orders…"} variant={caption} />
+        </Stack>)
+      TradeOrderLoaded -> browsing
+        (render-ui main <Stack direction={vertical} gap={md}>
+          <Stack align={center} direction={horizontal} gap={sm}>
+            <Icon name={trending-up} />
+            <Typography content={@config.title} variant={h3} />
+          </Stack>
+          <SimpleGrid cols={4}>
+            <StatDisplay icon={list} label={"Total orders"} value={?data.length} />
+            <StatDisplay icon={clock} label={Working} value={"0"} />
+            <StatDisplay icon={check-circle} label={"Filled today"} value={"0"} />
+            <StatDisplay icon={alert-triangle} label={Rejected} value={"0"} />
+          </SimpleGrid>
+          <Divider />
+          <DataGrid cols={1} entity={?data} fields={@config.fields} gap={sm} itemActions={@config.itemActions} />
+        </Stack>)
+      TradeOrderLoadFailed -> error
+        (render-ui main <Alert message={?error} variant={error} />)
+    }
+
+    state browsing {
+      OPEN_ORDER -> viewing_single
+        (set @entity.id ?row.id)
+        (set @entity.instrument ?row.instrument)
+        (set @entity.side ?row.side)
+        (set @entity.orderType ?row.orderType)
+        (set @entity.quantity ?row.quantity)
+        (set @entity.price ?row.price)
+        (set @entity.limitPrice ?row.limitPrice)
+        (set @entity.stopPrice ?row.stopPrice)
+        (set @entity.status ?row.status)
+        (set @entity.venue ?row.venue)
+        (set @entity.filledAt ?row.filledAt)
+        (set @entity.createdAt ?row.createdAt)
+        (render-ui main <Stack direction={vertical} gap={md}>
+          <Stack align={center} direction={horizontal} gap={sm}>
+            <Button action={CLOSE_VIEW} label={Back} variant={ghost} />
+            <Icon name={trending-up} />
+            <Typography content={@entity.instrument} variant={h3} />
+            <Badge label={@entity.side} variant={primary} />
+            <Badge label={@entity.status} variant={default} />
+          </Stack>
+          <Divider />
+          <Stack direction={vertical} gap={sm}>
+            <Stack direction={horizontal} gap={md}>
+              <Typography color={muted} content={"Order type"} variant={caption} />
+              <Typography content={@entity.orderType} variant={body} />
+            </Stack>
+            <Stack direction={horizontal} gap={md}>
+              <Typography color={muted} content={Venue} variant={caption} />
+              <Typography content={@entity.venue} variant={body} />
+            </Stack>
+          </Stack>
+          <Divider />
+          <SimpleGrid cols={4}>
+            <StatDisplay icon={hash} label={Quantity} value={@entity.quantity} />
+            <StatDisplay icon={dollar-sign} label={Price} value={@entity.price} />
+            <StatDisplay icon={dollar-sign} label={Limit} value={@entity.limitPrice} />
+            <StatDisplay icon={dollar-sign} label={Stop} value={@entity.stopPrice} />
+          </SimpleGrid>
+          <Stack align={center} direction={horizontal} gap={sm}>
+            <Button action={OPEN_ORDER} actionPayload={{ id: @entity.id, row: @entity }} label={Submit} variant={primary} />
+            <Button action={FILL} actionPayload={{ id: @entity.id }} label={Fill} variant={primary} />
+            <Button action={CANCEL} actionPayload={{ id: @entity.id }} label={Cancel} variant={danger} />
+          </Stack>
+        </Stack>)
+      CANCEL -> loading
+        (set @entity.id ?id)
+        (set @entity.status cancelled)
+        (persist update TradeOrder @entity {
+          emit: { failure: TradeOrderUpdateFailed, success: TradeOrderUpdated }
+        })
+        (render-ui main <Stack align={center} className={py-12} direction={vertical} gap={md}>
+          <Spinner />
+          <Typography color={muted} content={"Cancelling order…"} variant={caption} />
+        </Stack>)
+      TradeOrderUpdated -> loading
+        (fetch TradeOrder {
+          emit: { failure: TradeOrderLoadFailed, success: TradeOrderLoaded }
+        })
+      TradeOrderUpdateFailed -> browsing
+        (render-ui main <Alert message={?error} variant={error} />)
+      SET_STATUS -> loading
+        (set @entity.id ?entityId)
+        (set @entity.status ?newStatus)
+        (persist update TradeOrder @entity {
+          emit: { failure: TradeOrderUpdateFailed, success: TradeOrderUpdated }
+        })
+        (render-ui main <Stack align={center} className={py-12} direction={vertical} gap={md}>
+          <Spinner />
+          <Typography color={muted} content={"Updating order status…"} variant={caption} />
+        </Stack>)
+    }
+
+    state viewing_single {
+      CLOSE_VIEW -> loading
+        (fetch TradeOrder {
+          emit: { failure: TradeOrderLoadFailed, success: TradeOrderLoaded }
+        })
+        (render-ui main <Stack align={center} className={py-12} direction={vertical} gap={md}>
+          <Spinner />
+          <Typography color={muted} content={"Loading orders…"} variant={caption} />
+        </Stack>)
+      OPEN_ORDER -> loading
+        (set @entity.id ?id)
+        (set @entity.status working)
+        (persist update TradeOrder @entity {
+          emit: { failure: TradeOrderUpdateFailed, success: TradeOrderUpdated }
+        })
+        (render-ui main <Stack align={center} className={py-12} direction={vertical} gap={md}>
+          <Spinner />
+          <Typography color={muted} content={"Submitting order…"} variant={caption} />
+        </Stack>)
+      FILL -> loading
+        (set @entity.id ?id)
+        (set @entity.status filled)
+        (set @entity.filledAt "now")
+        (persist update TradeOrder @entity {
+          emit: { failure: TradeOrderUpdateFailed, success: TradeOrderUpdated }
+        })
+        (render-ui main <Stack align={center} className={py-12} direction={vertical} gap={md}>
+          <Spinner />
+          <Typography color={muted} content={"Filling order…"} variant={caption} />
+        </Stack>)
+      CANCEL -> loading
+        (set @entity.id ?id)
+        (set @entity.status cancelled)
+        (persist update TradeOrder @entity {
+          emit: { failure: TradeOrderUpdateFailed, success: TradeOrderUpdated }
+        })
+        (render-ui main <Stack align={center} className={py-12} direction={vertical} gap={md}>
+          <Spinner />
+          <Typography color={muted} content={"Cancelling order…"} variant={caption} />
+        </Stack>)
+    }
+
+    state error {
+      INIT -> loading
+        (fetch TradeOrder {
+          emit: { failure: TradeOrderLoadFailed, success: TradeOrderLoaded }
+        })
+        (render-ui main <Spinner size={sm} />)
+    }
+
+    emits {
+      OPEN_ORDER {
+        id : string!
+        row : TradeOrder
+      }
+        @description "Signals the order view is now visible."
+        @synonyms "show, display, reveal"
+        @tier "essential"
+      CLOSE_VIEW
+        @description "Signals the view is being closed or dismissed."
+        @synonyms "dismiss, hide, close"
+        @tier "customization"
+      FILL {
+        id : string!
+      }
+        @description "Indicates a trade order has been successfully filled."
+        @synonyms "completed, executed, finalized"
+        @tier "essential"
+      CANCEL {
+        id : string!
+      }
+        @description "Signals that the order has been cancelled."
+        @synonyms "revoke, delete, remove"
+        @tier "essential"
+      TradeOrderLoaded {
+        data : [TradeOrder]
+      }
+        @description "Signals successful loading of trade order data."
+        @synonyms "loaded, retrieved, fetched"
+        @tier "essential"
+      TradeOrderLoadFailed {
+        error : string
+        code : string
+      }
+        @description "Indicates that loading trade order data has failed."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+      TradeOrderUpdated {
+        row : TradeOrder
+      }
+        @description "Signals a change in the trade order's details."
+        @synonyms "modified, changed, refreshed"
+        @tier "customization"
+      TradeOrderUpdateFailed {
+        error : string
+        code : string
+      }
+        @description "Indicates a failure to update the trade order."
+        @synonyms "error, rejected, failed update"
+        @tier "internal"
+    }
+
+    listens {
+      OPEN_ORDER {
+        id : string!
+        row : TradeOrder
+      }
+        @description "A trade order is being displayed or accessed."
+        @synonyms "display, view, access, show"
+        @tier "essential"
+      CLOSE_VIEW
+        @description "The view is being closed or navigated away from."
+        @synonyms "dismiss, hide, unload"
+        @tier "customization"
+      FILL {
+        id : string!
+      }
+        @description "Indicates a trade order has been successfully filled."
+        @synonyms "completed, executed, finalized"
+        @tier "essential"
+      CANCEL {
+        id : string!
+      }
+        @description "Order cancellation request received."
+        @synonyms "revoke, delete, remove"
+        @tier "essential"
+      SET_STATUS {
+        entityId : string!
+        newStatus : string!
+      }
+        @description "Indicates a change in the order's lifecycle state."
+        @synonyms "update, change, modify, transition"
+        @tier "essential"
+      TradeOrderLoaded {
+        data : [TradeOrder]
+      }
+        @description "Indicates a trade order has been successfully retrieved."
+        @synonyms "loaded, retrieved, fetched"
+        @tier "essential"
+      TradeOrderLoadFailed {
+        error : string
+        code : string
+      }
+        @description "Indicates a failure to load trade order data."
+        @synonyms "error, failure, problem, unsuccessful"
+        @tier "internal"
+      TradeOrderUpdated {
+        row : TradeOrder
+      }
+        @description "Indicates a change in trade order details."
+        @synonyms "modified, changed, revised"
+        @tier "customization"
+      TradeOrderUpdateFailed {
+        error : string
+        code : string
+      }
+        @description "Indicates a failure to update the trade order."
+        @synonyms "error, rejected, failed update"
+        @tier "internal"
+    }
+
+    config {
+      title : string = "Trade Orders"
+        @label "Section title"
+        @description "Heading shown above the trade order blotter"
+        @tier "presentation"
+      fields : [FieldSpec] = [{
+        label: Instrument
+        name: instrument
+        variant: caption
+      }, {
+        label: Side
+        name: side
+        variant: badge
+      }, {
+        label: Type
+        name: orderType
+        variant: badge
+      }, {
+        label: Qty
+        name: quantity
+        variant: caption
+      }, {
+        label: Price
+        name: price
+        variant: caption
+      }, {
+        label: Status
+        name: status
+        variant: badge
+      }, {
+        label: Venue
+        name: venue
+        variant: caption
+      }]
+        @label "Columns to show"
+        @description "Each column maps to one field on the Trade Order entity"
+        @tier "presentation"
+      itemActions : [ItemAction] = [{
+        event: OPEN_ORDER
+        icon: arrow-right
+        label: Open
+        variant: primary
+      }, {
+        event: CANCEL
+        icon: x
+        label: Cancel
+        variant: danger
+      }]
+        @label "Row actions"
+        @description "Buttons users can click on each trade order row"
+        @tier "presentation"
+      orderType : "market" | "limit" | "stop" | "stop-limit" | "trailing" = market
+        @label "Default order type"
+        @synonyms "order kind"
+        @tier "domain"
+      executionVenuePolicy : "best-execution" | "primary-only" | "dark-pool-preferred" | "lit-only" = best-execution
+        @label "Execution venue policy"
+        @description "Routing strategy across listed venues + dark pools."
+        @synonyms "smart order routing, SOR"
+        @tier "domain"
+      positionLimitUSD : number = 1000000
+        @label "Position limit (USD)"
+        @description "Maximum notional position per instrument before block."
+        @synonyms "size limit, max position"
+        @tier "domain"
+      dailyVarLimitUSD : number = 250000
+        @label "Daily VaR limit (USD)"
+        @description "Maximum daily value-at-risk before new orders block."
+        @synonyms "risk limit, daily loss limit"
+        @tier "domain"
+      washTradePreventionMinutes : number = 30
+        @label "Wash-trade prevention (min)"
+        @description "Minimum minutes between offsetting trades on the same instrument."
+        @synonyms "self-cross prevention"
+        @tier "domain"
+      priceCollarsBps : number = 500
+        @label "Price collars (bps)"
+        @description "Maximum bps deviation from reference price before order rejected."
+        @synonyms "price band, fat-finger guard"
+        @tier "domain"
+      partialFillsAllowed : boolean = true
+        @label "Allow partial fills"
+        @description "When false, only fill-or-kill is accepted."
+        @tier "domain"
+      clientSideRiskCheck : "soft" | "hard" | "off" = hard
+        @label "Pre-trade risk check"
+        @description "soft = warn-and-allow; hard = block; off = skip."
+        @tier "domain"
+    }
+  }
+
+  page "/orders" as TradeOrderManagePage -> TradeOrderManage
+}

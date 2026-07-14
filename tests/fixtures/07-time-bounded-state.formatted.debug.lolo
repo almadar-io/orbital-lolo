@@ -1,0 +1,15 @@
+
+orbital ConfirmingOrbital {
+  entity Order [runtime] {
+    id : string!
+  }
+
+  trait ConfirmFlow -> Order [interaction] {
+    state confirming for 30s {
+      CONFIRM -> confirmed
+        (set @id x)
+    }
+
+    state confirmed {}
+  }
+}

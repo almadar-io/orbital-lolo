@@ -1,0 +1,31 @@
+
+;; Stage 1 fixture — `::` annotation on every declaration kind that supports
+;; it (entity, trait, page, orbital). The goal is parser coverage; each
+;; annotation resolves against a type declared earlier in the file.
+type Patient = Entity [persistent: patients] {
+  id : string!
+  name : string
+}
+type PatientViewTrait = Trait -> Patient
+type PatientListPage = Page -> PatientViewTrait
+type PatientModule = Orbital {
+  entity: Patient
+  traits: PatientViewTrait
+  page: PatientListPage
+}
+orbital PatientOrbital :: PatientModule {
+  entity Patient :: Patient [persistent: patients] {
+    id : string!
+    name : string
+    phone : string
+  }
+
+  trait PatientView :: PatientViewTrait -> Patient [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Patient)
+    }
+  }
+
+  page "/patients" :: PatientListPage -> PatientView
+}

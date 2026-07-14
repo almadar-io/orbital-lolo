@@ -1,0 +1,24 @@
+
+orbital ConfirmOrbital {
+  entity ConfirmAction [runtime] {
+    id : string!
+    pendingId : string
+  }
+
+  trait ConfirmActionConfirmation -> ConfirmAction [interaction] {
+    state idle {
+      REQUEST -> confirming
+        (set @pendingId ?id)
+        (render-ui modal <Alert message={"Are you sure?"} />)
+    }
+
+    state confirming {
+      CONFIRM -> idle
+        (render-ui modal null)
+      CANCEL -> idle
+        (render-ui modal null)
+      CLOSE -> idle
+        (render-ui modal null)
+    }
+  }
+}

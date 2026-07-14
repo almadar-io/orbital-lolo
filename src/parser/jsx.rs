@@ -477,8 +477,13 @@ fn listens_from_object(value: &SExpression, span: Span) -> Result<Vec<Listen>, P
             })
         }
     };
+    // `SExpression::Object` is HashMap-backed, so iteration order is
+    // nondeterministic per process — sort by event name so re-emits are
+    // byte-stable (the authored attribute order is already lost at parse).
+    let mut entries: Vec<(&String, &SExpression)> = map.iter().collect();
+    entries.sort_by(|a, b| a.0.cmp(b.0));
     let mut out = Vec::new();
-    for (event, trigger) in map {
+    for (event, trigger) in entries {
         let triggers = match trigger {
             SExpression::String(s) => s.clone(),
             other => {
