@@ -27,7 +27,7 @@ pub use ast::{Ast, Comment, EntityField, EventField, Span, TypeExpr};
 pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
 pub use format::format_program;
 pub use lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
-pub use lower::lower_to_orb;
+pub use lower::{lower_to_orb, lower_to_orb_with_prior};
 pub use parser::{parse, parse_str};
 
 use orbital_core::schema::OrbitalSchema;
@@ -55,11 +55,21 @@ pub fn parse_and_lower(path: &Path) -> Result<OrbitalSchema, LoloError> {
 /// Parse and lower a `.lolo` source string. Used by tests and the
 /// `--emit-orb` CLI flag when feeding from stdin.
 pub fn parse_and_lower_str(source: &str) -> Result<OrbitalSchema, LoloError> {
+    parse_and_lower_str_with_prior(source, None)
+}
+
+/// Parse and lower a `.lolo` source string, reusing ids from `prior` (a
+/// previously-emitted `.orb` schema for the same source) so re-emits do not
+/// churn ids. See [`lower_to_orb_with_prior`].
+pub fn parse_and_lower_str_with_prior(
+    source: &str,
+    prior: Option<&OrbitalSchema>,
+) -> Result<OrbitalSchema, LoloError> {
     let ast = parse_str(source).map_err(|e| LoloError::Parse {
         path: "<input>".to_string(),
         inner: e,
     })?;
-    let schema = lower_to_orb(&ast).map_err(|e| LoloError::Lower {
+    let schema = lower_to_orb_with_prior(&ast, prior).map_err(|e| LoloError::Lower {
         path: "<input>".to_string(),
         inner: e,
     })?;

@@ -21,6 +21,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 mod checks;
 mod emit_listen;
 mod entity;
+mod identity;
 mod page;
 mod r#trait;
 mod type_helpers;
@@ -39,8 +40,38 @@ pub(crate) use type_helpers::{
     type_expr_to_config_string, type_expr_to_config_values, type_expr_to_string,
 };
 
-/// Lower an entire `.lolo` program into an `OrbitalSchema`.
+/// Lower an entire `.lolo` program into an `OrbitalSchema` (no identity
+/// stamping — names only). Back-compat entry point; prefer
+/// [`lower_to_orb_with_prior`] when a prior `.orb` is available so ids stay
+/// stable across re-lowers.
 pub fn lower_to_orb(ast: &Program) -> Result<OrbitalSchema, LowerError> {
+    lower_to_orb_with_prior(ast, None)
+}
+
+/// Lower `ast` and stamp V4 identity: mint ids for authored nodes, resolve
+/// in-file references to id edges, and emit the ledger + `schemaVersion`.
+/// `prior` (a previously-emitted schema for the same source) anchors id reuse —
+/// re-lowering the same `.lolo` with its own output as `prior` yields
+/// byte-identical ids (zero churn). See [`self::identity`].
+pub fn lower_to_orb_with_prior(
+    ast: &Program,
+    prior: Option<&OrbitalSchema>,
+) -> Result<OrbitalSchema, LowerError> {
+    let mut schema = lower_to_orb_names_only(ast)?;
+    let synthetic_traits: HashSet<String> = ast
+        .orbitals
+        .iter()
+        .flat_map(|o| o.traits.iter())
+        .filter(|t| t.is_inline_synthetic)
+        .map(|t| t.name.clone())
+        .collect();
+    identity::stamp_identity(&mut schema, prior, &synthetic_traits);
+    Ok(schema)
+}
+
+/// The name-only lowering (pre-identity). Kept private; the two public entry
+/// points wrap it.
+fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
     // Phase 0: run the type-system resolver. Any unknown type / cycle /
     // kind-mismatch / composition-conflict / annotation-mismatch is reported
     // as `LowerError::Type(..)` before lowering proceeds. Types are stripped
