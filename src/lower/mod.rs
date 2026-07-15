@@ -21,7 +21,6 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 mod checks;
 mod emit_listen;
 mod entity;
-mod identity;
 mod page;
 mod r#trait;
 mod type_helpers;
@@ -65,7 +64,7 @@ pub fn lower_to_orb_with_prior(
         .filter(|t| t.is_inline_synthetic)
         .map(|t| t.name.clone())
         .collect();
-    identity::stamp_identity(&mut schema, prior, &synthetic_traits);
+    orbital_core::stamp::stamp_schema_identity(&mut schema, prior, &synthetic_traits);
     Ok(schema)
 }
 
@@ -75,12 +74,14 @@ pub fn lower_to_orb_with_prior(
 /// ledger + `schemaVersion`. `prior` anchors id reuse (zero churn on re-stamp).
 /// Factory schemas carry no parser-hoisted render-embed traits, so callers pass
 /// an empty `synthetic_traits` set. Same minting authority as the `.lolo` path.
+/// Re-exports the canonical minter, which now lives in `orbital_core::stamp`
+/// so the compiler (a sibling crate of lolo) can auto-stamp on load.
 pub fn stamp_schema_identity(
     schema: &mut OrbitalSchema,
     prior: Option<&OrbitalSchema>,
     synthetic_traits: &HashSet<String>,
 ) {
-    identity::stamp_identity(schema, prior, synthetic_traits);
+    orbital_core::stamp::stamp_schema_identity(schema, prior, synthetic_traits);
 }
 
 /// The name-only lowering (pre-identity). Kept private; the two public entry
