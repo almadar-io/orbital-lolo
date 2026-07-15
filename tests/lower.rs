@@ -22,7 +22,7 @@ fn fixtures_dir() -> PathBuf {
 /// id minted fresh each lowering cannot be a stable golden value.
 fn canonicalize(value: Value) -> Value {
     fn is_identity_key(k: &str) -> bool {
-        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id")
+        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id") || k.ends_with("Ids")
     }
     match value {
         Value::Object(map) => {

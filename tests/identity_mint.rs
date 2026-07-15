@@ -165,6 +165,94 @@ fn adding_a_trait_keeps_prior_ids_and_mints_only_the_new_node() {
     );
 }
 
+/// A fixture exercising the V4 leverage-ids side-maps: `Feed` embeds sibling
+/// `Card` (`@trait.Card`) and binds entity `Product`, so its `entity_ref_ids`
+/// must carry `Product → <product id>` and its `trait_embed_ids` must carry
+/// `Card → <card trait id>`.
+const FIXTURE_EMBED: &str = r#"
+    orbital Shop {
+        entity Product {
+            id : string!
+            title : string = ""
+        }
+        trait Card -> Product [interaction, instance] {
+            initial: idle
+            state idle {
+                INIT -> idle
+                    (render-ui main { type: badge, label: "x" })
+            }
+        }
+        trait Feed -> Product [interaction, collection] {
+            initial: idle
+            state idle {
+                LOAD -> idle
+                    (render-ui main { type: stack, direction: vertical, children: [@trait.Card] })
+            }
+        }
+        page "/shop" -> Feed
+    }
+"#;
+
+#[test]
+fn leverage_id_side_maps_are_minted_and_stable() {
+    let first = lower(FIXTURE_EMBED, None);
+    let orb = &first.orbitals[0];
+    let product_id = match &orb.entity {
+        EntityRef::Inline(e) => e.id.clone().expect("product id"),
+        _ => panic!("inline entity"),
+    };
+    let card_id = orb
+        .traits
+        .iter()
+        .find_map(|t| match t {
+            TraitReference::Inline(td) if td.name == "Card" => td.id.clone(),
+            _ => None,
+        })
+        .expect("card trait id");
+    let feed = orb
+        .traits
+        .iter()
+        .find_map(|t| match t {
+            TraitReference::Inline(td) if td.name == "Feed" => Some(td),
+            _ => None,
+        })
+        .expect("feed trait");
+
+    // Entity ref side-map: the bound Product resolves to the entity id.
+    assert_eq!(
+        feed.entity_ref_ids.as_ref().and_then(|m| m.get("Product")),
+        Some(&product_id),
+        "Feed.entityRefIds must map Product to its entity id: {:?}",
+        feed.entity_ref_ids
+    );
+    // Trait embed side-map: the `@trait.Card` embed resolves to Card's trait id.
+    assert_eq!(
+        feed.trait_embed_ids.as_ref().and_then(|m| m.get("Card")),
+        Some(&card_id),
+        "Feed.traitEmbedIds must map Card to its trait id: {:?}",
+        feed.trait_embed_ids
+    );
+
+    // Re-lower with prior → side-map ids are reused verbatim (byte-stable).
+    let second = lower(FIXTURE_EMBED, Some(&first));
+    let feed2 = second.orbitals[0]
+        .traits
+        .iter()
+        .find_map(|t| match t {
+            TraitReference::Inline(td) if td.name == "Feed" => Some(td),
+            _ => None,
+        })
+        .expect("feed trait 2");
+    assert_eq!(
+        feed.entity_ref_ids, feed2.entity_ref_ids,
+        "entityRefIds must be stable across re-lower with prior"
+    );
+    assert_eq!(
+        feed.trait_embed_ids, feed2.trait_embed_ids,
+        "traitEmbedIds must be stable across re-lower with prior"
+    );
+}
+
 #[test]
 fn reference_edges_resolve_to_in_file_ids() {
     let schema = lower(FIXTURE, None);

@@ -185,6 +185,39 @@ fn stamp_orbital(orbital: &mut Orbital, synthetic_traits: &HashSet<String>, mint
         }
     }
 
+    // Per-trait entity-ref + trait-embed id side-maps (V4 leverage-ids). Scan each
+    // inline trait's serialized body for entity names (`ids.entities`) and bare
+    // `@trait.<sibling>` embed tokens (`ids.traits`) and record name→id, so readers
+    // resolve these bare-`SExpression::String` positions by stable id (else name).
+    // This is the coverage that lets the entity/embed name-rewriters be deleted: on a
+    // rename the token keeps its old name AND the map key stays old → old-name → map →
+    // stable id → the (renamed) declaration. A superset is safe — readers consult the
+    // map only at genuine ref positions, so extra entries are inert; a MISSING entry is
+    // the only hazard, so the scan errs broad.
+    for tr in &mut orbital.traits {
+        let TraitReference::Inline(td) = tr else {
+            continue;
+        };
+        let Ok(body) = serde_json::to_value(&*td) else {
+            continue;
+        };
+        let mut ent_names: HashSet<String> = HashSet::new();
+        collect_entity_ref_names(&body, &ids.entities, &mut ent_names);
+        let entity_map: HashMap<String, String> = ent_names
+            .into_iter()
+            .filter_map(|n| ids.entities.get(&n).map(|id| (n, id.clone())))
+            .collect();
+        td.entity_ref_ids = (!entity_map.is_empty()).then_some(entity_map);
+
+        let mut embed_names: HashSet<String> = HashSet::new();
+        collect_embed_ref_names(&body, &ids.traits, &mut embed_names);
+        let embed_map: HashMap<String, String> = embed_names
+            .into_iter()
+            .filter_map(|n| ids.traits.get(&n).map(|id| (n, id.clone())))
+            .collect();
+        td.trait_embed_ids = (!embed_map.is_empty()).then_some(embed_map);
+    }
+
     // Pages.
     for page in orbital.pages.iter_mut().flatten() {
         if let PageRef::Inline(p) = page {
@@ -242,6 +275,71 @@ fn collect_trait_refs(expr: &SExpression, out: &mut HashSet<String>) {
         }
         SExpression::Array(items) => items.iter().for_each(|i| collect_trait_refs(i, out)),
         SExpression::Object(map) => map.values().for_each(|v| collect_trait_refs(v, out)),
+        _ => {}
+    }
+}
+
+/// Collect every entity name (present in `entities`) referenced anywhere in a
+/// serialized trait body: as an `@Name`/`@Name.field` binding token, a bare
+/// positional/prop slot value (`["fetch","Name",…]`, `{entity:"Name"}`), or a
+/// `[Name]` payload list type. Mirrors the position set of the JS
+/// `rewriteEntityInSExpr` rewriter, but broadened to a name-set (a superset is
+/// safe — see the mint comment).
+fn collect_entity_ref_names(
+    v: &serde_json::Value,
+    entities: &HashMap<String, String>,
+    out: &mut HashSet<String>,
+) {
+    match v {
+        serde_json::Value::String(s) => {
+            if let Some(rest) = s.strip_prefix('@') {
+                let name = rest.split('.').next().unwrap_or("");
+                if entities.contains_key(name) {
+                    out.insert(name.to_string());
+                }
+            }
+            if entities.contains_key(s) {
+                out.insert(s.clone());
+            }
+            if let Some(inner) = s.strip_prefix('[').and_then(|x| x.strip_suffix(']')) {
+                if entities.contains_key(inner) {
+                    out.insert(inner.to_string());
+                }
+            }
+        }
+        serde_json::Value::Array(a) => {
+            a.iter().for_each(|x| collect_entity_ref_names(x, entities, out))
+        }
+        serde_json::Value::Object(o) => {
+            o.values().for_each(|x| collect_entity_ref_names(x, entities, out))
+        }
+        _ => {}
+    }
+}
+
+/// Collect every bare `@trait.<Name>` embed token (no dotted alias path) whose
+/// `<Name>` is a sibling trait (`traits`), from a serialized trait body. Same
+/// token shape as `collect_trait_refs`, applied over the whole body (embeds also
+/// live in `config` values, not only effects).
+fn collect_embed_ref_names(
+    v: &serde_json::Value,
+    traits: &HashMap<String, String>,
+    out: &mut HashSet<String>,
+) {
+    match v {
+        serde_json::Value::String(s) => {
+            if let Some(name) = s.strip_prefix("@trait.") {
+                if !name.is_empty() && !name.contains('.') && traits.contains_key(name) {
+                    out.insert(name.to_string());
+                }
+            }
+        }
+        serde_json::Value::Array(a) => {
+            a.iter().for_each(|x| collect_embed_ref_names(x, traits, out))
+        }
+        serde_json::Value::Object(o) => {
+            o.values().for_each(|x| collect_embed_ref_names(x, traits, out))
+        }
         _ => {}
     }
 }

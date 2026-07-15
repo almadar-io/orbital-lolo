@@ -794,7 +794,11 @@ mod tests {
         // render-tree structural identity, not id identity.
         fn canon(v: serde_json::Value) -> serde_json::Value {
             fn is_identity_key(k: &str) -> bool {
-                k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id")
+                k == "id"
+                    || k == "ledger"
+                    || k == "schemaVersion"
+                    || k.ends_with("Id")
+                    || k.ends_with("Ids")
             }
             match v {
                 serde_json::Value::Object(map) => {

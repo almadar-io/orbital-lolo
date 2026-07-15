@@ -5,7 +5,7 @@ fn canon(v: Value) -> Value {
     // Drop V4 identity fields (opaque per-lowering ids + ledger); this test
     // asserts semantic preservation, not id identity.
     fn is_identity_key(k: &str) -> bool {
-        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id")
+        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id") || k.ends_with("Ids")
     }
     match v {
         Value::Object(map) => {

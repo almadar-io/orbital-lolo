@@ -18,7 +18,7 @@ fn canonicalize(value: Value) -> Value {
     // These tests assert *semantic* preservation across a reformat; ids are
     // minted fresh each (independent) lowering and are not semantic content.
     fn is_identity_key(k: &str) -> bool {
-        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id")
+        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id") || k.ends_with("Ids")
     }
     match value {
         Value::Object(map) => {
