@@ -253,6 +253,72 @@ fn leverage_id_side_maps_are_minted_and_stable() {
     );
 }
 
+/// V4-W5: an `entity`-typed config knob whose default names an in-file entity
+/// gets a stamped `refId` pointing at that entity's id, so a later rename of the
+/// entity declaration flows into the config value through `identity_normalize`.
+const FIXTURE_CONFIG_ENTITY: &str = r#"
+    orbital Ledger {
+        entity Account {
+            id : string!
+            balance : number = 0
+        }
+        trait Lifecycle -> Account [interaction, instance] {
+            initial: idle
+            state idle {
+                RUN -> idle
+                    (set @entity.balance 1)
+            }
+            config {
+                targetEntity : entity = Account
+            }
+        }
+        page "/ledger" -> Lifecycle
+    }
+"#;
+
+#[test]
+fn config_ref_ids_stamp_entity_typed_knob() {
+    let first = lower(FIXTURE_CONFIG_ENTITY, None);
+    let orb = &first.orbitals[0];
+    let account_id = match &orb.entity {
+        EntityRef::Inline(e) => e.id.clone().expect("account id"),
+        _ => panic!("inline entity"),
+    };
+    let lifecycle = orb
+        .traits
+        .iter()
+        .find_map(|t| match t {
+            TraitReference::Inline(td) if td.name == "Lifecycle" => Some(td),
+            _ => None,
+        })
+        .expect("lifecycle trait");
+    let cf = lifecycle
+        .config
+        .as_ref()
+        .and_then(|c| c.get("targetEntity"))
+        .expect("targetEntity config field");
+    assert_eq!(cf.field_type, "entity", "config field lowered to entity type");
+    assert_eq!(
+        cf.ref_id.as_ref(),
+        Some(&account_id),
+        "targetEntity refId must be stamped with Account's entity id: {:?}",
+        cf.ref_id
+    );
+
+    // Re-lower with prior → the stamped refId is stable.
+    let second = lower(FIXTURE_CONFIG_ENTITY, Some(&first));
+    let cf2 = second.orbitals[0]
+        .traits
+        .iter()
+        .find_map(|t| match t {
+            TraitReference::Inline(td) if td.name == "Lifecycle" => td.config.as_ref(),
+            _ => None,
+        })
+        .and_then(|c| c.get("targetEntity"))
+        .expect("targetEntity config field 2");
+    assert_eq!(cf.ref_id, cf2.ref_id, "config refId stable across re-lower");
+}
+
 #[test]
 fn reference_edges_resolve_to_in_file_ids() {
     let schema = lower(FIXTURE, None);

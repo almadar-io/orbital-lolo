@@ -407,6 +407,15 @@ impl Parser {
         if name == "trait" {
             return Ok(TypeExpr::Trait);
         }
+        // `entity` / `event` keywords as types — value is an entity/event NAME
+        // reference (V4-W5). Allowed only inside config { ... } blocks; the stamp
+        // id-carries the value so a rename resolves it by id.
+        if name == "entity" {
+            return Ok(TypeExpr::EntityRef);
+        }
+        if name == "event" {
+            return Ok(TypeExpr::EventRef);
+        }
         // `slot` keyword as a type — value is a UI slot name. Allowed only
         // inside config { ... } blocks.
         if name == "slot" {

@@ -343,6 +343,12 @@ impl Formatter {
             TypeExpr::Trait => {
                 self.output.push_str("trait");
             }
+            TypeExpr::EntityRef => {
+                self.output.push_str("entity");
+            }
+            TypeExpr::EventRef => {
+                self.output.push_str("event");
+            }
             TypeExpr::Slot => {
                 self.output.push_str("slot");
             }

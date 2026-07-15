@@ -450,6 +450,8 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
 pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
     match t {
         TypeExpr::Trait => Some("trait"),
+        TypeExpr::EntityRef => Some("entity"),
+        TypeExpr::EventRef => Some("event"),
         TypeExpr::Slot => Some("slot"),
         TypeExpr::Pattern => Some("pattern"),
         TypeExpr::SExpr => Some("SExpr"),

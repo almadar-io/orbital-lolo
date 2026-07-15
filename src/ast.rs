@@ -289,6 +289,13 @@ pub enum TypeExpr {
     /// `trait` — value is a `@trait.X` reference. Substituted to embedded
     /// trait UI at render time. Allowed only in `config { ... }` blocks.
     Trait,
+    /// `entity` — value is an entity NAME reference (V4-W5). The stamp records
+    /// the referenced entity's id on the config field so a declaration-only
+    /// rename resolves the value by id. Allowed only in `config { ... }` blocks.
+    EntityRef,
+    /// `event` — value is an event NAME reference (V4-W5), id-carried by the
+    /// stamp like `EntityRef`. Allowed only in `config { ... }` blocks.
+    EventRef,
     /// `slot` — value is a UI slot name. Validated against `VALID_SLOTS`.
     Slot,
     /// `pattern` — value is a pattern type name. Validated against `PATTERN_TYPES`.

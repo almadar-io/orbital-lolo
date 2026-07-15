@@ -26,6 +26,8 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::Object(_) => "object".to_string(),
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => "array".to_string(),
         TypeExpr::Trait => "trait".to_string(),
+        TypeExpr::EntityRef => "entity".to_string(),
+        TypeExpr::EventRef => "event".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::SExpr => "SExpr".to_string(),
@@ -91,6 +93,8 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
         TypeExpr::Optional(inner) => type_expr_to_compat_str(inner),
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => "array".to_string(),
         TypeExpr::Trait => "trait".to_string(),
+        // Entity/event refs are name strings at the bus-payload level.
+        TypeExpr::EntityRef | TypeExpr::EventRef => "string".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
         // SExpr is a structured value at the bus-payload level.
@@ -137,6 +141,8 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::RelationMany(name) => format!("{name}*"),
         TypeExpr::RelationManyNonEmpty(name) => format!("{name}+"),
         TypeExpr::Trait => "trait".to_string(),
+        TypeExpr::EntityRef => "entity".to_string(),
+        TypeExpr::EventRef => "event".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::SExpr => "SExpr".to_string(),
