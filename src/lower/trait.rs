@@ -106,6 +106,7 @@ pub(crate) fn lower_trait_reference(
                     items: None,
                     properties: None,
                     required: None,
+                    ref_id: None,
                 }
             } else {
                 // Declaration-form entries (an alias trait declaring its OWN
@@ -126,6 +127,7 @@ pub(crate) fn lower_trait_reference(
                     items,
                     properties,
                     required: None,
+                    ref_id: None,
                 }
             };
             map.insert(cf.name.clone(), schema_field);
@@ -486,6 +488,7 @@ pub(crate) fn lower_trait(
                     items,
                     properties,
                     required: if cf.required { Some(true) } else { None },
+                    ref_id: None,
                 },
             );
         }
