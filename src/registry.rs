@@ -57,6 +57,19 @@ impl Behavior {
     }
 }
 
+/// True when `ALMADAR_DEV` is set to a truthy value (anything but empty/`"0"`)
+/// — the same gate the compiler uses for live dev-workspace registries. The
+/// baked contracts slice is a publish-time artifact and can lag the live
+/// registries mid-dev-loop (a freshly authored trait is absent from it), so
+/// dev mode degrades unknown-member contract errors to skips; the compiler's
+/// post-inline validation reads the LIVE registries and stays authoritative.
+pub fn dev_registries_live() -> bool {
+    match std::env::var("ALMADAR_DEV") {
+        Ok(v) => !v.is_empty() && v != "0",
+        Err(_) => false,
+    }
+}
+
 static CONTRACTS: OnceLock<HashMap<String, Behavior>> = OnceLock::new();
 
 fn contracts() -> &'static HashMap<String, Behavior> {

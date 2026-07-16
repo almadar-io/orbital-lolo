@@ -1133,6 +1133,12 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
             match kind {
                 "traits" => {
                     let Some(tc) = beh.trait_contract(member) else {
+                        // Baked slice can lag the live registries in dev (a
+                        // freshly authored trait) — skip; the compiler's
+                        // post-inline validation is authoritative there.
+                        if crate::registry::dev_registries_live() {
+                            continue;
+                        }
                         return Err(LowerError::UnknownTraitRef {
                             reference: ref_str.clone(),
                             member: member.to_string(),
@@ -1186,6 +1192,9 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                 }
                 "pages" => {
                     if !beh.has_page(member) {
+                        if crate::registry::dev_registries_live() {
+                            continue;
+                        }
                         return Err(LowerError::UnknownPageRef {
                             reference: ref_str.clone(),
                             member: member.to_string(),
