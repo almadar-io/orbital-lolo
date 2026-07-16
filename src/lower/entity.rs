@@ -128,8 +128,23 @@ pub(crate) fn lower_type_expr(
                     );
                 }
             }
-            let (inner_ft, inner_values, inner_items, inner_props, _inner_rel) =
-                lower_type_expr(inner, aliases, entity_names);
+            // FC-5b: `[json]` is an array of free JSON values (typically object
+            // records). Lower the element to an UNCONSTRAINED object — identical
+            // to `[object]` — NOT `{type:"string"}` (the old unknown-name
+            // fallback), which mis-typed every object element and tripped
+            // `ORB_T_CONFIG_SHAPE_MISMATCH`. Authors wanting typed elements
+            // declare a named alias (`type X = { … }`) and write `[X]`.
+            // `json` is not in `is_primitive_type`, so `[json]` parses as
+            // `Array(Named("json"))`; accept both the Named and Primitive forms.
+            let inner_is_json = matches!(
+                inner.as_ref(),
+                TypeExpr::Named(p) | TypeExpr::Primitive(p) if p == "json"
+            );
+            let (inner_ft, inner_values, inner_items, inner_props, _inner_rel) = if inner_is_json {
+                (FieldType::Object, None, None, None, None)
+            } else {
+                lower_type_expr(inner, aliases, entity_names)
+            };
             let item = FieldDefinition {
                 name: None,
                 field_type: inner_ft,
@@ -277,4 +292,42 @@ pub(crate) fn primitive_to_field_type(name: &str) -> FieldType {
     // The type checker rejects unknown type names up front, so by lowering time
     // every name here is a known primitive; the String fallback is defensive.
     primitive_field_type(name).unwrap_or(FieldType::String)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::ast::TypeExpr;
+    use std::collections::{BTreeMap, HashSet};
+
+    fn lower(ty: &TypeExpr) -> LoweredType {
+        lower_type_expr(ty, &BTreeMap::new(), &HashSet::new())
+    }
+
+    #[test]
+    fn json_array_lowers_to_unconstrained_object_items() {
+        // FC-5b: `[json]` element must be an unconstrained object (like
+        // `[object]`), NOT `{type:"string"}` (which trips ORB_T_CONFIG_SHAPE_MISMATCH).
+        // `json` is not in `is_primitive_type`, so it parses as `Named("json")`.
+        let ty = TypeExpr::Array(Box::new(TypeExpr::Named("json".to_string())));
+        let (ft, _values, items, _props, _rel) = lower(&ty);
+        assert!(matches!(ft, FieldType::Array));
+        let item = items.expect("array carries an item schema");
+        assert!(
+            matches!(item.field_type, FieldType::Object),
+            "[json] element must lower to an object, got {:?}",
+            item.field_type
+        );
+        assert!(
+            item.properties.is_none(),
+            "[json] element must be UNCONSTRAINED (no properties)"
+        );
+    }
+
+    #[test]
+    fn scalar_json_stays_string() {
+        // The array-element refinement must not change the scalar `json` type.
+        let (ft, _, _, _, _) = lower(&TypeExpr::Named("json".to_string()));
+        assert!(matches!(ft, FieldType::String), "scalar json stays string");
+    }
 }

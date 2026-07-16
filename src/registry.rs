@@ -72,10 +72,13 @@ fn contracts() -> &'static HashMap<String, Behavior> {
 }
 
 /// Behavior key from a `uses … from "<path>"` path: the last path segment
-/// (`std/behaviors/std-modal` → `std-modal`). Local-file imports (`./x.orb`)
-/// have no registry entry; callers treat a `None` lookup as "unknown, skip".
+/// minus an `.orb`/`.lolo` extension (`std/behaviors/std-modal` → `std-modal`,
+/// browse form `@std/ui/core/atoms/std-stats.lolo` → `std-stats`). Local-file
+/// imports (`./x.orb`) have no registry entry; callers treat a `None` lookup
+/// as "unknown, skip".
 pub fn behavior_key_from_path(path: &str) -> &str {
     let trimmed = path.trim_end_matches(".orb");
+    let trimmed = trimmed.trim_end_matches(".lolo");
     trimmed.rsplit('/').next().unwrap_or(trimmed)
 }
 
@@ -88,4 +91,23 @@ pub fn get_behavior(key: &str) -> Option<&'static Behavior> {
 /// test and to gate checks off entirely if the slice is missing).
 pub fn is_loaded() -> bool {
     !contracts().is_empty()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn behavior_key_from_canonical_and_browse_paths() {
+        assert_eq!(behavior_key_from_path("std/behaviors/std-modal"), "std-modal");
+        assert_eq!(behavior_key_from_path("./local/thing.orb"), "thing");
+        assert_eq!(
+            behavior_key_from_path("@std/ui/core/atoms/std-stats.lolo"),
+            "std-stats"
+        );
+        assert_eq!(
+            behavior_key_from_path("@behaviors/app/molecules/app-crud-manager.lolo"),
+            "app-crud-manager"
+        );
+    }
 }
