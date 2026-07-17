@@ -236,26 +236,6 @@ pub enum LowerError {
         target_trait: String,
     },
 
-    /// `(navigate "/path")` effect references a route that no orbital
-    /// declares as a `pages[].path`. Catches typos and dangling links at
-    /// parse time before they show up as silent client-side router
-    /// no-ops at runtime (gap #19.A's author-side detection in
-    /// `docs/Almadar_Std_Verification.md`).
-    ///
-    /// Path matching is canonicalised: `:foo` placeholders on the page
-    /// side and `@payload.X` / `@entity.X` interpolations on the navigate
-    /// side both reduce to `<seg>` so the structural shape compares
-    /// 1:1. Static segments must match verbatim.
-    #[error(
-        "navigate target {path:?} in {orbital:?}.{trait_name:?} doesn't resolve to any \
-         declared `pages[].path` — declare a matching page or correct the path"
-    )]
-    NavigateTargetUnreachable {
-        orbital: String,
-        trait_name: String,
-        path: String,
-    },
-
     /// `(emit EVT {...})` literal payload omits a field declared as
     /// required on the trait's `emits { EVT { field : T! } }` block.
     /// Parse-time mirror of L2's `EmitPayloadMissingRequired` — the

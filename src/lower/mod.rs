@@ -27,8 +27,7 @@ mod type_helpers;
 
 pub(crate) use checks::{
     check_behavior_contracts, check_button_transitions, check_emit_payload_literals,
-    check_entity_fields_have_setters, check_listens_integrity, check_navigate_targets,
-    check_set_value_types,
+    check_entity_fields_have_setters, check_listens_integrity, check_set_value_types,
 };
 pub(crate) use emit_listen::{lower_emit, lower_listen, lower_tick, type_expr_to_payload_fields};
 pub(crate) use entity::{lower_entity, lower_type_expr, primitive_field_type};
@@ -179,7 +178,6 @@ fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
 
     check_listens_integrity(&orbitals)?;
     check_button_transitions(&orbitals)?;
-    check_navigate_targets(&orbitals)?;
     check_emit_payload_literals(&orbitals)?;
     check_behavior_contracts(&orbitals)?;
 
@@ -489,7 +487,7 @@ fn lower_orbital(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::lower::checks::{canonicalise_route, resolve_top_segment};
+    use crate::lower::checks::resolve_top_segment;
     use crate::parser::parse_str;
 
     fn lower(src: &str) -> OrbitalSchema {
@@ -956,8 +954,12 @@ mod tests {
     }
 
     #[test]
-    fn navigate_to_undeclared_page_errors() {
-        // No `page "/contacts"` exists; navigate should error.
+    fn navigate_to_undeclared_page_lowers_deferring_reachability_to_l2() {
+        // L1 no longer checks navigate reachability (it collected pages per
+        // parse-unit, so a single orbital extracted from a project failed on a
+        // legitimate sibling-route navigate). A dangling target now lowers
+        // cleanly at L1 and is caught post-inline by L2's
+        // `ORB_EFF_NAVIGATE_TARGET_UNREACHABLE`, which sees project-wide pages.
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
@@ -973,12 +975,11 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
-            Err(LowerError::NavigateTargetUnreachable { path, .. }) => {
-                assert_eq!(path, "/contacts/typo");
-            }
-            other => panic!("expected NavigateTargetUnreachable, got {:?}", other),
-        }
+        assert!(
+            result.is_ok(),
+            "L1 defers navigate reachability to L2: {:?}",
+            result.err()
+        );
     }
 
     #[test]
@@ -1003,25 +1004,6 @@ mod tests {
             result.is_ok(),
             "navigate to root should match `/` page: {:?}",
             result.err()
-        );
-    }
-
-    #[test]
-    fn canonicalise_route_handles_dynamic_segments() {
-        // Pure-function unit test for the canonicaliser. Both `:id` and
-        // `@payload.X` reduce to `<seg>`; static segments compare as-is;
-        // trailing slash is stripped.
-        assert_eq!(canonicalise_route("/projects/:id"), "/projects/<seg>");
-        assert_eq!(
-            canonicalise_route("/projects/@payload.id"),
-            "/projects/<seg>"
-        );
-        assert_eq!(canonicalise_route("/projects/:id/"), "/projects/<seg>");
-        assert_eq!(canonicalise_route("/"), "<root>");
-        assert_eq!(canonicalise_route("/contacts"), "/contacts");
-        assert_eq!(
-            canonicalise_route("/projects/:id/preview"),
-            "/projects/<seg>/preview"
         );
     }
 
