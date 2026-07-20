@@ -148,6 +148,7 @@ pub(crate) fn lower_trait_reference(
     };
 
     Ok(TraitReference::Reference {
+        id: None,
         reference: Some(ref_data.reference.clone()),
         name: Some(t.name.clone()),
         linked_entity: t.linked_entity.clone(),
