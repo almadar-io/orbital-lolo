@@ -292,6 +292,7 @@ impl Parser {
         let mut uses = Vec::new();
         let mut type_aliases = Vec::new();
         let mut entity = None;
+        let mut extra_entities = Vec::new();
         let mut traits = Vec::new();
         let mut pages = Vec::new();
         let mut body = Vec::new();
@@ -315,7 +316,14 @@ impl Parser {
             } else if self.check_ident("type") {
                 type_aliases.push(self.parse_type_alias()?);
             } else if self.check_ident("entity") {
-                entity = Some(self.parse_entity()?);
+                // First declaration is the primary entity; later ones lower
+                // into `auxiliary_entities` (never silently replace).
+                let parsed = self.parse_entity()?;
+                if entity.is_none() {
+                    entity = Some(parsed);
+                } else {
+                    extra_entities.push(parsed);
+                }
             } else if self.check_ident("trait") {
                 traits.push(self.parse_trait()?);
             } else if self.check_ident("page") {
@@ -369,6 +377,7 @@ impl Parser {
             uses,
             type_aliases,
             entity,
+            extra_entities,
             traits,
             pages,
             body,

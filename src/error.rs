@@ -308,6 +308,12 @@ pub enum LowerError {
     /// Cross-orbital bindings (`@payload.<F>` whose F is declared on a
     /// listened-from-other-orbital event) defer to the L2 validator.
     #[error(
+        "(let …) in trait {trait_name:?} has {body_count} body expressions — \
+         the body must be a single expression; wrap multiple effects in (do …)"
+    )]
+    LetMultiBody { trait_name: String, body_count: usize },
+
+    #[error(
         "(set @entity.{field}): expected {expected_type} (entity field type on {orbital:?}.{trait_name:?}'s linked entity) \
          but got {actual_type} (from {value_source})"
     )]

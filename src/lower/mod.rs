@@ -129,6 +129,12 @@ fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
                 file_shared_entity_names.insert(e.name.clone());
             }
         }
+        for e in &orb.extra_entities {
+            file_entity_names.insert(e.name.clone());
+            if e.shared {
+                file_shared_entity_names.insert(e.name.clone());
+            }
+        }
     }
     for ta in &ast.type_aliases {
         if matches!(ta.body, TypeBody::Entity { .. }) {
@@ -326,6 +332,15 @@ fn lower_orbital(
 ) -> Result<CoreOrbital, LowerError> {
     let entity = orb.entity.as_ref().ok_or(LowerError::MissingEntity)?;
     let entity_def = lower_entity(entity, aliases, entity_names)?;
+    // Entity declarations beyond the first lower into `auxiliary_entities` —
+    // the IR slot the validators, binding checks, and mock tier already
+    // accept (Gap #22) — so a multi-collection orbital (e.g. a dashboard
+    // reading two collections) is expressible.
+    let extra_entity_defs: Vec<EntityDefinition> = orb
+        .extra_entities
+        .iter()
+        .map(|e| lower_entity(e, aliases, entity_names))
+        .collect::<Result<_, _>>()?;
 
     // Reject lolo where an entity's name matches a sibling trait's
     // generated `<TraitName>State` or `<TraitName>Event` union — the TS
@@ -472,7 +487,16 @@ fn lower_orbital(
         theme: None,
         services: None,
         entity: EntityRef::Inline(entity_def),
-        auxiliary_entities: None,
+        auxiliary_entities: if extra_entity_defs.is_empty() {
+            None
+        } else {
+            Some(
+                extra_entity_defs
+                    .into_iter()
+                    .map(EntityRef::Inline)
+                    .collect(),
+            )
+        },
         traits,
         pages,
         emits: None,

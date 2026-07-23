@@ -182,6 +182,11 @@ pub struct Orbital {
     pub uses: Vec<UseDecl>,
     pub type_aliases: Vec<TypeAlias>,
     pub entity: Option<Entity>,
+    /// Entity declarations beyond the first. The first `entity` block is the
+    /// orbital's primary entity; later blocks lower into the IR's
+    /// `auxiliary_entities` (previously the parser silently last-wins
+    /// REPLACED the primary — C-VALIDATE-MULTI-ENTITY-ORBITAL).
+    pub extra_entities: Vec<Entity>,
     pub traits: Vec<Trait>,
     pub pages: Vec<Page>,
     /// Free-floating s-expression body items at the orbital level (e.g.,
