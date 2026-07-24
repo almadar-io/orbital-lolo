@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-21T09:54:57.379Z",
+  "exportedAt": "2026-07-24T05:10:33.187Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -3499,7 +3499,8 @@
           "types": [
             "string"
           ],
-          "description": "Event name to dispatch on search (schema metadata, wired by trait) This is metadata used by the trait generator, not by the component."
+          "description": "Declarative search event — emits UI:{event} via eventBus on query submit (alongside canonical UI:SEARCH)",
+          "kind": "event"
         },
         "entity": {
           "types": [
@@ -3658,6 +3659,20 @@
             "inline-column-header"
           ],
           "default": "toolbar"
+        },
+        "event": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative filter event — emits UI:{event} via eventBus on filter change (alongside canonical UI:FILTER)",
+          "kind": "event"
+        },
+        "clearEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative clear event — emits UI:{clearEvent} via eventBus on clear-all (alongside canonical UI:CLEAR_FILTERS)",
+          "kind": "event"
         }
       }
     },
@@ -5721,9 +5736,9 @@
         },
         "title": {
           "types": [
-            "string"
+            "node"
           ],
-          "description": "Drawer title"
+          "description": "Drawer title (text or any node, e.g. a brand logo + name)."
         },
         "children": {
           "types": [
@@ -9733,8 +9748,9 @@
           "types": [
             "string"
           ],
-          "description": "Font weight override",
+          "description": "Font weight override — `none` = no override, the variant's baked weight applies",
           "enumValues": [
+            "none",
             "light",
             "normal",
             "medium",
@@ -9748,6 +9764,7 @@
           ],
           "description": "Font size override",
           "enumValues": [
+            "none",
             "xs",
             "sm",
             "md",
@@ -15219,37 +15236,7 @@
           "types": [
             "string"
           ],
-          "description": "Programming language for syntax highlighting",
-          "enumValues": [
-            "text",
-            "json",
-            "javascript",
-            "js",
-            "typescript",
-            "ts",
-            "jsx",
-            "tsx",
-            "css",
-            "markdown",
-            "md",
-            "bash",
-            "shell",
-            "sh",
-            "yaml",
-            "yml",
-            "rust",
-            "python",
-            "py",
-            "sql",
-            "diff",
-            "toml",
-            "go",
-            "graphql",
-            "html",
-            "xml",
-            "orb",
-            "lolo"
-          ],
+          "description": "Programming language for syntax highlighting (any Prism id; loaded on demand if not pre-registered)",
           "default": "text"
         },
         "showCopyButton": {
@@ -15450,6 +15437,58 @@
                   "graphql",
                   "html",
                   "xml",
+                  "clojure",
+                  "clj",
+                  "edn",
+                  "haskell",
+                  "hs",
+                  "lisp",
+                  "scheme",
+                  "scala",
+                  "elixir",
+                  "ex",
+                  "exs",
+                  "erlang",
+                  "erl",
+                  "elm",
+                  "fsharp",
+                  "fs",
+                  "fsx",
+                  "ocaml",
+                  "ml",
+                  "java",
+                  "c",
+                  "cpp",
+                  "c++",
+                  "cc",
+                  "cxx",
+                  "hpp",
+                  "h",
+                  "csharp",
+                  "cs",
+                  "objectivec",
+                  "objc",
+                  "php",
+                  "ruby",
+                  "rb",
+                  "swift",
+                  "kotlin",
+                  "kt",
+                  "lua",
+                  "r",
+                  "dart",
+                  "julia",
+                  "fortran",
+                  "f90",
+                  "f95",
+                  "perl",
+                  "pl",
+                  "powershell",
+                  "ps1",
+                  "makefile",
+                  "make",
+                  "nginx",
+                  "ini",
                   "orb",
                   "lolo"
                 ]
@@ -17101,6 +17140,11 @@
                   "string"
                 ]
               },
+              "navigatesTo": {
+                "types": [
+                  "string"
+                ]
+              },
               "icon": {
                 "types": [
                   "icon",
@@ -17120,8 +17164,7 @@
               }
             },
             "required": [
-              "label",
-              "event"
+              "label"
             ]
           }
         },
@@ -17261,7 +17304,7 @@
           "types": [
             "function"
           ],
-          "description": "Render prop for custom per-card content. When provided, `fields` and `itemActions` are ignored.",
+          "description": "Render prop for custom per-card content. When provided, `fields` are ignored; `itemActions` render as a footer beneath the custom content.",
           "kind": "callback",
           "callbackArgs": [
             {
@@ -34016,22 +34059,6 @@
           "items": {
             "types": [
               "object"
-            ],
-            "properties": {
-              "type": {
-                "types": [
-                  "unknown"
-                ]
-              },
-              "content": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "required": [
-              "type",
-              "content"
             ]
           }
         },
@@ -34051,34 +34078,7 @@
           "types": [
             "object"
           ],
-          "description": "User progress for restoring activation/reflection state",
-          "properties": {
-            "activationResponse": {
-              "types": [
-                "string"
-              ]
-            },
-            "reflectionNotes": {
-              "types": [
-                "array"
-              ],
-              "items": {
-                "types": [
-                  "string"
-                ]
-              }
-            },
-            "bloomAnswered": {
-              "types": [
-                "object"
-              ],
-              "mapValue": {
-                "types": [
-                  "boolean"
-                ]
-              }
-            }
-          }
+          "description": "User progress for restoring activation/reflection state"
         },
         "onRunCodeSimulation": {
           "types": [
@@ -34107,7 +34107,7 @@
           "callbackArgs": [
             {
               "name": "type",
-              "type": "string"
+              "type": "object"
             },
             {
               "name": "description",
