@@ -31,6 +31,11 @@ struct Formatter {
     /// reconstruct `@(...)` sugar and to suppress the desugared top-level
     /// `trait` declarations.
     inline_traits: HashMap<String, Trait>,
+    /// Lexical bindings opened by enclosing `let` / `fn` forms. A bare atom
+    /// naming one of these must print quoted: the parser rejects the bare
+    /// spelling, and re-reading our own output has to succeed. Quoting is
+    /// always value-preserving — `x` and `"x"` both evaluate to `"x"`.
+    binding_scopes: Vec<Vec<String>>,
 }
 
 impl Formatter {
@@ -41,7 +46,31 @@ impl Formatter {
             comments,
             next_comment: 0,
             inline_traits: HashMap::new(),
+            binding_scopes: Vec::new(),
         }
+    }
+
+    fn is_lexically_bound(&self, name: &str) -> bool {
+        self.binding_scopes
+            .iter()
+            .any(|frame| frame.iter().any(|bound| bound == name))
+    }
+
+    /// Binding names declared by a `let` binding list (`((a v) (b w))`).
+    fn let_binding_names(bindings: &SExpression) -> Vec<String> {
+        let SExpression::Array(pairs) = bindings else {
+            return Vec::new();
+        };
+        pairs
+            .iter()
+            .filter_map(|pair| match pair {
+                SExpression::Array(kv) => match kv.first() {
+                    Some(SExpression::String(name)) => Some(name.clone()),
+                    _ => None,
+                },
+                _ => None,
+            })
+            .collect()
     }
 
     /// Emit any pending comments whose source line precedes `line`, each on its
@@ -1183,7 +1212,9 @@ impl Formatter {
         // heads (`==`, `+`, `<=`, …) print unquoted. Anything else — including
         // a sigil with an array index like `@config.x[0].y`, which the sigil
         // reader can't consume bare — must be quoted to round-trip.
-        if is_bare_sigil(s) || is_bare_atom(s) || is_operator_symbol(s) {
+        if (is_bare_sigil(s) || is_bare_atom(s) || is_operator_symbol(s))
+            && !self.is_lexically_bound(s)
+        {
             self.output.push_str(s);
             return;
         }
@@ -1663,7 +1694,49 @@ impl Formatter {
             self.output.push(' ');
             self.fmt_sexpr_inner(&arr[1], true); // binding list forced to paren
             self.output.push(' ');
+            // The binding names are in scope for the body only; the list itself
+            // is printed first so the names themselves stay unquoted.
+            self.binding_scopes.push(Self::let_binding_names(&arr[1]));
             self.fmt_sexpr_inner(&arr[2], false);
+            self.binding_scopes.pop();
+            self.output.push(')');
+            return;
+        }
+
+        // Lambda: parameters print bare, the body sees them as bound. Handles
+        // both the grouped `["fn", ["a", "b"], body]` and flat
+        // `["fn", "a", "b", body]` shapes.
+        let is_lambda =
+            matches!(&arr[0], SExpression::String(s) if s == "fn" || s == "lambda") && arr.len() >= 3;
+        if is_lambda {
+            let (params, body) = arr.split_at(arr.len() - 1);
+            let names: Vec<String> = match &params[1] {
+                SExpression::Array(grouped) if params.len() == 2 => grouped
+                    .iter()
+                    .filter_map(|p| match p {
+                        SExpression::String(n) => Some(n.clone()),
+                        _ => None,
+                    })
+                    .collect(),
+                _ => params[1..]
+                    .iter()
+                    .filter_map(|p| match p {
+                        SExpression::String(n) => Some(n.clone()),
+                        _ => None,
+                    })
+                    .collect(),
+            };
+            self.output.push('(');
+            for (i, item) in params.iter().enumerate() {
+                if i > 0 {
+                    self.output.push(' ');
+                }
+                self.fmt_sexpr_inner(item, false);
+            }
+            self.output.push(' ');
+            self.binding_scopes.push(names);
+            self.fmt_sexpr_inner(&body[0], false);
+            self.binding_scopes.pop();
             self.output.push(')');
             return;
         }

@@ -39,10 +39,20 @@ impl Parser {
         let mut items = vec![op];
         // Special case: `(let ((x v) (y w)) body)` — the second arg is a list of bindings.
         let is_let = matches!(items.first(), Some(SExpression::String(s)) if s == "let");
+        let is_lambda = matches!(items.first(), Some(SExpression::String(s)) if s == "fn" || s == "lambda");
+        // Both forms open a lexical scope that stays live for the body args
+        // parsed by the loop below.
+        let mut opened_scope = false;
         if is_let && matches!(self.peek(), TokenKind::LParen) {
             // Parse the binding list.
+            self.binding_scopes.push(Vec::new());
+            opened_scope = true;
             let bindings = self.parse_let_bindings()?;
             items.push(bindings);
+        } else if is_lambda {
+            let params = self.parse_lambda_params()?;
+            opened_scope = true;
+            items.extend(params);
         }
         loop {
             self.skip_newlines();
@@ -53,7 +63,64 @@ impl Parser {
             let arg = self.parse_sexpr_or_value()?;
             items.push(arg);
         }
+        if opened_scope {
+            self.binding_scopes.pop();
+        }
         Ok(SExpression::Array(items))
+    }
+
+    /// Consume a lambda's parameters and open a binding scope for them.
+    ///
+    /// Two surface forms reach here: grouped `(fn [a b] body)` and flat
+    /// `(fn a b body)`. In the flat form the trailing element is the body, not
+    /// a parameter — the same rule `SExpression::normalize_fn_shapes` applies
+    /// when it canonicalizes the two into one — so a run of bare identifiers
+    /// that ends at `)` yields one fewer parameter.
+    fn parse_lambda_params(&mut self) -> Result<Vec<SExpression>, ParseError> {
+        let mut emitted = Vec::new();
+        let mut names = Vec::new();
+        if matches!(self.peek(), TokenKind::LBracket) {
+            let grouped = self.parse_array_literal()?;
+            if let SExpression::Array(entries) = &grouped {
+                for entry in entries {
+                    if let SExpression::String(name) = entry {
+                        names.push(name.clone());
+                    }
+                }
+            }
+            emitted.push(grouped);
+            self.binding_scopes.push(names);
+            return Ok(emitted);
+        }
+        let mut flat: Vec<(String, Span)> = Vec::new();
+        while let TokenKind::Identifier(name) = self.peek().clone() {
+            // `<` heads a JSX element, never a parameter.
+            if name == "<" {
+                break;
+            }
+            let span = self.peek_span();
+            self.advance();
+            flat.push((name, span));
+        }
+        // A trailing bare identifier at `)` is the body. Emit it through the
+        // same bare-reference check the ordinary argument path applies.
+        let trailing_body = if matches!(self.peek(), TokenKind::RParen) {
+            flat.pop()
+        } else {
+            None
+        };
+        for (name, _) in &flat {
+            names.push(name.clone());
+            emitted.push(SExpression::String(name.clone()));
+        }
+        self.binding_scopes.push(names);
+        if let Some((body, span)) = trailing_body {
+            if self.is_lexically_bound(&body) {
+                return Err(ParseError::BareBindingReference { name: body, span });
+            }
+            emitted.push(SExpression::String(body));
+        }
+        Ok(emitted)
     }
 
     pub(crate) fn parse_let_bindings(&mut self) -> Result<SExpression, ParseError> {
@@ -82,6 +149,13 @@ impl Parser {
             };
             let value = self.parse_sexpr_or_value()?;
             self.expect_kind(&TokenKind::RParen, ")")?;
+            // `let` is sequential: a binding's value may read earlier bindings,
+            // so the name only enters scope after its own value is parsed.
+            if let SExpression::String(bound) = &name {
+                if let Some(frame) = self.binding_scopes.last_mut() {
+                    frame.push(bound.clone());
+                }
+            }
             pairs.push(SExpression::Array(vec![name, value]));
         }
         Ok(SExpression::Array(pairs))
@@ -133,7 +207,14 @@ impl Parser {
                     // position). Desugar to the existing render forms.
                     return self.parse_jsx_element();
                 }
+                let span = self.peek_span();
                 self.advance();
+                // A bare identifier that names an enclosing `let`/lambda
+                // binding reads as the literal string of its own name in both
+                // evaluators — silently, and green under every validator.
+                if self.is_lexically_bound(&name) {
+                    return Err(ParseError::BareBindingReference { name, span });
+                }
                 // Bare identifiers in argument position are atoms (event names,
                 // entity names, slot names, mode names). Special atoms `now`
                 // and `state` lower to bindings.

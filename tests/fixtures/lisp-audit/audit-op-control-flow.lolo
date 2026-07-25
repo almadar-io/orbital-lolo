@@ -57,7 +57,7 @@ orbital OpControlFlowOrbital {
 
       DEEPLY_NESTED -> active when @config.running
         (let ((x (if (and (> ?a 0) (or (< ?b 10) (!= ?c 0))) (do (let ((tmp (* ?a ?b))) (math/max @tmp (- ?c 5)))) 0)))
-          (let ((results (array/map @entity.points (fn pt (let ((y (* (object/get @pt x) @x))) (let ((clamped (math/clamp @y 0 100))) (math/min @clamped (* @entity.value 2))))))))
+          (let ((results (array/map @entity.points (fn pt (let ((y (* (object/get @pt "x") @x))) (let ((clamped (math/clamp @y 0 100))) (math/min @clamped (* @entity.value 2))))))))
             (let ((final (array/reduce @results 0 (fn acc v (+ @acc @v)))))
               (do
                 (set @entity.value @final)

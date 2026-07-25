@@ -82,6 +82,13 @@ pub enum ParseError {
 
     #[error("expected identifier at {}:{}", span.line, span.col)]
     ExpectedIdentifier { span: Span },
+
+    /// A `let` binding or `fn`/`lambda` parameter referenced without its `@`
+    /// sigil. Both evaluators resolve lexical bindings only through the sigil,
+    /// so a bare occurrence silently evaluates to its own name as a string —
+    /// green under every validator, wrong at runtime.
+    #[error("bare reference to the bound name {name:?} at {}:{}", span.line, span.col)]
+    BareBindingReference { name: String, span: Span },
 }
 
 impl ParseError {
@@ -95,6 +102,7 @@ impl ParseError {
             | ParseError::InvalidSExpr { span, .. }
             | ParseError::InvalidDuration { span, .. }
             | ParseError::InvalidSigil { span, .. }
+            | ParseError::BareBindingReference { span, .. }
             | ParseError::ExpectedIdentifier { span } => *span,
             ParseError::UnexpectedEof { .. } => Span::new(0, 0, 0),
         }
@@ -119,6 +127,14 @@ impl ParseError {
             ParseError::UnexpectedToken { got, .. } if got.contains("Identifier(\"when\")") => (
                 Some("`when` is not a `.lolo` keyword for transition guards".to_string()),
                 Some("write the guard in parentheses on the same arm: `EVENT -> nextState (guard-expr)`".to_string()),
+            ),
+            ParseError::BareBindingReference { name, .. } => (
+                Some(format!(
+                    "`{name}` is bound by an enclosing `let` or `fn`, but bare names are string literals here — both evaluators resolve lexical bindings only through the `@` sigil"
+                )),
+                Some(format!(
+                    "write `@{name}` to read the binding, or `\"{name}\"` if you really meant the literal string"
+                )),
             ),
             ParseError::UnexpectedToken { expected, .. }
                 if expected.contains("state, initial, emits, listens, ticks, or config") =>

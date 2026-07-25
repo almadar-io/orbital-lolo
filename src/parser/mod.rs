@@ -54,6 +54,11 @@ struct Parser {
     pending_inline_traits: Vec<crate::ast::Trait>,
     /// Monotonic counter for synthesized inline-ref names, scoped per orbital.
     inline_ref_counter: usize,
+    /// Lexical binding scopes opened by `let` bindings and `fn`/`lambda`
+    /// parameters. Only the parser can tell a bare identifier from a quoted
+    /// string — both collapse to `SExpression::String` — so the bare-reference
+    /// check has to live here.
+    binding_scopes: Vec<Vec<String>>,
 }
 
 impl Parser {
@@ -63,7 +68,15 @@ impl Parser {
             pos: 0,
             pending_inline_traits: Vec::new(),
             inline_ref_counter: 0,
+            binding_scopes: Vec::new(),
         }
+    }
+
+    /// True when `name` is bound by an enclosing `let` or lambda parameter.
+    pub(crate) fn is_lexically_bound(&self, name: &str) -> bool {
+        self.binding_scopes
+            .iter()
+            .any(|frame| frame.iter().any(|bound| bound == name))
     }
 
     // ----- Token cursor helpers -----

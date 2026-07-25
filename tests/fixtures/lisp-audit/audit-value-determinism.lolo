@@ -26,7 +26,7 @@ orbital ValueDeterminismOrbital {
         ;; expect: "abc"
         (set @entity.s (str/concat "a" "b" "c"))
         ;; expect: [36, 64, 100]
-        (set @entity.arr (array/map (array/filter @entity.arr (fn x (> x 5))) (fn x (* x x))))
+        (set @entity.arr (array/map (array/filter @entity.arr (fn x (> @x 5))) (fn x (* @x @x))))
         ;; expect: { label: "init", updated: <timestamp> }
         (set @entity.obj (object/merge @entity.obj { updated: now }))
         (emit Computed { n: @entity.n, s: @entity.s })
