@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-24T05:10:33.187Z",
+  "exportedAt": "2026-07-25T06:32:53.902Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -16320,6 +16320,63 @@
             "auto"
           ],
           "default": "auto"
+        },
+        "titleField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the chip label. Defaults to `title`. Lets a host bound to its own entity name the column instead of being forced to rename its fields to this grid's contract (same accessor idiom as `DataList`'s `senderField` / `DataGrid`'s `imageField`).",
+          "default": "title"
+        },
+        "startField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the start timestamp (ISO or epoch). Defaults to `startTime`.",
+          "default": "startTime"
+        },
+        "colorField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the chip's Tailwind colour class. Defaults to `color`.",
+          "default": "color"
+        },
+        "children": {
+          "types": [
+            "function"
+          ],
+          "description": "Render function for one event chip's content. Receives the row and its index in the materialised events array. The grid keeps ownership of placement, colour and the click target; this replaces only what is drawn INSIDE the chip, so a host can show a time + instructor + badge stack instead of the default single label.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "item",
+              "type": "object"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            }
+          ],
+          "renderCallback": true
+        },
+        "renderItem": {
+          "types": [
+            "function"
+          ],
+          "description": "Per-event render function (schema-level alias for the children render prop). In `.orb`: `[\"fn\", \"item\", { pattern tree with @item.field bindings }]`. In `.lolo`: `renderItem: (fn item <Component …={@item.field}/>)` — the same contract `data-list` / `data-grid` / `carousel` already use.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "item",
+              "type": "object"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            }
+          ],
+          "renderCallback": true
         }
       }
     },
