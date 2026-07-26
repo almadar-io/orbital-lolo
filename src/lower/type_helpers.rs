@@ -120,6 +120,9 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
     match declared_core {
         "any" => true,
         "date" | "datetime" | "timestamp" => actual == "string" || actual == "number",
+        // A semantic domain accepts a string literal/expression. Without this,
+        // `SUBMIT_FORM { email: email }` payloads fail the emit check.
+        "email" | "url" | "phone" | "uuid" | "image" => actual == "string",
         "entity" | "relation" => actual == "object" || actual == "string",
         _ => false,
     }

@@ -266,11 +266,16 @@ pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
         // `icon`/`component` are refinement types over string (validity enforced
         // at the render-ui layer); they lower to a plain string field.
         "string" | "money" | "any" | "icon" | "component" => FieldType::String,
-        // email/url/phone/uuid are grammar-documented string subtypes
-        // (Almadar_LOLO.md prim_type). Recognized here (no format validation yet)
-        // so they don't silently erase via the unknown-name path
-        // (Gap G-LOLO-TYPENAME-SILENT-FALLBACK).
-        "email" | "url" | "phone" | "uuid" => FieldType::String,
+        // Semantic string domains, now first-class field types rather than
+        // subtypes that erased to `string`. Closes the "no format validation yet"
+        // half of Gap G-LOLO-TYPENAME-SILENT-FALLBACK: the declared domain
+        // survives lowering, so the validator can check a literal default and
+        // codegen can emit the matching zod refinement.
+        "email" => FieldType::Email,
+        "url" => FieldType::Url,
+        "phone" => FieldType::Phone,
+        "uuid" => FieldType::Uuid,
+        "image" => FieldType::Image,
         // De-facto accepted config/field types in the std corpus — `json` (free
         // value), `node` (renderable content), `render-ui` (a render-ui pattern
         // object config), `relation` (a foreign-key reference). They lowered to
