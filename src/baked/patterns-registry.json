@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-25T06:32:53.902Z",
+  "exportedAt": "2026-07-26T06:18:13.545Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -40317,6 +40317,360 @@
             "string"
           ],
           "description": "className prop"
+        }
+      }
+    },
+    "import-preview-tree": {
+      "type": "import-preview-tree",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "ImportPreviewTree component",
+      "suggestedFor": [
+        "import",
+        "preview",
+        "tree",
+        "import preview tree"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "units": {
+          "types": [
+            "array"
+          ],
+          "description": "Staged units to preview",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "ref": {
+                "types": [
+                  "string"
+                ]
+              },
+              "targetEntity": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fields": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "object"
+                  ],
+                  "freeform": true
+                }
+              },
+              "parentRef": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "ref",
+              "targetEntity",
+              "fields"
+            ]
+          }
+        },
+        "skipped": {
+          "types": [
+            "array"
+          ],
+          "description": "Elements skipped during extraction, with reasons",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "ref": {
+                "types": [
+                  "string"
+                ]
+              },
+              "reason": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "ref",
+              "reason"
+            ]
+          },
+          "default": []
+        },
+        "entityDisplay": {
+          "types": [
+            "object"
+          ],
+          "description": "Entity name → display labels; falls back to the entity name",
+          "required": true,
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "singular": {
+                "types": [
+                  "string"
+                ]
+              },
+              "plural": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "singular",
+              "plural"
+            ]
+          }
+        },
+        "onConfirm": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when the user confirms the staged import",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "onCancel": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when the user cancels the staged import",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "confirmLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Confirm button label",
+          "default": "Confirm import"
+        },
+        "cancelLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Cancel button label",
+          "default": "Cancel"
+        },
+        "indent": {
+          "types": [
+            "number"
+          ],
+          "description": "Indent per tree depth in px (default: 16)",
+          "default": 16
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "import-progress": {
+      "type": "import-progress",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "ImportProgress component",
+      "suggestedFor": [
+        "import",
+        "progress",
+        "import progress"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "step": {
+          "types": [
+            "string"
+          ],
+          "description": "Current lifecycle step",
+          "required": true,
+          "enumValues": [
+            "fetching",
+            "mapping",
+            "reviewing",
+            "committing",
+            "done",
+            "failed"
+          ]
+        },
+        "counts": {
+          "types": [
+            "object"
+          ],
+          "description": "Unit counts",
+          "properties": {
+            "staged": {
+              "types": [
+                "number"
+              ]
+            },
+            "committed": {
+              "types": [
+                "number"
+              ]
+            },
+            "failed": {
+              "types": [
+                "number"
+              ]
+            }
+          }
+        },
+        "labels": {
+          "types": [
+            "object"
+          ],
+          "description": "Step label overrides",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        }
+      }
+    },
+    "import-source-picker": {
+      "type": "import-source-picker",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "ImportSourcePicker component",
+      "suggestedFor": [
+        "import",
+        "source",
+        "picker",
+        "import source picker"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "sources": {
+          "types": [
+            "array"
+          ],
+          "description": "Source options to render",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "description": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "action",
+                  "file"
+                ]
+              },
+              "accept": {
+                "types": [
+                  "string"
+                ]
+              },
+              "multiple": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "disabled": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ]
+          }
+        },
+        "onSelect": {
+          "types": [
+            "function"
+          ],
+          "description": "Called with the source id when an 'action' option is picked",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "sourceId",
+              "type": "string"
+            }
+          ]
+        },
+        "onFilesSelected": {
+          "types": [
+            "function"
+          ],
+          "description": "Called with the chosen files when a 'file' option resolves",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "files",
+              "type": "array"
+            }
+          ],
+          "nonEmittable": true
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional heading above the options"
+        },
+        "moreSources": {
+          "types": [
+            "node"
+          ],
+          "description": "Generic slot for additional sources rendered below the options"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
         }
       }
     }
