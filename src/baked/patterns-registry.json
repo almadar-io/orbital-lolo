@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-26T06:18:13.545Z",
+  "exportedAt": "2026-07-27T04:55:27.017Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -401,8 +401,7 @@
               }
             },
             "required": [
-              "label",
-              "onClick"
+              "label"
             ]
           }
         },
@@ -440,11 +439,15 @@
                   "default",
                   "danger"
                 ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ]
               }
             },
             "required": [
-              "label",
-              "onClick"
+              "label"
             ]
           }
         },
