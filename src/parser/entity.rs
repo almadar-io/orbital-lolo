@@ -11,10 +11,11 @@ impl Parser {
         // Optional `:: TypeName [args]` annotation above the body.
         let type_annotation = self.try_parse_type_annotation()?;
 
-        let (persistence, collection, shared) = if matches!(self.peek(), TokenKind::LBracket) {
+        let (persistence, collection, shared, identity) = if matches!(self.peek(), TokenKind::LBracket)
+        {
             self.parse_persistence_tag()?
         } else {
-            (None, None, false)
+            (None, None, false, false)
         };
 
         let brace_form = matches!(self.peek(), TokenKind::LBrace);
@@ -60,6 +61,7 @@ impl Parser {
             persistence,
             collection,
             shared,
+            identity,
             fields,
             span,
         })
@@ -82,20 +84,23 @@ impl Parser {
 
     /// Parses the entity header bracket: a comma-separated, order-independent
     /// list of tags. At most one persistence mode (`persistent` — optionally
-    /// `: collection` — or `runtime`) plus the orthogonal `shared` flag, e.g.
-    /// `[runtime, shared]`, `[persistent: bars]`, `[shared]`.
+    /// `: collection` — or `runtime`) plus the orthogonal `shared` and
+    /// `identity` flags, e.g. `[runtime, shared]`, `[persistent: bars]`,
+    /// `[shared]`, `[persistent: people, identity]`.
     pub(crate) fn parse_persistence_tag(
         &mut self,
-    ) -> Result<(Option<Persistence>, Option<String>, bool), ParseError> {
+    ) -> Result<(Option<Persistence>, Option<String>, bool, bool), ParseError> {
         self.expect_kind(&TokenKind::LBracket, "[")?;
         let mut persistence: Option<Persistence> = None;
         let mut collection: Option<String> = None;
         let mut shared = false;
+        let mut identity = false;
         loop {
             let tag_span = self.peek_span();
             let kind = self.expect_ident()?;
             match kind.as_str() {
                 "shared" => shared = true,
+                "identity" => identity = true,
                 "persistent" | "runtime" => {
                     let mode = if kind == "persistent" {
                         Persistence::Persistent
@@ -141,7 +146,7 @@ impl Parser {
             break;
         }
         self.expect_kind(&TokenKind::RBracket, "]")?;
-        Ok((persistence, collection, shared))
+        Ok((persistence, collection, shared, identity))
     }
 
     pub(crate) fn parse_field_decl(&mut self) -> Result<EntityField, ParseError> {

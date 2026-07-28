@@ -125,13 +125,14 @@ impl Parser {
     /// base for composition).
     pub(crate) fn parse_type_entity_body(&mut self) -> Result<TypeBody, ParseError> {
         // `TypeBody::Entity` (the `type X = Entity [...] { ... }` alias shape)
-        // has no `shared` field yet — only orbital-level `entity` headers
-        // carry it through to `EntityDefinition.shared` (lower/entity.rs).
-        let (persistence, collection, _shared) = if matches!(self.peek(), TokenKind::LBracket) {
-            self.parse_persistence_tag()?
-        } else {
-            (None, None, false)
-        };
+        // has no `shared`/`identity` field yet — only orbital-level `entity`
+        // headers carry those through to `EntityDefinition` (lower/entity.rs).
+        let (persistence, collection, _shared, _identity) =
+            if matches!(self.peek(), TokenKind::LBracket) {
+                self.parse_persistence_tag()?
+            } else {
+                (None, None, false, false)
+            };
         let mut fields = Vec::new();
         if matches!(self.peek(), TokenKind::LBrace) {
             self.advance();

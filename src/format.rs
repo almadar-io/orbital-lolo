@@ -201,9 +201,12 @@ impl Formatter {
                 fields,
             } => {
                 self.output.push_str("Entity");
+                // The `type X = Entity [...]` alias form carries neither
+                // `shared` nor `identity` (see parse_type_entity_body).
                 self.fmt_persistence_tag(
                     persistence.as_ref(),
                     collection.as_ref().map(|s| s.as_str()),
+                    false,
                     false,
                 );
                 self.output.push_str(" {");
@@ -395,6 +398,7 @@ impl Formatter {
         persistence: Option<&Persistence>,
         collection: Option<&str>,
         shared: bool,
+        identity: bool,
     ) {
         let mut tags = Vec::new();
         match (persistence, collection) {
@@ -405,6 +409,9 @@ impl Formatter {
         }
         if shared {
             tags.push("shared".to_string());
+        }
+        if identity {
+            tags.push("identity".to_string());
         }
         if !tags.is_empty() {
             self.output.push_str(" [");
@@ -559,6 +566,7 @@ impl Formatter {
             entity.persistence.as_ref(),
             entity.collection.as_ref().map(|s| s.as_str()),
             entity.shared,
+            entity.identity,
         );
         self.output.push_str(" {");
         if !entity.fields.is_empty() {

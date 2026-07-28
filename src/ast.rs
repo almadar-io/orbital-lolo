@@ -215,6 +215,11 @@ pub struct Entity {
     /// `shared` header tag — orthogonal to persistence: entity state shared
     /// across all bound traits vs copied per-trait.
     pub shared: bool,
+    /// `identity` header tag — orthogonal to both persistence and `shared`:
+    /// this entity types the ambient `@user` viewer. An app-owned user
+    /// directory is both persisted and the identity, so it cannot be a
+    /// persistence mode.
+    pub identity: bool,
     pub fields: Vec<EntityField>,
     pub span: Span,
 }

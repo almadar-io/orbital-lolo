@@ -21,6 +21,7 @@ pub(crate) fn lower_entity(
         fields,
         instances: None,
         shared: entity.shared,
+        identity: entity.identity,
         id: None,
     })
 }

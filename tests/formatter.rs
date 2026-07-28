@@ -388,3 +388,83 @@ orbital O {
         "permissive optional-colon/comma forms must lower identically to canonical"
     );
 }
+
+/// The `[identity]` tag must survive a reformat. `fmt_program` is a whole-AST
+/// reprint, so a tag the formatter does not re-emit is DELETED from the author's
+/// source on the next `orb fmt` — this test is the guard for that class.
+#[test]
+fn identity_tag_survives_reformat() {
+    let source = r#"app test-identity "1.0.0"
+"Identity tag round-trip."
+orbital PersonOrbital {
+  entity Person [persistent: people, identity] {
+    id : string!
+    name : string!
+    role : "clinician" | "frontdesk" | "patient" = clinician
+  }
+  trait V -> Person [interaction, collection] {
+    initial: idle
+    state idle {
+      INIT -> idle (render-ui main { type: "box" })
+    }
+  }
+  page "/a" as A -> V
+}
+"#;
+    let ast = parse_str(source).expect("parse original");
+    let formatted = format_program(&ast);
+    assert!(
+        formatted.contains("[persistent: people, identity]"),
+        "formatter dropped the identity tag; got:\n{formatted}"
+    );
+
+    let schema1 = parse_and_lower_str(source).expect("lower original");
+    let schema2 = parse_and_lower_str(&formatted).expect("lower formatted");
+    let v1 = canonicalize(strip_nulls(serde_json::to_value(&schema1).unwrap()));
+    let v2 = canonicalize(strip_nulls(serde_json::to_value(&schema2).unwrap()));
+    assert_eq!(v1, v2, "identity tag changed semantics across a reformat");
+
+    let entity = schema1.orbitals[0]
+        .entity
+        .as_inline()
+        .expect("inline entity");
+    assert!(entity.identity, "identity flag did not reach the IR");
+    assert!(!entity.shared, "identity must NOT imply shared");
+}
+
+/// `[identity]` is orthogonal to both persistence and `shared`, in any order.
+#[test]
+fn identity_composes_with_runtime_and_shared() {
+    for tag in [
+        "[runtime, identity]",
+        "[identity, runtime]",
+        "[persistent: people, identity, shared]",
+        "[identity]",
+    ] {
+        let source = format!(
+            r#"app test-identity "1.0.0"
+"Identity tag composition."
+orbital PersonOrbital {{
+  entity Person {tag} {{
+    id : string!
+  }}
+  trait V -> Person [interaction, collection] {{
+    initial: idle
+    state idle {{
+      INIT -> idle (render-ui main {{ type: "box" }})
+    }}
+  }}
+  page "/a" as A -> V
+}}
+"#
+        );
+        let schema = parse_and_lower_str(&source).unwrap_or_else(|e| panic!("{tag} must parse: {e:?}"));
+        let entity = schema.orbitals[0].entity.as_inline().expect("inline entity");
+        assert!(entity.identity, "{tag} did not set identity");
+        assert_eq!(
+            entity.shared,
+            tag.contains("shared"),
+            "{tag} got the wrong shared flag"
+        );
+    }
+}
