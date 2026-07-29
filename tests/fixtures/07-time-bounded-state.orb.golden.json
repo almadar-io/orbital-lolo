@@ -19,6 +19,7 @@
           "category": "interaction",
           "linkedEntity": "Order",
           "name": "ConfirmFlow",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

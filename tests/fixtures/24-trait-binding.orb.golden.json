@@ -24,6 +24,7 @@
           "category": "interaction",
           "linkedEntity": "Item",
           "name": "ItemSearch",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {
@@ -60,6 +61,7 @@
           "category": "interaction",
           "linkedEntity": "Item",
           "name": "ItemBrowse",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {
@@ -100,6 +102,7 @@
           "category": "interaction",
           "linkedEntity": "Item",
           "name": "ItemLayout",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

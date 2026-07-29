@@ -24,6 +24,7 @@
           "category": "interaction",
           "linkedEntity": "User",
           "name": "UserCrud",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

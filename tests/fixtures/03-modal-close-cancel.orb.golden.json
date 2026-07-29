@@ -23,6 +23,7 @@
           "category": "interaction",
           "linkedEntity": "ConfirmAction",
           "name": "ConfirmActionConfirmation",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

@@ -47,6 +47,7 @@
           "category": "interaction",
           "linkedEntity": "Rec",
           "name": "RecBrowse",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

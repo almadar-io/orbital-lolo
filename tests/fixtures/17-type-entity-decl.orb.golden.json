@@ -43,6 +43,7 @@
           "category": "interaction",
           "linkedEntity": "Record",
           "name": "RecordBrowse",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

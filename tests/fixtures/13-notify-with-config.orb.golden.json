@@ -19,6 +19,7 @@
           "category": "interaction",
           "linkedEntity": "Toast",
           "name": "Notifier",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

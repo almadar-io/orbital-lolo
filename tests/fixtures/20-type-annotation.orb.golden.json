@@ -39,6 +39,7 @@
           "category": "interaction",
           "linkedEntity": "Patient",
           "name": "PatientView",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

@@ -24,6 +24,7 @@
           "category": "interaction",
           "linkedEntity": "Patient",
           "name": "PatientLoader",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {
@@ -70,8 +71,7 @@
                       "emit": {
                         "failure": "PATIENT_LOAD_FAILED",
                         "success": "PATIENT_LOADED"
-                      },
-                      "id": "@payload.id"
+                      }
                     }
                   ]
                 ],
@@ -142,8 +142,7 @@
                     {
                       "emit": {
                         "on_change": "PATIENT_UPDATED"
-                      },
-                      "id": "@entity.id"
+                      }
                     }
                   ]
                 ],

@@ -68,9 +68,7 @@
                   [
                     "emit",
                     "ORDER_SHIPPED",
-                    {
-                      "orderId": "@id"
-                    }
+                    {}
                   ]
                 ],
                 "event": "SHIP",
@@ -97,6 +95,7 @@
             }
           ],
           "name": "NotificationHandler",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

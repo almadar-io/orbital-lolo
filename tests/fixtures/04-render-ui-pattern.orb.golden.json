@@ -24,6 +24,7 @@
           "category": "interaction",
           "linkedEntity": "Task",
           "name": "TaskList",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

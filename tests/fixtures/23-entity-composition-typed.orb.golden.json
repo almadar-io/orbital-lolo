@@ -63,6 +63,7 @@
           "category": "interaction",
           "linkedEntity": "Patient",
           "name": "PatientManage",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

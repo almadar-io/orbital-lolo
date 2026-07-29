@@ -438,9 +438,11 @@ pub(crate) fn lower_trait(
         Some(t.ticks.iter().map(lower_tick).collect())
     };
 
-    let scope = t.scope.as_ref().map(|s| match s {
-        crate::ast::TraitScope::Instance => orbital_core::schema::TraitScope::Instance,
-        crate::ast::TraitScope::Collection => orbital_core::schema::TraitScope::Collection,
+    // `scope` is required in the .orb schema (V2 Phase 6); an undeclared
+    // marker defaults to `instance` per the language spec.
+    let scope = Some(match t.scope.as_ref() {
+        Some(crate::ast::TraitScope::Collection) => orbital_core::schema::TraitScope::Collection,
+        Some(crate::ast::TraitScope::Instance) | None => orbital_core::schema::TraitScope::Instance,
     });
 
     // Lower the trait's declared `config { ... }` block into the schema's

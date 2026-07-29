@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-28T16:34:50.202Z",
+  "exportedAt": "2026-07-29T19:32:01.461Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -8494,6 +8494,25 @@
           ],
           "description": "Show arrow",
           "default": true
+        },
+        "open": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Controlled open state. When set, the host owns visibility and the popover reports intent through onOpenChange instead of toggling itself."
+        },
+        "onOpenChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired when the popover wants to change visibility (trigger click, outside click)",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "open",
+              "type": "boolean"
+            }
+          ]
         },
         "className": {
           "types": [
@@ -33547,6 +33566,13 @@
           ],
           "description": "Max inline action buttons before the rest collapse into a \"⋯\" overflow menu. Omit = all inline."
         },
+        "itemClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "When set, the whole row is clickable and emits UI:{itemClickEvent} with { id, row } (action-button clicks stopPropagation so they still win). Mirrors DataList's contract.",
+          "kind": "event"
+        },
         "selectable": {
           "types": [
             "boolean"
@@ -35065,8 +35091,21 @@
           "types": [
             "number"
           ],
-          "description": "Render scale (0.4 = 40% zoom). Ignored by `free`/`side` (world-pixel-direct).",
+          "description": "Render scale, legacy-squared semantics: on-screen cell ≈ `256 × scale²` px (the authored contract every board tuned its value for). Converted internally to the single camera zoom against the board's native tile width, so the cell pitch follows the asset while the on-screen size stays as authored. Ignored when `fit` is on; passed through raw for `free`/`side` (world-pixel-direct).",
           "default": 0.4
+        },
+        "tileWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Native tile/cell width in source px for this board's asset (e.g. 16 for Kenney tiny-dungeon, ~128 for iso blocks). The grid cell pitch follows the asset, so tile textures map 1:1 (crisp, no stretch). Defaults to the detected atlas tile width, else 256."
+        },
+        "fit": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Auto-fit the board's grid extent to the viewport (default false — boards render at their authored `scale` and overflow → pan). Opt in for whole-board-overview boards. User wheel/pinch zoom always wins after the initial fit.",
+          "default": false
         },
         "showMinimap": {
           "types": [
@@ -39503,13 +39542,13 @@
           "types": [
             "number"
           ],
-          "description": "Draw width in world units (fractions of `projector.tileWidth`); omitted → resolved source width in px."
+          "description": "Draw width in world units (fractions of `projector.tileWidth`). Omitted → one cell on tile grids (`flat`/`iso`/`hex`); native source px on `free`/`side`."
         },
         "height": {
           "types": [
             "number"
           ],
-          "description": "Draw height in world units (fractions of `projector.tileWidth`); omitted → resolved source height in px."
+          "description": "Draw height in world units (fractions of `projector.tileWidth`). Omitted → one cell on tile grids (`flat`/`iso`/`hex`); native source px on `free`/`side`."
         },
         "frame": {
           "types": [
@@ -40251,6 +40290,18 @@
             "boolean"
           ],
           "description": "Minimap overlay (2D)."
+        },
+        "fit": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Auto-fit the board's grid extent to the viewport (2D grid layouts; default false — boards render at their authored `camera.zoom` scale)."
+        },
+        "tileWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Native tile/cell width in source px of the board's asset (2D grid layouts; defaults to the detected atlas tile width, else 256)."
         },
         "backgroundImage": {
           "types": [
@@ -41032,6 +41083,60 @@
       },
       "drawable": true,
       "drawHost": true
+    },
+    "emoji-picker": {
+      "type": "emoji-picker",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "EmojiPicker component",
+      "suggestedFor": [
+        "emoji",
+        "picker",
+        "emoji picker"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "pickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event name — picking an emoji emits UI:{pickEvent} with { emoji } via eventBus",
+          "kind": "event"
+        },
+        "position": {
+          "types": [
+            "string"
+          ],
+          "description": "Which side of the trigger the panel opens on",
+          "enumValues": [
+            "top",
+            "bottom"
+          ],
+          "default": "top"
+        },
+        "triggerIcon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "Icon shown on the trigger button",
+          "default": "smile"
+        },
+        "triggerLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Accessible label for the trigger button",
+          "default": "Add emoji"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes applied to the trigger button"
+        }
+      }
     }
   },
   "categories": [

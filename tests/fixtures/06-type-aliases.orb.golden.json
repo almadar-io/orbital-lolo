@@ -28,6 +28,7 @@
           "category": "interaction",
           "linkedEntity": "StatusItem",
           "name": "StatusActions",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

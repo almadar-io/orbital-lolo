@@ -41,6 +41,7 @@
           "category": "interaction",
           "linkedEntity": "Widget",
           "name": "WidgetView",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {

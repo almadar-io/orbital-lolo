@@ -20,6 +20,7 @@
           "category": "interaction",
           "linkedEntity": "Product",
           "name": "ProductFetch",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {
@@ -43,9 +44,7 @@
                   [
                     "fetch",
                     "Product",
-                    {
-                      "id": "@payload.id"
-                    }
+                    {}
                   ]
                 ],
                 "event": "LOAD",

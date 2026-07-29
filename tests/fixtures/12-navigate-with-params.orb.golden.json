@@ -39,6 +39,7 @@
           "category": "interaction",
           "linkedEntity": "Page",
           "name": "Router",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {
@@ -73,9 +74,7 @@
                   [
                     "navigate",
                     "/order/:id",
-                    {
-                      "id": "@payload.id"
-                    }
+                    {}
                   ]
                 ],
                 "event": "GO_DETAIL",

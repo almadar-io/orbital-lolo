@@ -19,6 +19,7 @@
           "category": "interaction",
           "linkedEntity": "AgentTask",
           "name": "AgentRunner",
+          "scope": "instance",
           "stateMachine": {
             "events": [
               {
