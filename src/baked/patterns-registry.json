@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-27T04:55:27.017Z",
+  "exportedAt": "2026-07-28T16:34:50.202Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -9821,6 +9821,21 @@
           ],
           "description": "Inline style"
         },
+        "format": {
+          "types": [
+            "string"
+          ],
+          "description": "Value formatting applied to string/number/Date content — `none` (the default) renders content as-is. Covers the raw-ISO-date class: a bound datetime renders human-readable via `format=\"date\"|\"time\"|\"datetime\"`.",
+          "enumValues": [
+            "none",
+            "date",
+            "time",
+            "datetime",
+            "number",
+            "currency",
+            "percent"
+          ]
+        },
         "content": {
           "types": [
             "node"
@@ -14618,6 +14633,27 @@
                   "number"
                 ]
               },
+              "mark": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "kind": {
+                    "types": [
+                      "unknown"
+                    ]
+                  },
+                  "suggestionId": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind",
+                  "suggestionId"
+                ]
+              },
               "x": {
                 "types": [
                   "number"
@@ -14639,6 +14675,48 @@
             "array"
           ],
           "description": "Graph edges (the only rendered links)",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "source": {
+                "types": [
+                  "string"
+                ]
+              },
+              "target": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "weight": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "source",
+              "target"
+            ]
+          }
+        },
+        "proposedEdges": {
+          "types": [
+            "array"
+          ],
+          "description": "Uncommitted proposal links — rendered dashed/faint in a separate pass, never folded into the layout springs.",
           "items": {
             "types": [
               "object"
@@ -14823,6 +14901,111 @@
                       "number"
                     ]
                   },
+                  "mark": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "types": [
+                          "unknown"
+                        ]
+                      },
+                      "suggestionId": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "suggestionId"
+                    ]
+                  },
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "id"
+                ]
+              }
+            }
+          ]
+        },
+        "onMarkClick": {
+          "types": [
+            "function"
+          ],
+          "description": "On marked-node click (suggestion/proposal target). Takes priority over onNodeClick.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "node",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "group": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "size": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "badge": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "mark": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "types": [
+                          "unknown"
+                        ]
+                      },
+                      "suggestionId": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "suggestionId"
+                    ]
+                  },
                   "x": {
                     "types": [
                       "number"
@@ -14886,6 +15069,27 @@
                       "number"
                     ]
                   },
+                  "mark": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "types": [
+                          "unknown"
+                        ]
+                      },
+                      "suggestionId": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "suggestionId"
+                    ]
+                  },
                   "x": {
                     "types": [
                       "number"
@@ -14947,6 +15151,27 @@
                   "badge": {
                     "types": [
                       "number"
+                    ]
+                  },
+                  "mark": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "kind": {
+                        "types": [
+                          "unknown"
+                        ]
+                      },
+                      "suggestionId": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "kind",
+                      "suggestionId"
                     ]
                   },
                   "x": {
@@ -17704,11 +17929,23 @@
           ],
           "description": "Field name identifying the sender (used with variant: \"message\")"
         },
+        "senderLabelField": {
+          "types": [
+            "string"
+          ],
+          "description": "Field holding the sender's human-readable name (used with variant: \"message\"). Defaults to `senderField`. Set this when `senderField` holds an id — an id-keyed thread otherwise labels bubbles `staff-1` instead of `Sam Staff`."
+        },
         "currentUser": {
           "types": [
             "string"
           ],
           "description": "Current user identifier; messages matching this value align right (used with variant: \"message\")"
+        },
+        "emptyMessage": {
+          "types": [
+            "string"
+          ],
+          "description": "Message shown when there are no rows. Falls back to the generic \"no items\" translation. `TableView` already exposes this; an agenda or an inbox wants to say what \"empty\" means in its own words."
         },
         "className": {
           "types": [
@@ -17919,6 +18156,22 @@
           ],
           "description": "Max items to show before \"Show More\" button. Defaults to 5. Set to 0 to disable.",
           "default": 5
+        },
+        "sortBy": {
+          "types": [
+            "string"
+          ],
+          "description": "Field name to order rows by. Values are compared by their own type — numbers numerically, date-like strings chronologically, everything else alphabetically — never by what the field is called. Empty cells sort last. Unset leaves the incoming order untouched. Orders only the rows already fetched: a collection larger than its `limit` still needs ordering at the data layer."
+        },
+        "sortDirection": {
+          "types": [
+            "string"
+          ],
+          "description": "Direction for `sortBy`. Defaults to ascending.",
+          "enumValues": [
+            "asc",
+            "desc"
+          ]
         },
         "look": {
           "types": [
@@ -38970,7 +39223,8 @@
             "cell",
             "rect",
             "ellipse",
-            "poly"
+            "poly",
+            "path"
           ]
         },
         "position": {
@@ -39054,6 +39308,12 @@
               "object"
             ]
           }
+        },
+        "d": {
+          "types": [
+            "string"
+          ],
+          "description": "SVG path data in world units relative to the cell's projected top-left — same coordinate convention as `points`."
         },
         "fill": {
           "types": [
@@ -39455,7 +39715,8 @@
                   "cell",
                   "rect",
                   "ellipse",
-                  "poly"
+                  "poly",
+                  "path"
                 ]
               },
               "position": {
@@ -39529,6 +39790,11 @@
                     "object"
                   ]
                 }
+              },
+              "d": {
+                "types": [
+                  "string"
+                ]
               },
               "fill": {
                 "types": [
@@ -40676,6 +40942,96 @@
           "description": "Additional CSS classes"
         }
       }
+    },
+    "draw-group": {
+      "type": "draw-group",
+      "category": "game",
+      "tier": "atoms",
+      "family": "game",
+      "description": "DrawGroup component",
+      "suggestedFor": [
+        "draw",
+        "group",
+        "draw group"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "position": {
+          "types": [
+            "object"
+          ],
+          "description": "Logical scene position; the projector maps it to pixels / world.",
+          "required": true,
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ],
+          "scenePos": true
+        },
+        "scale": {
+          "types": [
+            "number"
+          ],
+          "description": "Uniform scale applied to the whole group."
+        },
+        "rotate": {
+          "types": [
+            "number"
+          ],
+          "description": "Rotation in radians (painter units)."
+        },
+        "opacity": {
+          "types": [
+            "number"
+          ],
+          "description": "0..1 opacity."
+        },
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "The grouped drawables, painted through the normal dispatch.",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "drawableSlot": true
+          }
+        }
+      },
+      "drawable": true,
+      "drawHost": true
     }
   },
   "categories": [
