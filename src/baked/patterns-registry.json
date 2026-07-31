@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-30T20:05:37.441Z",
+  "exportedAt": "2026-07-31T03:04:39.259Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -39335,7 +39335,7 @@
           "types": [
             "number"
           ],
-          "description": "Fine nudge from the anchor point in world units."
+          "description": "Fine nudge in world units — applies to every shape kind except `cell` (rect/ellipse from their anchor point; poly/path from the projected top-left)."
         },
         "offsetY": {
           "types": [
@@ -39461,6 +39461,124 @@
           "propertyRequired": [
             "color",
             "blur"
+          ]
+        },
+        "animation": {
+          "types": [
+            "object"
+          ],
+          "description": "Keyframe animation over this shape's props; the host runs a paint clock while present.",
+          "properties": {
+            "durationMs": {
+              "types": [
+                "number"
+              ]
+            },
+            "loop": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "keyframes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "at": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "offsetX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "offsetY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "rotate": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "opacity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "radiusX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "radiusY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "width": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "height": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "strokeWidth": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "fill": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "stroke": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "shadow": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "color": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "blur": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "color",
+                      "blur"
+                    ]
+                  }
+                },
+                "required": [
+                  "at"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "durationMs",
+            "keyframes"
           ]
         },
         "opacity": {
@@ -40020,6 +40138,123 @@
                 "required": [
                   "color",
                   "blur"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "durationMs": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "loop": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "keyframes": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "at": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "offsetX": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "offsetY": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "rotate": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "opacity": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "radiusX": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "radiusY": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "width": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "height": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "strokeWidth": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "fill": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "stroke": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "shadow": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "color": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "blur": {
+                              "types": [
+                                "number"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "color",
+                            "blur"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "at"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "durationMs",
+                  "keyframes"
                 ]
               },
               "opacity": {
