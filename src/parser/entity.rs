@@ -25,11 +25,41 @@ impl Parser {
         self.skip_newlines();
 
         let mut fields = Vec::new();
+        let mut read_policy = None;
+        let mut create_policy = None;
+        let mut update_policy = None;
+        let mut delete_policy = None;
         loop {
             self.skip_newlines();
             if brace_form && matches!(self.peek(), TokenKind::RBrace) {
                 self.advance();
                 break;
+            }
+            if let TokenKind::Sigil(name) = self.peek().clone() {
+                if matches!(name.as_str(), "read" | "create" | "update" | "delete") {
+                    let directive_span = self.peek_span();
+                    self.advance();
+                    let expr = self.parse_sexpr_or_value()?;
+                    self.expect_newline_or_eof()?;
+                    let slot = match name.as_str() {
+                        "read" => &mut read_policy,
+                        "create" => &mut create_policy,
+                        "update" => &mut update_policy,
+                        "delete" => &mut delete_policy,
+                        _ => unreachable!(),
+                    };
+                    if slot.is_some() {
+                        return Err(ParseError::InvalidType {
+                            span: directive_span,
+                            message: format!(
+                                "ELOLO_DUPLICATE_ACCESS_DIRECTIVE: entity declares `@{}` more than once",
+                                name
+                            ),
+                        });
+                    }
+                    *slot = Some(expr);
+                    continue;
+                }
             }
             if self.is_entity_field_start() {
                 fields.push(self.parse_field_decl()?);
@@ -62,6 +92,10 @@ impl Parser {
             collection,
             shared,
             identity,
+            read_policy,
+            create_policy,
+            update_policy,
+            delete_policy,
             fields,
             span,
         })

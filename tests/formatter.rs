@@ -432,6 +432,77 @@ orbital PersonOrbital {
     assert!(!entity.shared, "identity must NOT imply shared");
 }
 
+/// The four entity access directives (`@read`/`@create`/`@update`/`@delete`)
+/// survive a reformat with unchanged semantics.
+#[test]
+fn access_directives_survive_reformat() {
+    let source = r#"app test-access "1.0.0"
+"Access directive round-trip."
+orbital TicketOrbital {
+  entity Ticket [persistent: tickets] {
+    @read (or ["=", @user.role, "supervisor"] ["=", @entity.assignee, @user.id])
+    @create ["=", @user.role, "supervisor"]
+    @update ["=", @entity.assignee, @user.id]
+    @delete ["=", @user.role, "supervisor"]
+    id : string!
+    assignee : string!
+  }
+  trait V -> Ticket [interaction, collection] {
+    initial: idle
+    state idle {
+      INIT -> idle (render-ui main { type: "box" })
+    }
+  }
+  page "/a" as A -> V
+}
+"#;
+    let ast = parse_str(source).expect("parse original");
+    let formatted = format_program(&ast);
+    for sigil in ["@read", "@create", "@update", "@delete"] {
+        assert!(
+            formatted.contains(sigil),
+            "formatter dropped `{sigil}`; got:\n{formatted}"
+        );
+    }
+
+    let schema1 = parse_and_lower_str(source).expect("lower original");
+    let schema2 = parse_and_lower_str(&formatted).expect("lower formatted");
+    let v1 = canonicalize(strip_nulls(serde_json::to_value(&schema1).unwrap()));
+    let v2 = canonicalize(strip_nulls(serde_json::to_value(&schema2).unwrap()));
+    assert_eq!(v1, v2, "access directives changed semantics across a reformat");
+
+    let ticket = schema1.orbitals[0]
+        .entity
+        .as_inline()
+        .expect("inline entity");
+    assert!(ticket.read_policy.is_some(), "read_policy did not reach the IR");
+    assert!(ticket.create_policy.is_some(), "create_policy did not reach the IR");
+    assert!(ticket.update_policy.is_some(), "update_policy did not reach the IR");
+    assert!(ticket.delete_policy.is_some(), "delete_policy did not reach the IR");
+}
+
+/// A duplicate directive of the same kind is a parse error.
+#[test]
+fn duplicate_access_directive_is_rejected() {
+    let source = r#"app test-access-dup "1.0.0"
+"Duplicate directive rejection."
+orbital TicketOrbital {
+  entity Ticket [persistent: tickets] {
+    @read ["=", @user.id, @entity.assignee]
+    @read ["=", @user.id, @entity.assignee]
+    id : string!
+    assignee : string!
+  }
+}
+"#;
+    let err = parse_str(source).expect_err("duplicate @read must be a parse error");
+    let message = format!("{err}");
+    assert!(
+        message.contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"),
+        "unexpected error: {message}"
+    );
+}
+
 /// `[identity]` is orthogonal to both persistence and `shared`, in any order.
 #[test]
 fn identity_composes_with_runtime_and_shared() {

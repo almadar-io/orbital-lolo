@@ -22,6 +22,10 @@ pub(crate) fn lower_entity(
         instances: None,
         shared: entity.shared,
         identity: entity.identity,
+        read_policy: entity.read_policy.clone(),
+        create_policy: entity.create_policy.clone(),
+        update_policy: entity.update_policy.clone(),
+        delete_policy: entity.delete_policy.clone(),
         id: None,
     })
 }

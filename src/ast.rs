@@ -220,6 +220,19 @@ pub struct Entity {
     /// directory is both persisted and the identity, so it cannot be a
     /// persistence mode.
     pub identity: bool,
+    /// `@read <sexpr>` — a per-row predicate evaluated with `@entity` bound to
+    /// the candidate row and `@user` to the viewer. ANDed with any call-site
+    /// `filter:`; enforced once, for every trait that fetches this entity —
+    /// the read-access twin of `@create`/`@update`/`@delete` below.
+    pub read_policy: Option<SExpression>,
+    /// `@create <sexpr>` — evaluated with `@entity` bound to the INCOMING data
+    /// about to become a row (no row exists yet) and `@user` to the viewer.
+    pub create_policy: Option<SExpression>,
+    /// `@update <sexpr>` — evaluated with `@entity` bound to the EXISTING row
+    /// before mutation (fetched fresh) and `@user` to the viewer.
+    pub update_policy: Option<SExpression>,
+    /// `@delete <sexpr>` — same binding shape as `@update`.
+    pub delete_policy: Option<SExpression>,
     pub fields: Vec<EntityField>,
     pub span: Span,
 }

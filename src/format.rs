@@ -569,9 +569,28 @@ impl Formatter {
             entity.identity,
         );
         self.output.push_str(" {");
-        if !entity.fields.is_empty() {
+        let has_access_directives = entity.read_policy.is_some()
+            || entity.create_policy.is_some()
+            || entity.update_policy.is_some()
+            || entity.delete_policy.is_some();
+        if !entity.fields.is_empty() || has_access_directives {
             self.write_newline();
             self.indent();
+            for (sigil, expr) in [
+                ("read", &entity.read_policy),
+                ("create", &entity.create_policy),
+                ("update", &entity.update_policy),
+                ("delete", &entity.delete_policy),
+            ] {
+                if let Some(expr) = expr {
+                    self.write_indent();
+                    self.output.push('@');
+                    self.output.push_str(sigil);
+                    self.output.push(' ');
+                    self.fmt_sexpr(expr);
+                    self.write_newline();
+                }
+            }
             for field in &entity.fields {
                 self.write_indent();
                 self.fmt_entity_field(field);

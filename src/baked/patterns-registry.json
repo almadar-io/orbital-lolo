@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-29T19:32:01.461Z",
+  "exportedAt": "2026-07-30T20:05:37.441Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -35175,6 +35175,12 @@
             "string"
           ],
           "description": "Solid backdrop colour (drawn when no `backgroundImage`)."
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "Declarative JSX drawable children (`<DrawShape .../>` composed in paint order). When `drawables` is empty, each child registers its descriptor via the drawable registry context and the host paints them."
         }
       },
       "drawable": true,
@@ -39360,6 +39366,57 @@
           ],
           "description": "fill prop"
         },
+        "gradient": {
+          "types": [
+            "object"
+          ],
+          "description": "Gradient fill in world units; overrides `fill` when present.",
+          "properties": {
+            "kind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "linear",
+                "radial"
+              ]
+            },
+            "from": {
+              "types": [
+                "object"
+              ]
+            },
+            "to": {
+              "types": [
+                "object"
+              ]
+            },
+            "center": {
+              "types": [
+                "object"
+              ]
+            },
+            "radius": {
+              "types": [
+                "number"
+              ]
+            },
+            "stops": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "kind",
+            "stops"
+          ]
+        },
         "stroke": {
           "types": [
             "string"
@@ -39371,6 +39428,40 @@
             "number"
           ],
           "description": "strokeWidth prop"
+        },
+        "rotate": {
+          "types": [
+            "number"
+          ],
+          "description": "Rotation in radians (painter units, same as `draw-group`), about `pivot`."
+        },
+        "pivot": {
+          "types": [
+            "object"
+          ],
+          "description": "Rotation pivot in world units relative to the cell's projected top-left; default `{x:0.5, y:0.5}` (cell center)."
+        },
+        "shadow": {
+          "types": [
+            "object"
+          ],
+          "description": "Soft glow / drop-shadow behind the shape; `blur` in world units.",
+          "properties": {
+            "color": {
+              "types": [
+                "string"
+              ]
+            },
+            "blur": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "color",
+            "blur"
+          ]
         },
         "opacity": {
           "types": [
@@ -39840,6 +39931,56 @@
                   "string"
                 ]
               },
+              "gradient": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "kind": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "linear",
+                      "radial"
+                    ]
+                  },
+                  "from": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "to": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "center": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "radius": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "stops": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "stops"
+                ]
+              },
               "stroke": {
                 "types": [
                   "string"
@@ -39848,6 +39989,37 @@
               "strokeWidth": {
                 "types": [
                   "number"
+                ]
+              },
+              "rotate": {
+                "types": [
+                  "number"
+                ]
+              },
+              "pivot": {
+                "types": [
+                  "object"
+                ]
+              },
+              "shadow": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "blur": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "color",
+                  "blur"
                 ]
               },
               "opacity": {
@@ -40568,6 +40740,12 @@
               "string"
             ]
           }
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "Declarative JSX drawable children (`<DrawShape .../>` composed in paint order). Forwarded to the 2D host, which collects them via drawable registry context."
         }
       },
       "drawHost": true
