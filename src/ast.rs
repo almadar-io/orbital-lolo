@@ -233,6 +233,11 @@ pub struct Entity {
     pub update_policy: Option<SExpression>,
     /// `@delete <sexpr>` — same binding shape as `@update`.
     pub delete_policy: Option<SExpression>,
+    /// `@<op> none "<reason>"` — a DECLARED omission, keyed by op name
+    /// (`read`/`create`/`update`/`delete`) with the author's stated reason.
+    /// Behaves exactly like leaving the directive out; it exists so a lint can
+    /// tell a considered omission from a forgotten one.
+    pub access_waivers: Vec<(String, String)>,
     pub fields: Vec<EntityField>,
     pub span: Span,
 }

@@ -26,6 +26,21 @@ pub(crate) fn lower_entity(
         create_policy: entity.create_policy.clone(),
         update_policy: entity.update_policy.clone(),
         delete_policy: entity.delete_policy.clone(),
+        access_waivers: if entity.access_waivers.is_empty() {
+            None
+        } else {
+            let mut waivers = orbital_core::schema::AccessWaivers::default();
+            for (op, reason) in &entity.access_waivers {
+                match op.as_str() {
+                    "read" => waivers.read = Some(reason.clone()),
+                    "create" => waivers.create = Some(reason.clone()),
+                    "update" => waivers.update = Some(reason.clone()),
+                    "delete" => waivers.delete = Some(reason.clone()),
+                    _ => {}
+                }
+            }
+            Some(waivers)
+        },
         id: None,
     })
 }

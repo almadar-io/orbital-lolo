@@ -572,7 +572,8 @@ impl Formatter {
         let has_access_directives = entity.read_policy.is_some()
             || entity.create_policy.is_some()
             || entity.update_policy.is_some()
-            || entity.delete_policy.is_some();
+            || entity.delete_policy.is_some()
+            || !entity.access_waivers.is_empty();
         if !entity.fields.is_empty() || has_access_directives {
             self.write_newline();
             self.indent();
@@ -588,6 +589,20 @@ impl Formatter {
                     self.output.push_str(sigil);
                     self.output.push(' ');
                     self.fmt_sexpr(expr);
+                    self.write_newline();
+                } else if let Some((_, reason)) =
+                    entity.access_waivers.iter().find(|(op, _)| op == sigil)
+                {
+                    // `@<op> none "<reason>"` — the declared omission, printed
+                    // in the same slot as a real directive so a round-trip is
+                    // lossless.
+                    self.write_indent();
+                    self.output.push('@');
+                    self.output.push_str(sigil);
+                    self.output.push_str(" none ");
+                    self.output.push('"');
+                    self.output.push_str(&reason.replace('"', "\\\""));
+                    self.output.push('"');
                     self.write_newline();
                 }
             }

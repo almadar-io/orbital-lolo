@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-31T03:04:39.259Z",
+  "exportedAt": "2026-07-31T10:02:24.207Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -39378,7 +39378,8 @@
               ],
               "enumValues": [
                 "linear",
-                "radial"
+                "radial",
+                "conic"
               ]
             },
             "from": {
@@ -39401,6 +39402,11 @@
                 "number"
               ]
             },
+            "angle": {
+              "types": [
+                "number"
+              ]
+            },
             "stops": {
               "types": [
                 "array"
@@ -39417,6 +39423,46 @@
             "stops"
           ]
         },
+        "fillPattern": {
+          "types": [
+            "object"
+          ],
+          "description": "Repeating texture painted over the fill (grain / tiling image).",
+          "properties": {
+            "kind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "noise",
+                "image"
+              ]
+            },
+            "url": {
+              "types": [
+                "string"
+              ]
+            },
+            "scale": {
+              "types": [
+                "number"
+              ]
+            },
+            "alpha": {
+              "types": [
+                "number"
+              ]
+            },
+            "color": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "kind"
+          ]
+        },
         "stroke": {
           "types": [
             "string"
@@ -39428,6 +39474,115 @@
             "number"
           ],
           "description": "strokeWidth prop"
+        },
+        "strokeGradient": {
+          "types": [
+            "object"
+          ],
+          "description": "Gradient stroke in world units; overrides `stroke` when present.",
+          "properties": {
+            "kind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "linear",
+                "radial",
+                "conic"
+              ]
+            },
+            "from": {
+              "types": [
+                "object"
+              ]
+            },
+            "to": {
+              "types": [
+                "object"
+              ]
+            },
+            "center": {
+              "types": [
+                "object"
+              ]
+            },
+            "radius": {
+              "types": [
+                "number"
+              ]
+            },
+            "angle": {
+              "types": [
+                "number"
+              ]
+            },
+            "stops": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "kind",
+            "stops"
+          ]
+        },
+        "strokeDash": {
+          "types": [
+            "array"
+          ],
+          "description": "Dash pattern in painter-px (constant under group scale, like `strokeWidth`).",
+          "items": {
+            "types": [
+              "number"
+            ]
+          }
+        },
+        "strokeDashOffset": {
+          "types": [
+            "number"
+          ],
+          "description": "Dash phase offset in painter-px; animatable (marching ants)."
+        },
+        "blendMode": {
+          "types": [
+            "string"
+          ],
+          "description": "Composite/blend mode for this shape's draws (`lighter`, `multiply`, `screen`, …).",
+          "enumValues": [
+            "source-over",
+            "lighter",
+            "multiply",
+            "screen",
+            "overlay",
+            "darken",
+            "lighten",
+            "color-dodge",
+            "color-burn",
+            "hard-light",
+            "soft-light",
+            "difference",
+            "exclusion",
+            "hue",
+            "saturation",
+            "color",
+            "luminosity",
+            "source-atop",
+            "destination-over",
+            "destination-out",
+            "xor"
+          ]
+        },
+        "blur": {
+          "types": [
+            "number"
+          ],
+          "description": "Gaussian blur in painter-px. Expensive — forces an intermediate raster; use sparingly."
         },
         "rotate": {
           "types": [
@@ -39534,6 +39689,16 @@
                     ]
                   },
                   "strokeWidth": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "strokeDashOffset": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "blur": {
                     "types": [
                       "number"
                     ]
@@ -40060,7 +40225,8 @@
                     ],
                     "enumValues": [
                       "linear",
-                      "radial"
+                      "radial",
+                      "conic"
                     ]
                   },
                   "from": {
@@ -40083,6 +40249,11 @@
                       "number"
                     ]
                   },
+                  "angle": {
+                    "types": [
+                      "number"
+                    ]
+                  },
                   "stops": {
                     "types": [
                       "array"
@@ -40099,12 +40270,155 @@
                   "stops"
                 ]
               },
+              "fillPattern": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "kind": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "noise",
+                      "image"
+                    ]
+                  },
+                  "url": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "scale": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "alpha": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "kind"
+                ]
+              },
               "stroke": {
                 "types": [
                   "string"
                 ]
               },
               "strokeWidth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "strokeGradient": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "kind": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "linear",
+                      "radial",
+                      "conic"
+                    ]
+                  },
+                  "from": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "to": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "center": {
+                    "types": [
+                      "object"
+                    ]
+                  },
+                  "radius": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "angle": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "stops": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "kind",
+                  "stops"
+                ]
+              },
+              "strokeDash": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "strokeDashOffset": {
+                "types": [
+                  "number"
+                ]
+              },
+              "blendMode": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "source-over",
+                  "lighter",
+                  "multiply",
+                  "screen",
+                  "overlay",
+                  "darken",
+                  "lighten",
+                  "color-dodge",
+                  "color-burn",
+                  "hard-light",
+                  "soft-light",
+                  "difference",
+                  "exclusion",
+                  "hue",
+                  "saturation",
+                  "color",
+                  "luminosity",
+                  "source-atop",
+                  "destination-over",
+                  "destination-out",
+                  "xor"
+                ]
+              },
+              "blur": {
                 "types": [
                   "number"
                 ]
@@ -40210,6 +40524,16 @@
                           ]
                         },
                         "strokeWidth": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "strokeDashOffset": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "blur": {
                           "types": [
                             "number"
                           ]
@@ -40870,6 +41194,18 @@
             }
           }
         },
+        "lighting": {
+          "types": [
+            "object"
+          ],
+          "description": "3D scene light rig as data — ambient/directional/hemisphere/point lights + optional 'room' environment for PBR reflections. Omitted → the standard fixed rig."
+        },
+        "post": {
+          "types": [
+            "object"
+          ],
+          "description": "3D post-processing stack — bloom (emissive glow / neon) and vignette. Omitted → no post pass."
+        },
         "tileClickEvent": {
           "types": [
             "string"
@@ -41480,6 +41816,12 @@
           ],
           "description": "0..1 opacity."
         },
+        "clip": {
+          "types": [
+            "string"
+          ],
+          "description": "Clip the group's items to an SVG path (`d` syntax) in world units relative to the group origin — masked reveals, meters, portraits."
+        },
         "items": {
           "types": [
             "array"
@@ -41550,6 +41892,357 @@
           "description": "Additional CSS classes applied to the trigger button"
         }
       }
+    },
+    "draw-mesh": {
+      "type": "draw-mesh",
+      "category": "game",
+      "tier": "atoms",
+      "family": "game",
+      "description": "DrawMesh component",
+      "suggestedFor": [
+        "draw",
+        "mesh",
+        "draw mesh"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "shape": {
+          "types": [
+            "string"
+          ],
+          "description": "shape prop",
+          "required": true,
+          "enumValues": [
+            "box",
+            "sphere",
+            "capsule",
+            "cylinder",
+            "cone",
+            "torus",
+            "plane",
+            "circle"
+          ]
+        },
+        "position": {
+          "types": [
+            "object"
+          ],
+          "description": "Logical scene position; `z` is height in cells (projected to world Y).",
+          "required": true,
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ],
+          "scenePos": true
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "Box/plane X extent in cells (default 1)."
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "Box Y (height) extent / capsule-cylinder-cone length in cells (default 1)."
+        },
+        "depth": {
+          "types": [
+            "number"
+          ],
+          "description": "Box/plane Z extent in cells (default `width`)."
+        },
+        "radius": {
+          "types": [
+            "number"
+          ],
+          "description": "Sphere/capsule/cone/torus/circle radius in cells (default 0.4)."
+        },
+        "radiusTop": {
+          "types": [
+            "number"
+          ],
+          "description": "Cylinder top radius (default `radius`)."
+        },
+        "radiusBottom": {
+          "types": [
+            "number"
+          ],
+          "description": "Cylinder bottom radius (default `radius`)."
+        },
+        "tube": {
+          "types": [
+            "number"
+          ],
+          "description": "Torus tube radius in cells (default `radius` / 3)."
+        },
+        "segments": {
+          "types": [
+            "number"
+          ],
+          "description": "Curved-surface tessellation, clamped 3..64 (default 24). 4–8 + `flatShading` = low-poly."
+        },
+        "rotation": {
+          "types": [
+            "array"
+          ],
+          "description": "Euler rotation `[x, y, z]` in radians.",
+          "items": {
+            "types": [
+              "number"
+            ]
+          }
+        },
+        "pivot": {
+          "types": [
+            "string"
+          ],
+          "description": "`bottom` (default) rests the mesh on its position's ground plane; `center` centers it there.",
+          "enumValues": [
+            "bottom",
+            "center"
+          ]
+        },
+        "material": {
+          "types": [
+            "object"
+          ],
+          "description": "material prop",
+          "properties": {
+            "kind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "standard",
+                "physical",
+                "toon",
+                "basic"
+              ]
+            },
+            "color": {
+              "types": [
+                "string"
+              ]
+            },
+            "metalness": {
+              "types": [
+                "number"
+              ]
+            },
+            "roughness": {
+              "types": [
+                "number"
+              ]
+            },
+            "emissive": {
+              "types": [
+                "string"
+              ]
+            },
+            "emissiveIntensity": {
+              "types": [
+                "number"
+              ]
+            },
+            "opacity": {
+              "types": [
+                "number"
+              ]
+            },
+            "transmission": {
+              "types": [
+                "number"
+              ]
+            },
+            "ior": {
+              "types": [
+                "number"
+              ]
+            },
+            "flatShading": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "side": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "front",
+                "back",
+                "double"
+              ]
+            }
+          }
+        },
+        "outline": {
+          "types": [
+            "object"
+          ],
+          "description": "outline prop",
+          "properties": {
+            "color": {
+              "types": [
+                "string"
+              ]
+            },
+            "width": {
+              "types": [
+                "number"
+              ]
+            }
+          }
+        },
+        "castShadow": {
+          "types": [
+            "boolean"
+          ],
+          "description": "castShadow prop"
+        },
+        "receiveShadow": {
+          "types": [
+            "boolean"
+          ],
+          "description": "receiveShadow prop"
+        },
+        "animation": {
+          "types": [
+            "object"
+          ],
+          "description": "Keyframe animation over transform/material tracks; the 3D host runs it per frame.",
+          "properties": {
+            "durationMs": {
+              "types": [
+                "number"
+              ]
+            },
+            "loop": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "keyframes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "at": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "offsetX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "offsetY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "offsetZ": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "rotateX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "rotateY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "rotateZ": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "scale": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "opacity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "emissiveIntensity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "emissive": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "at"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "durationMs",
+            "keyframes"
+          ]
+        },
+        "opacity": {
+          "types": [
+            "number"
+          ],
+          "description": "0..1 opacity; multiplies the material and enclosing group opacity."
+        }
+      },
+      "drawable": true
     }
   },
   "categories": [

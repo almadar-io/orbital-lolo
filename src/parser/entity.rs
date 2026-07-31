@@ -29,6 +29,7 @@ impl Parser {
         let mut create_policy = None;
         let mut update_policy = None;
         let mut delete_policy = None;
+        let mut access_waivers: Vec<(String, String)> = Vec::new();
         loop {
             self.skip_newlines();
             if brace_form && matches!(self.peek(), TokenKind::RBrace) {
@@ -39,6 +40,56 @@ impl Parser {
                 if matches!(name.as_str(), "read" | "create" | "update" | "delete") {
                     let directive_span = self.peek_span();
                     self.advance();
+
+                    // `@<op> none "<reason>"` — the omission, declared. Same
+                    // runtime behaviour as leaving the directive out; recorded
+                    // so a lint can tell a considered omission from a forgotten
+                    // one. The reason is mandatory: an unexplained waiver is
+                    // exactly the thing this is meant to rule out.
+                    if matches!(self.peek(), TokenKind::Identifier(id) if id == "none") {
+                        self.advance();
+                        let reason = match self.peek().clone() {
+                            TokenKind::String(text) => {
+                                self.advance();
+                                text
+                            }
+                            _ => {
+                                return Err(ParseError::InvalidType {
+                                    span: directive_span,
+                                    message: format!(
+                                        "ELOLO_ACCESS_WAIVER_NEEDS_REASON: `@{name} none` must state why no per-row predicate can express this rule, e.g. `@{name} none \"visibility follows Ticket, which a per-row predicate cannot join\"`"
+                                    ),
+                                });
+                            }
+                        };
+                        if reason.trim().is_empty() {
+                            return Err(ParseError::InvalidType {
+                                span: directive_span,
+                                message: format!(
+                                    "ELOLO_ACCESS_WAIVER_NEEDS_REASON: `@{name} none` was given an empty reason"
+                                ),
+                            });
+                        }
+                        self.expect_newline_or_eof()?;
+                        if access_waivers.iter().any(|(op, _)| op == &name)
+                            || match name.as_str() {
+                                "read" => read_policy.is_some(),
+                                "create" => create_policy.is_some(),
+                                "update" => update_policy.is_some(),
+                                _ => delete_policy.is_some(),
+                            }
+                        {
+                            return Err(ParseError::InvalidType {
+                                span: directive_span,
+                                message: format!(
+                                    "ELOLO_DUPLICATE_ACCESS_DIRECTIVE: entity declares `@{name}` more than once"
+                                ),
+                            });
+                        }
+                        access_waivers.push((name.clone(), reason));
+                        continue;
+                    }
+
                     let expr = self.parse_sexpr_or_value()?;
                     self.expect_newline_or_eof()?;
                     let slot = match name.as_str() {
@@ -48,7 +99,7 @@ impl Parser {
                         "delete" => &mut delete_policy,
                         _ => unreachable!(),
                     };
-                    if slot.is_some() {
+                    if slot.is_some() || access_waivers.iter().any(|(op, _)| op == &name) {
                         return Err(ParseError::InvalidType {
                             span: directive_span,
                             message: format!(
@@ -93,6 +144,7 @@ impl Parser {
             shared,
             identity,
             read_policy,
+            access_waivers,
             create_policy,
             update_policy,
             delete_policy,
