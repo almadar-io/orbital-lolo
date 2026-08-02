@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-07-31T10:02:24.207Z",
+  "exportedAt": "2026-08-02T09:00:22.243Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -8586,6 +8586,11 @@
                 ]
               },
               "event": {
+                "types": [
+                  "string"
+                ]
+              },
+              "url": {
                 "types": [
                   "string"
                 ]
@@ -39934,7 +39939,13 @@
           "types": [
             "string"
           ],
-          "description": "Named GLB animation clip to play (3D backend only; the 2D painter animates via `frame`). Matched case-insensitively against the model's clips."
+          "description": "Animation to play. 3D backend: a named GLB clip (matched case-insensitively). 2D painter: when `asset.atlas` resolves to a `SpriteSheetAtlas` manifest, the canonical row of that name (idle/walk/attack/hit/death) plays off the host paint clock; an explicit `frame` rect overrides."
+        },
+        "loop": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Override the sheet row's loop flag. The paint clock is wall-time, so one-shot rows hold their final frame — preview pages set `true` to cycle attack/hit/death continuously."
         },
         "flipX": {
           "types": [
@@ -40784,6 +40795,11 @@
               "animation": {
                 "types": [
                   "string"
+                ]
+              },
+              "loop": {
+                "types": [
+                  "boolean"
                 ]
               },
               "flipX": {
@@ -41810,6 +41826,126 @@
           ],
           "description": "Rotation in radians (painter units)."
         },
+        "rotation": {
+          "types": [
+            "array"
+          ],
+          "description": "Euler rotation `[x, y, z]` in radians (world axes) — per-axis joint rotation for the 3D backend; a group placed at a joint with children authored joint-local IS a bone. The 2D painter applies only the in-plane `z` component, after `rotate`.",
+          "items": {
+            "types": [
+              "number"
+            ]
+          }
+        },
+        "bone": {
+          "types": [
+            "string"
+          ],
+          "description": "Skeleton bone name. A named group is addressable by a `draw-mesh` `skin` block (smooth skinning): the skinned mesh deforms with this group's animated transform. Names resolve within the nearest enclosing `skeleton: true` group (falling back to the canvas), so multiple instances of one rig never collide. Distinct from `id` (the hit-test handle)."
+        },
+        "skeleton": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Marks this group as a skeleton SCOPE: `bone` names and `skin` bindings in its subtree resolve against each other only — one scope per rig instance."
+        },
+        "animation": {
+          "types": [
+            "object"
+          ],
+          "description": "Keyframe animation over the group TRANSFORM tracks (`offsetX/Y/Z` in cells, `rotateX/Y/Z` in radians, `scale`; the 2D painter also honors `opacity`) — children inherit it, so nested animated groups form a joint chain. Material tracks belong on leaf meshes.",
+          "properties": {
+            "durationMs": {
+              "types": [
+                "number"
+              ]
+            },
+            "loop": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "keyframes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "at": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "offsetX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "offsetY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "offsetZ": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "rotateX": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "rotateY": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "rotateZ": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "scale": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "opacity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "emissiveIntensity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "emissive": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "at"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "durationMs",
+            "keyframes"
+          ]
+        },
         "opacity": {
           "types": [
             "number"
@@ -41933,7 +42069,8 @@
             "cone",
             "torus",
             "plane",
-            "circle"
+            "circle",
+            "polyhedron"
           ]
         },
         "position": {
@@ -42013,6 +42150,123 @@
           ],
           "description": "Curved-surface tessellation, clamped 3..64 (default 24). 4–8 + `flatShading` = low-poly."
         },
+        "vertices": {
+          "types": [
+            "array"
+          ],
+          "description": "`polyhedron` only: raw vertices as scene-frame `[x, y, z]` triples in cells, `z` = up.",
+          "items": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "number"
+              ]
+            }
+          }
+        },
+        "faces": {
+          "types": [
+            "array"
+          ],
+          "description": "`polyhedron` only: triangle index triples into `vertices`, wound counter-clockwise seen from OUTSIDE in the scene frame.",
+          "items": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "number"
+              ]
+            }
+          }
+        },
+        "uvs": {
+          "types": [
+            "array"
+          ],
+          "description": "`polyhedron` only: per-vertex `[u, v]` texture coordinates parallel to `vertices`, glTF convention (`v` grows DOWN from the image's top-left). Pairs with `material.map`.",
+          "items": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "number"
+              ]
+            }
+          }
+        },
+        "skin": {
+          "types": [
+            "object"
+          ],
+          "description": "`polyhedron` only: smooth-skinning weights binding the vertices to named bone groups. Vertices must then be authored in BIND POSE model space; the bones' animated transforms deform them.",
+          "properties": {
+            "bones": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "inverseBindMatrices": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            },
+            "indices": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            },
+            "weights": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            }
+          },
+          "propertyRequired": [
+            "bones",
+            "inverseBindMatrices",
+            "indices",
+            "weights"
+          ]
+        },
         "rotation": {
           "types": [
             "array"
@@ -42028,7 +42282,7 @@
           "types": [
             "string"
           ],
-          "description": "`bottom` (default) rests the mesh on its position's ground plane; `center` centers it there.",
+          "description": "`bottom` (default) rests the mesh on its position's ground plane; `center` centers it there. For `polyhedron`, `bottom` lifts by −min(z) and `center` applies no offset — the vertices are authoritative.",
           "enumValues": [
             "bottom",
             "center"
@@ -42104,6 +42358,11 @@
                 "front",
                 "back",
                 "double"
+              ]
+            },
+            "map": {
+              "types": [
+                "string"
               ]
             }
           }
