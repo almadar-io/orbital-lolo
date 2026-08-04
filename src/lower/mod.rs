@@ -484,7 +484,9 @@ fn lower_orbital(
     Ok(CoreOrbital {
         name: orb.name.clone(),
         uses,
-        theme: None,
+        theme: orb.theme.as_ref().map(|name| {
+            orbital_core::schema::ThemeRef::Reference(name.clone())
+        }),
         services: None,
         entity: EntityRef::Inline(entity_def),
         auxiliary_entities: if extra_entity_defs.is_empty() {

@@ -533,6 +533,16 @@ impl Formatter {
             self.fmt_page(p);
             self.write_newline();
         }
+        if let Some(theme) = &orbital.theme {
+            if !first {
+                self.write_newline();
+            }
+            first = false;
+            self.write_indent();
+            self.output.push_str("theme ");
+            self.write_quoted_string(theme);
+            self.write_newline();
+        }
         for expr in &orbital.body {
             if !first {
                 self.write_newline();

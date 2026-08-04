@@ -309,6 +309,7 @@ impl Parser {
         let mut traits = Vec::new();
         let mut pages = Vec::new();
         let mut body = Vec::new();
+        let mut theme: Option<String> = None;
 
         loop {
             self.skip_newlines();
@@ -341,6 +342,8 @@ impl Parser {
                 traits.push(self.parse_trait()?);
             } else if self.check_ident("page") {
                 pages.push(self.parse_page()?);
+            } else if self.check_ident("theme") {
+                theme = Some(self.parse_orbital_theme()?);
             } else if matches!(self.peek(), TokenKind::LParen) {
                 // Top-level s-expression — typically `(behavior/compose ...)`.
                 let expr = self.parse_sexpr()?;
@@ -348,7 +351,7 @@ impl Parser {
                 self.expect_newline_or_eof()?;
             } else {
                 return Err(ParseError::UnexpectedToken {
-                    expected: "uses, type, entity, trait, page, or s-expression".to_string(),
+                    expected: "uses, type, entity, trait, page, theme, or s-expression".to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
                 });
@@ -393,9 +396,28 @@ impl Parser {
             extra_entities,
             traits,
             pages,
+            theme,
             body,
             span,
         })
+    }
+
+    /// `theme "<name>"` — the orbital's active skin (a reference to a
+    /// built-in registry theme or an orbital-declared inline theme).
+    fn parse_orbital_theme(&mut self) -> Result<String, ParseError> {
+ self.expect_keyword("theme")?;
+        match self.peek().clone() {
+            TokenKind::String(s) => {
+                self.advance();
+                self.expect_newline_or_eof()?;
+                Ok(s)
+            }
+            other => Err(ParseError::UnexpectedToken {
+                expected: "a quoted theme name, e.g. theme \"linear-clean\"".to_string(),
+                got: format!("{:?}", other),
+                span: self.peek_span(),
+            }),
+        }
     }
 
     fn parse_use_decl(&mut self) -> Result<UseDecl, ParseError> {

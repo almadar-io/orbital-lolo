@@ -189,6 +189,13 @@ pub struct Orbital {
     pub extra_entities: Vec<Entity>,
     pub traits: Vec<Trait>,
     pub pages: Vec<Page>,
+    /// `theme "<name>"` — the orbital's active skin, a reference to a
+    /// theme in the built-in `@almadar-ui/themes/` registry (or an
+    /// orbital-declared inline theme). Lowers to `ThemeRef::Reference`.
+    /// `@currentTheme` resolves to this at render time. `None` ⇒ no skin
+    /// declared (the host omits `data-theme`, or the assembler sets it via
+    /// the factory `theme` param).
+    pub theme: Option<String>,
     /// Free-floating s-expression body items at the orbital level (e.g.,
     /// `(behavior/compose { ... })`). Lowered to top-level effects on the
     /// orbital that the Compose pass will resolve.
