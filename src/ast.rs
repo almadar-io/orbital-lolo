@@ -606,6 +606,10 @@ pub struct Page {
     /// fragile path-to-name heuristics — every committed .orb was authored
     /// with a hand-picked name that no single derivation rule reproduces.
     pub name: Option<String>,
+    /// Nav icon name — `@icon "..."` annotation below the page line.
+    pub icon: Option<String>,
+    /// Human nav label — `@label "..."` annotation below the page line.
+    pub label: Option<String>,
 }
 
 /// Top-level AST returned by the parser. The compiler-facing entry point is

@@ -71,6 +71,8 @@ pub(crate) fn lower_page(p: &Page) -> PageRef {
                 .collect(),
         ),
         sections: None,
+        icon: p.icon.clone(),
+        label: p.label.clone(),
         id: None,
     })
 }

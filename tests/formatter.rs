@@ -242,6 +242,25 @@ fn fixture_14_emit_with_payload() {
     assert_round_trip("14-emit-with-payload");
 }
 
+/// Page annotations (`@icon`/`@label`) survive a parse → format → re-parse →
+/// re-lower round-trip with identical lowered `.orb`. Proves the annotation is
+/// carried through AST → formatter → re-parse → lower without loss.
+#[test]
+fn page_annotations_round_trip() {
+    let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" as FooPage -> T\n    @icon \"users\"\n    @label \"Foo\"\n}";
+    let ast = parse_str(src).expect("parse original");
+    let formatted = format_program(&ast);
+    // The annotation surface must appear in the formatted output.
+    assert!(formatted.contains("@icon \"users\""), "@icon missing: {formatted}");
+    assert!(formatted.contains("@label \"Foo\""), "@label missing: {formatted}");
+    let schema1 = parse_and_lower_str(src).expect("lower original");
+    let schema2 =
+        parse_and_lower_str(&formatted).expect("lower formatted");
+    let v1 = canonicalize(strip_nulls(serde_json::to_value(&schema1).unwrap()));
+    let v2 = canonicalize(strip_nulls(serde_json::to_value(&schema2).unwrap()));
+    assert_eq!(v1, v2, "page annotation lost in round-trip");
+}
+
 #[test]
 fn fixture_15_agent_invocation() {
     assert_round_trip("15-agent-invocation");
@@ -538,4 +557,14 @@ orbital PersonOrbital {{
             "{tag} got the wrong shared flag"
         );
     }
+}
+
+#[test]
+fn page_annotation_lands_in_orb() {
+    let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" as FooPage -> T\n    @icon \"users\"\n    @label \"Foo\"\n}";
+    let schema = parse_and_lower_str(src).expect("lower");
+    let v = serde_json::to_value(&schema).unwrap();
+    let page = &v["orbitals"][0]["pages"][0];
+    assert_eq!(page["icon"], serde_json::json!("users"));
+    assert_eq!(page["label"], serde_json::json!("Foo"));
 }

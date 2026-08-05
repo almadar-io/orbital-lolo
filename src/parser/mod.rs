@@ -832,6 +832,26 @@ mod tests {
     }
 
     #[test]
+    fn parse_page_annotations() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" as FooPage -> T\n    @icon \"users\"\n    @label \"Foo\"\n}";
+        let prog = p(src);
+        let page = &prog.orbitals[0].pages[0];
+        assert_eq!(page.path, "/foo");
+        assert_eq!(page.name.as_deref(), Some("FooPage"));
+        assert_eq!(page.icon.as_deref(), Some("users"));
+        assert_eq!(page.label.as_deref(), Some("Foo"));
+    }
+
+    #[test]
+    fn parse_page_no_annotations_is_none() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" -> T\n}";
+        let prog = p(src);
+        let page = &prog.orbitals[0].pages[0];
+        assert!(page.icon.is_none());
+        assert!(page.label.is_none());
+    }
+
+    #[test]
     fn parse_config_field_tier_annotation() {
         let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E {\n    state s { I -> s }\n    config {\n      currency : string = \"USD\"\n        @label \"Currency\"\n        @tier \"domain\"\n      auditPrefix : string = \"audit-\"\n        @tier \"internal\"\n    }\n  }\n}";
         let prog = p(src);

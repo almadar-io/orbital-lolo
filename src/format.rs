@@ -1186,6 +1186,18 @@ impl Formatter {
             }
             self.output.push(']');
         }
+        if let Some(icon) = &page.icon {
+            self.write_newline();
+            self.write_indent();
+            self.output.push_str("  @icon ");
+            self.write_quoted_string(icon);
+        }
+        if let Some(label) = &page.label {
+            self.write_newline();
+            self.write_indent();
+            self.output.push_str("  @label ");
+            self.write_quoted_string(label);
+        }
     }
 
     fn fmt_type_annotation(&mut self, ann: &TypeAnnotation) {

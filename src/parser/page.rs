@@ -93,8 +93,36 @@ impl Parser {
                 }
             }
         }
-        if matches!(self.peek(), TokenKind::Newline) {
+        // Trailing `@icon "..."` / `@label "..."` annotations (one or more
+        // indented lines below the page declaration). Mirrors the config-knob
+        // annotation reader (`parse_config_annotations`).
+        let mut icon = None;
+        let mut label = None;
+        loop {
+            self.skip_newlines();
+            let annotation = match self.peek().clone() {
+                TokenKind::Sigil(s) if s == "icon" || s == "label" => s,
+                _ => break,
+            };
             self.advance();
+            let value = match self.peek().clone() {
+                TokenKind::String(s) => {
+                    self.advance();
+                    s
+                }
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: format!("string literal after @{}", annotation),
+                        got: format!("{:?}", other),
+                        span: self.peek_span(),
+                    });
+                }
+            };
+            match annotation.as_str() {
+                "icon" => icon = Some(value),
+                "label" => label = Some(value),
+                _ => unreachable!(),
+            }
         }
         Ok(Page {
             path,
@@ -106,6 +134,8 @@ impl Parser {
             span,
             reference,
             name,
+            icon,
+            label,
         })
     }
 }
