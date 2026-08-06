@@ -9,9 +9,10 @@ use orbital_core::schema::SExpression;
 use std::collections::HashMap;
 
 use crate::ast::{
-    AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst, Listen,
-    Orbital, Page, Persistence, Program, State, Tick, TickInterval, Trait, TraitRefData,
-    TraitScope, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
+    AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst,
+    ExpectsDecl, ExpectsKind, Listen, Orbital, Page, Persistence, Program, State, Tick,
+    TickInterval, Trait, TraitRefData, TraitScope, Transition, TypeAlias, TypeAnnotation, TypeBody,
+    TypeExpr, UseDecl,
 };
 
 /// Format a `Program` AST into canonical `.lolo` source text.
@@ -490,6 +491,16 @@ impl Formatter {
             self.fmt_use_decl(u);
             self.write_newline();
         }
+        for e in &orbital.expects {
+            if !first {
+                self.write_newline();
+            }
+            first = false;
+            self.emit_comments_before(e.span.line);
+            self.write_indent();
+            self.fmt_expects_decl(e);
+            self.write_newline();
+        }
         for ta in &orbital.type_aliases {
             if !first {
                 self.write_newline();
@@ -563,6 +574,48 @@ impl Formatter {
         self.output.push_str(&u.alias);
         self.output.push_str(" from ");
         self.write_quoted_string(&u.path);
+    }
+
+    fn fmt_expects_decl(&mut self, e: &ExpectsDecl) {
+        self.output.push_str("expects ");
+        match &e.kind {
+            ExpectsKind::Identity { name, shape } => {
+                self.output.push_str("identity");
+                if let Some(name) = name {
+                    self.output.push(' ');
+                    self.output.push_str(name);
+                }
+                self.fmt_expects_shape(shape);
+            }
+            ExpectsKind::Entity { name, shape } => {
+                self.output.push_str("entity ");
+                self.output.push_str(name);
+                self.fmt_expects_shape(shape);
+            }
+            ExpectsKind::Event { trait_name, event } => {
+                self.output.push_str("event ");
+                self.output.push_str(trait_name);
+                self.output.push('.');
+                self.output.push_str(event);
+            }
+        }
+    }
+
+    fn fmt_expects_shape(&mut self, shape: &Option<Vec<EntityField>>) {
+        let Some(fields) = shape else {
+            return;
+        };
+        self.output.push_str(" {");
+        self.write_newline();
+        self.indent();
+        for field in fields {
+            self.write_indent();
+            self.fmt_entity_field(field);
+            self.write_newline();
+        }
+        self.dedent();
+        self.write_indent();
+        self.output.push('}');
     }
 
     fn fmt_entity(&mut self, entity: &Entity) {

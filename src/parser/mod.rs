@@ -303,6 +303,7 @@ impl Parser {
         self.skip_newlines();
 
         let mut uses = Vec::new();
+        let mut expects: Vec<ExpectsDecl> = Vec::new();
         let mut type_aliases = Vec::new();
         let mut entity = None;
         let mut extra_entities = Vec::new();
@@ -327,6 +328,17 @@ impl Parser {
             }
             if self.check_ident("uses") {
                 uses.push(self.parse_use_decl()?);
+            } else if self.check_ident("expects") {
+                let decl = self.parse_expects_decl()?;
+                if let Some(dup) = expects_duplicate(&expects, &decl) {
+                    return Err(ParseError::InvalidType {
+                        span: decl.span,
+                        message: format!(
+                            "ELOLO_DUPLICATE_EXPECTATION: orbital declares {dup} more than once"
+                        ),
+                    });
+                }
+                expects.push(decl);
             } else if self.check_ident("type") {
                 type_aliases.push(self.parse_type_alias()?);
             } else if self.check_ident("entity") {
@@ -351,7 +363,8 @@ impl Parser {
                 self.expect_newline_or_eof()?;
             } else {
                 return Err(ParseError::UnexpectedToken {
-                    expected: "uses, type, entity, trait, page, theme, or s-expression".to_string(),
+                    expected: "uses, expects, type, entity, trait, page, theme, or s-expression"
+                        .to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
                 });
@@ -391,6 +404,7 @@ impl Parser {
             name,
             type_annotation,
             uses,
+            expects,
             type_aliases,
             entity,
             extra_entities,
@@ -441,6 +455,133 @@ impl Parser {
         self.expect_newline_or_eof()?;
         Ok(UseDecl { alias, path, span })
     }
+
+    /// `expects` ("identity" Ident? shape? | "entity" Ident shape? | "event" Ident "." IDENT)
+    /// — one expectation per line; the shape reuses the entity field parser.
+    fn parse_expects_decl(&mut self) -> Result<ExpectsDecl, ParseError> {
+        let span = self.peek_span();
+        self.expect_keyword("expects")?;
+        let kind = if self.check_ident("identity") {
+            self.advance();
+            let name = if matches!(self.peek(), TokenKind::Identifier(_)) {
+                Some(self.expect_ident()?)
+            } else {
+                None
+            };
+            let shape = self.parse_expects_shape()?;
+            ExpectsKind::Identity { name, shape }
+        } else if self.check_ident("entity") {
+            self.advance();
+            let name = self.expect_ident()?;
+            let shape = self.parse_expects_shape()?;
+            ExpectsKind::Entity { name, shape }
+        } else if self.check_ident("event") {
+            self.advance();
+            let path_span = self.peek_span();
+            let path = self.parse_dotted_ident()?;
+            let Some((trait_name, event)) = path.rsplit_once('.') else {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "dotted Trait.EVENT form, e.g. expects event Checkout.ORDER_PLACED"
+                        .to_string(),
+                    got: path,
+                    span: path_span,
+                });
+            };
+            ExpectsKind::Event {
+                trait_name: trait_name.to_string(),
+                event: event.to_string(),
+            }
+        } else {
+            return Err(ParseError::UnexpectedToken {
+                expected: "identity, entity, or event after `expects`".to_string(),
+                got: format!("{:?}", self.peek()),
+                span: self.peek_span(),
+            });
+        };
+        self.expect_newline_or_eof()?;
+        Ok(ExpectsDecl { kind, span })
+    }
+
+    /// Optional `{ field_decl+ }` after an `expects identity`/`expects entity`
+    /// header — the §6 entity field-declaration grammar, verbatim.
+    fn parse_expects_shape(&mut self) -> Result<Option<Vec<EntityField>>, ParseError> {
+        if !matches!(self.peek(), TokenKind::LBrace) {
+            return Ok(None);
+        }
+        let shape_span = self.peek_span();
+        self.advance();
+        let mut fields = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnexpectedEof {
+                    expected: "field declaration or }".to_string(),
+                });
+            }
+            if self.is_entity_field_start() {
+                fields.push(self.parse_field_decl()?);
+            } else {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "field declaration or }".to_string(),
+                    got: format!("{:?}", self.peek()),
+                    span: self.peek_span(),
+                });
+            }
+        }
+        if fields.is_empty() {
+            return Err(ParseError::InvalidType {
+                span: shape_span,
+                message: "expects shape must declare at least one field — omit the braces for the existence-only form".to_string(),
+            });
+        }
+        // Same restriction as entity bodies: config-only reference types carry
+        // no meaning in a data shape.
+        for f in &fields {
+            if let Some(ty_name) = type_expr_config_only_type(&f.type_expr) {
+                return Err(ParseError::InvalidType {
+                    span: f.span,
+                    message: format!(
+                        "ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY: expects shape field '{}' cannot use the `{}` type — `{}` is for config blocks only",
+                        f.name, ty_name, ty_name
+                    ),
+                });
+            }
+        }
+        Ok(Some(fields))
+    }
+}
+
+/// Duplicate key for `ELOLO_DUPLICATE_EXPECTATION`: same kind+name, or the
+/// same event. Returns a human-readable description of the duplicate.
+fn expects_duplicate(existing: &[ExpectsDecl], new: &ExpectsDecl) -> Option<String> {
+    existing.iter().find_map(|e| match (&e.kind, &new.kind) {
+        (ExpectsKind::Identity { name: a, .. }, ExpectsKind::Identity { name: b, .. })
+            if a == b =>
+        {
+            Some(match b {
+                Some(n) => format!("`expects identity {n}`"),
+                None => "`expects identity`".to_string(),
+            })
+        }
+        (ExpectsKind::Entity { name: a, .. }, ExpectsKind::Entity { name: b, .. }) if a == b => {
+            Some(format!("`expects entity {b}`"))
+        }
+        (
+            ExpectsKind::Event {
+                trait_name: ta,
+                event: ea,
+            },
+            ExpectsKind::Event {
+                trait_name: tb,
+                event: eb,
+            },
+        ) if ta == tb && ea == eb => Some(format!("`expects event {tb}.{eb}`")),
+        _ => None,
+    })
 }
 
 // ----- Helpers -----
@@ -530,6 +671,7 @@ pub(crate) fn is_block_keyword(name: &str) -> bool {
         "app"
             | "orbital"
             | "uses"
+            | "expects"
             | "entity"
             | "type"
             | "trait"
@@ -869,5 +1011,136 @@ mod tests {
         let prog = p(src);
         let t = &prog.orbitals[0].traits[0];
         assert_eq!(t.config[0].tier, None);
+    }
+
+    #[test]
+    fn parse_expects_all_forms() {
+        let src = "orbital O {\n  expects identity Customer {\n    role : \"store-manager\" | \"operations-director\"\n  }\n  expects entity OrderRecord {\n    status : \"placed\" | \"shipped\" | \"delivered\"\n    totalAmount : number\n  }\n  expects entity CartItem\n  expects event Checkout.ORDER_PLACED\n  entity E { id : string! }\n}";
+        let prog = p(src);
+        let expects = &prog.orbitals[0].expects;
+        assert_eq!(expects.len(), 4);
+        match &expects[0].kind {
+            ExpectsKind::Identity { name, shape } => {
+                assert_eq!(name.as_deref(), Some("Customer"));
+                let shape = shape.as_ref().expect("identity shape");
+                assert_eq!(shape.len(), 1);
+                assert_eq!(shape[0].name, "role");
+                assert!(matches!(&shape[0].type_expr, TypeExpr::Union(_)));
+            }
+            other => panic!("expected identity, got {other:?}"),
+        }
+        match &expects[1].kind {
+            ExpectsKind::Entity { name, shape } => {
+                assert_eq!(name, "OrderRecord");
+                let shape = shape.as_ref().expect("entity shape");
+                assert_eq!(shape.len(), 2);
+                assert_eq!(shape[0].name, "status");
+                assert_eq!(shape[1].name, "totalAmount");
+                assert!(matches!(
+                    &shape[1].type_expr,
+                    TypeExpr::Primitive(p) if p == "number"
+                ));
+            }
+            other => panic!("expected entity, got {other:?}"),
+        }
+        match &expects[2].kind {
+            ExpectsKind::Entity { name, shape } => {
+                assert_eq!(name, "CartItem");
+                assert!(shape.is_none());
+            }
+            other => panic!("expected entity, got {other:?}"),
+        }
+        match &expects[3].kind {
+            ExpectsKind::Event { trait_name, event } => {
+                assert_eq!(trait_name, "Checkout");
+                assert_eq!(event, "ORDER_PLACED");
+            }
+            other => panic!("expected event, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_expects_bare_identity() {
+        let prog = p("orbital O {\n  expects identity\n  entity E { id : string! }\n}");
+        match &prog.orbitals[0].expects[0].kind {
+            ExpectsKind::Identity { name, shape } => {
+                assert!(name.is_none());
+                assert!(shape.is_none());
+            }
+            other => panic!("expected identity, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_expects_named_identity_without_shape() {
+        let prog =
+            p("orbital O {\n  expects identity Customer\n  entity E { id : string! }\n}");
+        match &prog.orbitals[0].expects[0].kind {
+            ExpectsKind::Identity { name, shape } => {
+                assert_eq!(name.as_deref(), Some("Customer"));
+                assert!(shape.is_none());
+            }
+            other => panic!("expected identity, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_expects_absent_is_empty() {
+        let prog = p("orbital O {\n  entity E { id : string! }\n}");
+        assert!(prog.orbitals[0].expects.is_empty());
+    }
+
+    #[test]
+    fn parse_expects_duplicate_entity_errors() {
+        let src = "orbital O {\n  expects entity CartItem\n  expects entity CartItem\n  entity E { id : string! }\n}";
+        let err = parse_str(src).expect_err("duplicate must fail");
+        assert!(
+            err.to_string().contains("ELOLO_DUPLICATE_EXPECTATION"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn parse_expects_duplicate_event_errors() {
+        let src = "orbital O {\n  expects event Checkout.ORDER_PLACED\n  expects event Checkout.ORDER_PLACED\n  entity E { id : string! }\n}";
+        let err = parse_str(src).expect_err("duplicate must fail");
+        assert!(
+            err.to_string().contains("ELOLO_DUPLICATE_EXPECTATION"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn parse_expects_duplicate_bare_identity_errors() {
+        let src = "orbital O {\n  expects identity\n  expects identity\n  entity E { id : string! }\n}";
+        let err = parse_str(src).expect_err("duplicate must fail");
+        assert!(
+            err.to_string().contains("ELOLO_DUPLICATE_EXPECTATION"),
+            "unexpected error: {err}"
+        );
+    }
+
+    #[test]
+    fn parse_expects_same_name_different_kind_is_not_duplicate() {
+        let src = "orbital O {\n  expects identity Customer\n  expects entity Customer\n  entity E { id : string! }\n}";
+        let prog = p(src);
+        assert_eq!(prog.orbitals[0].expects.len(), 2);
+    }
+
+    #[test]
+    fn parse_expects_event_requires_dotted_form() {
+        let src = "orbital O {\n  expects event ORDER_PLACED\n  entity E { id : string! }\n}";
+        assert!(parse_str(src).is_err());
+    }
+
+    #[test]
+    fn parse_expects_empty_shape_errors() {
+        let src = "orbital O {\n  expects entity CartItem { }\n  entity E { id : string! }\n}";
+        assert!(parse_str(src).is_err());
+    }
+
+    #[test]
+    fn expects_is_block_keyword() {
+        assert!(is_block_keyword("expects"));
     }
 }

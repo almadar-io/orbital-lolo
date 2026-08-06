@@ -180,6 +180,9 @@ pub struct Orbital {
     /// Optional `::` type annotation above the orbital declaration.
     pub type_annotation: Option<TypeAnnotation>,
     pub uses: Vec<UseDecl>,
+    /// `expects ...` declarations — consumer-side requirements on sibling
+    /// orbitals (docs/Almadar_LOLO_Expects_Proposal.md §3).
+    pub expects: Vec<ExpectsDecl>,
     pub type_aliases: Vec<TypeAlias>,
     pub entity: Option<Entity>,
     /// Entity declarations beyond the first. The first `entity` block is the
@@ -209,6 +212,32 @@ pub struct UseDecl {
     pub alias: String,
     pub path: String,
     pub span: Span,
+}
+
+/// One `expects ...` declaration inside an orbital block.
+#[derive(Debug, Clone)]
+pub struct ExpectsDecl {
+    pub kind: ExpectsKind,
+    pub span: Span,
+}
+
+/// The three expectation forms. `shape` reuses the entity field-declaration
+/// grammar verbatim — it is the consumer's declared minimal contract.
+#[derive(Debug, Clone)]
+pub enum ExpectsKind {
+    /// `expects identity [Name] [{ fields }]` — bare (neither name nor shape)
+    /// is the hand-authoring escape hatch.
+    Identity {
+        name: Option<String>,
+        shape: Option<Vec<EntityField>>,
+    },
+    /// `expects entity Name [{ fields }]` — shape omitted = opaque reference.
+    Entity {
+        name: String,
+        shape: Option<Vec<EntityField>>,
+    },
+    /// `expects event Trait.EVENT` — names pass through verbatim.
+    Event { trait_name: String, event: String },
 }
 
 /// `entity Name [:: TypeAnnotation] [persistence] { fields... }`.

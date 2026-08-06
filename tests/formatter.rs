@@ -568,3 +568,71 @@ fn page_annotation_lands_in_orb() {
     assert_eq!(page["icon"], serde_json::json!("users"));
     assert_eq!(page["label"], serde_json::json!("Foo"));
 }
+
+/// `expects` declarations survive a reformat with unchanged semantics, print
+/// after the `uses` group with one blank line between the groups, and re-format
+/// to a stable output (idempotent).
+#[test]
+fn expects_survive_reformat() {
+    let source = r#"app test-expects "1.0.0"
+"Expects round-trip."
+orbital ProductOrbital {
+  uses AppShell from "std/behaviors/std-app-layout"
+  expects identity Customer {
+    role : "store-manager" | "operations-director"
+  }
+  expects entity OrderRecord {
+    status : "placed" | "shipped" | "delivered"
+    totalAmount : number
+  }
+  expects entity CartItem
+  expects event Checkout.ORDER_PLACED
+  entity Product [persistent: products] {
+    id : string!
+    title : string!
+  }
+  trait V -> Product [interaction, collection] {
+    initial: idle
+    state idle {
+      INIT -> idle (render-ui main { type: "box" })
+    }
+  }
+  page "/a" as A -> V
+}
+"#;
+    let ast = parse_str(source).expect("parse original");
+    let formatted = format_program(&ast);
+    for needle in [
+        "expects identity Customer {",
+        "expects entity OrderRecord {",
+        "expects entity CartItem",
+        "expects event Checkout.ORDER_PLACED",
+    ] {
+        assert!(
+            formatted.contains(needle),
+            "formatter dropped `{needle}`; got:\n{formatted}"
+        );
+    }
+    // Layout: expects group after the uses group, one blank line between.
+    let uses_pos = formatted.find("uses AppShell").expect("uses printed");
+    let expects_pos = formatted.find("expects identity").expect("expects printed");
+    assert!(uses_pos < expects_pos, "expects must print after uses");
+    assert!(
+        formatted[uses_pos..expects_pos].contains("\n\n"),
+        "expected one blank line between the uses and expects groups; got:\n{formatted}"
+    );
+
+    let schema1 = parse_and_lower_str(source).expect("lower original");
+    let schema2 = parse_and_lower_str(&formatted).expect("lower formatted");
+    let v1 = canonicalize(strip_nulls(serde_json::to_value(&schema1).unwrap()));
+    let v2 = canonicalize(strip_nulls(serde_json::to_value(&schema2).unwrap()));
+    assert_eq!(v1, v2, "expects changed semantics across a reformat");
+
+    let expects = schema1.orbitals[0].expects.as_ref().expect("expects in IR");
+    assert_eq!(expects.len(), 4);
+
+    // Idempotent: formatting the formatted output changes nothing.
+    let formatted2 = format_program(&parse_str(&formatted).expect("parse formatted"));
+    assert_eq!(formatted, formatted2, "formatter is not idempotent over expects");
+}
+
