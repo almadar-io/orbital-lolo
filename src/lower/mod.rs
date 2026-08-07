@@ -110,11 +110,12 @@ fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
 
     // Phase 9.6.A: collect the set of names that designate ENTITIES (relation
     // targets) — distinct from type aliases that happen to be record-shaped.
-    // Members: every orbital's primary `entity` block in the program, plus any
-    // type alias whose body is `TypeBody::Entity` (declared with the `entity`
-    // keyword). `lower_type_expr` uses this to decide whether `[Name]` lowers
-    // to a `cardinality: Many` Relation field (entity) or a regular array of
-    // an inline object schema (struct alias).
+    // Members: every orbital's primary `entity` block in the program, any
+    // `expects entity`/`expects identity` name (supplied by a sibling at
+    // compose time), plus any type alias whose body is `TypeBody::Entity`
+    // (declared with the `entity` keyword). `lower_type_expr` uses this to
+    // decide whether `[Name]` lowers to a `cardinality: Many` Relation field
+    // (entity) or a regular array of an inline object schema (struct alias).
     let mut file_entity_names: HashSet<String> = HashSet::new();
     // Entities declared `[shared]` — several bound traits co-mutate one shared
     // instance, so the per-trait explicit-binding check (a read with no LOCAL
@@ -136,6 +137,14 @@ fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
                 file_shared_entity_names.insert(e.name.clone());
             }
         }
+        // `expects entity`/`expects identity` names are legal relation
+        // targets too — the sibling orbital supplies the declaration at
+        // compose time (the L2 relations validator licenses the same names).
+        file_entity_names.extend(
+            crate::types::expected_entity_names(orb)
+                .into_iter()
+                .map(str::to_string),
+        );
     }
     for ta in &ast.type_aliases {
         if matches!(ta.body, TypeBody::Entity { .. }) {

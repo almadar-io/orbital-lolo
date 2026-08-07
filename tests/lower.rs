@@ -446,3 +446,49 @@ orbital Demo {
         "expected placement hint, got: {msg}"
     );
 }
+
+
+// An `expects entity` name is a legal field type standalone: the declaration
+// promises the entity exists at compose time, so `customer : Customer` lowers
+// to a cardinality:One relation (and `[Customer]` to Many), matching the L2
+// relations validator's license for expects-named relation targets.
+#[test]
+fn expects_entity_name_lowers_to_relation_field() {
+    use orbital_core::schema::{Cardinality, EntityRef, FieldType};
+
+    let source = r#"
+orbital OrbE {
+  expects entity Customer
+  entity Order [persistent: orders] {
+    id : string!
+    customer : Customer
+    watchers : [Customer]
+  }
+  trait OrderTrait -> Order [interaction] { state idle { INIT -> idle (ref Order) } }
+  page "/orders" -> OrderTrait
+}
+"#;
+    let schema = parse_and_lower_str(source).expect("parse_and_lower");
+    let EntityRef::Inline(entity) = &schema.orbitals[0].entity else {
+        panic!("expected inline entity");
+    };
+    let customer = entity
+        .fields
+        .iter()
+        .find(|f| f.name.as_deref() == Some("customer"))
+        .expect("customer field");
+    assert_eq!(customer.field_type, FieldType::Relation);
+    let relation = customer.relation.as_ref().expect("customer relation");
+    assert_eq!(relation.entity, "Customer");
+    assert_eq!(relation.cardinality, Some(Cardinality::One));
+
+    let watchers = entity
+        .fields
+        .iter()
+        .find(|f| f.name.as_deref() == Some("watchers"))
+        .expect("watchers field");
+    assert_eq!(watchers.field_type, FieldType::Relation);
+    let relation = watchers.relation.as_ref().expect("watchers relation");
+    assert_eq!(relation.entity, "Customer");
+    assert_eq!(relation.cardinality, Some(Cardinality::Many));
+}

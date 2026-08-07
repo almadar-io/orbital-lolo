@@ -26,8 +26,8 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use crate::ast::{
-    Emit, Entity, EntityField, Orbital, Page, Persistence, Program, Span, Trait, TypeAlias,
-    TypeAnnotation, TypeBody, TypeExpr,
+    Emit, Entity, EntityField, ExpectsKind, Orbital, Page, Persistence, Program, Span, Trait,
+    TypeAlias, TypeAnnotation, TypeBody, TypeExpr,
 };
 use crate::error::{TypeError, TypeKindName};
 
@@ -802,6 +802,22 @@ pub fn check_orbital_annotation(
     Ok(())
 }
 
+/// Every entity name an orbital's `expects entity` / `expects identity`
+/// declaration promises. The named entity is supplied by a sibling orbital at
+/// compose time, so its name is a legal field-type reference (`field :
+/// Customer`, `[Customer]`) even with no local `entity` block. L1 mirror of
+/// the compiler's `expectations::expected_entity_names`.
+pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
+    orb.expects
+        .iter()
+        .filter_map(|e| match &e.kind {
+            ExpectsKind::Entity { name, .. } => Some(name.as_str()),
+            ExpectsKind::Identity { name, .. } => name.as_deref(),
+            ExpectsKind::Event { .. } => None,
+        })
+        .collect()
+}
+
 /// Walk the whole program and run resolution + annotation checks. Runs after
 /// the lowerer has collected both scopes; failures are returned as the first
 /// error encountered.
@@ -812,11 +828,16 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
     }
     // All declared entity names — legal targets for a field's relation/type
     // reference (`field : OtherEntity`), alongside primitives and type aliases.
-    let entity_names: BTreeSet<String> = program
+    // `expects` names count too: the declaration is a promise the entity
+    // exists at compose time.
+    let mut entity_names: BTreeSet<String> = program
         .orbitals
         .iter()
         .filter_map(|o| o.entity.as_ref().map(|e| e.name.clone()))
         .collect();
+    for o in &program.orbitals {
+        entity_names.extend(expected_entity_names(o).into_iter().map(str::to_string));
+    }
 
     // Pre-build per-orbital scoped registries so cycle detection + annotation
     // checks see both scopes consistently.
@@ -940,6 +961,43 @@ orbital OrbY {
   entity Order [persistent: orders] {
     id : string!
     status : Statsu
+  }
+  trait OrderTrait -> Order [interaction] { state idle { INIT -> idle (ref Order) } }
+  page "/orders" -> OrderTrait
+}
+"#;
+        let err = check(src).unwrap_err();
+        assert!(matches!(err, TypeError::UnknownType { .. }), "got {err:?}");
+    }
+
+    #[test]
+    fn ok_expects_entity_name_is_a_legal_field_type() {
+        // `expects entity Customer` promises the entity exists at compose
+        // time, so its name is a legal field-type reference standalone —
+        // both the bare and the array form.
+        let src = r#"
+orbital OrbE {
+  expects entity Customer
+  entity Order [persistent: orders] {
+    id : string!
+    customer : Customer
+    watchers : [Customer]
+  }
+  trait OrderTrait -> Order [interaction] { state idle { INIT -> idle (ref Order) } }
+  page "/orders" -> OrderTrait
+}
+"#;
+        check(src).unwrap();
+    }
+
+    #[test]
+    fn err_field_type_neither_declared_nor_expected() {
+        let src = r#"
+orbital OrbF {
+  expects entity Customer
+  entity Order [persistent: orders] {
+    id : string!
+    customer : Nonexistent
   }
   trait OrderTrait -> Order [interaction] { state idle { INIT -> idle (ref Order) } }
   page "/orders" -> OrderTrait

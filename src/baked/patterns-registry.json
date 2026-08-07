@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-05T01:21:57.163Z",
+  "exportedAt": "2026-08-07T01:16:00.674Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -17039,6 +17039,21 @@
           ],
           "description": "Auto zoom-to-fit after layout settles (default true)",
           "default": true
+        },
+        "layout": {
+          "types": [
+            "string"
+          ],
+          "description": "Layout mode. force = physics simulation (default); flow = layered left-to-right process flow; tree = top-down hierarchy tiers from the roots; radial = concentric rings by depth (a pure cycle renders as a single ring). Non-force layouts are deterministic.",
+          "enumValues": [
+            "force",
+            "flow",
+            "tree",
+            "radial"
+          ],
+          "default": "force",
+          "synonyms": "layout mode, flow layout, tree layout, radial layout, hierarchy layout",
+          "tier": "domain"
         }
       }
     },
