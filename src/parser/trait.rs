@@ -293,6 +293,7 @@ impl Parser {
     /// the closing `}` has been consumed.
     pub(crate) fn parse_trait_ref_body(&mut self) -> Result<TraitRefBody, ParseError> {
         // Body must be brace-form.
+        let body_open = self.peek_span();
         self.expect_kind(&TokenKind::LBrace, "{")?;
         self.skip_newlines();
 
@@ -308,17 +309,34 @@ impl Parser {
                 self.advance();
                 break;
             }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '{',
+                    closer: '}',
+                    open_span: body_open,
+                    found: "end of file".to_string(),
+                });
+            }
             if self.check_ident("events") {
                 self.advance();
                 if matches!(self.peek(), TokenKind::Colon) {
                     self.advance();
                 }
+                let events_open = self.peek_span();
                 self.expect_kind(&TokenKind::LBrace, "{")?;
                 loop {
                     self.skip_newlines();
                     if matches!(self.peek(), TokenKind::RBrace) {
                         self.advance();
                         break;
+                    }
+                    if self.at_eof() {
+                        return Err(ParseError::UnclosedDelimiter {
+                            delimiter: '{',
+                            closer: '}',
+                            open_span: events_open,
+                            found: "end of file".to_string(),
+                        });
                     }
                     let from_event = self.expect_ident()?;
                     self.expect_kind(&TokenKind::Colon, ":")?;
@@ -341,12 +359,21 @@ impl Parser {
                 if matches!(self.peek(), TokenKind::Colon) {
                     self.advance();
                 }
+                let fields_open = self.peek_span();
                 self.expect_kind(&TokenKind::LBrace, "{")?;
                 loop {
                     self.skip_newlines();
                     if matches!(self.peek(), TokenKind::RBrace) {
                         self.advance();
                         break;
+                    }
+                    if self.at_eof() {
+                        return Err(ParseError::UnclosedDelimiter {
+                            delimiter: '{',
+                            closer: '}',
+                            open_span: fields_open,
+                            found: "end of file".to_string(),
+                        });
                     }
                     let from_field = self.expect_ident()?;
                     self.expect_kind(&TokenKind::Colon, ":")?;
@@ -380,12 +407,21 @@ impl Parser {
                 if matches!(self.peek(), TokenKind::Colon) {
                     self.advance();
                 }
+                let config_open = self.peek_span();
                 self.expect_kind(&TokenKind::LBrace, "{")?;
                 loop {
                     self.skip_newlines();
                     if matches!(self.peek(), TokenKind::RBrace) {
                         self.advance();
                         break;
+                    }
+                    if self.at_eof() {
+                        return Err(ParseError::UnclosedDelimiter {
+                            delimiter: '{',
+                            closer: '}',
+                            open_span: config_open,
+                            found: "end of file".to_string(),
+                        });
                     }
                     let span = self.peek_span();
                     let key = self.expect_ident()?;
@@ -566,22 +602,27 @@ impl Parser {
         let target = self.expect_ident()?;
         // Optional `when (sexpr)`.
         let mut guard = None;
+        let mut guard_spans = Vec::new();
         if self.check_ident("when") {
             self.advance();
-            guard = Some(self.parse_sexpr_or_value()?);
+            let (g, spans) = self.capture_expr_spans(|p| p.parse_sexpr_or_value())?;
+            guard = Some(g);
+            guard_spans = spans;
         }
         // Optional newline before effects.
         if matches!(self.peek(), TokenKind::Newline) {
             self.advance();
         }
         let mut effects = Vec::new();
+        let mut effect_spans = Vec::new();
         // Each effect is one s-expression on its own line. Stop when we see
         // anything that's not a `(` (i.e., next event, next state block, etc.).
         loop {
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::LParen) {
-                let eff = self.parse_sexpr()?;
+                let (eff, spans) = self.capture_expr_spans(|p| p.parse_sexpr())?;
                 effects.push(eff);
+                effect_spans.push(spans);
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
                 }
@@ -595,6 +636,8 @@ impl Parser {
             guard,
             effects,
             span,
+            guard_spans,
+            effect_spans,
         })
     }
 
@@ -954,18 +997,24 @@ impl Parser {
                     self.advance();
                 }
                 let mut guard = None;
+                let mut guard_spans = Vec::new();
                 if self.check_ident("when") {
                     self.advance();
-                    guard = Some(self.parse_sexpr_or_value()?);
+                    let (g, spans) = self.capture_expr_spans(|p| p.parse_sexpr_or_value())?;
+                    guard = Some(g);
+                    guard_spans = spans;
                     if matches!(self.peek(), TokenKind::Newline) {
                         self.advance();
                     }
                 }
                 let mut effects = Vec::new();
+                let mut effect_spans = Vec::new();
                 loop {
                     self.skip_newlines();
                     if matches!(self.peek(), TokenKind::LParen) {
-                        effects.push(self.parse_sexpr()?);
+                        let (eff, spans) = self.capture_expr_spans(|p| p.parse_sexpr())?;
+                        effects.push(eff);
+                        effect_spans.push(spans);
                         if matches!(self.peek(), TokenKind::Newline) {
                             self.advance();
                         }
@@ -979,6 +1028,8 @@ impl Parser {
                     guard,
                     effects,
                     span,
+                    guard_spans,
+                    effect_spans,
                 });
             } else {
                 break;

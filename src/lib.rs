@@ -27,8 +27,14 @@ pub use ast::{Ast, Comment, EntityField, EventField, Span, TypeExpr};
 pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
 pub use format::format_program;
 pub use lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
-pub use lower::{lower_to_orb, lower_to_orb_with_prior, stamp_schema_identity};
+pub use lower::{
+    lower_to_orb, lower_to_orb_with_map, lower_to_orb_with_prior,
+    lower_to_orb_with_prior_and_map, stamp_schema_identity,
+};
 pub use parser::{parse, parse_str};
+pub use source_map::LoloSourceMap;
+
+pub mod source_map;
 
 use orbital_core::schema::OrbitalSchema;
 use std::path::Path;
@@ -41,21 +47,21 @@ pub fn parse_and_lower(path: &Path) -> Result<OrbitalSchema, LoloError> {
         path: path.display().to_string(),
         message: e.to_string(),
     })?;
-    let ast = parse_str(&source).map_err(|e| LoloError::Parse {
-        path: path.display().to_string(),
-        inner: e,
-    })?;
-    let schema = lower_to_orb(&ast).map_err(|e| LoloError::Lower {
-        path: path.display().to_string(),
-        inner: e,
-    })?;
-    Ok(schema)
+    parse_and_lower_str_at(&source, &path.display().to_string())
 }
 
 /// Parse and lower a `.lolo` source string. Used by tests and the
 /// `--emit-orb` CLI flag when feeding from stdin.
 pub fn parse_and_lower_str(source: &str) -> Result<OrbitalSchema, LoloError> {
-    parse_and_lower_str_with_prior(source, None)
+    parse_and_lower_str_at(source, "<input>")
+}
+
+/// [`parse_and_lower_str`] tagging errors with `path` instead of the generic
+/// `"<input>"` placeholder — used when the real source file is known (CLI
+/// commands reading from disk) so parse errors report `file:line:col`
+/// instead of `<input>:line:col`.
+pub fn parse_and_lower_str_at(source: &str, path: &str) -> Result<OrbitalSchema, LoloError> {
+    parse_and_lower_str_with_prior_at(source, None, path)
 }
 
 /// Parse and lower a `.lolo` source string, reusing ids from `prior` (a
@@ -65,13 +71,40 @@ pub fn parse_and_lower_str_with_prior(
     source: &str,
     prior: Option<&OrbitalSchema>,
 ) -> Result<OrbitalSchema, LoloError> {
+    parse_and_lower_str_with_prior_at(source, prior, "<input>")
+}
+
+/// [`parse_and_lower_str_with_prior`] tagging errors with `path`.
+pub fn parse_and_lower_str_with_prior_at(
+    source: &str,
+    prior: Option<&OrbitalSchema>,
+    path: &str,
+) -> Result<OrbitalSchema, LoloError> {
     let ast = parse_str(source).map_err(|e| LoloError::Parse {
-        path: "<input>".to_string(),
+        path: path.to_string(),
         inner: e,
     })?;
     let schema = lower_to_orb_with_prior(&ast, prior).map_err(|e| LoloError::Lower {
-        path: "<input>".to_string(),
+        path: path.to_string(),
         inner: e,
     })?;
     Ok(schema)
+}
+
+/// [`parse_and_lower_str_at`] additionally returning the L2 source map (see
+/// [`source_map::LoloSourceMap`]) that maps a resolved-schema JSON-pointer
+/// path back to the originating `.lolo` span.
+pub fn parse_and_lower_str_with_map(
+    source: &str,
+    path: &str,
+) -> Result<(OrbitalSchema, LoloSourceMap), LoloError> {
+    let ast = parse_str(source).map_err(|e| LoloError::Parse {
+        path: path.to_string(),
+        inner: e,
+    })?;
+    let (schema, map) = lower_to_orb_with_map(&ast).map_err(|e| LoloError::Lower {
+        path: path.to_string(),
+        inner: e,
+    })?;
+    Ok((schema, map))
 }

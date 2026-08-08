@@ -492,6 +492,13 @@ pub struct Transition {
     pub guard: Option<SExpression>,
     pub effects: Vec<SExpression>,
     pub span: Span,
+    /// L2 source-map spans captured while parsing `guard`, keyed by the
+    /// JSON-pointer trail relative to the guard expression's own root (`""`
+    /// for the guard's own span). Empty when there's no guard.
+    pub guard_spans: Vec<(String, Span)>,
+    /// Parallel to `effects`: `effect_spans[i]` holds the trail/span pairs
+    /// captured while parsing `effects[i]`.
+    pub effect_spans: Vec<Vec<(String, Span)>>,
 }
 
 /// One entry in an `emits { }` block.
@@ -556,6 +563,11 @@ pub struct Tick {
     pub guard: Option<SExpression>,
     pub effects: Vec<SExpression>,
     pub span: Span,
+    /// L2 source-map spans captured while parsing `guard`. See
+    /// [`Transition::guard_spans`].
+    pub guard_spans: Vec<(String, Span)>,
+    /// Parallel to `effects`. See [`Transition::effect_spans`].
+    pub effect_spans: Vec<Vec<(String, Span)>>,
 }
 
 #[derive(Debug, Clone)]

@@ -181,16 +181,9 @@ fn check_set_in_expr(
         // `(set @entity.X name)` defers to L2 instead of being mis-typed as a
         // string literal. Recurse into the body with the augmented set; the
         // initializer expressions are checked with the original set.
-        // Targeted diagnostic for the classic authoring mistake: a multi-
-        // statement let body without `(do …)` parses as extra array elements
-        // and used to surface only as opaque downstream type/paren errors
-        // (C-LET-SINGLE-BODY-DIAG).
-        if matches!(&arr.first(), Some(SExpression::String(s)) if s == "let") && arr.len() > 3 {
-            return Err(LowerError::LetMultiBody {
-                trait_name: t.name.clone(),
-                body_count: arr.len() - 2,
-            });
-        }
+        // A multi-statement let body without `(do …)` is now caught at parse
+        // time as `ParseError::TooManyArgs` (C-LET-SINGLE-BODY-DIAG moved
+        // upstream from lowering to parsing).
         let is_let =
             matches!(&arr.first(), Some(SExpression::String(s)) if s == "let") && arr.len() == 3;
         if is_let {

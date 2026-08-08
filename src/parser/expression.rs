@@ -6,6 +6,7 @@ use super::*;
 impl Parser {
     pub(crate) fn parse_sexpr(&mut self) -> Result<SExpression, ParseError> {
         let span = self.peek_span();
+        self.record_expr_span();
         self.expect_kind(&TokenKind::LParen, "(")?;
         if matches!(self.peek(), TokenKind::RParen) {
             self.advance();
@@ -36,15 +37,22 @@ impl Parser {
                 })
             }
         };
+        let head = match &op {
+            SExpression::String(s) => Some(s.clone()),
+            _ => None,
+        };
         let mut items = vec![op];
         // Special case: `(let ((x v) (y w)) body)` — the second arg is a list of bindings.
         let is_let = matches!(items.first(), Some(SExpression::String(s)) if s == "let");
+        let has_let_bindings = is_let && matches!(self.peek(), TokenKind::LParen);
         let is_lambda = matches!(items.first(), Some(SExpression::String(s)) if s == "fn" || s == "lambda");
         // Both forms open a lexical scope that stays live for the body args
         // parsed by the loop below.
         let mut opened_scope = false;
-        if is_let && matches!(self.peek(), TokenKind::LParen) {
-            // Parse the binding list.
+        if has_let_bindings {
+            // Parse the binding list. Not wrapped in `with_trail_seg` — the
+            // absolute `[1][pair][1]` trail for each binding VALUE is built
+            // by `parse_let_bindings` itself (see its own doc comment).
             self.binding_scopes.push(Vec::new());
             opened_scope = true;
             let bindings = self.parse_let_bindings()?;
@@ -54,17 +62,92 @@ impl Parser {
             opened_scope = true;
             items.extend(params);
         }
+        // Loop-arg budgets for heads whose args before this loop are already
+        // consumed above (`let`'s binding list, `fn`/`lambda`'s params) — the
+        // loop only sees what remains. `if`/`when` consume nothing above, so
+        // their loop budget equals their total-arg budget.
+        let loop_arg_max: Option<usize> = match head.as_deref() {
+            Some("let") if has_let_bindings => Some(1),
+            Some("if") => Some(3),
+            Some("when") => Some(2),
+            // `(fn (a b) body)` — parenthesized params aren't consumed by
+            // `parse_lambda_params`, so they reach the loop as its first arg;
+            // the budget then covers params + body.
+            Some("fn") | Some("lambda") if opened_scope => {
+                Some(if items.len() == 1 { 2 } else { 1 })
+            }
+            _ => None,
+        };
+        let mut arg_spans: Vec<Span> = Vec::new();
         loop {
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::RParen) {
                 self.advance();
                 break;
             }
-            let arg = self.parse_sexpr_or_value()?;
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '(',
+                    closer: ')',
+                    open_span: span,
+                    found: "end of file".to_string(),
+                });
+            }
+            // A bare `}` here is always the enclosing block closing over an
+            // unterminated s-expression — report the cause (the open `(`),
+            // not the consequence.
+            if matches!(self.peek(), TokenKind::RBrace) {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '(',
+                    closer: ')',
+                    open_span: span,
+                    found: "`}`".to_string(),
+                });
+            }
+            arg_spans.push(self.peek_span());
+            let arg_index = items.len();
+            let arg =
+                self.with_trail_seg(format!("[{arg_index}]"), |p| p.parse_sexpr_or_value())?;
             items.push(arg);
         }
         if opened_scope {
             self.binding_scopes.pop();
+        }
+        if let (Some(max), Some(h)) = (loop_arg_max, head.as_deref()) {
+            if arg_spans.len() > max {
+                let consumed_before_loop = items.len() - 1 - arg_spans.len();
+                return Err(ParseError::TooManyArgs {
+                    head: h.to_string(),
+                    max: consumed_before_loop + max,
+                    got: items.len() - 1,
+                    span: arg_spans[max],
+                });
+            }
+        }
+        if let Some("set") = head.as_deref() {
+            // args = items[1..] (target, value, [options]).
+            let args_len = items.len() - 1;
+            if args_len == 3 {
+                let is_options_object = matches!(&items[3], SExpression::Object(_));
+                if !is_options_object {
+                    return Err(ParseError::SetExtraArgs {
+                        got: args_len,
+                        span: arg_spans[2],
+                    });
+                }
+            } else if args_len > 3 {
+                return Err(ParseError::SetExtraArgs {
+                    got: args_len,
+                    span: arg_spans[2],
+                });
+            }
+            if args_len >= 2 {
+                if let SExpression::Array(inner) = &items[2] {
+                    if matches!(inner.first(), Some(SExpression::String(s)) if s == "set") {
+                        return Err(ParseError::SetNestedValue { span: arg_spans[1] });
+                    }
+                }
+            }
         }
         Ok(SExpression::Array(items))
     }
@@ -123,15 +206,31 @@ impl Parser {
         Ok(emitted)
     }
 
+    /// Parses `((x v) (y w))` — the outer list of `(name value)` pairs after
+    /// `let`. Trail note: the call site (`parse_sexpr`) does NOT wrap this
+    /// call in a `[1]` trail segment, so each binding's value span is
+    /// recorded here under the FULL absolute path `[1][{pair_index}][1]` —
+    /// index 1 (the bindings-list arg of the enclosing `let` sexpr), then the
+    /// pair's index, then 1 (the value slot of the `(name value)` pair).
     pub(crate) fn parse_let_bindings(&mut self) -> Result<SExpression, ParseError> {
         // `((x v) (y w))` — outer list of inner pairs.
+        let open_span = self.peek_span();
         self.expect_kind(&TokenKind::LParen, "(")?;
         let mut pairs = Vec::new();
+        let mut pair_index = 0usize;
         loop {
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::RParen) {
                 self.advance();
                 break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '(',
+                    closer: ')',
+                    open_span,
+                    found: "end of file".to_string(),
+                });
             }
             self.expect_kind(&TokenKind::LParen, "(")?;
             // name
@@ -147,7 +246,9 @@ impl Parser {
                     })
                 }
             };
-            let value = self.parse_sexpr_or_value()?;
+            let value = self.with_trail_seg(format!("[1][{pair_index}][1]"), |p| {
+                p.parse_sexpr_or_value()
+            })?;
             self.expect_kind(&TokenKind::RParen, ")")?;
             // `let` is sequential: a binding's value may read earlier bindings,
             // so the name only enters scope after its own value is parsed.
@@ -157,12 +258,14 @@ impl Parser {
                 }
             }
             pairs.push(SExpression::Array(vec![name, value]));
+            pair_index += 1;
         }
         Ok(SExpression::Array(pairs))
     }
 
     /// Parse one s-expression argument: an atom, a paren list, an object literal, or an array literal.
     pub(crate) fn parse_sexpr_or_value(&mut self) -> Result<SExpression, ParseError> {
+        self.record_expr_span();
         match self.peek().clone() {
             TokenKind::AtParen => self.parse_inline_trait_ref(),
             TokenKind::LParen => self.parse_sexpr(),
@@ -341,6 +444,7 @@ impl Parser {
     }
 
     pub(crate) fn parse_object_literal(&mut self) -> Result<SExpression, ParseError> {
+        let open_span = self.peek_span();
         self.expect_kind(&TokenKind::LBrace, "{")?;
         let mut map: HashMap<String, SExpression> = HashMap::new();
         loop {
@@ -348,6 +452,14 @@ impl Parser {
             if matches!(self.peek(), TokenKind::RBrace) {
                 self.advance();
                 break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '{',
+                    closer: '}',
+                    open_span,
+                    found: "end of file".to_string(),
+                });
             }
             // Key: identifier or string.
             let key = match self.peek().clone() {
@@ -367,7 +479,7 @@ impl Parser {
                 }
             };
             self.expect_kind(&TokenKind::Colon, ":")?;
-            let value = self.parse_sexpr_or_value()?;
+            let value = self.with_trail_seg(format!(".{key}"), |p| p.parse_sexpr_or_value())?;
             map.insert(key, value);
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -378,6 +490,7 @@ impl Parser {
     }
 
     pub(crate) fn parse_array_literal(&mut self) -> Result<SExpression, ParseError> {
+        let open_span = self.peek_span();
         self.expect_kind(&TokenKind::LBracket, "[")?;
         let mut items = Vec::new();
         loop {
@@ -386,7 +499,17 @@ impl Parser {
                 self.advance();
                 break;
             }
-            let value = self.parse_sexpr_or_value()?;
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '[',
+                    closer: ']',
+                    open_span,
+                    found: "end of file".to_string(),
+                });
+            }
+            let index = items.len();
+            let value =
+                self.with_trail_seg(format!("[{index}]"), |p| p.parse_sexpr_or_value())?;
             items.push(value);
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();

@@ -10,8 +10,13 @@ pub(crate) fn lower_trait_decl(
     event_aliases: &BTreeMap<String, EventTypeResolved>,
     intrinsic_fields: &HashSet<String>,
     shared_entity_names: &HashSet<String>,
+    source_map: &mut crate::source_map::LoloSourceMap,
+    base: &str,
 ) -> Result<TraitReference, LowerError> {
     if let Some(ref_data) = &t.reference {
+        // Trait REFERENCES don't declare their own transitions/ticks (those
+        // live in the imported atom's `.lolo`, a different source file), so
+        // there's nothing to map here.
         lower_trait_reference(t, ref_data, aliases, entity_names)
     } else {
         Ok(TraitReference::Inline(lower_trait(
@@ -22,6 +27,8 @@ pub(crate) fn lower_trait_decl(
             event_aliases,
             intrinsic_fields,
             shared_entity_names,
+            source_map,
+            base,
         )?))
     }
 }
@@ -171,6 +178,8 @@ pub(crate) fn lower_trait(
     event_aliases: &BTreeMap<String, EventTypeResolved>,
     intrinsic_fields: &HashSet<String>,
     shared_entity_names: &HashSet<String>,
+    source_map: &mut crate::source_map::LoloSourceMap,
+    base: &str,
 ) -> Result<TraitDefinition, LowerError> {
     // Build the state machine: states (with isInitial), events (collected
     // from transitions), transitions (one per Transition AST node, plus
@@ -198,6 +207,25 @@ pub(crate) fn lower_trait(
         for tr in &state.transitions {
             if event_seen.insert(tr.event.clone()) {
                 event_keys.push(tr.event.clone());
+            }
+            // Index into `transitions` this push lands at — used both as the
+            // TransitionDefinition's own array index (matching L2's
+            // `stateMachine.transitions[k]` path) and to key the source-map
+            // inserts below.
+            let k = transitions.len();
+            for (suffix, sp) in &tr.guard_spans {
+                source_map.insert(
+                    format!("{base}.stateMachine.transitions[{k}].guard{suffix}"),
+                    *sp,
+                );
+            }
+            for (e_idx, spans) in tr.effect_spans.iter().enumerate() {
+                for (suffix, sp) in spans {
+                    source_map.insert(
+                        format!("{base}.stateMachine.transitions[{k}].effects[{e_idx}]{suffix}"),
+                        *sp,
+                    );
+                }
             }
             transitions.push(TransitionDefinition {
                 from: StringOrArray::Single(state.name.clone()),
@@ -435,7 +463,26 @@ pub(crate) fn lower_trait(
     let ticks = if t.ticks.is_empty() {
         None
     } else {
-        Some(t.ticks.iter().map(lower_tick).collect())
+        Some(
+            t.ticks
+                .iter()
+                .enumerate()
+                .map(|(ti, tk)| {
+                    for (suffix, sp) in &tk.guard_spans {
+                        source_map.insert(format!("{base}.ticks[{ti}].guard{suffix}"), *sp);
+                    }
+                    for (e_idx, spans) in tk.effect_spans.iter().enumerate() {
+                        for (suffix, sp) in spans {
+                            source_map.insert(
+                                format!("{base}.ticks[{ti}].effects[{e_idx}]{suffix}"),
+                                *sp,
+                            );
+                        }
+                    }
+                    lower_tick(tk)
+                })
+                .collect(),
+        )
     };
 
     // `scope` is required in the .orb schema (V2 Phase 6); an undeclared

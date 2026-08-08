@@ -59,6 +59,15 @@ struct Parser {
     /// string — both collapse to `SExpression::String` — so the bare-reference
     /// check has to live here.
     binding_scopes: Vec<Vec<String>>,
+    /// L2 source-map span capture, active only inside a
+    /// [`Self::capture_expr_spans`] window (one per transition guard / effect
+    /// / tick guard / tick effect). `None` outside a window — recording is a
+    /// no-op then, so ordinary parsing pays nothing.
+    expr_span_capture: Option<Vec<(String, Span)>>,
+    /// JSON-pointer-style trail accumulated by [`Self::with_trail_seg`] while
+    /// a capture window is active — e.g. `"[1][0][1]"` for a `let` binding
+    /// value. Meaningless outside a capture window.
+    expr_trail: String,
 }
 
 impl Parser {
@@ -69,7 +78,53 @@ impl Parser {
             pending_inline_traits: Vec::new(),
             inline_ref_counter: 0,
             binding_scopes: Vec::new(),
+            expr_span_capture: None,
+            expr_trail: String::new(),
         }
+    }
+
+    /// Run `f`, recording every [`Self::record_expr_span`] call made during
+    /// it as a `(trail, span)` pair relative to the trail active on entry.
+    /// Used once per transition guard / effect and per tick guard / effect so
+    /// the lowerer can rebuild an L2 `.orb` JSON-pointer path back to the
+    /// exact `.lolo` span. Windows never nest in practice (each call site is
+    /// a single top-level expression parse); the save/restore below makes
+    /// nesting safe anyway.
+    pub(crate) fn capture_expr_spans<T>(
+        &mut self,
+        f: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<(T, Vec<(String, Span)>), ParseError> {
+        let prev_capture = self.expr_span_capture.replace(Vec::new());
+        let prev_trail = std::mem::take(&mut self.expr_trail);
+        let result = f(self);
+        self.expr_trail = prev_trail;
+        let captured = self.expr_span_capture.take().unwrap_or_default();
+        self.expr_span_capture = prev_capture;
+        result.map(|v| (v, captured))
+    }
+
+    /// Record the current token's span under the current trail, when a
+    /// capture window ([`Self::capture_expr_spans`]) is active.
+    pub(crate) fn record_expr_span(&mut self) {
+        if self.expr_span_capture.is_some() {
+            let entry = (self.expr_trail.clone(), self.peek_span());
+            self.expr_span_capture.as_mut().unwrap().push(entry);
+        }
+    }
+
+    /// Push `seg` onto the trail for the duration of `f`, then restore it.
+    /// A no-op (aside from the string manipulation) outside a capture
+    /// window — cheap enough not to special-case.
+    pub(crate) fn with_trail_seg<T>(
+        &mut self,
+        seg: String,
+        f: impl FnOnce(&mut Self) -> Result<T, ParseError>,
+    ) -> Result<T, ParseError> {
+        let prev_len = self.expr_trail.len();
+        self.expr_trail.push_str(&seg);
+        let result = f(self);
+        self.expr_trail.truncate(prev_len);
+        result
     }
 
     /// True when `name` is bound by an enclosing `let` or lambda parameter.
@@ -137,6 +192,7 @@ impl Parser {
                 Ok(name)
             }
             _ => Err(ParseError::ExpectedIdentifier {
+                got: format!("{:?}", self.peek()),
                 span: self.peek_span(),
             }),
         }
@@ -158,6 +214,7 @@ impl Parser {
                 Ok(format!("@{name}"))
             }
             _ => Err(ParseError::ExpectedIdentifier {
+                got: format!("{:?}", self.peek()),
                 span: self.peek_span(),
             }),
         }
@@ -520,6 +577,7 @@ impl Parser {
             if self.at_eof() {
                 return Err(ParseError::UnexpectedEof {
                     expected: "field declaration or }".to_string(),
+                    span: self.peek_span(),
                 });
             }
             if self.is_entity_field_start() {

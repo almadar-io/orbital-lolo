@@ -56,7 +56,26 @@ pub fn lower_to_orb_with_prior(
     ast: &Program,
     prior: Option<&OrbitalSchema>,
 ) -> Result<OrbitalSchema, LowerError> {
-    let mut schema = lower_to_orb_names_only(ast)?;
+    lower_to_orb_with_prior_and_map(ast, prior).map(|(schema, _map)| schema)
+}
+
+/// [`lower_to_orb`] additionally returning the L2 source map (see
+/// [`crate::source_map::LoloSourceMap`]).
+pub fn lower_to_orb_with_map(
+    ast: &Program,
+) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
+    lower_to_orb_with_prior_and_map(ast, None)
+}
+
+/// [`lower_to_orb_with_prior`] additionally returning the L2 source map. The
+/// map never enters the schema itself (the emitted `.orb` stays byte
+/// identical) — it's a side channel built alongside the ordinary lowering.
+pub fn lower_to_orb_with_prior_and_map(
+    ast: &Program,
+    prior: Option<&OrbitalSchema>,
+) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
+    let mut source_map = crate::source_map::LoloSourceMap::new();
+    let mut schema = lower_to_orb_names_only(ast, &mut source_map)?;
     let synthetic_traits: HashSet<String> = ast
         .orbitals
         .iter()
@@ -65,7 +84,7 @@ pub fn lower_to_orb_with_prior(
         .map(|t| t.name.clone())
         .collect();
     orbital_core::stamp::stamp_schema_identity(&mut schema, prior, &synthetic_traits);
-    Ok(schema)
+    Ok((schema, source_map))
 }
 
 /// Stamp V4 identity directly onto an already-lowered `OrbitalSchema` that has
@@ -84,9 +103,12 @@ pub fn stamp_schema_identity(
     orbital_core::stamp::stamp_schema_identity(schema, prior, synthetic_traits);
 }
 
-/// The name-only lowering (pre-identity). Kept private; the two public entry
+/// The name-only lowering (pre-identity). Kept private; the public entry
 /// points wrap it.
-fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
+fn lower_to_orb_names_only(
+    ast: &Program,
+    source_map: &mut crate::source_map::LoloSourceMap,
+) -> Result<OrbitalSchema, LowerError> {
     // Phase 0: run the type-system resolver. Any unknown type / cycle /
     // kind-mismatch / composition-conflict / annotation-mismatch is reported
     // as `LowerError::Type(..)` before lowering proceeds. Types are stripped
@@ -153,7 +175,7 @@ fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
     }
 
     let mut orbitals = Vec::with_capacity(ast.orbitals.len());
-    for orb in &ast.orbitals {
+    for (orbital_index, orb) in ast.orbitals.iter().enumerate() {
         // Merge orbital-scoped type aliases on top of file-level ones.
         let mut local_aliases = type_aliases.clone();
         for ta in &orb.type_aliases {
@@ -182,6 +204,7 @@ fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
                     .collect(),
             );
         }
+        let orbital_base = format!("orbitals[{orbital_index}]");
         orbitals.push(lower_orbital(
             orb,
             &local_aliases,
@@ -189,6 +212,8 @@ fn lower_to_orb_names_only(ast: &Program) -> Result<OrbitalSchema, LowerError> {
             &local_entity_names,
             &local_events,
             &file_shared_entity_names,
+            source_map,
+            &orbital_base,
         )?);
     }
 
@@ -372,6 +397,8 @@ fn lower_orbital(
     entity_names: &HashSet<String>,
     event_aliases: &BTreeMap<String, EventTypeResolved>,
     shared_entity_names: &HashSet<String>,
+    source_map: &mut crate::source_map::LoloSourceMap,
+    base: &str,
 ) -> Result<CoreOrbital, LowerError> {
     let entity = orb.entity.as_ref().ok_or(LowerError::MissingEntity)?;
     let entity_def = lower_entity(entity, aliases, entity_names)?;
@@ -453,7 +480,8 @@ fn lower_orbital(
     }
 
     let mut traits = Vec::new();
-    for t in &orb.traits {
+    for (trait_index, t) in orb.traits.iter().enumerate() {
+        let trait_base = format!("{base}.traits[{trait_index}]");
         traits.push(lower_trait_decl(
             t,
             aliases,
@@ -462,6 +490,8 @@ fn lower_orbital(
             event_aliases,
             &intrinsic_fields,
             shared_entity_names,
+            source_map,
+            &trait_base,
         )?);
     }
 

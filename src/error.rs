@@ -59,8 +59,52 @@ pub enum ParseError {
         span: Span,
     },
 
-    #[error("unexpected end of input: expected {expected}")]
-    UnexpectedEof { expected: String },
+    #[error("unexpected end of input at {}:{}: expected {expected}", span.line, span.col)]
+    UnexpectedEof { expected: String, span: Span },
+
+    /// An s-expression head accepts at most `max` argument(s) but the author
+    /// wrote `got` — almost always a multi-statement body that needed
+    /// `(do …)`. `span` points at the first extra argument.
+    #[error(
+        "too many expressions in `({head} …)` at {}:{}: `{head}` takes at most {max} argument(s), got {got}",
+        span.line, span.col
+    )]
+    TooManyArgs {
+        head: String,
+        max: usize,
+        got: usize,
+        span: Span,
+    },
+
+    /// `(set target value …)` with more than the 2 required args (or a
+    /// 3rd arg that isn't the `{ emit: … }` options object).
+    #[error(
+        "`(set …)` takes 2 arguments — a target and a value — but got {got} at {}:{}",
+        span.line, span.col
+    )]
+    SetExtraArgs { got: usize, span: Span },
+
+    /// `(set a (set b v))` — `set` is a statement, not an expression; it
+    /// cannot be nested as the value of another `set`.
+    #[error(
+        "`(set …)` cannot be the value of another `(set …)` at {}:{}: set is a statement that returns nothing, not an expression",
+        span.line, span.col
+    )]
+    SetNestedValue { span: Span },
+
+    /// A block boundary (`found`: end of file, or a closing token like `}`)
+    /// reached before the matching closer for a `(`, `{`, or `[` opened at
+    /// `open_span`.
+    #[error(
+        "unclosed `{delimiter}` opened at {}:{}: reached {found} before the matching `{closer}`",
+        open_span.line, open_span.col
+    )]
+    UnclosedDelimiter {
+        delimiter: char,
+        closer: char,
+        open_span: Span,
+        found: String,
+    },
 
     #[error("unknown keyword {keyword:?} at {}:{}", span.line, span.col)]
     UnknownKeyword { keyword: String, span: Span },
@@ -80,8 +124,8 @@ pub enum ParseError {
     #[error("invalid sigil {value:?} at {}:{}", span.line, span.col)]
     InvalidSigil { value: String, span: Span },
 
-    #[error("expected identifier at {}:{}", span.line, span.col)]
-    ExpectedIdentifier { span: Span },
+    #[error("expected identifier at {}:{}, got {got}", span.line, span.col)]
+    ExpectedIdentifier { got: String, span: Span },
 
     /// A `let` binding or `fn`/`lambda` parameter referenced without its `@`
     /// sigil. Both evaluators resolve lexical bindings only through the sigil,
@@ -103,8 +147,12 @@ impl ParseError {
             | ParseError::InvalidDuration { span, .. }
             | ParseError::InvalidSigil { span, .. }
             | ParseError::BareBindingReference { span, .. }
-            | ParseError::ExpectedIdentifier { span } => *span,
-            ParseError::UnexpectedEof { .. } => Span::new(0, 0, 0),
+            | ParseError::TooManyArgs { span, .. }
+            | ParseError::SetExtraArgs { span, .. }
+            | ParseError::SetNestedValue { span }
+            | ParseError::ExpectedIdentifier { span, .. } => *span,
+            ParseError::UnclosedDelimiter { open_span, .. } => *open_span,
+            ParseError::UnexpectedEof { span, .. } => *span,
         }
     }
 
@@ -136,11 +184,107 @@ impl ParseError {
                     "write `@{name}` to read the binding, or `\"{name}\"` if you really meant the literal string"
                 )),
             ),
+            ParseError::UnexpectedToken { got, .. } if got.contains("Identifier(\"/\")") => (
+                Some("`//` is not a comment in `.lolo` — comments start with `;;`".to_string()),
+                Some("replace the `//` with `;;`, or delete the comment line".to_string()),
+            ),
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("object key expected, got LParen") =>
+            (
+                Some("`{ … }` opens an OBJECT literal, not a code block — code blocks don't exist in `.lolo`".to_string()),
+                Some("for several effects in one slot (e.g. a lambda body) write `(do effect1 effect2 …)`; if you meant an object, its entries are `key: value`".to_string()),
+            ),
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("object key expected, got Sigil") =>
+            (
+                Some("object literals have no shorthand keys — every entry is written `key: value`".to_string()),
+                Some("write the pair explicitly: `field: @entity.field`".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected == ":" && got.contains("Sigil(") =>
+            (
+                Some("object literals have no shorthand keys — every entry is written `key: value`".to_string()),
+                Some("write the pair explicitly: `field: @entity.field`".to_string()),
+            ),
+            ParseError::ExpectedIdentifier { got, .. }
+                if ["description", "tier", "synonyms", "category", "capabilities"]
+                    .iter()
+                    .any(|a| got.contains(&format!("Sigil(\"{a}\")"))) =>
+            (
+                Some("event annotations (`@description`, `@tier`, …) go AFTER the payload block's closing `}`, not inside it".to_string()),
+                Some("inside `{ … }` only `field : type` lines are allowed; move the annotation lines to just below the closing `}`".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected.contains("uses, expects, type, entity, trait, page")
+                    && ["state", "emits", "listens", "ticks", "initial", "config"]
+                        .iter()
+                        .any(|kw| got.contains(&format!("Identifier(\"{kw}\")"))) =>
+            (
+                Some("this block belongs INSIDE a `trait <Name> { … }`, but the parser is at orbital level — an extra `}` above closed the trait early".to_string()),
+                Some("remove the surplus `}` above this line (re-count braces from the trait header down), or move this block back inside the trait".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected.contains("state, initial, emits, listens, ticks, or config")
+                    && looks_like_event_identifier(got) =>
+            (
+                Some("this looks like a transition arm (`EVENT -> target`) sitting OUTSIDE any `state { … }` block — transitions live inside states".to_string()),
+                Some("move the arm into the right `state <name> { … }` block; write its guard inline as `EVENT -> target (guard-expr)`, never with `when`".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected.contains("state, initial, emits, listens, ticks, or config")
+                    && got.contains("RParen") =>
+            (
+                Some("stray `)` — an s-expression in the effects above this line closes one paren too many".to_string()),
+                Some("re-count parens in the preceding effect lines; each `(…)` effect must balance".to_string()),
+            ),
             ParseError::UnexpectedToken { expected, .. }
                 if expected.contains("state, initial, emits, listens, ticks, or config") =>
             (
                 Some("inside a `state { ... }` body each arm must start with `EVENT -> nextState` or an effect like `(set ...)`".to_string()),
                 Some("remove or rewrite the stray token so the state body matches the grammar".to_string()),
+            ),
+            ParseError::TooManyArgs { head, .. } if head == "if" => (
+                Some(format!(
+                    "`({head} …)` allows one expression per argument position — everything after the last one is an extra argument"
+                )),
+                Some("write `(if cond then else)`; to run several effects in a branch wrap them as `(do effect1 effect2 …)`".to_string()),
+            ),
+            ParseError::TooManyArgs { head, .. } => (
+                Some(format!(
+                    "`({head} …)` allows one expression per argument position — everything after the last one is an extra argument"
+                )),
+                Some("wrap the body's multiple effects in a single `(do effect1 effect2 …)`".to_string()),
+            ),
+            ParseError::SetExtraArgs { .. } => (
+                Some("each `(set …)` writes one binding".to_string()),
+                Some("write one `(set target value)` per effect line, or run several in sequence with `(do (set …) (set …))`".to_string()),
+            ),
+            ParseError::SetNestedValue { .. } => (
+                Some("`set` performs a write and produces no value".to_string()),
+                Some("write the writes in sequence: `(do (set a …) (set b …))`".to_string()),
+            ),
+            ParseError::UnclosedDelimiter { .. } => (
+                Some("every `(`, `{`, `[` must balance; this one was never closed".to_string()),
+                Some("add the matching closer, then re-count delimiters in the block starting at the reported line".to_string()),
+            ),
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("expected operator, got Newline")
+                    || message.contains("expected operator, got LParen") =>
+            (
+                Some("bare `( … )` is not a grouping block — every `(` must start an operator call".to_string()),
+                Some("to run several effects in one slot write `(do effect1 effect2 …)`; delete the bare `(`".to_string()),
+            ),
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("expected operator, got Sigil") =>
+            (
+                Some("a value never needs its own parentheses — parens always start an operator call like `(set …)` or `(+ …)`".to_string()),
+                Some("write the value bare (`@entity.field`), or complete the operator call you meant".to_string()),
+            ),
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("unexpected token in s-expression: RBrace") =>
+            (
+                Some("missing `)` — the s-expression above never closed before this `}`".to_string()),
+                Some("re-count parens in the effect lines just above; add the missing `)`".to_string()),
             ),
             _ => (None, None),
         }
@@ -323,12 +467,6 @@ pub enum LowerError {
     ///
     /// Cross-orbital bindings (`@payload.<F>` whose F is declared on a
     /// listened-from-other-orbital event) defer to the L2 validator.
-    #[error(
-        "(let …) in trait {trait_name:?} has {body_count} body expressions — \
-         the body must be a single expression; wrap multiple effects in (do …)"
-    )]
-    LetMultiBody { trait_name: String, body_count: usize },
-
     #[error(
         "(set @entity.{field}): expected {expected_type} (entity field type on {orbital:?}.{trait_name:?}'s linked entity) \
          but got {actual_type} (from {value_source})"
@@ -579,6 +717,24 @@ impl TypeError {
     }
 }
 
+/// True when a rendered token debug string is `Identifier("NAME")` with NAME
+/// in ALL_CAPS — the shape of an event name heading a transition arm.
+fn looks_like_event_identifier(got: &str) -> bool {
+    let Some(start) = got.find("Identifier(\"") else {
+        return false;
+    };
+    let name = &got[start + "Identifier(\"".len()..];
+    let Some(end) = name.find('"') else {
+        return false;
+    };
+    let name = &name[..end];
+    !name.is_empty()
+        && name.chars().any(|c| c.is_ascii_uppercase())
+        && name
+            .chars()
+            .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+}
+
 fn hint_suggestion(s: &Option<String>) -> String {
     match s {
         Some(suggestion) => format!(" — did you mean {suggestion:?}?"),
@@ -624,5 +780,28 @@ impl LoloError {
                 None => format!("{path}: {inner}"),
             },
         }
+    }
+
+    /// Teaching hint for CLI/editor surfaces. Delegates to the inner parse
+    /// error's `hint()`; lowering errors carry no hint table yet.
+    pub fn hint(&self) -> (Option<String>, Option<String>) {
+        match self {
+            LoloError::Parse { inner, .. } => inner.hint(),
+            LoloError::Io { .. } | LoloError::Lower { .. } => (None, None),
+        }
+    }
+
+    /// [`Self::render`] plus the 💡 suggestion / → fix-guidance lines when
+    /// `hint()` has something to say.
+    pub fn render_with_hint(&self) -> String {
+        let mut out = self.render();
+        let (suggestion, fix) = self.hint();
+        if let Some(s) = suggestion {
+            out.push_str(&format!("\n  \u{1f4a1} {s}"));
+        }
+        if let Some(f) = fix {
+            out.push_str(&format!("\n  \u{2192} {f}"));
+        }
+        out
     }
 }
