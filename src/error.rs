@@ -38,8 +38,12 @@ impl LexError {
     pub fn hint(&self) -> (Option<String>, Option<String>) {
         match self {
             LexError::UnexpectedChar { ch: ';', .. } => (
-                Some(".lolo does not use `;` for comments".to_string()),
-                Some("remove the `;` and any trailing text on that line".to_string()),
+                Some("a single `;` is not valid — `.lolo` comments are `;;` (double semicolon)".to_string()),
+                Some("write `;; comment`, or remove the stray `;`".to_string()),
+            ),
+            LexError::UnexpectedChar { ch: '\'', .. } => (
+                Some("strings are double-quoted in `.lolo` — `'` is not a valid quote".to_string()),
+                Some("replace '…' with \"…\"".to_string()),
             ),
             _ => (None, None),
         }
@@ -200,6 +204,34 @@ impl ParseError {
                 Some("object literals have no shorthand keys — every entry is written `key: value`".to_string()),
                 Some("write the pair explicitly: `field: @entity.field`".to_string()),
             ),
+            // Observed live: a closer pile-up like `}])` `}))` where one `{`
+            // was never closed — the parser is still inside an object when a
+            // `)` arrives (C-PAREN mid-file shape; the EOF shape is
+            // UnclosedDelimiter).
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("object key expected, got RParen")
+                    || message.contains("object key expected, got RBracket") =>
+            (
+                Some("a `)` or `]` arrived while an object `{ … }` was still open — a `{` above is missing its `}`".to_string()),
+                Some("close the object first: every `{` needs its `}` before the enclosing `(`/`[` can close; re-count the closer sequence at this line".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, .. } if expected == "from" => (
+                Some("`uses` needs a source path: `uses <name> from \"std/behaviors/<name>\"`".to_string()),
+                Some("std imports use the flat canonical form `std/behaviors/<name>` — topic folders never appear in import paths".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected.contains("{ or . or newline") && got.contains("Arrow") =>
+            (
+                Some("a `listens` entry is `EVENT { … }` — the `EVENT -> target { payload }` direction form belongs to `emits`, not `listens`".to_string()),
+                Some("drop the `-> …` part; declare just the event name with its payload block".to_string()),
+            ),
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected == ":"
+                    && (got.contains("Comma") || got.contains("RBrace") || got.contains("Newline")) =>
+            (
+                Some("an object entry is `key: value` — a multi-word text value must be quoted, and entries are whitespace-separated".to_string()),
+                Some("quote the text (`label: \"Next Review\"`) and drop any `,` between entries".to_string()),
+            ),
             ParseError::UnexpectedToken { expected, got, .. }
                 if expected == ":" && got.contains("Sigil(") =>
             (
@@ -222,6 +254,30 @@ impl ParseError {
             (
                 Some("this block belongs INSIDE a `trait <Name> { … }`, but the parser is at orbital level — an extra `}` above closed the trait early".to_string()),
                 Some("remove the surplus `}` above this line (re-count braces from the trait header down), or move this block back inside the trait".to_string()),
+            ),
+            // Same failure one scope up (C-EARLY-TRAIT-CLOSE's orbital-level
+            // cousin, observed live: `page` at file level after a surplus `}`
+            // closed the orbital — the snippet shows the stranded declaration
+            // but not the causal brace, so the hint must name it).
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected.contains("type or orbital")
+                    && ["page", "trait", "entity", "uses", "expects"]
+                        .iter()
+                        .any(|kw| got.contains(&format!("Identifier(\"{kw}\")"))) =>
+            (
+                Some("this declaration belongs INSIDE the `orbital <Name> { … }` block, but the parser is at FILE level — an extra `}` above closed the orbital early".to_string()),
+                Some("remove the surplus `}` above this line (re-count braces from the orbital header down), or move this declaration back inside the orbital's `{ … }`".to_string()),
+            ),
+            // Observed live (Run 18, 4 identical stalls): a stray `]` (or
+            // `)`) left over from a render-ui block falls through to trait
+            // level, and the default state-arm suggestion misdirects — the
+            // model edits transitions instead of deleting one closer.
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected.contains("state, initial, emits, listens, ticks, or config")
+                    && (got.contains("RBracket") || got.contains("RParen")) =>
+            (
+                Some("a stray `]` or `)` — the s-expression/array above already closed, so this extra closer falls through to trait level".to_string()),
+                Some("delete this surplus closer (re-count `[`/`]` and `(`/`)` in the effect above; each opener closes exactly once)".to_string()),
             ),
             ParseError::UnexpectedToken { expected, got, .. }
                 if expected.contains("state, initial, emits, listens, ticks, or config")
