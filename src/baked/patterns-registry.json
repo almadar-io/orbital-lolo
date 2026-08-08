@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-07T01:16:00.674Z",
+  "exportedAt": "2026-08-07T09:57:06.909Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -3559,14 +3559,32 @@
                   "string"
                 ]
               },
+              "filterType": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "text",
+                  "select",
+                  "toggle",
+                  "checkbox",
+                  "date",
+                  "daterange",
+                  "date-range"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
                 ],
                 "enumValues": [
-                  "checkbox",
+                  "text",
                   "select",
-                  "toggle"
+                  "toggle",
+                  "checkbox",
+                  "date",
+                  "daterange",
+                  "date-range"
                 ]
               },
               "options": {
@@ -10025,14 +10043,32 @@
                   "string"
                 ]
               },
+              "filterType": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "text",
+                  "select",
+                  "toggle",
+                  "checkbox",
+                  "date",
+                  "daterange",
+                  "date-range"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
                 ],
                 "enumValues": [
-                  "checkbox",
+                  "text",
                   "select",
-                  "toggle"
+                  "toggle",
+                  "checkbox",
+                  "date",
+                  "daterange",
+                  "date-range"
                 ]
               },
               "options": {
@@ -32991,14 +33027,30 @@
               },
               "range": {
                 "types": [
-                  "function"
+                  "function",
+                  "object"
+                ],
+                "properties": {
+                  "from": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "to": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
                 ]
               }
             },
             "required": [
               "label",
-              "value",
-              "range"
+              "value"
             ]
           }
         },
