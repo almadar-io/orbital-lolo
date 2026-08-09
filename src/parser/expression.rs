@@ -266,6 +266,7 @@ impl Parser {
     /// Parse one s-expression argument: an atom, a paren list, an object literal, or an array literal.
     pub(crate) fn parse_sexpr_or_value(&mut self) -> Result<SExpression, ParseError> {
         self.record_expr_span();
+        let pattern_type_value = std::mem::take(&mut self.pattern_type_value);
         match self.peek().clone() {
             TokenKind::AtParen => self.parse_inline_trait_ref(),
             TokenKind::LParen => self.parse_sexpr(),
@@ -315,7 +316,9 @@ impl Parser {
                 // A bare identifier that names an enclosing `let`/lambda
                 // binding reads as the literal string of its own name in both
                 // evaluators — silently, and green under every validator.
-                if self.is_lexically_bound(&name) {
+                // `type:` values are exempt: that position holds a pattern
+                // name, so `type: card` inside `(fn card …)` is the pattern.
+                if !pattern_type_value && self.is_lexically_bound(&name) {
                     return Err(ParseError::BareBindingReference { name, span });
                 }
                 // Bare identifiers in argument position are atoms (event names,
@@ -479,7 +482,9 @@ impl Parser {
                 }
             };
             self.expect_kind(&TokenKind::Colon, ":")?;
+            self.pattern_type_value = key == "type";
             let value = self.with_trail_seg(format!(".{key}"), |p| p.parse_sexpr_or_value())?;
+            self.pattern_type_value = false;
             map.insert(key, value);
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();

@@ -659,6 +659,19 @@ impl Parser {
                 break;
             }
             if self.at_eof() || !is_event_name_at_peek(self.peek()) {
+                // In brace form the only legal tokens here are `}` or the
+                // next event name — breaking silently would leave the `}`
+                // unconsumed and surface a misleading trait-body keyword
+                // error far from the real problem.
+                if brace_form && !self.at_eof() {
+                    return Err(ParseError::InvalidSExpr {
+                        message: format!(
+                            "unexpected token inside `emits {{ … }}`: {:?}",
+                            self.peek()
+                        ),
+                        span: self.peek_span(),
+                    });
+                }
                 break;
             }
             out.push(self.parse_emit_decl()?);

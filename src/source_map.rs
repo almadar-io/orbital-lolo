@@ -38,11 +38,21 @@ impl LoloSourceMap {
     /// found. Returns `None` on a fully-untracked path or one containing a
     /// non-numeric bracket (a shape this map doesn't index).
     pub fn lookup(&self, l2_path: &str) -> Option<Span> {
+        self.lookup_detailed(l2_path).map(|(span, _)| span)
+    }
+
+    /// Like [`lookup`](Self::lookup), but also reports whether the hit was
+    /// exact (`true`) or a longest-prefix fallback to an ancestor's span
+    /// (`false`). A fallback span is never wrong — it is the nearest tracked
+    /// ancestor — but for subtrees spliced by the inline phase (config
+    /// defaults, `@trait.X` references) it can be far from the expression
+    /// that actually failed, so callers surface approximate hits differently.
+    pub fn lookup_detailed(&self, l2_path: &str) -> Option<(Span, bool)> {
         let normalized = normalize(l2_path)?;
         let mut candidate: &str = &normalized;
         loop {
             if let Some(span) = self.entries.get(candidate) {
-                return Some(*span);
+                return Some((*span, candidate == normalized));
             }
             candidate = strip_last_segment(candidate)?;
         }
@@ -151,5 +161,21 @@ mod tests {
     fn lookup_miss_returns_none() {
         let map = LoloSourceMap::new();
         assert_eq!(map.lookup("orbitals[0].traits[0]"), None);
+    }
+
+    #[test]
+    fn lookup_detailed_reports_exactness() {
+        let mut map = LoloSourceMap::new();
+        map.insert("orbitals[0].traits[0].stateMachine.transitions[1]", Span::new(9, 3, 1));
+        assert_eq!(
+            map.lookup_detailed("orbitals[0].traits[0].stateMachine.transitions[1]"),
+            Some((Span::new(9, 3, 1), true))
+        );
+        assert_eq!(
+            map.lookup_detailed(
+                "orbitals[0].traits[0].stateMachine.transitions[1].effects[0][3].children[0]"
+            ),
+            Some((Span::new(9, 3, 1), false))
+        );
     }
 }

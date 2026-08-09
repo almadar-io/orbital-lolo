@@ -68,6 +68,12 @@ struct Parser {
     /// a capture window is active — e.g. `"[1][0][1]"` for a `let` binding
     /// value. Meaningless outside a capture window.
     expr_trail: String,
+    /// Set by the object-literal parser for the value of a `type:` key —
+    /// that position holds a render-ui pattern name, so a bare identifier
+    /// there is the pattern's own name string and never a lexical-binding
+    /// reference. Consumed (reset) on entry to `parse_sexpr_or_value`, so it
+    /// never leaks into nested expressions.
+    pub(crate) pattern_type_value: bool,
 }
 
 impl Parser {
@@ -80,6 +86,7 @@ impl Parser {
             binding_scopes: Vec::new(),
             expr_span_capture: None,
             expr_trail: String::new(),
+            pattern_type_value: false,
         }
     }
 

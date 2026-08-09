@@ -139,3 +139,35 @@ fn formatter_quotes_a_bound_name_so_its_output_reparses() {
     );
     parse_str(&formatted).expect("formatter output must re-parse");
 }
+
+#[test]
+fn type_key_value_is_a_pattern_name_not_a_binding_reference() {
+    // run 33 (StreakDisplay): `renderItem: (fn card { … type: card … })` —
+    // the `type:` value is the render-ui pattern name, so the collision with
+    // the lambda parameter is not a bare reference.
+    parse_ok(
+        "(render-ui main { renderItem: (fn card { children: [{ type: card title: @card.title }] }) })",
+    );
+}
+
+#[test]
+fn sibling_keys_still_reject_a_bare_bound_name() {
+    let err = parse_err(
+        "(render-ui main { renderItem: (fn card { children: [{ type: card title: card }] }) })",
+    );
+    assert!(
+        err.contains("BareBindingReference") && err.contains("\"card\""),
+        "expected a BareBindingReference for the non-type key, got: {err}"
+    );
+}
+
+#[test]
+fn type_key_exemption_does_not_leak_into_nested_expressions() {
+    let err = parse_err(
+        "(render-ui main { renderItem: (fn card { children: [{ type: (do card) }] }) })",
+    );
+    assert!(
+        err.contains("BareBindingReference") && err.contains("\"card\""),
+        "a bare bound name nested under a type: value must still error, got: {err}"
+    );
+}

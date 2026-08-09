@@ -117,6 +117,16 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
     if declared_core == actual {
         return true;
     }
+    // A declared ARRAY type (`[string]`, `[object]`, `[Entity]`) accepts an
+    // array literal: the shallow classifier types every array literal as
+    // "array" and cannot see elements, and this table had NO arm for `[…]`
+    // — so `data: [...]` against `data : [string]` could never pass and the
+    // error read as a self-contradiction ("declared as [string] but the
+    // literal value has type array"; run 28, ReviewReminders). Element-level
+    // checking is the L2 emit-payload backstop's job.
+    if declared_core.starts_with('[') && declared_core.ends_with(']') {
+        return actual == "array";
+    }
     match declared_core {
         "any" => true,
         "date" | "datetime" | "timestamp" => actual == "string" || actual == "number",

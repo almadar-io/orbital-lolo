@@ -45,6 +45,29 @@ impl LexError {
                 Some("strings are double-quoted in `.lolo` — `'` is not a valid quote".to_string()),
                 Some("replace '…' with \"…\"".to_string()),
             ),
+            // ```lolo fences written INTO the file (run 36: gpt-oss wrapped
+            // the whole draft in a markdown code block).
+            LexError::UnexpectedChar { ch: '`', .. } => (
+                Some("`` ` `` has no meaning in `.lolo` — this usually means a markdown code fence (```) was written into the file; the file must contain raw source only".to_string()),
+                Some("delete the ``` fence lines (and any prose around them) so the file starts directly with `orbital`/`app`".to_string()),
+            ),
+            // Inline prose annotation after a declaration (run 39: granite wrote
+            // `date : date! – day of the review activity` — the dash starts free
+            // text the lexer cannot read).
+            LexError::UnexpectedChar { ch: '–' | '—', .. } => (
+                Some("a dash starting free text — inline commentary is not part of the syntax; prose after a declaration must be a `;;` comment".to_string()),
+                Some("replace the dash with `;;` (comments run to end of line) or delete the trailing prose".to_string()),
+            ),
+            LexError::UnexpectedChar { ch: '\u{2018}' | '\u{2019}' | '\u{201C}' | '\u{201D}', .. } => (
+                Some("a curly “smart” quote — `.lolo` strings use straight double quotes only".to_string()),
+                Some("replace the curly quote with a straight `\"` (and apostrophes in prose belong inside a double-quoted string or a `;;` comment)".to_string()),
+            ),
+            // `\uXXXX`-style escapes (run 39: StudyStreak) — the string escape
+            // set is tiny; unicode goes in literally.
+            LexError::InvalidEscape { ch, .. } => (
+                Some(format!("`\\{ch}` is not a valid string escape — `.lolo` supports only `\\\"`, `\\\\`, `\\/`, `\\n`, `\\t`, `\\r`")),
+                Some("write the character directly in the string (files are UTF-8; no `\\u` escapes needed)".to_string()),
+            ),
             _ => (None, None),
         }
     }
@@ -170,6 +193,15 @@ impl ParseError {
                 Some(".lolo arrays and objects are whitespace-separated, not comma-separated".to_string()),
                 Some("remove the `,` and keep a space or newline between items".to_string()),
             ),
+            // `(transition loading -> ready)` — an invented transition EFFECT
+            // (run 30: ReviewHeatmap, 4 identical validates: the message
+            // stated the rule but not the concrete edit for THIS line).
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("unexpected `->` inside an s-expression") =>
+            (
+                Some("there is no `(transition …)` effect — the state change lives on the ARM line itself".to_string()),
+                Some("DELETE this parenthesized line; the transition target goes after the arrow on the arm above the effects: `EVENT -> ready`".to_string()),
+            ),
             ParseError::UnexpectedToken { expected, got, .. }
                 if expected == "]" && got == "Bang" =>
             (
@@ -224,6 +256,34 @@ impl ParseError {
             (
                 Some("a `listens` entry is `EVENT { … }` — the `EVENT -> target { payload }` direction form belongs to `emits`, not `listens`".to_string()),
                 Some("drop the `-> …` part; declare just the event name with its payload block".to_string()),
+            ),
+            // `payload: { … }` under an emits entry (run 33: ActivityHeatmap
+            // — the listens brace-block shape guessed with a keyword; the old
+            // silent loop-break surfaced a trait-level keyword error instead).
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("unexpected token inside `emits")
+                    && message.contains("Identifier(\"payload\")") =>
+            (
+                Some("there is no `payload:` keyword — an emits entry declares its payload as a brace block directly after the event name".to_string()),
+                Some("merge it into the entry: `EVENT_NAME { field : type }` (annotations like `@tier` go on the lines after the block)".to_string()),
+            ),
+            ParseError::InvalidSExpr { message, .. }
+                if message.contains("unexpected token inside `emits") =>
+            (
+                Some("an `emits { … }` block holds only event entries: `EVENT_NAME [-> internal|external] [{ field : type }]` plus `@description`/`@tier` annotation lines".to_string()),
+                Some("remove or rewrite this token so each entry starts with an UPPER_SNAKE event name".to_string()),
+            ),
+            // `ADD_TOPIC -> presentation` — the @tier vocabulary written as a
+            // route (run 33: TopicManager, never converted without a hint).
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected == "internal or external after `->`" =>
+            (
+                Some(format!(
+                    "`{got}` is not a route — after `->` an emits entry routes `internal` or `external` only; words like `presentation`/`domain` are TIER annotations, not routes"
+                )),
+                Some(format!(
+                    "delete `-> {got}` (or route it `-> external` if a sibling orbital consumes it) and put the tier on its own line after the entry: `@tier \"{got}\"`"
+                )),
             ),
             ParseError::UnexpectedToken { expected, got, .. }
                 if expected == ":"
@@ -292,6 +352,17 @@ impl ParseError {
             (
                 Some("stray `)` — an s-expression in the effects above this line closes one paren too many".to_string()),
                 Some("re-count parens in the preceding effect lines; each `(…)` effect must balance".to_string()),
+            ),
+            // An effect `(…)` where trait MEMBERS are expected: the effect is
+            // fine — a surplus `}` above ejected it from its `state { … }`
+            // block (run 21: TopicManager burned 8+ validates while the
+            // catch-all arm below told it to rewrite the state body).
+            ParseError::UnexpectedToken { expected, got, .. }
+                if expected.contains("state, initial, emits, listens, ticks, or config")
+                    && got.contains("LParen") =>
+            (
+                Some("this effect `(…)` is sitting at TRAIT level — a `}` above this line closed its `state { … }` block too early".to_string()),
+                Some("delete the surplus `}` between the last transition arm and this effect (or move the effect back under its `EVENT -> target` arm inside the state block)".to_string()),
             ),
             ParseError::UnexpectedToken { expected, .. }
                 if expected.contains("state, initial, emits, listens, ticks, or config") =>
