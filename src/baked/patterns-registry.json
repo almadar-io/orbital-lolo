@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-07T09:57:06.909Z",
+  "exportedAt": "2026-08-16T04:34:48.224Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -3570,7 +3570,9 @@
                   "checkbox",
                   "date",
                   "daterange",
-                  "date-range"
+                  "date-range",
+                  "numberrange",
+                  "number-range"
                 ]
               },
               "type": {
@@ -3584,7 +3586,9 @@
                   "checkbox",
                   "date",
                   "daterange",
-                  "date-range"
+                  "date-range",
+                  "numberrange",
+                  "number-range"
                 ]
               },
               "options": {
@@ -3596,6 +3600,21 @@
                     "string"
                   ]
                 }
+              },
+              "min": {
+                "types": [
+                  "number"
+                ]
+              },
+              "max": {
+                "types": [
+                  "number"
+                ]
+              },
+              "step": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -10054,7 +10073,9 @@
                   "checkbox",
                   "date",
                   "daterange",
-                  "date-range"
+                  "date-range",
+                  "numberrange",
+                  "number-range"
                 ]
               },
               "type": {
@@ -10068,7 +10089,9 @@
                   "checkbox",
                   "date",
                   "daterange",
-                  "date-range"
+                  "date-range",
+                  "numberrange",
+                  "number-range"
                 ]
               },
               "options": {
@@ -10080,6 +10103,21 @@
                     "string"
                   ]
                 }
+              },
+              "min": {
+                "types": [
+                  "number"
+                ]
+              },
+              "max": {
+                "types": [
+                  "number"
+                ]
+              },
+              "step": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
