@@ -458,6 +458,17 @@ pub enum LowerError {
     #[error("emit {event:?} has duplicate payload field {field:?}")]
     PayloadFieldCollision { event: String, field: String },
 
+    /// An emits/listens entry restates its event's payload inline while an
+    /// orbital-scope `type X = Event { … }` alias also types the same event,
+    /// and the two shapes DISAGREE. Restating is allowed (it keeps the
+    /// emits/listens block self-documenting) but must match the alias —
+    /// silent drift between the two was the old "inline always wins"
+    /// precedence's failure mode (syntax revision 2026-08-18).
+    #[error(
+        "event {event:?}: the inline payload shape disagrees with the `type {event} = Event {{ … }}` alias ({detail});          restating the shape inline is allowed but it must match the alias — fix one side (or delete the inline restatement to use the alias alone)"
+    )]
+    PayloadAliasMismatch { event: String, detail: String },
+
     /// Trait reads `@entity.<field>` in render-ui / a guard / an effect but
     /// no transition runs `(set @entity.<field> <value>)`. Per the
     /// explicit-binding rule, every `@entity.X` read must be backed by an
@@ -730,6 +741,18 @@ pub enum LowerError {
         key: String,
         suggestion: Option<String>,
     },
+
+    /// Increment 3-II: a trait reference's `::` annotation, once reinterpreted
+    /// as call-site type-parameter arguments (`[type_name] ++ type_args`
+    /// chunked into name/value pairs), has an odd total count — one name has
+    /// no paired value. Structurally malformed regardless of what the
+    /// referenced source trait declares, so this is caught at L1.
+    #[error(
+        "trait {trait_name:?}'s `::` annotation {args:?} has an odd number of identifiers — \
+         reinterpreted as type-parameter call-site arguments (`:: V string R Booking`), each \
+         name needs a paired value"
+    )]
+    OddTypeArgCount { trait_name: String, args: Vec<String> },
 
     /// Error from the type-system resolver. See `TypeError` for variants.
     /// Carries a span so the CLI can surface `file:line:col: …`.

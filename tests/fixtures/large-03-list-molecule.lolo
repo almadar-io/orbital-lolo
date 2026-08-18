@@ -24,7 +24,7 @@ orbital ListItemOrbital {
   }
 
   type ListItemLoaded     = Event { data : [ListItem] }              "Fired when the ListItem collection finishes loading; payload.data holds the list"
-  type ListItemLoadFailed = Event { error : string, code : string } "Fired when the ListItem collection fails to load"
+  type ListItemLoadFailed = Event { error : string!, code : string } "Fired when the ListItem collection fails to load"
 
   trait ListItemBrowse -> @rebindable ListItem [interaction, collection] {
     initial: loading

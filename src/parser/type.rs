@@ -2,25 +2,73 @@
 
 use super::*;
 
+/// The six kind names a parenthesized type parameter may declare — shared by
+/// the type-alias parameter form (`type Foo (E : Entity) = ...`, Increment
+/// 3-I) and the trait-level parameter form (`trait Name (V : Type) -> ...`,
+/// Increment 3-II). Only `Type` and `Entity` are meaningfully acted on by
+/// the compiler today; the rest are stored but inert.
+pub(crate) const VALID_TYPE_PARAM_KINDS: [&str; 6] =
+    ["Type", "Entity", "Trait", "Page", "Orbital", "Event"];
+
+/// Type-parameter names must start lowercase: in `.lolo`, PascalCase names
+/// in type position ARE concrete types (entities, aliases), so `row : E`
+/// would be locally indistinguishable from a reference to an entity named
+/// `E`. Lowercase variables (`e`, `v`) make variable-vs-concrete obvious at
+/// the use site (the Haskell convention, adopted 2026-08-18).
+pub(crate) fn type_param_name_error(name: &str, span: crate::ast::Span) -> Option<ParseError> {
+    if name.chars().next().map(|c| c.is_lowercase()).unwrap_or(false) {
+        None
+    } else {
+        Some(ParseError::UnexpectedToken {
+            expected: "a lowercase-initial type-parameter name (e.g. `e`, `v`) — PascalCase names are concrete types".to_string(),
+            got: name.to_string(),
+            span,
+        })
+    }
+}
+
 impl Parser {
     pub(crate) fn parse_type_alias(&mut self) -> Result<TypeAlias, ParseError> {
         let span = self.peek_span();
         self.expect_keyword("type")?;
         let name = self.expect_ident()?;
-        // Optional single-ident type parameter: `type Browsable T = ...`.
-        // If the next token is an Identifier, it's the parameter name; the
-        // `=` must follow it. If the next token is `=`, there's no parameter.
-        let type_param = if let TokenKind::Identifier(p) = self.peek().clone() {
+        // Optional type parameter, either form:
+        //   bare:   `type Browsable T = ...`         — no kind, defaults to Entity
+        //   kinded: `type Foo (E : Entity) = ...`     — parenthesized name + kind
+        let (type_param, type_param_kind) = if matches!(self.peek(), TokenKind::LParen) {
+            self.advance();
+            let pname_span = self.peek_span();
+            let pname = self.expect_ident()?;
+            if let Some(e) = type_param_name_error(&pname, pname_span) {
+                return Err(e);
+            }
+            self.expect_kind(&TokenKind::Colon, ":")?;
+            let kind_span = self.peek_span();
+            let kind = self.expect_ident()?;
+            if !VALID_TYPE_PARAM_KINDS.contains(&kind.as_str()) {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "Type, Entity, Trait, Page, Orbital, or Event".to_string(),
+                    got: kind,
+                    span: kind_span,
+                });
+            }
+            self.expect_kind(&TokenKind::RParen, ")")?;
+            (Some(pname), Some(kind))
+        } else if let TokenKind::Identifier(p) = self.peek().clone() {
             if !matches!(self.peek_n(1), TokenKind::Equals) {
                 // Identifier not followed by `=` — must be malformed; let
                 // the `expect_kind(Equals)` below produce the real error.
-                None
+                (None, None)
             } else {
+                let pname_span = self.peek_span();
                 self.advance();
-                Some(p)
+                if let Some(e) = type_param_name_error(&p, pname_span) {
+                    return Err(e);
+                }
+                (Some(p), None)
             }
         } else {
-            None
+            (None, None)
         };
         self.expect_kind(&TokenKind::Equals, "=")?;
         let body = self.parse_type_body()?;
@@ -28,6 +76,7 @@ impl Parser {
         Ok(TypeAlias {
             name,
             type_param,
+            type_param_kind,
             body,
             span,
         })
@@ -392,6 +441,14 @@ impl Parser {
                 self.skip_newlines();
             }
             return Ok(TypeExpr::Object(fields));
+        }
+        // `@entity` — bound-entity row self-reference (payload positions only;
+        // the Stage-2 checker rejects it elsewhere).
+        if let TokenKind::Sigil(s) = self.peek().clone() {
+            if s == "entity" {
+                self.advance();
+                return Ok(TypeExpr::BoundEntityRow);
+            }
         }
         let name = self.expect_ident()?;
         // `Map K V` — reserved built-in dynamic-key map constructor, applied by

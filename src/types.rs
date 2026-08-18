@@ -357,6 +357,7 @@ fn merge_entity_composition(parts: Vec<TypeBody>, span: Span) -> Result<TypeBody
 fn format_type_expr(te: &TypeExpr) -> String {
     match te {
         TypeExpr::Primitive(s) => format!("prim:{s}"),
+        TypeExpr::BoundEntityRow => "@entity".to_string(),
         TypeExpr::Named(s) => format!("named:{s}"),
         TypeExpr::StringLiteral(s) => format!("lit:{s:?}"),
         TypeExpr::Array(inner) => format!("[{}]", format_type_expr(inner)),
@@ -556,6 +557,8 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         TypeExpr::RelationMany(n) | TypeExpr::RelationManyNonEmpty(n) => {
             out.insert(n.clone());
         }
+        // `@entity` references no NAMED type — nothing to collect.
+        TypeExpr::BoundEntityRow => {}
         TypeExpr::Primitive(_)
         | TypeExpr::StringLiteral(_)
         | TypeExpr::Trait
@@ -587,11 +590,12 @@ fn check_field_type_refs(
     span: Span,
     ctx: &ResolveCtx<'_>,
     entity_names: &BTreeSet<String>,
+    trait_type_params: &BTreeSet<String>,
 ) -> Result<(), TypeError> {
     let mut refs = BTreeSet::new();
     visit_expr_refs(type_expr, &mut refs);
     for r in &refs {
-        if ctx.lookup(r).is_some() || entity_names.contains(r) {
+        if ctx.lookup(r).is_some() || entity_names.contains(r) || trait_type_params.contains(r) {
             continue;
         }
         let mut haystack = ctx.known_names();
@@ -658,10 +662,11 @@ pub fn check_emit_payload_types(
     emit: &Emit,
     ctx: &ResolveCtx<'_>,
     own_entity_name: Option<&str>,
+    trait_type_params: &BTreeSet<String>,
 ) -> Result<(), TypeError> {
     for f in &emit.payload {
         if let TypeExpr::Named(name) = &f.type_expr {
-            check_named_payload_ref(name.as_str(), f.span, ctx, own_entity_name)?;
+            check_named_payload_ref(name.as_str(), f.span, ctx, own_entity_name, trait_type_params)?;
         }
     }
     Ok(())
@@ -672,8 +677,9 @@ fn check_named_payload_ref(
     span: Span,
     ctx: &ResolveCtx<'_>,
     own_entity_name: Option<&str>,
+    trait_type_params: &BTreeSet<String>,
 ) -> Result<(), TypeError> {
-    if own_entity_name == Some(name) {
+    if own_entity_name == Some(name) || trait_type_params.contains(name) {
         return Ok(());
     }
     let resolved = resolve_named(name, &[], ctx, span)?;
@@ -722,11 +728,31 @@ pub fn check_entity_annotation(
 /// Check an `::` annotation on a trait body (reference form). For Stage 2 we
 /// verify the resolved kind is Trait, and when the type carries a concrete
 /// `upstream` / `linked_entity`, the body agrees with both.
+///
+/// Increment 3-II reinterpretation: on a trait REFERENCE (`trt.reference` is
+/// `Some`), the `::` surface is ambiguous between the pre-existing
+/// alias-conformance meaning (`:: AliasName arg`) and NEW call-site
+/// type-parameter arguments (`:: v string`, keyed onto the referenced source
+/// trait's OWN declared params — see `lower::trait::lower_trait_reference`).
+/// The source trait's parameter list is not visible here (it may live in
+/// another behavior package entirely, resolved only at compile time by the
+/// L2 inline phase — see `docs/Almadar_LOLO.md`). The disambiguation this
+/// layer CAN make: `ann.type_name` resolving as a genuine known type alias in
+/// `ctx` is unambiguous — keep the existing conformance check. When it does
+/// NOT resolve as a known alias, on a reference we defer entirely rather than
+/// raising `UnknownType` — it is a legitimate param-binding candidate that
+/// only the compiler can confirm or reject once the source trait is loaded.
+/// Inline (non-reference) trait declarations are UNAFFECTED: `::` always
+/// means alias-conformance there (a trait's OWN params use the `(v : Type)`
+/// declaration syntax instead).
 pub fn check_trait_annotation(
     ann: &TypeAnnotation,
     trt: &Trait,
     ctx: &ResolveCtx<'_>,
 ) -> Result<(), TypeError> {
+    if trt.reference.is_some() && ctx.lookup(&ann.type_name).is_none() {
+        return Ok(());
+    }
     let resolved = resolve_named(&ann.type_name, &ann.type_args, ctx, ann.span)?;
     let TypeBody::Trait {
         upstream: type_upstream,
@@ -859,24 +885,32 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
                 check_entity_annotation(ann, entity, &ctx)?;
             }
             for f in &entity.fields {
-                check_field_type_refs(&f.type_expr, f.span, &ctx, &entity_names)?;
+                check_field_type_refs(&f.type_expr, f.span, &ctx, &entity_names, &BTreeSet::new())?;
             }
         }
         for trt in &orb.traits {
             if let Some(ann) = &trt.type_annotation {
                 check_trait_annotation(ann, trt, &ctx)?;
             }
+            // Increment 3-II: a trait's own declared type-parameter names
+            // (`(v : Type, ...)`) are legal bare references in its config /
+            // emit-payload type positions — they are neither aliases nor
+            // entity names, so without this exclusion every reference would
+            // spuriously raise `UnknownType`.
+            let trait_type_params: BTreeSet<String> =
+                trt.type_params.iter().map(|p| p.name.clone()).collect();
             for cf in &trt.config {
-                check_field_type_refs(&cf.type_expr, cf.span, &ctx, &entity_names)?;
+                check_field_type_refs(&cf.type_expr, cf.span, &ctx, &entity_names, &trait_type_params)?;
             }
             // Validate emit-payload type references against the registry.
             // Entity- or struct-kind only. Other kinds (trait/page/orbital)
             // are a KindMismatch. Missing names propagate UnknownType.
             // Also permits the orbital's own entity name, which is not in
-            // the type registry but is a legal payload reference.
+            // the type registry but is a legal payload reference, and any of
+            // this trait's own declared type-parameter names.
             let own_entity_name = orb.entity.as_ref().map(|e| e.name.as_str());
             for emit in &trt.emits {
-                check_emit_payload_types(emit, &ctx, own_entity_name)?;
+                check_emit_payload_types(emit, &ctx, own_entity_name, &trait_type_params)?;
             }
         }
         for page in &orb.pages {
@@ -1140,6 +1174,30 @@ orbital OrbW {
             }
             other => panic!("expected UnknownType, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn ok_parenthesized_kinded_param_applies_like_bare_param() {
+        // `(e : Entity)` must be bindable within the alias body exactly like
+        // the legacy bare-ident param form — a `::` call site supplying a
+        // concrete entity name resolves without an UnknownType error.
+        let src = r#"
+type Wrapped (e : Entity) = Entity {
+  id : string!
+  payload : E
+}
+
+orbital OrbP {
+  expects entity Inner
+  entity Outer :: Wrapped Inner [persistent: outers] {
+    id : string!
+    payload : Inner
+  }
+  trait OuterTrait -> Outer [interaction] { state idle { INIT -> idle (ref Outer) } }
+  page "/outers" -> OuterTrait
+}
+"#;
+        check(src).unwrap();
     }
 
     #[test]

@@ -708,6 +708,9 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
 pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
     match t {
         TypeExpr::Trait => Some("trait"),
+        // `@entity` self-reference: payload-positions-only, so an entity field
+        // must reject it the same way it rejects the config-only brands.
+        TypeExpr::BoundEntityRow => Some("@entity"),
         TypeExpr::EntityRef => Some("entity"),
         TypeExpr::EventRef => Some("event"),
         TypeExpr::Slot => Some("slot"),
@@ -988,6 +991,41 @@ mod tests {
             TypeBody::Enum(v) => assert_eq!(v.len(), 3),
             _ => panic!("expected enum"),
         }
+    }
+
+    #[test]
+    fn parse_type_alias_bare_param_still_parses() {
+        // Legacy single-ident param form, no parenthesized kind.
+        let src = "type Browsable t = Trait -> T\norbital O {\n  entity E { id : string! }\n}";
+        let prog = p(src);
+        assert_eq!(prog.type_aliases[0].type_param.as_deref(), Some("t"));
+        assert_eq!(prog.type_aliases[0].type_param_kind, None);
+    }
+
+    #[test]
+    fn parse_type_alias_parenthesized_kinded_param() {
+        // Increment 3-I: `type Name (e : Entity) = ...`.
+        let src = "type RecurrenceSaved (e : Entity) = Event { row : e }\norbital O {\n  entity E2 { id : string! }\n}";
+        let prog = p(src);
+        assert_eq!(prog.type_aliases.len(), 1);
+        let alias = &prog.type_aliases[0];
+        assert_eq!(alias.name, "RecurrenceSaved");
+        assert_eq!(alias.type_param.as_deref(), Some("e"));
+        assert_eq!(alias.type_param_kind.as_deref(), Some("Entity"));
+        match &alias.body {
+            TypeBody::Event { .. } => {}
+            other => panic!("expected Event body, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_type_alias_bad_kind_name_errors() {
+        let src = "type Foo (E : Bogus) = Event { row : e }\norbital O {\n  entity E2 { id : string! }\n}";
+        let err = parse_str(src).expect_err("bad kind name must fail to parse");
+        assert!(
+            matches!(err, ParseError::UnexpectedToken { .. }),
+            "got {err:?}"
+        );
     }
 
     #[test]

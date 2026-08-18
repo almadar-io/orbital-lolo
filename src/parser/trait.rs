@@ -9,6 +9,15 @@ impl Parser {
         self.expect_keyword("trait")?;
         let name = self.expect_ident()?;
 
+        // Increment 3-II: optional `(V : Type, R : Type)` trait-level type
+        // parameter list, immediately after the name and before `::`/`->`/`=`
+        // — unambiguous, since none of those three continuations start with
+        // `(`. Only meaningful on the inline-declaration form (a reference
+        // form has no legitimate use for it; parsed here regardless so a
+        // stray `(...)` on a reference is consumed instead of producing a
+        // confusing downstream parse error, and is simply unused there).
+        let type_params = self.parse_trait_type_params()?;
+
         // Optional `:: TypeName [args]` annotation above the trait body.
         let type_annotation = self.try_parse_type_annotation()?;
 
@@ -16,7 +25,7 @@ impl Parser {
         // The `=` immediately after the name/annotation disambiguates from the
         // inline form, which uses `->` for the linkedEntity binding.
         if matches!(self.peek(), TokenKind::Equals) {
-            return self.parse_trait_reference(name, span, type_annotation);
+            return self.parse_trait_reference(name, span, type_params, type_annotation);
         }
 
         // Optional `-> [@rebindable] Entity`. `@rebindable` between the
@@ -195,6 +204,7 @@ impl Parser {
 
         Ok(Trait {
             name,
+            type_params,
             type_annotation,
             linked_entity,
             entity_rebindable,
@@ -213,6 +223,47 @@ impl Parser {
             reference: None,
             is_inline_synthetic: false,
         })
+    }
+
+    /// Increment 3-II: parse an optional `(V : Type, R : Type)` trait-level
+    /// type parameter list. Returns an empty `Vec` when the next token isn't
+    /// `(`. Accepts BOTH comma- and space-separated params in one grammar:
+    /// after each `name : kind` pair, an optional `,` is consumed if present;
+    /// either way the loop continues straight into the next pair (or `)`).
+    pub(crate) fn parse_trait_type_params(&mut self) -> Result<Vec<TraitTypeParam>, ParseError> {
+        if !matches!(self.peek(), TokenKind::LParen) {
+            return Ok(Vec::new());
+        }
+        self.advance();
+        let mut params = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RParen) {
+                self.advance();
+                break;
+            }
+            let pname_span = self.peek_span();
+            let pname = self.expect_ident()?;
+            if let Some(e) = crate::parser::r#type::type_param_name_error(&pname, pname_span) {
+                return Err(e);
+            }
+            self.expect_kind(&TokenKind::Colon, ":")?;
+            let kind_span = self.peek_span();
+            let kind = self.expect_ident()?;
+            if !crate::parser::r#type::VALID_TYPE_PARAM_KINDS.contains(&kind.as_str()) {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "Type, Entity, Trait, Page, Orbital, or Event".to_string(),
+                    got: kind,
+                    span: kind_span,
+                });
+            }
+            params.push(TraitTypeParam { name: pname, kind });
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+            self.skip_newlines();
+        }
+        Ok(params)
     }
 
     /// Parse the body of a trait reference declaration.
@@ -240,6 +291,7 @@ impl Parser {
         &mut self,
         name: String,
         span: Span,
+        type_params: Vec<TraitTypeParam>,
         type_annotation: Option<TypeAnnotation>,
     ) -> Result<Trait, ParseError> {
         // Consume the `=`.
@@ -260,6 +312,7 @@ impl Parser {
 
         Ok(Trait {
             name,
+            type_params,
             type_annotation,
             linked_entity,
             entity_rebindable: false,

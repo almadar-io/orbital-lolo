@@ -87,6 +87,10 @@ pub(crate) fn lower_type_expr(
 ) -> LoweredType {
     match ty {
         TypeExpr::Primitive(name) => (primitive_to_field_type(name), None, None, None, None),
+        // `@entity` is only legal in event payload positions (enforced by the
+        // Stage-2 checker); an entity/config field reaching here is already an
+        // error upstream — lower defensively to an opaque object.
+        TypeExpr::BoundEntityRow => (FieldType::Object, None, None, None, None),
         TypeExpr::Trait => (FieldType::Trait, None, None, None, None),
         TypeExpr::Slot => (FieldType::Slot, None, None, None, None),
         TypeExpr::Pattern => (FieldType::Pattern, None, None, None, None),
@@ -121,6 +125,13 @@ pub(crate) fn lower_type_expr(
                         entity_id: None,
                     }),
                 )
+            } else if let Some(ft) = primitive_field_type(name) {
+                // Primitive spelled as a Named node (the parser's
+                // `is_primitive_type` list is narrower than the full primitive
+                // vocabulary — `json`/`node`/`render-ui` arrive here). Routes
+                // `node` to its first-class tag; the erased spellings keep
+                // their historical lowering.
+                (ft, None, None, None, None)
             } else {
                 // Unknown named type — preserve as a string field.
                 (FieldType::String, None, None, None, None)
@@ -296,13 +307,16 @@ pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
         "phone" => FieldType::Phone,
         "uuid" => FieldType::Uuid,
         "image" => FieldType::Image,
+        // Renderable content is first-class (type-integrity campaign): the
+        // `.orb` carries the honest `node` tag instead of lying `string`.
+        "node" => FieldType::Node,
         // De-facto accepted config/field types in the std corpus — `json` (free
-        // value), `node` (renderable content), `render-ui` (a render-ui pattern
-        // object config), `relation` (a foreign-key reference). They lowered to
-        // a string field via the old unknown-name fallback; recognized here to
-        // preserve that (re-typing e.g. json→object is a separate refinement)
+        // value), `render-ui` (a render-ui pattern object config), `relation`
+        // (a foreign-key reference). They lowered to a string field via the old
+        // unknown-name fallback; recognized here to preserve that (`json` and
+        // `render-ui` are being ELIMINATED, not re-typed — Gate C tracks them)
         // while still rejecting genuine typos.
-        "json" | "node" | "render-ui" | "relation" => FieldType::String,
+        "json" | "render-ui" | "relation" => FieldType::String,
         "int" | "float" | "number" | "duration" => FieldType::Number,
         "bool" | "boolean" => FieldType::Boolean,
         "date" => FieldType::Date,
@@ -346,6 +360,25 @@ mod tests {
         assert!(
             item.properties.is_none(),
             "[json] element must be UNCONSTRAINED (no properties)"
+        );
+    }
+
+    #[test]
+    fn node_lowers_first_class_scalar_and_array() {
+        // Type-integrity campaign: `node` is renderable content and must keep
+        // its tag — never erase to string. `node` is not in
+        // `is_primitive_type`, so it parses as `Named("node")` like `json`.
+        let (ft, _, _, _, _) = lower(&TypeExpr::Named("node".to_string()));
+        assert!(matches!(ft, FieldType::Node), "scalar node keeps its tag");
+
+        let ty = TypeExpr::Array(Box::new(TypeExpr::Named("node".to_string())));
+        let (ft, _values, items, _props, _rel) = lower(&ty);
+        assert!(matches!(ft, FieldType::Array));
+        let item = items.expect("array carries an item schema");
+        assert!(
+            matches!(item.field_type, FieldType::Node),
+            "[node] element must lower to Node, got {:?}",
+            item.field_type
         );
     }
 

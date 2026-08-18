@@ -270,6 +270,13 @@ pub(crate) struct EventTypeResolved {
     /// Optional description from `type X = Event T "description"`.
     /// Flows through to `EmitDefinition.description` on every reference.
     pub description: Option<String>,
+    /// The alias's type-parameter name, when declared with either the bare
+    /// (`type X T = ...`) or parenthesized kinded (`type X (E : Entity) =
+    /// ...`) form. A payload field referencing this name lowers to the `$E`
+    /// sentinel (increment 3-I) instead of erroring as an unknown type — the
+    /// compiler's inline phase substitutes it with the using trait's bound
+    /// entity.
+    pub type_param: Option<String>,
 }
 
 /// Collect `type X = Event <T> [scope] "description"` aliases into a lookup
@@ -290,6 +297,7 @@ fn collect_event_type_bodies(aliases: &[TypeAlias]) -> BTreeMap<String, EventTyp
                     payload: payload.clone(),
                     scope: *scope,
                     description: description.clone(),
+                    type_param: ta.type_param.clone(),
                 },
             );
         }
@@ -554,6 +562,8 @@ fn lower_orbital(
             linked_entity_id: None,
             entity_ref_ids: None,
             trait_embed_ids: None,
+            type_params: None,
+            type_args: None,
         };
         traits.push(TraitReference::Inline(synth));
     }

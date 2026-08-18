@@ -407,6 +407,7 @@ impl Parser {
 
         self.pending_inline_traits.push(Trait {
             name: name.clone(),
+            type_params: Vec::new(),
             type_annotation: None,
             linked_entity,
             entity_rebindable: false,

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-16T04:34:48.224Z",
+  "exportedAt": "2026-08-16T20:27:53.721Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -36694,6 +36694,36 @@
           ],
           "description": "backgroundColor prop"
         },
+        "mode": {
+          "types": [
+            "string"
+          ],
+          "description": "Painter: 2D raster (default) or 3D mesh scene via the lazy three.js host.",
+          "enumValues": [
+            "2d",
+            "3d"
+          ],
+          "default": "2d"
+        },
+        "camera": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }).",
+          "freeform": true
+        },
+        "lighting": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: scene light rig as data."
+        },
+        "post": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: post-processing stack (bloom/vignette)."
+        },
         "nodes": {
           "types": [
             "array"
@@ -36715,6 +36745,11 @@
                 ]
               },
               "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
                 "types": [
                   "number"
                 ]
@@ -36743,6 +36778,22 @@
                   "organelle",
                   "molecule",
                   "organism"
+                ]
+              },
+              "shape": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "box",
+                  "sphere",
+                  "capsule",
+                  "cylinder",
+                  "cone",
+                  "torus",
+                  "plane",
+                  "circle",
+                  "polyhedron"
                 ]
               }
             },
@@ -36795,7 +36846,7 @@
           "types": [
             "array"
           ],
-          "description": "Extra declarative shapes in canvas pixel coordinates.",
+          "description": "Extra declarative shapes in canvas pixel coordinates (2D mode only — ignored in 3D).",
           "items": {
             "types": [
               "object"
@@ -37110,6 +37161,36 @@
           ],
           "description": "backgroundColor prop"
         },
+        "mode": {
+          "types": [
+            "string"
+          ],
+          "description": "Painter: 2D raster (default) or 3D mesh scene via the lazy three.js host.",
+          "enumValues": [
+            "2d",
+            "3d"
+          ],
+          "default": "2d"
+        },
+        "camera": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }).",
+          "freeform": true
+        },
+        "lighting": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: scene light rig as data."
+        },
+        "post": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: post-processing stack (bloom/vignette)."
+        },
         "atoms": {
           "types": [
             "array"
@@ -37131,6 +37212,11 @@
                 ]
               },
               "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
                 "types": [
                   "number"
                 ]
@@ -37253,7 +37339,7 @@
           "types": [
             "array"
           ],
-          "description": "Extra declarative shapes in canvas pixel coordinates.",
+          "description": "Extra declarative shapes in canvas pixel coordinates (2D mode only — ignored in 3D).",
           "items": {
             "types": [
               "object"
@@ -38076,6 +38162,36 @@
           ],
           "description": "backgroundColor prop"
         },
+        "mode": {
+          "types": [
+            "string"
+          ],
+          "description": "Painter: 2D raster (default) or 3D mesh scene via the lazy three.js host.",
+          "enumValues": [
+            "2d",
+            "3d"
+          ],
+          "default": "2d"
+        },
+        "camera": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }).",
+          "freeform": true
+        },
+        "lighting": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: scene light rig as data."
+        },
+        "post": {
+          "types": [
+            "object"
+          ],
+          "description": "3D only: post-processing stack (bloom/vignette)."
+        },
         "bodies": {
           "types": [
             "array"
@@ -38097,6 +38213,11 @@
                 ]
               },
               "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
                 "types": [
                   "number"
                 ]
@@ -38126,12 +38247,22 @@
                   "number"
                 ]
               },
+              "vz": {
+                "types": [
+                  "number"
+                ]
+              },
               "fx": {
                 "types": [
                   "number"
                 ]
               },
               "fy": {
+                "types": [
+                  "number"
+                ]
+              },
+              "fz": {
                 "types": [
                   "number"
                 ]
@@ -38209,7 +38340,7 @@
           "types": [
             "array"
           ],
-          "description": "Extra declarative shapes in canvas pixel coordinates.",
+          "description": "Extra declarative shapes in canvas pixel coordinates (2D mode only — ignored in 3D).",
           "items": {
             "types": [
               "object"

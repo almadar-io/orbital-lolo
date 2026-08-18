@@ -10,6 +10,7 @@ use super::*;
 pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Primitive(name) => name.clone(),
+        TypeExpr::BoundEntityRow => "@entity".to_string(),
         TypeExpr::Named(name) => name.clone(),
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_config_string(inner)),
         // `Map K V` → round-trippable `Map<K,V>` config-string (the key is a
@@ -68,6 +69,8 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
             other => other.to_string(),
         },
         TypeExpr::Named(n) => n.clone(), // entity / struct reference
+        // Bound-entity row: a record at the bus-payload level.
+        TypeExpr::BoundEntityRow => "object".to_string(),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Array(_) => "array".to_string(),
         // A map is a record/object at the bus-payload level.
@@ -141,6 +144,7 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
 pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Primitive(s) | TypeExpr::Named(s) => s.clone(),
+        TypeExpr::BoundEntityRow => "@entity".to_string(),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_string(inner)),
         TypeExpr::Map(key, value) => format!(

@@ -40,6 +40,37 @@ pub(crate) fn lower_trait_reference(
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,
 ) -> Result<TraitReference, LowerError> {
+    // Increment 3-II: reinterpret the trait's `::` annotation as call-site
+    // type-parameter arguments — `[type_name] ++ type_args`, chunked into
+    // (name, value) pairs — UNLESS `type_name` resolves as a known LOCAL type
+    // alias, in which case the annotation keeps its pre-existing
+    // alias-conformance meaning (handled entirely by `check_trait_annotation`
+    // in `types.rs`; nothing to lower here) and no `typeArgs` are emitted.
+    // `check_trait_annotation` already skipped the alias-conformance check
+    // for exactly the branch taken here (same `aliases.contains_key` test —
+    // this file's `aliases` map mirrors that check's `ResolveCtx` lookup).
+    // An odd flat-pair count is a structurally malformed annotation — no
+    // source-trait visibility is needed to catch it, so it errors here at
+    // L1 rather than waiting on the L2 inline phase.
+    let type_args = match &t.type_annotation {
+        Some(ann) if !aliases.contains_key(&ann.type_name) => {
+            let mut flat: Vec<String> = Vec::with_capacity(1 + ann.type_args.len());
+            flat.push(ann.type_name.clone());
+            flat.extend(ann.type_args.iter().cloned());
+            if flat.len() % 2 != 0 {
+                return Err(LowerError::OddTypeArgCount {
+                    trait_name: t.name.clone(),
+                    args: flat,
+                });
+            }
+            let mut map: HashMap<String, String> = HashMap::new();
+            for pair in flat.chunks(2) {
+                map.insert(pair[0].clone(), pair[1].clone());
+            }
+            Some(map)
+        }
+        _ => None,
+    };
     let events = if ref_data.events.is_empty() {
         None
     } else {
@@ -167,6 +198,7 @@ pub(crate) fn lower_trait_reference(
         event_ids: None,
         linked_entity_id: None,
         ref_id: None,
+        type_args,
     })
 }
 
@@ -181,6 +213,10 @@ pub(crate) fn lower_trait(
     source_map: &mut crate::source_map::LoloSourceMap,
     base: &str,
 ) -> Result<TraitDefinition, LowerError> {
+    // Increment 3-II: this trait's own declared type-parameter names, usable
+    // directly in its `emits`/`listens`/`config` type positions.
+    let trait_type_params: Vec<&str> = t.type_params.iter().map(|p| p.name.as_str()).collect();
+
     // Build the state machine: states (with isInitial), events (collected
     // from transitions), transitions (one per Transition AST node, plus
     // auto-generated TIMEOUT entries for time-bound states).
@@ -305,12 +341,41 @@ pub(crate) fn lower_trait(
         let fields = if !l.payload.is_empty() {
             l.payload
                 .iter()
-                .map(|f| PayloadField {
-                    name: f.name.clone(),
-                    field_type: type_expr_to_string(&f.type_expr),
-                    required: if f.required { Some(true) } else { None },
-                    description: None,
-                    properties: None,
+                .map(|f| {
+                    // Increment 3-II: a field referencing this trait's OWN
+                    // declared type parameter lowers to the `$V` / `[$V]`
+                    // sentinel — checked first, same as the emit-payload path.
+                    let sentinel =
+                        emit_listen::type_param_sentinel(&f.type_expr, &trait_type_params);
+                    // Inline `{ … }` struct shapes (and struct aliases /
+                    // arrays of them) keep their nested `properties` — the
+                    // same contract emits payloads carry. Without this a
+                    // typed `payload : { id : string … }` listen lowered to
+                    // a shapeless `object` (Gate B finding).
+                    let array_elem = match &f.type_expr {
+                        crate::ast::TypeExpr::Array(inner) => {
+                            emit_listen::struct_payload_properties(inner, aliases, &trait_type_params)
+                        }
+                        _ => None,
+                    };
+                    let (field_type, properties) = if let Some(s) = sentinel {
+                        (s, None)
+                    } else if let Some(elem) = array_elem {
+                        ("[object]".to_string(), Some(elem))
+                    } else if let Some(nested) =
+                        emit_listen::struct_payload_properties(&f.type_expr, aliases, &trait_type_params)
+                    {
+                        ("object".to_string(), Some(nested))
+                    } else {
+                        (type_expr_to_string(&f.type_expr), None)
+                    };
+                    PayloadField {
+                        name: f.name.clone(),
+                        field_type,
+                        required: if f.required { Some(true) } else { None },
+                        description: None,
+                        properties,
+                    }
                 })
                 .collect()
         } else {
@@ -356,7 +421,7 @@ pub(crate) fn lower_trait(
     let lowered_emits: Vec<EmitDefinition> = t
         .emits
         .iter()
-        .map(|e| lower_emit(e, aliases, entities, event_aliases))
+        .map(|e| lower_emit(e, aliases, entities, event_aliases, &trait_type_params))
         .collect::<Result<Vec<_>, _>>()?;
     let mut emit_payloads: HashMap<String, Vec<PayloadField>> = HashMap::new();
     for def in &lowered_emits {
@@ -395,13 +460,43 @@ pub(crate) fn lower_trait(
                     //      enforces emit↔event payload parity, so this only fills
                     //      holes, never contradicts.
                     let payload = if let Some(fields) = listen_payloads.remove(&k) {
+                        // Alias-consistency (syntax revision 2026-08-18): a
+                        // listen restating a payload the orbital-scope alias
+                        // also types must MATCH it — same rule as emits.
+                        if let Some(resolved) = event_aliases.get(&k) {
+                            let alias_param: Vec<&str> =
+                                resolved.type_param.as_deref().into_iter().collect();
+                            let alias_fields = type_expr_to_payload_fields(
+                                &k,
+                                &resolved.payload,
+                                aliases,
+                                entities,
+                                &alias_param,
+                            )?;
+                            if let Some(detail) =
+                                emit_listen::payload_fields_mismatch_norm(
+                                    &fields,
+                                    &alias_fields,
+                                    entities,
+                                    aliases,
+                                )
+                            {
+                                return Err(LowerError::PayloadAliasMismatch {
+                                    event: k.clone(),
+                                    detail,
+                                });
+                            }
+                        }
                         Some(fields)
                     } else if let Some(resolved) = event_aliases.get(&k) {
+                        let alias_param: Vec<&str> =
+                            resolved.type_param.as_deref().into_iter().collect();
                         Some(type_expr_to_payload_fields(
                             &k,
                             &resolved.payload,
                             aliases,
                             entities,
+                            &alias_param,
                         )?)
                     } else if let Some(fields) = emit_payloads.remove(&k) {
                         Some(fields)
@@ -516,6 +611,11 @@ pub(crate) fn lower_trait(
                     });
                 }
             }
+            // Increment 3-II: a config field typed as this trait's own
+            // declared type parameter (`config { result : V }`) lowers its
+            // `field_type` to the `$V` sentinel directly — checked first
+            // since a param name never resolves as a struct alias/entity.
+            let sentinel = emit_listen::type_param_sentinel(&cf.type_expr, &trait_type_params);
             // Run the structural lowerer alongside the string-tag lowerer.
             // `lower_type_expr` resolves named aliases (e.g. `[MetricSpec]`)
             // into `FieldType::Array` + `items: Box<FieldDefinition>` with the
@@ -523,18 +623,28 @@ pub(crate) fn lower_trait(
             // entity fields take. The string `field_type` stays as the
             // human/readable tag so the existing resolve/codegen consumers
             // keep working; `items` / `properties` are additive.
-            let (_, _, items, properties, _) =
-                lower_type_expr(&cf.type_expr, aliases, entity_names);
+            let (field_type, items, properties, values) = if let Some(s) = sentinel {
+                (s, None, None, None)
+            } else {
+                let (_, _, items, properties, _) =
+                    lower_type_expr(&cf.type_expr, aliases, entity_names);
+                (
+                    type_expr_to_config_string(&cf.type_expr),
+                    items,
+                    properties,
+                    type_expr_to_config_values(&cf.type_expr),
+                )
+            };
             map.insert(
                 cf.name.clone(),
                 SchemaConfigField {
-                    field_type: type_expr_to_config_string(&cf.type_expr),
+                    field_type,
                     default: cf.default.clone(),
                     label: cf.label.clone(),
                     description: cf.description.clone(),
                     synonyms: cf.synonyms.clone(),
                     tier: cf.tier.clone(),
-                    values: type_expr_to_config_values(&cf.type_expr),
+                    values,
                     items,
                     properties,
                     required: if cf.required { Some(true) } else { None },
@@ -601,6 +711,20 @@ pub(crate) fn lower_trait(
         linked_entity_id: None,
         entity_ref_ids: None,
         trait_embed_ids: None,
+        type_params: if t.type_params.is_empty() {
+            None
+        } else {
+            Some(
+                t.type_params
+                    .iter()
+                    .map(|p| orbital_core::schema::TraitTypeParamDef {
+                        name: p.name.clone(),
+                        kind: p.kind.clone(),
+                    })
+                    .collect(),
+            )
+        },
+        type_args: None,
     })
 }
 

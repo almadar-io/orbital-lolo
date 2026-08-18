@@ -23,6 +23,7 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
                         event_ids: None,
                         linked_entity_id: None,
                         ref_id: None,
+                        type_args: None,
                     })
                     .collect(),
             )
@@ -67,6 +68,7 @@ pub(crate) fn lower_page(p: &Page) -> PageRef {
                     event_ids: None,
                     linked_entity_id: None,
                     ref_id: None,
+                    type_args: None,
                 })
                 .collect(),
         ),

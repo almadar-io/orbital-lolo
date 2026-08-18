@@ -1,8 +1,8 @@
-;; Stage 1 fixture — parameterized trait shape `type Browsable T = Trait ... -> T`,
+;; Stage 1 fixture — parameterized trait shape `type Browsable t = Trait ... -> T`,
 ;; applied via `::` to a concrete trait. `T` is substituted to `MyItem` at
 ;; annotation time.
 
-type Browsable T = Trait Browse.traits.BrowseItemBrowse -> T
+type Browsable t = Trait Browse.traits.BrowseItemBrowse -> T
 
 orbital MyOrbital {
   uses Browse from "std/behaviors/std-browse"

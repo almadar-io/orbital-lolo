@@ -63,9 +63,18 @@ pub struct AppHeader {
 #[derive(Debug, Clone)]
 pub struct TypeAlias {
     pub name: String,
-    /// Single-ident type parameter (the `T` in `type Browsable T = ...`).
-    /// `None` for non-parameterized aliases.
+    /// Single-ident type parameter — either the bare form (`T` in
+    /// `type Browsable T = ...`) or the name half of the parenthesized
+    /// kinded form (`E` in `type Foo (E : Entity) = ...`). `None` for
+    /// non-parameterized aliases.
     pub type_param: Option<String>,
+    /// The kind half of a parenthesized kinded type parameter (`Entity` in
+    /// `type Foo (E : Entity) = ...`) — one of `Type | Entity | Trait | Page
+    /// | Orbital | Event`. `None` for the bare form or when there's no
+    /// parameter at all. Only `Entity` is acted on by the compiler today
+    /// (increment 3-I: `(E : Entity)` on an `Event` alias monomorphizes to
+    /// the using trait's bound entity); other kinds are stored but inert.
+    pub type_param_kind: Option<String>,
     pub body: TypeBody,
     pub span: Span,
 }
@@ -344,6 +353,13 @@ pub enum TypeExpr {
     /// `T | U` union (lowering inlines this to enum values when all members
     /// are bare names or string literals).
     Union(Vec<TypeExpr>),
+    /// `@entity` — the bound entity's ROW type (self-reference). The sigil
+    /// already means "the bound entity" throughout the expression grammar; in
+    /// a payload type position it names that entity's row shape, resolved at
+    /// compose time against the trait's final `linkedEntity` (monomorphized
+    /// exactly like an Entity-kinded type parameter's default). Only legal in
+    /// event payload positions (Event alias bodies, emits/listens payloads).
+    BoundEntityRow,
     /// `T?` nullable.
     Optional(Box<TypeExpr>),
     /// `T*` one-to-many relation.
@@ -372,6 +388,20 @@ pub enum TypeExpr {
     SExpr,
 }
 
+/// One trait-level type parameter (Increment 3-II): `(V : Type)` in
+/// `trait LookupRun (V : Type, R : Type) -> KeyLookup [lifecycle, instance] { ... }`.
+/// Parsed immediately after the trait name, before `::`/`->`/`=`. `kind` is
+/// validated against the same six kind names Increment 3-I's alias params
+/// accept (`Type | Entity | Trait | Page | Orbital | Event`); only `Type` and
+/// `Entity` are meaningfully acted on downstream. A param name is usable in
+/// this trait's own `emits`/`listens`/config type positions, lowering each
+/// reference to a `"$<name>"` sentinel (3-I's substitution machinery).
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct TraitTypeParam {
+    pub name: String,
+    pub kind: String,
+}
+
 /// `trait Name [:: TypeAnnotation] -> Entity [category] { ... }` or
 /// `trait Name [:: TypeAnnotation] = Alias.traits.Upstream -> Entity { ... }` (reference form).
 /// Instance vs collection scope, parsed from the trait modifier list
@@ -387,6 +417,12 @@ pub enum TraitScope {
 #[derive(Debug, Clone)]
 pub struct Trait {
     pub name: String,
+    /// Increment 3-II: trait-level type parameters declared `(V : Type, ...)`
+    /// immediately after the name. Empty for traits that declare none —
+    /// which is every trait predating this increment, and always empty on a
+    /// reference-form trait (a reference supplies ARGUMENTS via `::`, not a
+    /// parameter declaration).
+    pub type_params: Vec<TraitTypeParam>,
     /// Optional `::` type annotation above the trait declaration.
     pub type_annotation: Option<TypeAnnotation>,
     pub linked_entity: Option<String>,

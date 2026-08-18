@@ -162,7 +162,15 @@ impl Formatter {
         self.output.push_str(&alias.name);
         if let Some(tp) = &alias.type_param {
             self.output.push(' ');
-            self.output.push_str(tp);
+            if let Some(kind) = &alias.type_param_kind {
+                self.output.push('(');
+                self.output.push_str(tp);
+                self.output.push_str(" : ");
+                self.output.push_str(kind);
+                self.output.push(')');
+            } else {
+                self.output.push_str(tp);
+            }
         }
         self.output.push_str(" = ");
         self.fmt_type_body(&alias.body);
@@ -325,6 +333,9 @@ impl Formatter {
             }
             TypeExpr::StringLiteral(s) => {
                 self.write_quoted_string(s);
+            }
+            TypeExpr::BoundEntityRow => {
+                self.output.push_str("@entity");
             }
             TypeExpr::Array(inner) => {
                 self.output.push('[');
@@ -683,6 +694,18 @@ impl Formatter {
     fn fmt_trait(&mut self, tr: &Trait) {
         self.output.push_str("trait ");
         self.output.push_str(&tr.name);
+        if !tr.type_params.is_empty() {
+            self.output.push_str(" (");
+            for (i, p) in tr.type_params.iter().enumerate() {
+                if i > 0 {
+                    self.output.push_str(", ");
+                }
+                self.output.push_str(&p.name);
+                self.output.push_str(" : ");
+                self.output.push_str(&p.kind);
+            }
+            self.output.push(')');
+        }
         if let Some(ann) = &tr.type_annotation {
             self.output.push(' ');
             self.fmt_type_annotation(ann);
