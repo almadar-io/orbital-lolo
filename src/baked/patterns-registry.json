@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-16T20:27:53.721Z",
+  "exportedAt": "2026-08-19T03:03:56.666Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -105,7 +105,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -580,7 +585,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -967,7 +977,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -1316,7 +1331,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -2076,7 +2096,18 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "properties": {
+                  "enum": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                }
               },
               "readonly": {
                 "types": [
@@ -2559,7 +2590,18 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true
+                      "properties": {
+                        "enum": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "string"
+                            ]
+                          }
+                        }
+                      }
                     },
                     "readonly": {
                       "types": [
@@ -2863,7 +2905,18 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "properties": {
+                  "enum": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                }
               },
               "readonly": {
                 "types": [
@@ -3346,7 +3399,18 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true
+                      "properties": {
+                        "enum": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "string"
+                            ]
+                          }
+                        }
+                      }
                     },
                     "readonly": {
                       "types": [
@@ -6107,7 +6171,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -6605,7 +6674,12 @@
           "types": [
             "object"
           ],
-          "description": "Inline styles"
+          "description": "Inline styles",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "children": {
           "types": [
@@ -6688,7 +6762,12 @@
           "types": [
             "object"
           ],
-          "description": "Inline styles"
+          "description": "Inline styles",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "children": {
           "types": [
@@ -7449,7 +7528,12 @@
           "types": [
             "object"
           ],
-          "description": "Inline style"
+          "description": "Inline style",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         }
       }
     },
@@ -9525,7 +9609,12 @@
           "types": [
             "object"
           ],
-          "description": "Inline styles"
+          "description": "Inline styles",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "children": {
           "types": [
@@ -9880,7 +9969,12 @@
           "types": [
             "object"
           ],
-          "description": "Inline style"
+          "description": "Inline style",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "format": {
           "types": [
@@ -14124,7 +14218,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -16052,7 +16151,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -21587,7 +21691,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -21761,7 +21870,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -21942,7 +22056,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -22174,7 +22293,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -22363,7 +22487,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -22560,7 +22689,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -22716,7 +22850,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -22897,7 +23036,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -30370,7 +30514,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -31815,7 +31964,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -32553,7 +32707,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -33628,7 +33787,7 @@
           "types": [
             "array"
           ],
-          "description": "Per-row action buttons (trailing column).",
+          "description": "Per-row actions, collected under a trailing kebab overflow menu.",
           "kind": "event-list",
           "eventField": "event",
           "items": {
@@ -33674,14 +33833,15 @@
           "types": [
             "number"
           ],
-          "description": "Max inline action buttons before the rest collapse into a \"⋯\" overflow menu. Omit = all inline."
+          "description": "maxInlineActions prop"
         },
         "itemClickEvent": {
           "types": [
             "string"
           ],
-          "description": "When set, the whole row is clickable and emits UI:{itemClickEvent} with { id, row } (action-button clicks stopPropagation so they still win). Mirrors DataList's contract.",
-          "kind": "event"
+          "description": "When set, the whole row is clickable and emits UI:{itemClickEvent} with { id, row } (action-button clicks stopPropagation so they still win). Mirrors DataList's contract. When OMITTED and `itemActions` exist, the row click defaults to the first non-danger item action (the view/open action by authoring convention) — a danger action never becomes the row default (destructive actions require intentional reach).",
+          "kind": "event",
+          "default": ""
         },
         "selectable": {
           "types": [
@@ -34025,7 +34185,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -34527,7 +34692,34 @@
           "types": [
             "object"
           ],
-          "description": "User progress for restoring activation/reflection state"
+          "description": "User progress for restoring activation/reflection state",
+          "properties": {
+            "activationResponse": {
+              "types": [
+                "string"
+              ]
+            },
+            "reflectionNotes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "bloomAnswered": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            }
+          }
         },
         "onRunCodeSimulation": {
           "types": [
@@ -34671,7 +34863,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -34826,7 +35023,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -35926,7 +36128,12 @@
           "types": [
             "object"
           ],
-          "description": "Inline styles"
+          "description": "Inline styles",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "children": {
           "types": [
@@ -36091,7 +36298,12 @@
           "types": [
             "object"
           ],
-          "description": "Inline styles"
+          "description": "Inline styles",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "children": {
           "types": [
@@ -36268,7 +36480,12 @@
           "types": [
             "object"
           ],
-          "description": "Active filters"
+          "description": "Active filters",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "selectedIds": {
           "types": [
@@ -36355,12 +36572,14 @@
                   "line",
                   "arrow",
                   "circle",
+                  "ellipse",
                   "rect",
                   "polygon",
                   "path",
                   "text",
                   "axis",
-                  "grid"
+                  "grid",
+                  "venn-region"
                 ]
               },
               "id": {
@@ -36512,6 +36731,45 @@
                 "types": [
                   "number"
                 ]
+              },
+              "startAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "inside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "outside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -36519,6 +36777,153 @@
             ]
           },
           "default": []
+        },
+        "readouts": {
+          "types": [
+            "array"
+          ],
+          "description": "Top-right status chip row (live measurements, scores, counters).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "string",
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          },
+          "synonyms": "chips, stats, measurements"
+        },
+        "traces": {
+          "types": [
+            "array"
+          ],
+          "description": "Inset sparkline panels stacked from the bottom-right corner.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "series": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "samples": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "object"
+                        ],
+                        "properties": {
+                          "x": {
+                            "types": [
+                              "number"
+                            ]
+                          },
+                          "y": {
+                            "types": [
+                              "number"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ]
+                      }
+                    },
+                    "color": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "samples"
+                  ]
+                }
+              },
+              "xLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "yLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "frameColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundOpacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "series"
+            ]
+          },
+          "synonyms": "sparkline, time series, history plot"
         },
         "interactive": {
           "types": [
@@ -36795,6 +37200,21 @@
                   "circle",
                   "polyhedron"
                 ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              },
+              "state": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "default",
+                  "highlight",
+                  "muted"
+                ]
               }
             },
             "required": [
@@ -36833,6 +37253,11 @@
                 "types": [
                   "string"
                 ]
+              },
+              "directed": {
+                "types": [
+                  "boolean"
+                ]
               }
             },
             "required": [
@@ -36841,6 +37266,344 @@
             ]
           },
           "default": []
+        },
+        "compartments": {
+          "types": [
+            "array"
+          ],
+          "description": "Organelle/membrane/cell-boundary ellipses (2D only).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fill": {
+                "types": [
+                  "string"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "lineWidth": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ]
+          },
+          "default": [],
+          "synonyms": "membrane, organelle region, cell boundary"
+        },
+        "bands": {
+          "types": [
+            "array"
+          ],
+          "description": "Full-width horizontal background stripes, drawn first (2D only).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            }
+          },
+          "default": [],
+          "synonyms": "trophic levels, zones, layers"
+        },
+        "stages": {
+          "types": [
+            "array"
+          ],
+          "description": "Phase/step chips (2D only).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "state": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "pending",
+                  "active",
+                  "done"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label"
+            ]
+          },
+          "default": [],
+          "synonyms": "phases, timeline, cycle"
+        },
+        "stageStyle": {
+          "types": [
+            "string"
+          ],
+          "description": "Layout for `stages`: a bottom timeline strip (default) or a radial ring.",
+          "enumValues": [
+            "timeline",
+            "ring"
+          ],
+          "default": "timeline"
+        },
+        "helix": {
+          "types": [
+            "object"
+          ],
+          "description": "A DNA double-helix ladder panel (2D only).",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "width": {
+              "types": [
+                "number"
+              ]
+            },
+            "height": {
+              "types": [
+                "number"
+              ]
+            },
+            "rungs": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "a": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "b": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "state": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "paired",
+                      "open",
+                      "new"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                }
+              }
+            },
+            "fork": {
+              "types": [
+                "number"
+              ]
+            },
+            "colorA": {
+              "types": [
+                "string"
+              ]
+            },
+            "colorB": {
+              "types": [
+                "string"
+              ]
+            },
+            "rungColor": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "rungs"
+          ],
+          "synonyms": "DNA ladder, replication fork, base pairs"
+        },
+        "helix3d": {
+          "types": [
+            "object"
+          ],
+          "description": "A 3D DNA double-helix ladder. 3D only.",
+          "properties": {
+            "count": {
+              "types": [
+                "number"
+              ]
+            },
+            "rungs": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "radius": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                }
+              }
+            },
+            "radius": {
+              "types": [
+                "number"
+              ]
+            },
+            "rise": {
+              "types": [
+                "number"
+              ]
+            },
+            "twistDeg": {
+              "types": [
+                "number"
+              ]
+            },
+            "strandAColor": {
+              "types": [
+                "string"
+              ]
+            },
+            "strandBColor": {
+              "types": [
+                "string"
+              ]
+            },
+            "backboneRadius": {
+              "types": [
+                "number"
+              ]
+            },
+            "rungRadius": {
+              "types": [
+                "number"
+              ]
+            },
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            },
+            "unwoundCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "unwindSpread": {
+              "types": [
+                "number"
+              ]
+            }
+          }
         },
         "shapes": {
           "types": [
@@ -36860,12 +37623,14 @@
                   "line",
                   "arrow",
                   "circle",
+                  "ellipse",
                   "rect",
                   "polygon",
                   "path",
                   "text",
                   "axis",
-                  "grid"
+                  "grid",
+                  "venn-region"
                 ]
               },
               "id": {
@@ -37017,6 +37782,45 @@
                 "types": [
                   "number"
                 ]
+              },
+              "startAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "inside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "outside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -37025,18 +37829,174 @@
           },
           "default": []
         },
+        "readouts": {
+          "types": [
+            "array"
+          ],
+          "description": "Top-right status chip row, forwarded to LearningCanvas verbatim.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "string",
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          }
+        },
+        "traces": {
+          "types": [
+            "array"
+          ],
+          "description": "Inset sparkline panels, forwarded to LearningCanvas verbatim.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "series": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "samples": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "object"
+                        ],
+                        "properties": {
+                          "x": {
+                            "types": [
+                              "number"
+                            ]
+                          },
+                          "y": {
+                            "types": [
+                              "number"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ]
+                      }
+                    },
+                    "color": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "samples"
+                  ]
+                }
+              },
+              "xLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "yLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "frameColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundOpacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "series"
+            ]
+          }
+        },
+        "showGrid": {
+          "types": [
+            "boolean"
+          ],
+          "description": "3D only: show the ground grid (default off)."
+        },
+        "shadows": {
+          "types": [
+            "boolean"
+          ],
+          "description": "3D only: enable shadows. Omitted → the host default."
+        },
         "interactive": {
           "types": [
             "boolean"
           ],
-          "description": "interactive prop",
-          "default": false
+          "description": "2D: pointer interaction (click/hover). 3D: orbit camera controls."
         },
         "animate": {
           "types": [
             "boolean"
           ],
-          "description": "animate prop",
+          "description": "2D only: continuous redraw loop. 3D motion is entity-state driven.",
           "default": false
         },
         "onShapeClick": {
@@ -37235,6 +38195,16 @@
                 "types": [
                   "string"
                 ]
+              },
+              "charge": {
+                "types": [
+                  "string"
+                ]
+              },
+              "lonePairs": {
+                "types": [
+                  "number"
+                ]
               }
             },
             "required": [
@@ -37277,6 +38247,17 @@
               "color": {
                 "types": [
                   "string"
+                ]
+              },
+              "state": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "default",
+                  "forming",
+                  "breaking",
+                  "highlight"
                 ]
               }
             },
@@ -37335,6 +38316,302 @@
           },
           "default": []
         },
+        "bondStyle": {
+          "types": [
+            "string"
+          ],
+          "description": "Bond line rendering: 'thick' varies stroke width by order (default), 'parallel' draws offset parallel strokes. 2D only.",
+          "enumValues": [
+            "thick",
+            "parallel"
+          ],
+          "default": "thick"
+        },
+        "containers": {
+          "types": [
+            "array"
+          ],
+          "description": "Beaker/flask/container outlines (2D only).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fill": {
+                "types": [
+                  "string"
+                ]
+              },
+              "lineWidth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "divider": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "none",
+                  "solid",
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "dividerColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "leftLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "rightLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "level": {
+                "types": [
+                  "number"
+                ]
+              },
+              "levelColor": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "width",
+              "height"
+            ]
+          },
+          "default": [],
+          "synonyms": "beaker, flask, box, membrane, burette"
+        },
+        "equation": {
+          "types": [
+            "string"
+          ],
+          "description": "Reaction equation text centered at the top of the canvas. 2D only.",
+          "synonyms": "reaction equation, formula"
+        },
+        "equationColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Equation text color (default '#111827')."
+        },
+        "lattice3d": {
+          "types": [
+            "object"
+          ],
+          "description": "A 3D crystal lattice block (simple cubic, BCC, FCC, rock salt, diamond, ...). 3D only.",
+          "properties": {
+            "basis": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "key": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dx": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "dy": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "dz": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "element": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "radius": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "xEdge": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "yEdge": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "zEdge": {
+                    "types": [
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "key",
+                  "dx",
+                  "dy",
+                  "dz"
+                ]
+              }
+            },
+            "nx": {
+              "types": [
+                "number"
+              ]
+            },
+            "ny": {
+              "types": [
+                "number"
+              ]
+            },
+            "nz": {
+              "types": [
+                "number"
+              ]
+            },
+            "latticeConstant": {
+              "types": [
+                "number"
+              ]
+            },
+            "bonds": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "from": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "to": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dx": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "dy": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "dz": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ]
+              }
+            },
+            "bondRadius": {
+              "types": [
+                "number"
+              ]
+            },
+            "highlightCell": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "dimColor": {
+              "types": [
+                "string"
+              ]
+            },
+            "showLabels": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "selectedId": {
+              "types": [
+                "string"
+              ]
+            },
+            "selectedColor": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "basis"
+          ]
+        },
         "shapes": {
           "types": [
             "array"
@@ -37353,12 +38630,14 @@
                   "line",
                   "arrow",
                   "circle",
+                  "ellipse",
                   "rect",
                   "polygon",
                   "path",
                   "text",
                   "axis",
-                  "grid"
+                  "grid",
+                  "venn-region"
                 ]
               },
               "id": {
@@ -37510,6 +38789,45 @@
                 "types": [
                   "number"
                 ]
+              },
+              "startAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "inside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "outside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -37518,18 +38836,174 @@
           },
           "default": []
         },
+        "readouts": {
+          "types": [
+            "array"
+          ],
+          "description": "Top-right status chip row, forwarded to LearningCanvas verbatim.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "string",
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          }
+        },
+        "traces": {
+          "types": [
+            "array"
+          ],
+          "description": "Inset sparkline panels, forwarded to LearningCanvas verbatim.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "series": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "samples": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "object"
+                        ],
+                        "properties": {
+                          "x": {
+                            "types": [
+                              "number"
+                            ]
+                          },
+                          "y": {
+                            "types": [
+                              "number"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ]
+                      }
+                    },
+                    "color": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "samples"
+                  ]
+                }
+              },
+              "xLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "yLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "frameColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundOpacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "series"
+            ]
+          }
+        },
+        "showGrid": {
+          "types": [
+            "boolean"
+          ],
+          "description": "3D only: show the ground grid (default off)."
+        },
+        "shadows": {
+          "types": [
+            "boolean"
+          ],
+          "description": "3D only: enable shadows. Omitted → the host default."
+        },
         "interactive": {
           "types": [
             "boolean"
           ],
-          "description": "interactive prop",
-          "default": false
+          "description": "2D: pointer interaction (click/hover). 3D: orbit camera controls."
         },
         "animate": {
           "types": [
             "boolean"
           ],
-          "description": "animate prop",
+          "description": "2D only: continuous redraw loop. 3D motion is entity-state driven.",
           "default": false
         },
         "onShapeClick": {
@@ -37697,6 +39171,20 @@
           "description": "gridStep prop",
           "default": 1
         },
+        "showTickLabels": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Draw numeric labels on grid lines (default false).",
+          "default": false
+        },
+        "showCurveLabels": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Draw each curve's `label` at its last in-range sample (default false).",
+          "default": false
+        },
         "curves": {
           "types": [
             "array"
@@ -37742,6 +39230,15 @@
                     "y"
                   ]
                 }
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
               }
             },
             "required": [
@@ -37783,6 +39280,15 @@
               "radius": {
                 "types": [
                   "number"
+                ]
+              },
+              "style": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "closed",
+                  "open"
                 ]
               }
             },
@@ -37843,6 +39349,288 @@
           },
           "default": []
         },
+        "regions": {
+          "types": [
+            "array"
+          ],
+          "description": "Filled areas under curves or between curve pairs.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "samples": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "x": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "y": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ]
+                }
+              },
+              "samples2": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "x": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "y": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ]
+                }
+              },
+              "baseline": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "samples"
+            ]
+          },
+          "default": []
+        },
+        "bars": {
+          "types": [
+            "array"
+          ],
+          "description": "Riemann/histogram bar strips.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y0": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y1": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "width",
+              "y1"
+            ]
+          },
+          "default": []
+        },
+        "guides": {
+          "types": [
+            "array"
+          ],
+          "description": "Fixed reference lines (vline/hline).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "vline",
+                  "hline"
+                ]
+              },
+              "at": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "kind",
+              "at"
+            ]
+          },
+          "default": []
+        },
+        "angles": {
+          "types": [
+            "array"
+          ],
+          "description": "Angle-sweep arcs at a vertex.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "from": {
+                "types": [
+                  "number"
+                ]
+              },
+              "to": {
+                "types": [
+                  "number"
+                ]
+              },
+              "radius": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "from",
+              "to"
+            ]
+          },
+          "default": []
+        },
+        "hops": {
+          "types": [
+            "array"
+          ],
+          "description": "Number-line jump arcs.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "from": {
+                "types": [
+                  "number"
+                ]
+              },
+              "to": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          },
+          "default": []
+        },
         "shapes": {
           "types": [
             "array"
@@ -37861,12 +39649,14 @@
                   "line",
                   "arrow",
                   "circle",
+                  "ellipse",
                   "rect",
                   "polygon",
                   "path",
                   "text",
                   "axis",
-                  "grid"
+                  "grid",
+                  "venn-region"
                 ]
               },
               "id": {
@@ -38018,6 +39808,45 @@
                 "types": [
                   "number"
                 ]
+              },
+              "startAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "inside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "outside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -38025,6 +39854,151 @@
             ]
           },
           "default": []
+        },
+        "readouts": {
+          "types": [
+            "array"
+          ],
+          "description": "Top-right status chips, forwarded verbatim to LearningCanvas.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "string",
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          }
+        },
+        "traces": {
+          "types": [
+            "array"
+          ],
+          "description": "Inset sparkline panels, forwarded verbatim to LearningCanvas.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "series": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "samples": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "object"
+                        ],
+                        "properties": {
+                          "x": {
+                            "types": [
+                              "number"
+                            ]
+                          },
+                          "y": {
+                            "types": [
+                              "number"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ]
+                      }
+                    },
+                    "color": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "samples"
+                  ]
+                }
+              },
+              "xLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "yLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "frameColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundOpacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "series"
+            ]
+          }
         },
         "interactive": {
           "types": [
@@ -38299,6 +40273,16 @@
                 "types": [
                   "string"
                 ]
+              },
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "rod",
+                  "spring",
+                  "string"
+                ]
               }
             },
             "required": [
@@ -38336,6 +40320,549 @@
           "description": "forceScale prop",
           "default": 20
         },
+        "sceneObjects": {
+          "types": [
+            "array"
+          ],
+          "description": "Ground/wall/ramp/box/pivot scene fixtures. 2D only.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ground",
+                  "wall",
+                  "ramp",
+                  "box",
+                  "pivot"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "x1": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y1": {
+                "types": [
+                  "number"
+                ]
+              },
+              "x2": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y2": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fill": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "default": []
+        },
+        "trails": {
+          "types": [
+            "array"
+          ],
+          "description": "Fading trajectory polylines (2D) / trajectory tubes (3D).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "points": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "x": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "y": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "z": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ]
+                }
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              },
+              "fade": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "points"
+            ]
+          },
+          "default": []
+        },
+        "vectors": {
+          "types": [
+            "array"
+          ],
+          "description": "Named force/velocity/free-body arrows, anchored by point or by body id. 2D only.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "body": {
+                "types": [
+                  "string"
+                ]
+              },
+              "dx": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dy": {
+                "types": [
+                  "number"
+                ]
+              },
+              "scale": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              }
+            },
+            "required": [
+              "dx",
+              "dy"
+            ]
+          },
+          "default": []
+        },
+        "surface3d": {
+          "types": [
+            "object"
+          ],
+          "description": "A 3D height-field surface mesh (wave, terrain, potential well). 3D only.",
+          "properties": {
+            "nx": {
+              "types": [
+                "number"
+              ]
+            },
+            "ny": {
+              "types": [
+                "number"
+              ]
+            },
+            "heights": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "spacing": {
+              "types": [
+                "number"
+              ]
+            },
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "bands": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "min": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "color"
+                ]
+              }
+            },
+            "color": {
+              "types": [
+                "string"
+              ]
+            },
+            "opacity": {
+              "types": [
+                "number"
+              ]
+            },
+            "flatShading": {
+              "types": [
+                "boolean"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "nx",
+            "ny",
+            "heights"
+          ]
+        },
+        "vectors3d": {
+          "types": [
+            "array"
+          ],
+          "description": "Labeled 3D arrows (field arrows, axis triads). 3D only.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dx": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dy": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dz": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "dx",
+              "dy"
+            ]
+          },
+          "default": []
+        },
+        "vectorScale": {
+          "types": [
+            "number"
+          ],
+          "description": "Multiplies every `vectors3d` entry's `dx`/`dy`/`dz` (default 1). 3D only.",
+          "default": 1
+        },
+        "angles": {
+          "types": [
+            "array"
+          ],
+          "description": "Angle arcs between two bearings. 2D only.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "from": {
+                "types": [
+                  "number"
+                ]
+              },
+              "to": {
+                "types": [
+                  "number"
+                ]
+              },
+              "radius": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y",
+              "from",
+              "to"
+            ]
+          },
+          "default": []
+        },
+        "field": {
+          "types": [
+            "object"
+          ],
+          "description": "A single uniform vector/into/out field lattice. 2D only.",
+          "properties": {
+            "kind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "arrows",
+                "into",
+                "out"
+              ]
+            },
+            "spacing": {
+              "types": [
+                "number"
+              ]
+            },
+            "angle": {
+              "types": [
+                "number"
+              ]
+            },
+            "size": {
+              "types": [
+                "number"
+              ]
+            },
+            "color": {
+              "types": [
+                "string"
+              ]
+            },
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "width": {
+              "types": [
+                "number"
+              ]
+            },
+            "height": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "kind"
+          ]
+        },
+        "meters": {
+          "types": [
+            "array"
+          ],
+          "description": "Bottom-left labeled bar gauges. 2D only.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "number"
+                ]
+              },
+              "max": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          },
+          "default": []
+        },
         "shapes": {
           "types": [
             "array"
@@ -38354,12 +40881,14 @@
                   "line",
                   "arrow",
                   "circle",
+                  "ellipse",
                   "rect",
                   "polygon",
                   "path",
                   "text",
                   "axis",
-                  "grid"
+                  "grid",
+                  "venn-region"
                 ]
               },
               "id": {
@@ -38511,6 +41040,45 @@
                 "types": [
                   "number"
                 ]
+              },
+              "startAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "inside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "outside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -38519,18 +41087,174 @@
           },
           "default": []
         },
+        "readouts": {
+          "types": [
+            "array"
+          ],
+          "description": "Top-right status chip row, forwarded to LearningCanvas verbatim.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "string",
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label",
+              "value"
+            ]
+          }
+        },
+        "traces": {
+          "types": [
+            "array"
+          ],
+          "description": "Inset sparkline panels, forwarded to LearningCanvas verbatim.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "series": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "samples": {
+                      "types": [
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "object"
+                        ],
+                        "properties": {
+                          "x": {
+                            "types": [
+                              "number"
+                            ]
+                          },
+                          "y": {
+                            "types": [
+                              "number"
+                            ]
+                          }
+                        },
+                        "required": [
+                          "x",
+                          "y"
+                        ]
+                      }
+                    },
+                    "color": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "samples"
+                  ]
+                }
+              },
+              "xLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "yLabel": {
+                "types": [
+                  "string"
+                ]
+              },
+              "frameColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundColor": {
+                "types": [
+                  "string"
+                ]
+              },
+              "backgroundOpacity": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "series"
+            ]
+          }
+        },
+        "showGrid": {
+          "types": [
+            "boolean"
+          ],
+          "description": "3D only: show the ground grid (default off)."
+        },
+        "shadows": {
+          "types": [
+            "boolean"
+          ],
+          "description": "3D only: enable shadows. Omitted → the host default."
+        },
         "interactive": {
           "types": [
             "boolean"
           ],
-          "description": "interactive prop",
-          "default": false
+          "description": "2D: pointer interaction (click/hover). 3D: orbit camera controls."
         },
         "animate": {
           "types": [
             "boolean"
           ],
-          "description": "animate prop",
+          "description": "2D only: continuous redraw loop. 3D motion is entity-state driven.",
           "default": false
         },
         "onShapeClick": {
@@ -38982,6 +41706,33 @@
                 "types": [
                   "string"
                 ]
+              },
+              "corner": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "tl": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "tr": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "bl": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "br": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                }
               }
             },
             "required": [
@@ -38995,7 +41746,7 @@
           "types": [
             "array"
           ],
-          "description": "Index cursors (i/j/lo/hi/mid); drawn as markers beneath the referenced bar/cell column.",
+          "description": "Index cursors (i/j/lo/hi/mid); drawn as markers beneath the referenced bar/slot column.",
           "items": {
             "types": [
               "object"
@@ -39023,6 +41774,297 @@
           },
           "default": []
         },
+        "ranges": {
+          "types": [
+            "array"
+          ],
+          "description": "Highlighted index ranges over the bars panel (translucent fill bands or labeled brackets).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "from": {
+                "types": [
+                  "number"
+                ]
+              },
+              "to": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "fill",
+                  "bracket"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          },
+          "default": []
+        },
+        "slots": {
+          "types": [
+            "array"
+          ],
+          "description": "Discrete value slots (registers/variables); laid out in a row or a vertical stack.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "types": [
+                  "string",
+                  "number"
+                ]
+              },
+              "state": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "empty",
+                  "filled",
+                  "highlight"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            }
+          },
+          "default": []
+        },
+        "slotOrientation": {
+          "types": [
+            "string"
+          ],
+          "description": "Slot stack direction; horizontal lays slots left-to-right, vertical stacks bottom-up.",
+          "enumValues": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal"
+        },
+        "frames": {
+          "types": [
+            "array"
+          ],
+          "description": "Recursion/call-stack frames; laid out bottom-up like a real call stack.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "detail": {
+                "types": [
+                  "string"
+                ]
+              },
+              "state": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "active",
+                  "returning",
+                  "done"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "label"
+            ]
+          },
+          "default": []
+        },
+        "buckets": {
+          "types": [
+            "array"
+          ],
+          "description": "Hash-table buckets; each row is an index chip plus its chained entries.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "index": {
+                "types": [
+                  "number"
+                ]
+              },
+              "entries": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "label": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "state": {
+                      "types": [
+                        "string"
+                      ],
+                      "enumValues": [
+                        "default",
+                        "highlight",
+                        "probing"
+                      ]
+                    },
+                    "color": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "label"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "index",
+              "entries"
+            ]
+          },
+          "default": []
+        },
+        "auxBars": {
+          "types": [
+            "array"
+          ],
+          "description": "Secondary bar strip inside the bars panel (e.g. a running total beside the primary values).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "value": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "value"
+            ]
+          },
+          "default": []
+        },
+        "rowLabels": {
+          "types": [
+            "array"
+          ],
+          "description": "Row-header labels drawn to the left of the cells grid.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "index": {
+                "types": [
+                  "number"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "index",
+              "text"
+            ]
+          },
+          "default": []
+        },
+        "colLabels": {
+          "types": [
+            "array"
+          ],
+          "description": "Column-header labels drawn above the cells grid.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "index": {
+                "types": [
+                  "number"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "index",
+              "text"
+            ]
+          },
+          "default": []
+        },
         "shapes": {
           "types": [
             "array"
@@ -39041,12 +42083,14 @@
                   "line",
                   "arrow",
                   "circle",
+                  "ellipse",
                   "rect",
                   "polygon",
                   "path",
                   "text",
                   "axis",
-                  "grid"
+                  "grid",
+                  "venn-region"
                 ]
               },
               "id": {
@@ -39198,6 +42242,45 @@
                 "types": [
                   "number"
                 ]
+              },
+              "startAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "inside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "outside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -39381,7 +42464,12 @@
           "types": [
             "object"
           ],
-          "description": "style prop"
+          "description": "style prop",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "aria-hidden": {
           "types": [
@@ -39457,7 +42545,12 @@
           "types": [
             "object"
           ],
-          "description": "style prop"
+          "description": "style prop",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "children": {
           "types": [
@@ -39592,6 +42685,22 @@
           "items": {
             "types": [
               "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
             ]
           }
         },
@@ -39626,16 +42735,64 @@
             "from": {
               "types": [
                 "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
               ]
             },
             "to": {
               "types": [
                 "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
               ]
             },
             "center": {
               "types": [
                 "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
               ]
             },
             "radius": {
@@ -39735,16 +42892,64 @@
             "from": {
               "types": [
                 "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
               ]
             },
             "to": {
               "types": [
                 "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
               ]
             },
             "center": {
               "types": [
                 "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
               ]
             },
             "radius": {
@@ -39835,7 +43040,23 @@
           "types": [
             "object"
           ],
-          "description": "Rotation pivot in world units relative to the cell's projected top-left; default `{x:0.5, y:0.5}` (cell center)."
+          "description": "Rotation pivot in world units relative to the cell's projected top-left; default `{x:0.5, y:0.5}` (cell center).",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ]
         },
         "shadow": {
           "types": [
@@ -40169,7 +43390,35 @@
           "types": [
             "object"
           ],
-          "description": "Explicit atlas sub-rect override (px); omitted → resolved from `asset.atlas`/`asset.sprite`."
+          "description": "Explicit atlas sub-rect override (px); omitted → resolved from `asset.atlas`/`asset.sprite`.",
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "w": {
+              "types": [
+                "number"
+              ]
+            },
+            "h": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y",
+            "w",
+            "h"
+          ]
         },
         "animation": {
           "types": [
@@ -40205,7 +43454,23 @@
           "types": [
             "object"
           ],
-          "description": "Drop shadow (e.g. a team-colored glow)."
+          "description": "Drop shadow (e.g. a team-colored glow).",
+          "properties": {
+            "color": {
+              "types": [
+                "string"
+              ]
+            },
+            "blur": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "color",
+            "blur"
+          ]
         }
       },
       "drawable": true
@@ -40305,15 +43570,30 @@
         },
         "align": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "align prop"
+          "description": "align prop",
+          "enumValues": [
+            "center",
+            "end",
+            "left",
+            "right",
+            "start"
+          ]
         },
         "baseline": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "baseline prop"
+          "description": "baseline prop",
+          "enumValues": [
+            "alphabetic",
+            "bottom",
+            "hanging",
+            "ideographic",
+            "middle",
+            "top"
+          ]
         },
         "opacity": {
           "types": [
@@ -40448,6 +43728,22 @@
                 "items": {
                   "types": [
                     "object"
+                  ],
+                  "properties": {
+                    "x": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "y": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
                   ]
                 }
               },
@@ -40479,16 +43775,64 @@
                   "from": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "x": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "y": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
                     ]
                   },
                   "to": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "x": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "y": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
                     ]
                   },
                   "center": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "x": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "y": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
                     ]
                   },
                   "radius": {
@@ -40584,16 +43928,64 @@
                   "from": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "x": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "y": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
                     ]
                   },
                   "to": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "x": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "y": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
                     ]
                   },
                   "center": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "x": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "y": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y"
                     ]
                   },
                   "radius": {
@@ -40678,6 +44070,22 @@
               "pivot": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
                 ]
               },
               "shadow": {
@@ -41026,6 +44434,34 @@
               "frame": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "w": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "h": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "w",
+                  "h"
                 ]
               },
               "animation": {
@@ -41056,6 +44492,22 @@
               "shadow": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "blur": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "color",
+                  "blur"
                 ]
               }
             },
@@ -41171,12 +44623,27 @@
               },
               "align": {
                 "types": [
-                  "object"
+                  "string"
+                ],
+                "enumValues": [
+                  "center",
+                  "end",
+                  "left",
+                  "right",
+                  "start"
                 ]
               },
               "baseline": {
                 "types": [
-                  "object"
+                  "string"
+                ],
+                "enumValues": [
+                  "alphabetic",
+                  "bottom",
+                  "hanging",
+                  "ideographic",
+                  "middle",
+                  "top"
                 ]
               },
               "opacity": {
@@ -42738,6 +46205,565 @@
         }
       },
       "drawable": true
+    },
+    "algo-graph-canvas": {
+      "type": "algo-graph-canvas",
+      "category": "learning",
+      "tier": "molecules",
+      "family": "learning",
+      "description": "AlgoGraphCanvas component",
+      "suggestedFor": [
+        "algo",
+        "graph",
+        "canvas",
+        "algo graph canvas"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "width": {
+          "types": [
+            "number"
+          ],
+          "description": "width prop",
+          "default": 600
+        },
+        "height": {
+          "types": [
+            "number"
+          ],
+          "description": "height prop",
+          "default": 400
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "title prop"
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "backgroundColor prop"
+        },
+        "nodes": {
+          "types": [
+            "array"
+          ],
+          "description": "nodes prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "state": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "unvisited",
+                  "frontier",
+                  "current",
+                  "visited",
+                  "goal",
+                  "path"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "radius": {
+                "types": [
+                  "number"
+                ]
+              },
+              "badge": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "text": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "text"
+                ]
+              }
+            },
+            "required": [
+              "id"
+            ]
+          },
+          "default": []
+        },
+        "edges": {
+          "types": [
+            "array"
+          ],
+          "description": "edges prop",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "from": {
+                "types": [
+                  "string"
+                ]
+              },
+              "to": {
+                "types": [
+                  "string"
+                ]
+              },
+              "directed": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "weight": {
+                "types": [
+                  "number"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "state": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "default",
+                  "tree",
+                  "relaxed",
+                  "candidate",
+                  "path"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          },
+          "default": []
+        },
+        "layout": {
+          "types": [
+            "string"
+          ],
+          "description": "Deterministic layout to compute node positions; `manual` passes through `x`/`y`.",
+          "enumValues": [
+            "manual",
+            "tree",
+            "layered",
+            "circle"
+          ],
+          "default": "manual"
+        },
+        "root": {
+          "types": [
+            "string"
+          ],
+          "description": "`tree` layout only: preferred root id. Falls back to the first indegree-0 node."
+        },
+        "shapes": {
+          "types": [
+            "array"
+          ],
+          "description": "Extra declarative shapes in canvas pixel coordinates.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "line",
+                  "arrow",
+                  "circle",
+                  "ellipse",
+                  "rect",
+                  "polygon",
+                  "path",
+                  "text",
+                  "axis",
+                  "grid",
+                  "venn-region"
+                ]
+              },
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "x1": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y1": {
+                "types": [
+                  "number"
+                ]
+              },
+              "x2": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y2": {
+                "types": [
+                  "number"
+                ]
+              },
+              "radius": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              },
+              "height": {
+                "types": [
+                  "number"
+                ]
+              },
+              "points": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "x": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "y": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ]
+                }
+              },
+              "path": {
+                "types": [
+                  "string"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fontSize": {
+                "types": [
+                  "number"
+                ]
+              },
+              "align": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "left",
+                  "center",
+                  "right"
+                ]
+              },
+              "axis": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "x",
+                  "y"
+                ]
+              },
+              "min": {
+                "types": [
+                  "number"
+                ]
+              },
+              "max": {
+                "types": [
+                  "number"
+                ]
+              },
+              "step": {
+                "types": [
+                  "number"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "fill": {
+                "types": [
+                  "string"
+                ]
+              },
+              "lineWidth": {
+                "types": [
+                  "number"
+                ]
+              },
+              "opacity": {
+                "types": [
+                  "number"
+                ]
+              },
+              "startAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endAngle": {
+                "types": [
+                  "number"
+                ]
+              },
+              "dash": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "dashed",
+                  "dotted"
+                ]
+              },
+              "inside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "outside": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "type"
+            ]
+          },
+          "default": []
+        },
+        "interactive": {
+          "types": [
+            "boolean"
+          ],
+          "description": "interactive prop",
+          "default": false
+        },
+        "animate": {
+          "types": [
+            "boolean"
+          ],
+          "description": "animate prop",
+          "default": false
+        },
+        "onShapeClick": {
+          "types": [
+            "function"
+          ],
+          "description": "onShapeClick prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "payload",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "type": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "index": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "index"
+                ]
+              }
+            }
+          ]
+        },
+        "onNodeClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Fires when a node circle is clicked, alongside `onShapeClick`.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "payload",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "index": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "index"
+                ]
+              }
+            }
+          ]
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "isLoading prop"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "error prop",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        }
+      }
     }
   },
   "categories": [

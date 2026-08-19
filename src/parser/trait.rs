@@ -330,6 +330,7 @@ impl Parser {
             span,
             reference: Some(TraitRefData {
                 reference,
+                name_override: body.name_override,
                 events: body.events,
                 fields: body.fields,
                 config: body.config,
@@ -355,6 +356,7 @@ impl Parser {
         let mut config_values: Vec<ConfigField> = Vec::new();
         let mut listens: Vec<Listen> = Vec::new();
         let mut emits_scope: Option<String> = None;
+        let mut name_override: Option<String> = None;
 
         loop {
             self.skip_newlines();
@@ -552,6 +554,26 @@ impl Parser {
                     got: "on".to_string(),
                     span: event_span,
                 });
+            } else if self.check_ident("name") {
+                // `name: "InstanceName"` — instance-name override. Lets one
+                // source trait be rebound multiple times in one orbital: the
+                // declaration identifier stays free while this names the
+                // instance (mount handle, duplicate-name disambiguation).
+                self.advance();
+                if matches!(self.peek(), TokenKind::Colon) {
+                    self.advance();
+                }
+                let value = match self.peek().clone() {
+                    TokenKind::String(v) => {
+                        self.advance();
+                        v
+                    }
+                    _ => self.expect_ident()?,
+                };
+                name_override = Some(value);
+                if matches!(self.peek(), TokenKind::Newline) {
+                    self.advance();
+                }
             } else if self.check_ident("listens") {
                 listens.extend(self.parse_listens_block()?);
             } else if self.check_ident("emitsScope") {
@@ -566,7 +588,7 @@ impl Parser {
                 }
             } else {
                 return Err(ParseError::UnexpectedToken {
-                    expected: "events, fields, config, listens, emitsScope, or }".to_string(),
+                    expected: "events, fields, config, listens, emitsScope, name, or }".to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
                 });
@@ -579,6 +601,7 @@ impl Parser {
             config: config_values,
             listens,
             emits_scope,
+            name_override,
         })
     }
 

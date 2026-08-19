@@ -435,6 +435,7 @@ impl Parser {
             config: Vec::new(),
             span,
             reference: Some(TraitRefData {
+                name_override: None,
                 reference,
                 events: body.events,
                 fields: body.fields,

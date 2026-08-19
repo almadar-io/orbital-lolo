@@ -918,6 +918,13 @@ impl Formatter {
     }
 
     fn fmt_trait_ref_overrides(&mut self, ref_data: &TraitRefData) {
+        if let Some(name) = &ref_data.name_override {
+            self.write_indent();
+            self.output.push_str("name: \"");
+            self.output.push_str(name);
+            self.output.push('"');
+            self.write_newline();
+        }
         if !ref_data.events.is_empty() {
             self.write_indent();
             self.output.push_str("events {");

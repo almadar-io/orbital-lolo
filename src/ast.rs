@@ -483,6 +483,8 @@ pub struct TraitRefBody {
     pub config: Vec<ConfigField>,
     pub listens: Vec<Listen>,
     pub emits_scope: Option<String>,
+    /// `name: "InstanceName"` — instance-name override for the reference.
+    pub name_override: Option<String>,
 }
 
 /// Override payload for a `trait Name = Alias.traits.Upstream { ... }` form.
@@ -490,6 +492,11 @@ pub struct TraitRefBody {
 pub struct TraitRefData {
     /// Dotted path: e.g. `"Modal.traits.ModalRecordModal"`.
     pub reference: String,
+    /// `name: "InstanceName"` — instance-name override lowered to `name` on
+    /// the trait reference. Disambiguates multiple rebinds of one source
+    /// trait in a single orbital (the declaration identifier stays free for
+    /// embed unification); absent, the declaration identifier is the name.
+    pub name_override: Option<String>,
     /// Event-key renames in source order: `[("OPEN", "ADD_ITEM"), ...]`.
     /// Lowered to `events: { OPEN: "ADD_ITEM" }` on the trait reference.
     pub events: Vec<(String, String)>,

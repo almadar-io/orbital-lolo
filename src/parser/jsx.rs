@@ -424,6 +424,7 @@ impl Parser {
             config: Vec::new(),
             span,
             reference: Some(TraitRefData {
+                name_override: None,
                 reference,
                 events: Vec::new(),
                 fields: Vec::new(),

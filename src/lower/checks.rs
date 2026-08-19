@@ -974,15 +974,23 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                 );
             }
         }
-        // Target field set — only known fully for an inline entity. An `extends`
-        // target inherits fields not visible until inline, so row-constraints
-        // are skipped there (compiler backstop covers it).
-        let entity_fields: Option<HashSet<String>> = match &orbital.entity {
-            EntityRef::Inline(ed) => {
-                Some(ed.fields.iter().filter_map(|f| f.name.clone()).collect())
+        // Per-entity field sets — primary + auxiliary inline entities, keyed by
+        // name, so a trait's row-constraints resolve against the entity it is
+        // actually rebound to (`linkedEntity`), not the first-declared block.
+        // Only inline definitions are known here; an `extends`/reference target
+        // (or a compose-time `expects entity`) is absent from the map and its
+        // check is skipped (compiler backstop covers it).
+        let mut entity_fields_by_name: HashMap<String, HashSet<String>> = HashMap::new();
+        for ent_ref in std::iter::once(&orbital.entity)
+            .chain(orbital.auxiliary_entities.iter().flatten())
+        {
+            if let EntityRef::Inline(ed) = ent_ref {
+                entity_fields_by_name.insert(
+                    ed.name.clone(),
+                    ed.fields.iter().filter_map(|f| f.name.clone()).collect(),
+                );
             }
-            _ => None,
-        };
+        }
 
         for tref in &orbital.traits {
             let TraitReference::Reference {
@@ -1023,7 +1031,10 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                         });
                     };
                     // 3.3 row-constraints (inline-entity targets only).
-                    if let (Some(fields), Some(ent)) = (&entity_fields, linked_entity) {
+                    if let Some((ent, fields)) = linked_entity
+                        .as_ref()
+                        .and_then(|ent| entity_fields_by_name.get(ent).map(|f| (ent, f)))
+                    {
                         let missing: Vec<String> = tc
                             .requires
                             .iter()
