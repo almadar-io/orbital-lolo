@@ -273,6 +273,7 @@ impl Parser {
                 name: String::new(),
                 version: None,
                 description: None,
+                theme: None,
                 span: self.peek_span(),
             }
         };
@@ -340,10 +341,20 @@ impl Parser {
         } else {
             None
         };
+        // Optional `theme "<key>"` line closing the header block — the
+        // app-level skin every orbital's `@currentTheme` seeds from. Must be
+        // consumed here: the top-level loop accepts only `type`/`orbital`.
+        self.skip_newlines();
+        let theme = if self.check_ident("theme") {
+            Some(self.parse_orbital_theme()?)
+        } else {
+            None
+        };
         Ok(AppHeader {
             name,
             version,
             description,
+            theme,
             span,
         })
     }
@@ -491,7 +502,7 @@ impl Parser {
                 Ok(s)
             }
             other => Err(ParseError::UnexpectedToken {
-                expected: "a quoted theme name, e.g. theme \"linear-clean\"".to_string(),
+                expected: "a quoted theme key, e.g. theme \"linear-clean-light\"".to_string(),
                 got: format!("{:?}", other),
                 span: self.peek_span(),
             }),
@@ -818,6 +829,30 @@ mod tests {
         let prog = p("app MyApp v1\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
         assert_eq!(prog.app.name, "MyApp");
         assert_eq!(prog.app.version, Some("1".to_string()));
+        assert_eq!(prog.app.theme, None);
+    }
+
+    #[test]
+    fn parse_app_header_theme_after_description() {
+        let prog = p("app MyApp \"1.0.0\"\n\"A themed app\"\ntheme \"linear-clean-light\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
+        assert_eq!(prog.app.description, Some("A themed app".to_string()));
+        assert_eq!(prog.app.theme, Some("linear-clean-light".to_string()));
+        assert_eq!(prog.orbitals.len(), 1);
+    }
+
+    #[test]
+    fn parse_app_header_theme_without_description() {
+        let prog = p("app MyApp \"1.0.0\"\ntheme \"terminal-dark\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
+        assert_eq!(prog.app.description, None);
+        assert_eq!(prog.app.theme, Some("terminal-dark".to_string()));
+        assert_eq!(prog.orbitals.len(), 1);
+    }
+
+    #[test]
+    fn app_theme_does_not_capture_orbital_theme() {
+        let prog = p("app MyApp \"1.0.0\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme \"clay-light\"\n}");
+        assert_eq!(prog.app.theme, None);
+        assert_eq!(prog.orbitals[0].theme, Some("clay-light".to_string()));
     }
 
     #[test]

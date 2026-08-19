@@ -233,6 +233,11 @@ fn lower_to_orb_names_only(
         },
         version: ast.app.version.clone(),
         description: ast.app.description.clone(),
+        theme: ast
+            .app
+            .theme
+            .clone()
+            .map(orbital_core::schema::ThemeRef::Reference),
         orbitals,
         metadata: None,
         ledger: None,
@@ -620,6 +625,28 @@ mod tests {
         let s = lower("orbital Foo { entity Bar { id : string! } }");
         assert_eq!(s.name, "Foo");
         assert_eq!(s.orbitals.len(), 1);
+        assert!(s.theme.is_none());
+    }
+
+    #[test]
+    fn lower_app_theme_and_format_round_trip() {
+        let src = "app MyApp \"1.0.0\"\n\"Desc\"\ntheme \"linear-clean-light\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}";
+        let s = lower(src);
+        match &s.theme {
+            Some(orbital_core::schema::ThemeRef::Reference(k)) => {
+                assert_eq!(k, "linear-clean-light")
+            }
+            other => panic!("expected app theme reference, got {:?}", other),
+        }
+        // Formatter must re-emit the header theme line or `orb fmt` eats it.
+        let ast = parse_str(src).expect("parse");
+        let formatted = crate::format::format_program(&ast);
+        assert!(
+            formatted.contains("theme \"linear-clean-light\""),
+            "formatted output lost the app theme line:\n{formatted}"
+        );
+        let reparsed = parse_str(&formatted).expect("reparse formatted");
+        assert_eq!(reparsed.app.theme, Some("linear-clean-light".to_string()));
     }
 
     #[test]

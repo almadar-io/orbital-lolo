@@ -54,6 +54,10 @@ pub struct AppHeader {
     pub name: String,
     pub version: Option<String>,
     pub description: Option<String>,
+    /// `theme "<key>"` on the line after the header — the APP-level skin
+    /// every orbital's `@currentTheme` seeds from unless the orbital
+    /// declares its own `theme`. A full `<base>-<light|dark>` registry key.
+    pub theme: Option<String>,
     pub span: Span,
 }
 

@@ -154,6 +154,12 @@ impl Formatter {
             self.write_indent();
             self.write_quoted_string(desc);
         }
+        if let Some(theme) = &app.theme {
+            self.write_newline();
+            self.write_indent();
+            self.output.push_str("theme ");
+            self.write_quoted_string(theme);
+        }
     }
 
     fn fmt_type_alias(&mut self, alias: &TypeAlias) {
