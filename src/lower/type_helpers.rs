@@ -136,6 +136,9 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
         // A semantic domain accepts a string literal/expression. Without this,
         // `SUBMIT_FORM { email: email }` payloads fail the emit check.
         "email" | "url" | "phone" | "uuid" | "image" => actual == "string",
+        // Money is numeric at rest; file is the canonical struct value.
+        "money" => actual == "number",
+        "file" => actual == "object",
         "entity" | "relation" => actual == "object" || actual == "string",
         _ => false,
     }

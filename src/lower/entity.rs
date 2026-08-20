@@ -296,7 +296,14 @@ pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
     Some(match name {
         // `icon`/`component` are refinement types over string (validity enforced
         // at the render-ui layer); they lower to a plain string field.
-        "string" | "money" | "any" | "icon" | "component" => FieldType::String,
+        "string" | "any" | "icon" | "component" => FieldType::String,
+        // Promoted 2026-08-20 (was collapsed to String — the schema lied about
+        // the value's shape): money is numeric at rest; file is the canonical
+        // {name, url, mimeType, sizeBytes} struct. The declared type — never a
+        // field-name heuristic — drives currency inputs/formatting and the
+        // upload dropzone + download-chip rendering on both paths.
+        "money" => FieldType::Money,
+        "file" => FieldType::File,
         // Semantic string domains, now first-class field types rather than
         // subtypes that erased to `string`. Closes the "no format validation yet"
         // half of Gap G-LOLO-TYPENAME-SILENT-FALLBACK: the declared domain

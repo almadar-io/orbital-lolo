@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-19T03:03:56.666Z",
+  "exportedAt": "2026-08-20T05:24:05.750Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1236,6 +1236,7 @@
       "tier": "organisms",
       "family": "core",
       "description": "Detail view panel for drawers/sidebars",
+      "fieldsContract": "display",
       "suggestedFor": [
         "drawer content",
         "side panels",
@@ -1517,6 +1518,54 @@
             ]
           }
         },
+        "backAction": {
+          "types": [
+            "object"
+          ],
+          "description": "Navigation-back affordance. Renders top-LEFT before the title (OS/back convention — Almadar_UX §8.4), spatially separated from the right-aligned action buttons + close X. Never inferred from actions[] labels.",
+          "properties": {
+            "label": {
+              "types": [
+                "string"
+              ]
+            },
+            "icon": {
+              "types": [
+                "icon",
+                "string"
+              ]
+            },
+            "onClick": {
+              "types": [
+                "function"
+              ]
+            },
+            "event": {
+              "types": [
+                "string"
+              ]
+            },
+            "navigatesTo": {
+              "types": [
+                "string"
+              ]
+            },
+            "variant": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "primary",
+                "secondary",
+                "ghost",
+                "danger"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "label"
+          ]
+        },
         "footer": {
           "types": [
             "node"
@@ -1548,6 +1597,26 @@
                 ]
               },
               "header": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "values": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "relation": {
                 "types": [
                   "string"
                 ]
@@ -1615,6 +1684,48 @@
             "boolean"
           ],
           "description": "Show actions flag"
+        },
+        "relationsData": {
+          "types": [
+            "object"
+          ],
+          "description": "Relation display data: { fieldName: [{value, label}] } — injected server-side by the runtime (relation-option injection) or bound by compiled codegen; resolves stored foreign ids to display names.",
+          "mapValue": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "value": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "disabled": {
+                  "types": [
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          }
         }
       }
     },
@@ -1886,6 +1997,7 @@
       "tier": "organisms",
       "family": "core",
       "description": "Complete form with fields and actions",
+      "fieldsContract": "form",
       "suggestedFor": [
         "create forms",
         "edit forms",
@@ -2118,6 +2230,11 @@
                 "types": [
                   "boolean"
                 ]
+              },
+              "hint": {
+                "types": [
+                  "string"
+                ]
               }
             }
           }
@@ -2269,6 +2386,42 @@
             ]
           },
           "default": {}
+        },
+        "fieldOverrides": {
+          "types": [
+            "array"
+          ],
+          "description": "Per-field display-copy overrides (label/placeholder/hint), merged by field name over the schema-enriched fields.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "placeholder": {
+                "types": [
+                  "string"
+                ]
+              },
+              "hint": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
         },
         "conditionalFields": {
           "types": [
@@ -2611,6 +2764,11 @@
                     "disabled": {
                       "types": [
                         "boolean"
+                      ]
+                    },
+                    "hint": {
+                      "types": [
+                        "string"
                       ]
                     }
                   }
@@ -2695,6 +2853,7 @@
       "tier": "organisms",
       "family": "core",
       "description": "Alias for form — Complete form with fields and actions",
+      "fieldsContract": "form",
       "suggestedFor": [
         "create forms",
         "edit forms",
@@ -2927,6 +3086,11 @@
                 "types": [
                   "boolean"
                 ]
+              },
+              "hint": {
+                "types": [
+                  "string"
+                ]
               }
             }
           }
@@ -3078,6 +3242,42 @@
             ]
           },
           "default": {}
+        },
+        "fieldOverrides": {
+          "types": [
+            "array"
+          ],
+          "description": "Per-field display-copy overrides (label/placeholder/hint), merged by field name over the schema-enriched fields.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "placeholder": {
+                "types": [
+                  "string"
+                ]
+              },
+              "hint": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "name"
+            ]
+          }
         },
         "conditionalFields": {
           "types": [
@@ -3420,6 +3620,11 @@
                     "disabled": {
                       "types": [
                         "boolean"
+                      ]
+                    },
+                    "hint": {
+                      "types": [
+                        "string"
                       ]
                     }
                   }
@@ -40051,6 +40256,28 @@
               }
             }
           ]
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}` — same contract as the game canvas keyMap.",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keyup `e.code` → the board's SEMANTIC event.",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "isLoading": {
           "types": [

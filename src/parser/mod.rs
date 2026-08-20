@@ -687,6 +687,9 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
             | "datetime"
             | "duration"
             | "money"
+            // Uploaded file/attachment — a struct value at rest
+            // ({name, url, mimeType, sizeBytes}); promoted 2026-08-20.
+            | "file"
             // Semantic string domains — first-class types, not refinements.
             // Listing them here is what makes `email : email` parse as a
             // primitive instead of an unknown named type that erases to string.
