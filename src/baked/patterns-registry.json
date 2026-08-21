@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-20T23:14:19.545Z",
+  "exportedAt": "2026-08-21T10:52:11.515Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1517,6 +1517,12 @@
               "label"
             ]
           }
+        },
+        "maxInlineActions": {
+          "types": [
+            "number"
+          ],
+          "description": "Max inline action buttons before the rest collapse into a \"⋯\" overflow menu (mirrors DataGrid's maxInlineActions). Omit = all inline."
         },
         "backAction": {
           "types": [
@@ -4418,8 +4424,9 @@
           "types": [
             "array"
           ],
-          "description": "Breadcrumb items",
-          "required": true,
+          "description": "Breadcrumb items. Omit together with `fromNavStack` to render the orbital-scoped navigation stack instead of an authored trail.",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -4466,6 +4473,20 @@
               "label"
             ]
           }
+        },
+        "fromNavStack": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Render the current orbital's navigation stack (NavStackProvider) as the trail: one crumb per visited/declared level, last entry current. The stack is client-session state both execution paths maintain; outside a provider this renders nothing.",
+          "default": false
+        },
+        "itemEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when a non-current crumb is clicked, with payload `{ label, href, index }` — the trait handles it with `(navigate ?href)`. Without it, stack crumbs navigate directly.",
+          "kind": "event"
         },
         "separator": {
           "types": [
