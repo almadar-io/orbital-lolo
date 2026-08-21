@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-21T10:52:11.515Z",
+  "exportedAt": "2026-08-21T17:33:36.142Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -7576,7 +7576,8 @@
           ],
           "description": "When set, renders a small X button on the right of the badge that invokes this handler — turns the badge into a removable chip. Used by the TagInput molecule and other \"list of removable values\" surfaces.",
           "kind": "callback",
-          "callbackArgs": []
+          "callbackArgs": [],
+          "default": ""
         },
         "removeLabel": {
           "types": [
@@ -25366,7 +25367,8 @@
           ],
           "description": "Called when the user clicks the remove (×) button",
           "kind": "callback",
-          "callbackArgs": []
+          "callbackArgs": [],
+          "default": ""
         },
         "removable": {
           "types": [
@@ -25409,7 +25411,8 @@
               "type": "string",
               "required": true
             }
-          ]
+          ],
+          "default": ""
         }
       }
     },
@@ -31831,7 +31834,8 @@
           ],
           "description": "Remove handler",
           "kind": "callback",
-          "callbackArgs": []
+          "callbackArgs": [],
+          "default": ""
         },
         "clickEvent": {
           "types": [
@@ -31859,7 +31863,8 @@
               "type": "number",
               "required": true
             }
-          ]
+          ],
+          "default": ""
         },
         "dropEvent": {
           "types": [
