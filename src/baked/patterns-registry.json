@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-20T05:24:05.750Z",
+  "exportedAt": "2026-08-20T23:14:19.545Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1800,9 +1800,10 @@
         },
         "status": {
           "types": [
-            "object"
+            "object",
+            "string"
           ],
-          "description": "Status badge",
+          "description": "Status badge — a bare string (an entity's status field bound directly, e.g. `status: @entity.status`) renders as a default-variant badge",
           "properties": {
             "label": {
               "types": [
@@ -2549,7 +2550,12 @@
             "formValues": {
               "types": [
                 "object"
-              ]
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ]
+              }
             },
             "globalVariables": {
               "types": [
@@ -2576,7 +2582,12 @@
             "entity": {
               "types": [
                 "object"
-              ]
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ]
+              }
             }
           },
           "propertyRequired": [
@@ -3405,7 +3416,12 @@
             "formValues": {
               "types": [
                 "object"
-              ]
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ]
+              }
             },
             "globalVariables": {
               "types": [
@@ -3432,7 +3448,12 @@
             "entity": {
               "types": [
                 "object"
-              ]
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ]
+              }
             }
           },
           "propertyRequired": [
@@ -13019,7 +13040,7 @@
           "types": [
             "object"
           ],
-          "description": "Current user info (optional - auto-populated from auth context if not provided)",
+          "description": "Current user info (optional - auto-populated from auth context if not provided). Accepts `null` as well as `undefined`: the `.lolo` substrate's signed-out spelling is `(if @config.viewerName {…} null)`, and the compiled path passes that `null` through verbatim.",
           "properties": {
             "name": {
               "types": [
@@ -13038,8 +13059,7 @@
             }
           },
           "propertyRequired": [
-            "name",
-            "email"
+            "name"
           ]
         },
         "headerActions": {
@@ -46991,6 +47011,566 @@
           ]
         }
       }
+    },
+    "fx-overlay": {
+      "type": "fx-overlay",
+      "category": "container",
+      "tier": "molecules",
+      "family": "core",
+      "description": "FxOverlay component",
+      "suggestedFor": [
+        "overlay",
+        "fx overlay"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "Live screen-space fx entries (the mechanic's fx list filtered to `space == \"screen\"`); mount starts each item's animation, ttl decay unmounts it.",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "effect": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "confetti",
+                  "flash",
+                  "shake",
+                  "sparkle",
+                  "float-text",
+                  "streak-glow"
+                ]
+              },
+              "message": {
+                "types": [
+                  "string"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "size": {
+                "types": [
+                  "number"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "ttl": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxTtl": {
+                "types": [
+                  "number"
+                ]
+              },
+              "bornAt": {
+                "types": [
+                  "number"
+                ]
+              },
+              "space": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "world",
+                  "screen"
+                ]
+              },
+              "particleCount": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vx": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vy": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vz": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "ttl"
+            ]
+          }
+        },
+        "tickMs": {
+          "types": [
+            "number"
+          ],
+          "description": "The fx mechanic's decay tick period in ms; per-item animation duration = maxTtl × tickMs. Default 500."
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "Wrapped content — the `shake` target and the overlay's bounds."
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional class names on the outermost element."
+        }
+      }
+    },
+    "draw-fx-layer": {
+      "type": "draw-fx-layer",
+      "category": "game",
+      "tier": "molecules",
+      "family": "game",
+      "description": "DrawFxLayer component",
+      "suggestedFor": [
+        "draw",
+        "layer",
+        "draw fx layer"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
+        "type": {
+          "types": [
+            "unknown"
+          ],
+          "description": "type prop",
+          "required": true
+        },
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "The live fx entries — the mechanic's `@entity.fx` list passed whole; `space: \"screen\"` entries are skipped (the overlay owns those).",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "position": {
+                "types": [
+                  "object"
+                ],
+                "scenePos": true,
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "z": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "x",
+                  "y"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "z": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "message": {
+                "types": [
+                  "string"
+                ]
+              },
+              "ttl": {
+                "types": [
+                  "number"
+                ]
+              },
+              "maxTtl": {
+                "types": [
+                  "number"
+                ]
+              },
+              "bornAt": {
+                "types": [
+                  "number"
+                ]
+              },
+              "space": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "world",
+                  "screen"
+                ]
+              },
+              "effect": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "confetti",
+                  "flash",
+                  "shake",
+                  "sparkle",
+                  "float-text",
+                  "streak-glow"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "size": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vx": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vy": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vz": {
+                "types": [
+                  "number"
+                ]
+              },
+              "particleCount": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "type",
+              "x",
+              "ttl"
+            ]
+          }
+        },
+        "presets": {
+          "types": [
+            "array"
+          ],
+          "description": "Consumer-declared effect vocabulary — one row per fx `type` (look + recipe). Unknown types fall back to a neutral spark burst.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "color": {
+                "types": [
+                  "string"
+                ]
+              },
+              "color2": {
+                "types": [
+                  "string"
+                ]
+              },
+              "size": {
+                "types": [
+                  "number"
+                ]
+              },
+              "shape": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "spark",
+                  "ring",
+                  "puff",
+                  "streak"
+                ]
+              },
+              "count": {
+                "types": [
+                  "number"
+                ]
+              },
+              "glow": {
+                "types": [
+                  "number"
+                ]
+              },
+              "gravity": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vx": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vy": {
+                "types": [
+                  "number"
+                ]
+              },
+              "vz": {
+                "types": [
+                  "number"
+                ]
+              },
+              "space": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "world",
+                  "screen"
+                ]
+              },
+              "effect": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "confetti",
+                  "flash",
+                  "shake",
+                  "sparkle",
+                  "float-text",
+                  "streak-glow"
+                ]
+              },
+              "particleCount": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "type"
+            ]
+          }
+        },
+        "art": {
+          "types": [
+            "object"
+          ],
+          "description": "Vector art per fx type (an asset-art map: type → anim-state → drawables); a type's `idle` state wins over sprites/procedural.",
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "mapValue": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "drawableSlot": true
+              }
+            }
+          }
+        },
+        "sprites": {
+          "types": [
+            "object"
+          ],
+          "description": "Sprite asset per fx type (an asset-manifest effects map) — used when no vector art matches.",
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "url": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "role": {
+                "types": [
+                  "string"
+                ]
+              },
+              "category": {
+                "types": [
+                  "string"
+                ]
+              },
+              "animations": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "style": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "pixel",
+                  "vector",
+                  "hd",
+                  "1-bit",
+                  "isometric"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ]
+              },
+              "dimension": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "2d",
+                  "3d"
+                ]
+              },
+              "aspect": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "1:1",
+                  "16:9",
+                  "5:7",
+                  "8:1"
+                ]
+              },
+              "atlas": {
+                "types": [
+                  "asset"
+                ]
+              },
+              "sprite": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "thumbnailUrl": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "url",
+              "role",
+              "category"
+            ]
+          }
+        },
+        "tickMs": {
+          "types": [
+            "number"
+          ],
+          "description": "The fx mechanic's decay tick period in ms; lifetime = maxTtl × tickMs. Default 500."
+        },
+        "textColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Floating-message text color when an item declares none. Default `#ffe066`."
+        }
+      },
+      "drawable": true,
+      "drawHost": true
     }
   },
   "categories": [
