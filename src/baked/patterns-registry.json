@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-21T17:33:36.142Z",
+  "exportedAt": "2026-08-22T08:33:22.708Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1522,7 +1522,8 @@
           "types": [
             "number"
           ],
-          "description": "Max inline action buttons before the rest collapse into a \"⋯\" overflow menu (mirrors DataGrid's maxInlineActions). Omit = all inline."
+          "description": "Max inline action buttons before the rest collapse into a \"⋯\" overflow menu (mirrors DataGrid's maxInlineActions). Defaults to 2 — primary + secondary visible, the rest under the menu — so every detail panel carries the same action pattern.",
+          "default": 2
         },
         "backAction": {
           "types": [
@@ -1689,7 +1690,8 @@
           "types": [
             "boolean"
           ],
-          "description": "Show actions flag"
+          "description": "When false, hides the action buttons + overflow menu (and the close ×). Defaults to true.",
+          "default": true
         },
         "relationsData": {
           "types": [
@@ -13367,25 +13369,25 @@
           "types": [
             "node"
           ],
-          "description": "Stat chips row — floats along the top edge"
+          "description": "Stat chips row — floats along the top edge. Legacy chrome surface: new behaviors emit HUD chrome via `render-ui \"hud-top\"` instead."
         },
         "addons": {
           "types": [
             "node"
           ],
-          "description": "Action cluster — floats bottom-right (End Turn, Fire, Reset, …)"
+          "description": "Action cluster — floats bottom-right (End Turn, Fire, Reset, …). Legacy chrome surface: new behaviors emit action chrome via `render-ui \"hud-bottom\"` or `\"floating\"` instead."
         },
         "controls": {
           "types": [
             "node"
           ],
-          "description": "Movement controls — floats bottom-left (d-pad / control-grid)."
+          "description": "Movement controls — floats bottom-left (d-pad / control-grid). Legacy chrome surface: new behaviors emit movement controls via `render-ui \"hud-bottom\"` instead."
         },
         "overlay": {
           "types": [
             "node"
           ],
-          "description": "Centered overlay layer (victory/defeat banners, dialogs)."
+          "description": "Centered overlay layer (victory/defeat banners, dialogs). Legacy chrome surface: new behaviors emit overlays via `render-ui \"overlay\"` (clear with `render-ui \"overlay\" null` on every exit) instead."
         },
         "className": {
           "types": [
@@ -13600,7 +13602,7 @@
           "types": [
             "string"
           ],
-          "description": "Game font key (future | future-narrow | pixel | blocks | mini) or a CSS font-family.",
+          "description": "Game display-font key (future | future-narrow | pixel | blocks | mini) or a CSS font-family. Scoped override of the theme contract's --font-family-display slot: titles and numerics take this face, body text follows the active theme.",
           "default": "future"
         },
         "data-theme": {
@@ -17011,6 +17013,13 @@
           ],
           "description": "Row field holding the start timestamp (ISO or epoch). Defaults to `startTime`.",
           "default": "startTime"
+        },
+        "endField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the end timestamp (ISO or epoch). Defaults to `endTime`. When a row carries an end, the event's chip renders in its start slot and every further slot it covers shows a subdued continuation bar — without this, multi-hour events silently collapsed to their first hour.",
+          "default": "endTime"
         },
         "colorField": {
           "types": [
@@ -29827,6 +29836,17 @@
           ],
           "default": "md"
         },
+        "variant": {
+          "types": [
+            "string"
+          ],
+          "description": "Layout variant: \"floating\" (default) renders a compact pill cluster that hugs its content width; \"bar\" preserves the legacy full-width split bar.",
+          "enumValues": [
+            "floating",
+            "bar"
+          ],
+          "default": "floating"
+        },
         "className": {
           "types": [
             "string"
@@ -30383,8 +30403,7 @@
             "number",
             "string"
           ],
-          "description": "Current value (defaults to 0 if not provided)",
-          "default": 0
+          "description": "Current value (defaults to 0 if not provided)"
         },
         "max": {
           "types": [
@@ -36139,6 +36158,17 @@
             "boolean"
           ],
           "description": "disabled prop"
+        },
+        "visibility": {
+          "types": [
+            "string"
+          ],
+          "description": "\"auto\" (default) renders only on coarse-pointer (touch) devices; \"always\" renders everywhere.",
+          "enumValues": [
+            "auto",
+            "always"
+          ],
+          "default": "auto"
         },
         "className": {
           "types": [

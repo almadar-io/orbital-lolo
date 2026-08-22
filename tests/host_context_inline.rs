@@ -184,8 +184,10 @@ fn multi_party_lambda_inline_refs_splice_into_host_scope() {
         "no hoisted reference may remain in the render tree"
     );
 
-    // Wrapper emits merged into the host (ButtonRender: ACTION, BadgeRender:
-    // REMOVE).
+    // Wrapper emits merged into the host (ButtonRender: ACTION). BadgeRender
+    // declares no static emits since the presence-gated outlet change —
+    // `onRemove` is an OFF-by-default knob whose emit is the caller-supplied
+    // event name, so there is no REMOVE to merge.
     let host = orbital
         .traits
         .iter()
@@ -201,7 +203,7 @@ fn multi_party_lambda_inline_refs_splice_into_host_scope() {
         .map(|e| e.event.as_str())
         .collect();
     assert!(
-        emits.contains(&"ACTION") && emits.contains(&"REMOVE"),
+        emits.contains(&"ACTION"),
         "wrapper emits must merge into the host: {emits:?}"
     );
 
