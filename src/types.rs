@@ -388,6 +388,7 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::EventRef => "event".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
+        TypeExpr::Secret => "secret".to_string(),
         TypeExpr::SExpr => "SExpr".to_string(),
     }
 }
@@ -566,6 +567,7 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         | TypeExpr::EventRef
         | TypeExpr::Slot
         | TypeExpr::Pattern
+        | TypeExpr::Secret
         | TypeExpr::SExpr => {}
     }
 }

@@ -729,6 +729,7 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         TypeExpr::EventRef => Some("event"),
         TypeExpr::Slot => Some("slot"),
         TypeExpr::Pattern => Some("pattern"),
+        TypeExpr::Secret => Some("secret"),
         TypeExpr::SExpr => Some("SExpr"),
         TypeExpr::Array(inner) => type_expr_config_only_type(inner),
         TypeExpr::Map(key, value) => {

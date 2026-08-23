@@ -384,6 +384,11 @@ pub enum TypeExpr {
     Slot,
     /// `pattern` — value is a pattern type name. Validated against `PATTERN_TYPES`.
     Pattern,
+    /// `secret` — value is a credential REFERENCE (an env-var key name for
+    /// `resolveCredentialRef`), never secret material itself. Config-only
+    /// (core's `SECRET_CONFIG_TYPES` contract, I-29): UI renders the knob as
+    /// a password input; traces/bakes mask it as defense-in-depth.
+    Secret,
     /// `SExpr` — value is a compiled s-expression (the `SExpr` brand from
     /// `@almadar/core`). Used for config fields that hold an s-expression
     /// (e.g. a `conditionalFields` visibility condition). Emits the recursive

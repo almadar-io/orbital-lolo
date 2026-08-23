@@ -405,6 +405,9 @@ impl Formatter {
             TypeExpr::Pattern => {
                 self.output.push_str("pattern");
             }
+            TypeExpr::Secret => {
+                self.output.push_str("secret");
+            }
             TypeExpr::SExpr => {
                 self.output.push_str("SExpr");
             }

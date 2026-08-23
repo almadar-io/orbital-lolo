@@ -484,6 +484,14 @@ impl Parser {
         if name == "pattern" {
             return Ok(TypeExpr::Pattern);
         }
+        // `secret` keyword as a type — value is a credential reference (an
+        // env-var key name), never the secret itself. Allowed only inside
+        // config { ... } blocks (core's SECRET_CONFIG_TYPES contract, I-29).
+        // Previously this silently parsed as Named("secret") — a meaningless
+        // user type that defeated the whole contract.
+        if name == "secret" {
+            return Ok(TypeExpr::Secret);
+        }
         // `SExpr` keyword as a type — value is a compiled s-expression (the
         // `@almadar/core` `SExpr` brand). Allowed only inside config { ... }
         // blocks. Emits the recursive `SExpr` TS type.

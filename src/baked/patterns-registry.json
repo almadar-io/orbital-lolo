@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-22T08:33:22.708Z",
+  "exportedAt": "2026-08-23T03:36:02.671Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -39451,6 +39451,26 @@
           ],
           "description": "gridStep prop",
           "default": 1
+        },
+        "backgroundColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Canvas fill color; `var(--token, fallback)` strings resolve against the active theme. Default transparent."
+        },
+        "gridColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Grid line color; resolves theme tokens (default `var(--color-border, #9ca3af)`).",
+          "default": "var(--color-border, #9ca3af)"
+        },
+        "axisColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Axis line color; resolves theme tokens (default `var(--color-muted-foreground, #374151)`).",
+          "default": "var(--color-muted-foreground, #374151)"
         },
         "showTickLabels": {
           "types": [
