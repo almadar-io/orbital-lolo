@@ -193,9 +193,9 @@ fn lower_to_orb_names_only(
                 local_entity_names.insert(ta.name.clone());
             }
         }
-        // The orbital's own entity is also addressable by name in emit payloads
-        // (`emits { SAVED :: CartItem }` where CartItem is the orbital entity).
-        if let Some(e) = &orb.entity {
+        // The orbital's own entities (primary and extras) are also addressable
+        // by name in emit payloads (`emits { SAVED :: CartItem }`).
+        for e in orb.entity.iter().chain(orb.extra_entities.iter()) {
             local_entities.insert(
                 e.name.clone(),
                 e.fields
@@ -483,25 +483,36 @@ fn lower_orbital(
     // computes itself, marked `@intrinsic` in the .lolo. These are excluded from
     // a rebindable trait's `entity_contract.requires` so the post-inline rebind
     // validator does NOT demand them on the rebind target (they travel WITH the
-    // trait via the inline field-merge). Collected from the orbital's primary
-    // entity (the only entity a `@rebindable` trait binds in std/app atoms).
-    let mut intrinsic_fields: HashSet<String> = HashSet::new();
-    for f in &entity.fields {
-        if f.is_intrinsic {
-            intrinsic_fields.insert(f.name.clone());
-        }
+    // trait via the inline field-merge). Collected per entity (primary and
+    // extras); each trait gets the set of the entity its `->` binding names,
+    // falling back to the primary's set when unbound or unmatched.
+    let mut intrinsic_by_entity: HashMap<&str, HashSet<String>> = HashMap::new();
+    for e in std::iter::once(entity).chain(orb.extra_entities.iter()) {
+        let set: HashSet<String> = e
+            .fields
+            .iter()
+            .filter(|f| f.is_intrinsic)
+            .map(|f| f.name.clone())
+            .collect();
+        intrinsic_by_entity.insert(e.name.as_str(), set);
     }
+    let primary_intrinsics = &intrinsic_by_entity[entity.name.as_str()];
 
     let mut traits = Vec::new();
     for (trait_index, t) in orb.traits.iter().enumerate() {
         let trait_base = format!("{base}.traits[{trait_index}]");
+        let intrinsic_fields = t
+            .linked_entity
+            .as_deref()
+            .and_then(|n| intrinsic_by_entity.get(n))
+            .unwrap_or(primary_intrinsics);
         traits.push(lower_trait_decl(
             t,
             aliases,
             entities,
             entity_names,
             event_aliases,
-            &intrinsic_fields,
+            intrinsic_fields,
             shared_entity_names,
             source_map,
             &trait_base,

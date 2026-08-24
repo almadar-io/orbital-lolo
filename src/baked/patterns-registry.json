@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-23T03:36:02.671Z",
+  "exportedAt": "2026-08-24T09:35:40.638Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1625,7 +1625,29 @@
               },
               "relation": {
                 "types": [
-                  "string"
+                  "object"
+                ],
+                "properties": {
+                  "entity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "cardinality": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "one",
+                      "many",
+                      "one-to-many",
+                      "many-to-one",
+                      "many-to-many"
+                    ]
+                  }
+                },
+                "required": [
+                  "entity"
                 ]
               }
             },
@@ -2190,7 +2212,10 @@
                     ],
                     "enumValues": [
                       "one",
-                      "many"
+                      "many",
+                      "one-to-many",
+                      "many-to-one",
+                      "many-to-many"
                     ]
                   }
                 },
@@ -2735,7 +2760,10 @@
                           ],
                           "enumValues": [
                             "one",
-                            "many"
+                            "many",
+                            "one-to-many",
+                            "many-to-one",
+                            "many-to-many"
                           ]
                         }
                       },
@@ -3056,7 +3084,10 @@
                     ],
                     "enumValues": [
                       "one",
-                      "many"
+                      "many",
+                      "one-to-many",
+                      "many-to-one",
+                      "many-to-many"
                     ]
                   }
                 },
@@ -3601,7 +3632,10 @@
                           ],
                           "enumValues": [
                             "one",
-                            "many"
+                            "many",
+                            "one-to-many",
+                            "many-to-one",
+                            "many-to-many"
                           ]
                         }
                       },
@@ -25219,8 +25253,7 @@
           "types": [
             "array"
           ],
-          "description": "The tree data",
-          "required": true,
+          "description": "The tree data (pre-nested). Ignored when `items` is provided.",
           "items": {
             "types": [
               "object"
@@ -25274,6 +25307,43 @@
             ]
           }
         },
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "Flat node list, nested by `parentId` at render time — takes precedence over `tree` when provided. A `parentId` with no matching row renders that node as a root rather than dropping it.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "parentId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ]
+          }
+        },
         "selectedPath": {
           "types": [
             "string"
@@ -25292,6 +25362,20 @@
               "type": "string"
             }
           ]
+        },
+        "onNodeSelect": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when a node is clicked, in flat `items` mode; carries the selected node's id. Presence-gated: binding this prop is what turns on the click-to-select affordance, mirroring Badge's `onRemove`.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ],
+          "default": ""
         },
         "className": {
           "types": [

@@ -663,12 +663,12 @@ fn levenshtein(a: &str, b: &str) -> usize {
 pub fn check_emit_payload_types(
     emit: &Emit,
     ctx: &ResolveCtx<'_>,
-    own_entity_name: Option<&str>,
+    own_entity_names: &BTreeSet<String>,
     trait_type_params: &BTreeSet<String>,
 ) -> Result<(), TypeError> {
     for f in &emit.payload {
         if let TypeExpr::Named(name) = &f.type_expr {
-            check_named_payload_ref(name.as_str(), f.span, ctx, own_entity_name, trait_type_params)?;
+            check_named_payload_ref(name.as_str(), f.span, ctx, own_entity_names, trait_type_params)?;
         }
     }
     Ok(())
@@ -678,10 +678,10 @@ fn check_named_payload_ref(
     name: &str,
     span: Span,
     ctx: &ResolveCtx<'_>,
-    own_entity_name: Option<&str>,
+    own_entity_names: &BTreeSet<String>,
     trait_type_params: &BTreeSet<String>,
 ) -> Result<(), TypeError> {
-    if own_entity_name == Some(name) || trait_type_params.contains(name) {
+    if own_entity_names.contains(name) || trait_type_params.contains(name) {
         return Ok(());
     }
     let resolved = resolve_named(name, &[], ctx, span)?;
@@ -861,7 +861,8 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
     let mut entity_names: BTreeSet<String> = program
         .orbitals
         .iter()
-        .filter_map(|o| o.entity.as_ref().map(|e| e.name.clone()))
+        .flat_map(|o| o.entity.iter().chain(o.extra_entities.iter()))
+        .map(|e| e.name.clone())
         .collect();
     for o in &program.orbitals {
         entity_names.extend(expected_entity_names(o).into_iter().map(str::to_string));
@@ -882,7 +883,7 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
         if let Some(ann) = &orb.type_annotation {
             check_orbital_annotation(ann, orb, &ctx)?;
         }
-        if let Some(entity) = &orb.entity {
+        for entity in orb.entity.iter().chain(orb.extra_entities.iter()) {
             if let Some(ann) = &entity.type_annotation {
                 check_entity_annotation(ann, entity, &ctx)?;
             }
@@ -907,12 +908,18 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
             // Validate emit-payload type references against the registry.
             // Entity- or struct-kind only. Other kinds (trait/page/orbital)
             // are a KindMismatch. Missing names propagate UnknownType.
-            // Also permits the orbital's own entity name, which is not in
-            // the type registry but is a legal payload reference, and any of
-            // this trait's own declared type-parameter names.
-            let own_entity_name = orb.entity.as_ref().map(|e| e.name.as_str());
+            // Also permits the orbital's own entity names (primary and
+            // extras), which are not in the type registry but are legal
+            // payload references, and any of this trait's own declared
+            // type-parameter names.
+            let own_entity_names: BTreeSet<String> = orb
+                .entity
+                .iter()
+                .chain(orb.extra_entities.iter())
+                .map(|e| e.name.clone())
+                .collect();
             for emit in &trt.emits {
-                check_emit_payload_types(emit, &ctx, own_entity_name, &trait_type_params)?;
+                check_emit_payload_types(emit, &ctx, &own_entity_names, &trait_type_params)?;
             }
         }
         for page in &orb.pages {

@@ -531,7 +531,7 @@ impl Formatter {
             self.fmt_type_alias(ta);
             self.write_newline();
         }
-        if let Some(entity) = &orbital.entity {
+        for entity in orbital.entity.iter().chain(orbital.extra_entities.iter()) {
             if !first {
                 self.write_newline();
             }
