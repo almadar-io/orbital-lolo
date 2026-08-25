@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-24T09:35:40.638Z",
+  "exportedAt": "2026-08-25T01:35:07.912Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1364,6 +1364,24 @@
             "string"
           ],
           "description": "title prop"
+        },
+        "onTitleCommit": {
+          "types": [
+            "function"
+          ],
+          "description": "When bound, the title becomes editable in place: clicking it swaps the heading for an input, Enter or blur commits, Escape reverts. Receives the committed title and the record's id so the host can persist a partial update. Unbound, the title stays a plain heading.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "title",
+              "type": "string"
+            },
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ],
+          "default": ""
         },
         "subtitle": {
           "types": [
