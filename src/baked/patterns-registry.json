@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-25T01:35:07.912Z",
+  "exportedAt": "2026-08-28T09:02:57.076Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -26399,91 +26399,6 @@
         }
       }
     },
-    "rich-block-editor": {
-      "type": "rich-block-editor",
-      "category": "display",
-      "tier": "molecules",
-      "family": "core",
-      "description": "RichBlockEditor component",
-      "suggestedFor": [
-        "rich",
-        "block",
-        "editor",
-        "rich block editor"
-      ],
-      "typicalSize": "large",
-      "propsSchema": {
-        "initialBlocks": {
-          "types": [
-            "object",
-            "array"
-          ],
-          "description": "Initial block payload — the rows that orb-bound traits emit. Items missing id/type are normalized into paragraph blocks at mount.",
-          "kind": "entity",
-          "cardinality": "collection"
-        },
-        "onChange": {
-          "types": [
-            "function"
-          ],
-          "description": "onChange prop",
-          "kind": "callback",
-          "callbackArgs": [
-            {
-              "name": "blocks",
-              "type": "array"
-            }
-          ]
-        },
-        "changeEvent": {
-          "types": [
-            "string"
-          ],
-          "description": "changeEvent prop",
-          "kind": "event-ref",
-          "emitPayloadSchema": [
-            {
-              "name": "blocks",
-              "type": "array",
-              "required": true
-            }
-          ]
-        },
-        "readOnly": {
-          "types": [
-            "boolean"
-          ],
-          "description": "readOnly prop",
-          "default": false
-        },
-        "placeholder": {
-          "types": [
-            "string"
-          ],
-          "description": "placeholder prop"
-        },
-        "enableBlocks": {
-          "types": [
-            "boolean"
-          ],
-          "description": "Opt-in to the Notion-style block authoring chrome (insert toolbar, per-row +/menu gutter, turn-into menu). Off by default: the editor renders as a plain rich text surface that edits block content inline without any add-block affordances.",
-          "default": true
-        },
-        "showToolbar": {
-          "types": [
-            "boolean"
-          ],
-          "description": "showToolbar prop",
-          "default": true
-        },
-        "className": {
-          "types": [
-            "string"
-          ],
-          "description": "className prop"
-        }
-      }
-    },
     "version-diff": {
       "type": "version-diff",
       "category": "display",
@@ -47749,6 +47664,399 @@
       },
       "drawable": true,
       "drawHost": true
+    },
+    "rich-text-editor": {
+      "type": "rich-text-editor",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "RichTextEditor component",
+      "suggestedFor": [
+        "rich",
+        "text",
+        "editor",
+        "rich text editor"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "value": {
+          "types": [
+            "string"
+          ],
+          "description": "The rich text content as HTML. Sanitized before rendering and on every change."
+        },
+        "onChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onChange prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "value",
+              "type": "string"
+            }
+          ]
+        },
+        "changeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "changeEvent prop",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "readOnly": {
+          "types": [
+            "boolean"
+          ],
+          "description": "readOnly prop",
+          "default": false
+        },
+        "placeholder": {
+          "types": [
+            "string"
+          ],
+          "description": "placeholder prop"
+        },
+        "showToolbar": {
+          "types": [
+            "boolean"
+          ],
+          "description": "showToolbar prop",
+          "default": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "document-panel": {
+      "type": "document-panel",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "DocumentPanel — a record rendered as one continuous document: editable title over the rich-text body, editing controls tucked into the header corner.",
+      "capabilities": "document page, note editor, wiki page, article editor, writing surface, rich text document, content editing canvas",
+      "suggestedFor": [
+        "document",
+        "panel",
+        "document panel"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "The loaded record — supplies the id every commit event carries.",
+          "kind": "entity",
+          "cardinality": "record"
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "Document title (falls back to \"Untitled\" for a blank draft)"
+        },
+        "subtitle": {
+          "types": [
+            "string"
+          ],
+          "description": "Muted byline under the title; hidden when empty"
+        },
+        "value": {
+          "types": [
+            "string"
+          ],
+          "description": "The document body as rich-text HTML"
+        },
+        "actions": {
+          "types": [
+            "array"
+          ],
+          "description": "Header actions (settings, history, …). At most one explicit primary stays inline; the rest live under a single \"⋯\" menu — the title owns its row.",
+          "kind": "event-list",
+          "eventField": "event",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "primary",
+                  "secondary",
+                  "ghost",
+                  "danger"
+                ]
+              }
+            },
+            "required": [
+              "label"
+            ]
+          }
+        },
+        "maxInlineActions": {
+          "types": [
+            "number"
+          ],
+          "description": "0 collapses even the primary action into the menu"
+        },
+        "editing": {
+          "types": [
+            "boolean"
+          ],
+          "description": "false = read surface with click-to-edit body; true = live editor",
+          "default": false
+        },
+        "titleCommitEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emitted when the title commits: { title, id }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "title",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "contentChangeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Forwarded to the embedded RichTextEditor's autosave stream: { value }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "editEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emitted by the header Edit affordance and a click on the read body: { id }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "doneEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emitted by the Done button that ends the editing session: { id }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "editLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "editLabel prop"
+        },
+        "doneLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "doneLabel prop"
+        },
+        "autosaveHint": {
+          "types": [
+            "string"
+          ],
+          "description": "Muted caption beside Done telling the author work persists on its own"
+        },
+        "placeholder": {
+          "types": [
+            "string"
+          ],
+          "description": "Placeholder for an empty body"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "document-details": {
+      "type": "document-details",
+      "category": "display",
+      "tier": "molecules",
+      "family": "core",
+      "description": "DocumentDetails — the document's metadata as a compact settings card for the rail beside a DocumentPanel, each property committing in place.",
+      "capabilities": "document settings, page details, post settings sidebar, metadata panel, document properties, publish settings",
+      "suggestedFor": [
+        "document",
+        "details",
+        "document details"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "entity": {
+          "types": [
+            "object"
+          ],
+          "description": "The loaded record — supplies the id every commit carries and the values the rows read.",
+          "kind": "entity",
+          "cardinality": "record"
+        },
+        "fields": {
+          "types": [
+            "array"
+          ],
+          "description": "The properties shown; empty renders nothing.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "key": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "header": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "text",
+                  "boolean",
+                  "select",
+                  "readonly"
+                ]
+              },
+              "options": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "format": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "date",
+                  "currency",
+                  "number",
+                  "boolean",
+                  "percent"
+                ]
+              }
+            }
+          }
+        },
+        "metaCommitEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emitted when a property commits: { id, patch } — patch carries the id plus the one changed field, ready for a partial persist update.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "patch",
+              "type": "object",
+              "required": true
+            }
+          ]
+        },
+        "title": {
+          "types": [
+            "string"
+          ],
+          "description": "Card heading (defaults to the localized \"Details\")"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
     }
   },
   "categories": [
