@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-28T23:51:47.246Z",
+  "exportedAt": "2026-08-29T08:05:11.231Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -47772,6 +47772,19 @@
           ],
           "description": "Muted byline under the title; hidden when empty"
         },
+        "coverImage": {
+          "types": [
+            "string"
+          ],
+          "description": "Cover/hero image URL painted as a full-bleed banner above the header row (Notion/article-hero shape); hidden when empty"
+        },
+        "icon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "Document icon rendered beside the title (a file glyph, a domain icon); hidden when empty"
+        },
         "value": {
           "types": [
             "string"
@@ -47936,6 +47949,7 @@
       "family": "core",
       "description": "DocumentDetails — the document's metadata as a compact settings card for the rail beside a DocumentPanel, each property committing in place.",
       "capabilities": "document settings, page details, post settings sidebar, metadata panel, document properties, publish settings",
+      "fieldsContract": "display",
       "suggestedFor": [
         "document",
         "details",
@@ -47995,7 +48009,8 @@
                   "text",
                   "boolean",
                   "select",
-                  "readonly"
+                  "readonly",
+                  "image"
                 ]
               },
               "options": {
@@ -48019,6 +48034,11 @@
                   "boolean",
                   "percent"
                 ]
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
               }
             }
           }
@@ -48038,6 +48058,30 @@
             {
               "name": "patch",
               "type": "object",
+              "required": true
+            }
+          ]
+        },
+        "relationEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Makes relation chips clickable: emitted with { field, id, name } when a hydrated relation value (or one row of a many-relation) is clicked — the host routes it to the linked record's own surface.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "field",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "name",
+              "type": "string",
               "required": true
             }
           ]
