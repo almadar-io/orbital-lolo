@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-28T09:02:57.076Z",
+  "exportedAt": "2026-08-28T23:51:47.246Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -47754,13 +47754,11 @@
       ],
       "typicalSize": "medium",
       "propsSchema": {
-        "entity": {
+        "id": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "The loaded record — supplies the id every commit event carries.",
-          "kind": "entity",
-          "cardinality": "record"
+          "description": "The record's id — carried on every commit and action event."
         },
         "title": {
           "types": [
