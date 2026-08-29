@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-29T08:05:11.231Z",
+  "exportedAt": "2026-08-29T18:15:51.642Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -13301,6 +13301,12 @@
           ],
           "description": "Custom sidebar footer (optional). When omitted, the sidebar has no footer — apps that need Settings/etc. add them via navItems."
         },
+        "sidebarContent": {
+          "types": [
+            "node"
+          ],
+          "description": "Optional content region rendered between the nav links and the footer — a page tree or any consumer navigation surface; scrolls independently and takes the sidebar's remaining height. Hidden in the collapsed rail."
+        },
         "currentPath": {
           "types": [
             "string"
@@ -25368,6 +25374,23 @@
           ],
           "description": "Currently selected file path"
         },
+        "selectedId": {
+          "types": [
+            "string"
+          ],
+          "description": "Currently selected node id, in flat `items` mode: the row highlights and every ancestor auto-expands so the selection is always visible — the \"you are here\" a navigation tree needs."
+        },
+        "look": {
+          "types": [
+            "string"
+          ],
+          "description": "Visual treatment for flat `items` mode: `files` (default) keeps the monospace file-browser look; `nav` renders a sidebar navigation tree — regular font, document icons, roomier hit areas.",
+          "enumValues": [
+            "files",
+            "nav"
+          ],
+          "default": "files"
+        },
         "onFileSelect": {
           "types": [
             "function"
@@ -25394,6 +25417,32 @@
             }
           ],
           "default": ""
+        },
+        "onNodeAction": {
+          "types": [
+            "function"
+          ],
+          "description": "Called from the row's hover action button, in flat `items` mode; carries that node's id. Presence-gated: binding it renders the action.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ],
+          "default": ""
+        },
+        "nodeActionIcon": {
+          "types": [
+            "string"
+          ],
+          "description": "Icon for the row hover action (default: plus)."
+        },
+        "nodeActionLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Accessible label/tooltip for the row hover action."
         },
         "className": {
           "types": [
