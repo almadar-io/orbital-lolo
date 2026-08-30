@@ -100,9 +100,14 @@ pub(crate) fn lower_type_expr(
         // an entity context they fall back — SExpr to an opaque object, the
         // entity/event name refs to a plain string value.
         TypeExpr::SExpr => (FieldType::Object, None, None, None, None),
-        TypeExpr::EntityRef | TypeExpr::EventRef => {
-            (FieldType::String, None, None, None, None)
-        }
+        TypeExpr::EntityRef => (FieldType::String, None, None, None, None),
+        // Phase B: an `event`-typed struct-alias field (e.g. `ItemAction.event`)
+        // keeps its type tag through lowering instead of erasing to `string` —
+        // `check_field_def_shape`'s closed-circuit-parity acceptance check
+        // (`config_type.rs`) needs the tag to fire. Entity-field positions stay
+        // protected by the parser gate (`ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY`);
+        // this arm is reached only for struct aliases consumed by config knobs.
+        TypeExpr::EventRef => (FieldType::Event, None, None, None, None),
         TypeExpr::Named(name) => {
             if let Some(alias) = aliases.get(name) {
                 match alias {

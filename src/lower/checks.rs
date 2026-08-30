@@ -1106,17 +1106,28 @@ fn config_type_compatible(got: &str, expected: &str) -> bool {
     match got {
         "number" => !matches!(
             expected,
-            "string" | "boolean" | "pattern" | "slot" | "icon" | "component"
+            "string" | "boolean" | "pattern" | "slot" | "icon" | "component" | "event"
         ),
         "boolean" => !matches!(
             expected,
-            "string" | "number" | "int" | "float" | "pattern" | "slot" | "icon" | "component"
+            "string"
+                | "number"
+                | "int"
+                | "float"
+                | "pattern"
+                | "slot"
+                | "icon"
+                | "component"
+                | "event"
         ),
         "string" => !matches!(expected, "number" | "int" | "float" | "boolean"),
-        "array" => !matches!(expected, "number" | "int" | "float" | "boolean" | "string"),
+        "array" => !matches!(
+            expected,
+            "number" | "int" | "float" | "boolean" | "string" | "event"
+        ),
         "object" => !matches!(
             expected,
-            "number" | "int" | "float" | "boolean" | "string" | "array"
+            "number" | "int" | "float" | "boolean" | "string" | "array" | "event"
         ),
         _ => true,
     }
