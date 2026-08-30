@@ -23,6 +23,7 @@ mod checks;
 mod emit_listen;
 mod entity;
 mod page;
+mod payload_contract;
 mod r#trait;
 mod type_helpers;
 

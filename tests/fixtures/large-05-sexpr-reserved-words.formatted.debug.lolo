@@ -7,7 +7,7 @@ orbital TradeOrderOrbital {
 
     type TradeOrderLoadFailed = Event { error : string, code : string } "Fired when the trade order collection fails to load"
 
-    type TradeOrderUpdated = Event { row : TradeOrder } "Fired after a trade order row's status persists"
+    type TradeOrderUpdated = Event TradeOrder "Fired after a trade order row's status persists"
 
     type TradeOrderUpdateFailed = Event { error : string, code : string } "Fired when a trade order row's status update fails to persist"
 
@@ -218,9 +218,7 @@ orbital TradeOrderOrbital {
         @description "Indicates that loading trade order data has failed."
         @synonyms "error, failure, problem, unsuccessful"
         @tier "internal"
-      TradeOrderUpdated {
-        row : TradeOrder
-      }
+      TradeOrderUpdated
         @description "Signals a change in the trade order's details."
         @synonyms "modified, changed, refreshed"
         @tier "customization"
@@ -277,9 +275,7 @@ orbital TradeOrderOrbital {
         @description "Indicates a failure to load trade order data."
         @synonyms "error, failure, problem, unsuccessful"
         @tier "internal"
-      TradeOrderUpdated {
-        row : TradeOrder
-      }
+      TradeOrderUpdated
         @description "Indicates a change in trade order details."
         @synonyms "modified, changed, revised"
         @tier "customization"

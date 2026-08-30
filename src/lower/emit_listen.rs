@@ -360,6 +360,19 @@ pub(crate) fn type_expr_to_payload_fields(
                 } else if let Some(nested) = struct_payload_properties(ftype, aliases, type_params)
                 {
                     ("object".to_string(), Some(nested))
+                } else if let Some(entity_fields) = named_entity_fields(ftype, entities_by_name) {
+                    // An ENTITY named in a field position expands to
+                    // `object` + its own fields — the same shape `lower_emit`'s
+                    // inline path already produced for the identical authored
+                    // line. Without this the alias-only path left a raw entity
+                    // NAME in `field_type` with no `properties`, so one authored
+                    // `{ row : E }` lowered to two different `.orb` shapes
+                    // depending on whether an inline restatement happened to
+                    // exist, and the raw name reached codegen as a bare
+                    // `Reference` (which rendered as `string` in events.ts).
+                    // `payload_fields_mismatch_norm` normalized the two for
+                    // COMPARISON only; nothing normalized what was emitted.
+                    ("object".to_string(), Some(entity_fields))
                 } else {
                     (type_expr_to_string(ftype), None)
                 };
@@ -387,6 +400,36 @@ pub(crate) fn type_expr_to_payload_fields(
             }])
         }
     }
+}
+
+/// If `te` names a known ENTITY, return that entity's fields flattened one
+/// level — the payload shape an entity reference in a field position carries.
+///
+/// Deliberately non-propagating, unlike `lower_emit`'s inline path which
+/// `?`-propagates `UnknownPayloadType`: a name that is not an entity (a struct
+/// alias already handled by `struct_payload_properties`, a type parameter, a
+/// primitive) simply yields `None` so the caller keeps its existing string
+/// form. Making this arm fatal would reject files that lower fine today.
+pub(crate) fn named_entity_fields(
+    te: &TypeExpr,
+    entities_by_name: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+) -> Option<Vec<PayloadField>> {
+    let TypeExpr::Named(name) = te else {
+        return None;
+    };
+    let fields = entities_by_name.get(name)?;
+    Some(
+        fields
+            .iter()
+            .map(|(n, t, req)| PayloadField {
+                name: n.clone(),
+                field_type: type_expr_to_string(t),
+                required: if *req { Some(true) } else { None },
+                description: None,
+                properties: None,
+            })
+            .collect(),
+    )
 }
 
 /// If `te` is a reference to one of `type_params` — `Named(param)` or

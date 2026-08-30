@@ -469,6 +469,22 @@ pub enum LowerError {
     )]
     PayloadAliasMismatch { event: String, detail: String },
 
+    /// L1 rung of the payload invariant: an event declares a field the effect
+    /// that fires it does not emit, so every read of it is `undefined` at
+    /// runtime. Raised only for the cases one file can decide on its own — a
+    /// `persist create|update` naming a literal, locally-declared entity. The
+    /// contract comes from `orbital_core::effects::emit_contract`, shared with
+    /// the compiler's post-inline check so the two layers cannot disagree.
+    #[error(
+        "event {event:?} declares payload field {field:?}, but `{operator} {entity}` emits the persisted row FLAT — {entity} has no {field:?} field, so `?{field}` reads undefined at runtime. Declare the event as the bare entity (`type {event} = Event {entity}`), or drop the field."
+    )]
+    PayloadNotProduced {
+        event: String,
+        field: String,
+        operator: String,
+        entity: String,
+    },
+
     /// Trait reads `@entity.<field>` in render-ui / a guard / an effect but
     /// no transition runs `(set @entity.<field> <value>)`. Per the
     /// explicit-binding rule, every `@entity.X` read must be backed by an

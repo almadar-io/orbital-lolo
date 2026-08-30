@@ -19,7 +19,7 @@ pub(crate) fn lower_trait_decl(
         // there's nothing to map here.
         lower_trait_reference(t, ref_data, aliases, entity_names)
     } else {
-        Ok(TraitReference::Inline(lower_trait(
+        let lowered = TraitReference::Inline(lower_trait(
             t,
             aliases,
             entities,
@@ -29,7 +29,12 @@ pub(crate) fn lower_trait_decl(
             shared_entity_names,
             source_map,
             base,
-        )?))
+        )?);
+        // L1 rung of the payload invariant — runs on the LOWERED trait so it
+        // sees the same `PayloadField[]` the compiler will, and only judges
+        // call sites this file can decide alone (see `payload_contract`).
+        super::payload_contract::check_trait_payload_contracts(&lowered, entities)?;
+        Ok(lowered)
     }
 }
 
@@ -371,6 +376,17 @@ pub(crate) fn lower_trait(
                         emit_listen::struct_payload_properties(&f.type_expr, aliases, &trait_type_params)
                     {
                         ("object".to_string(), Some(nested))
+                    } else if let Some(entity_fields) =
+                        emit_listen::named_entity_fields(&f.type_expr, entities)
+                    {
+                        // Expand an entity reference exactly as the `emits`
+                        // side does. `emits { EVT { row : E } }` and
+                        // `listens { EVT { row : E } }` are the SAME authored
+                        // line and must lower to the same payload; before this
+                        // they disagreed (`object` + properties vs a raw entity
+                        // name), so one event carried two shapes depending on
+                        // which block declared it.
+                        ("object".to_string(), Some(entity_fields))
                     } else {
                         (type_expr_to_string(&f.type_expr), None)
                     };
