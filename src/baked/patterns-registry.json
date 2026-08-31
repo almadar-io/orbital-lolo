@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-31T05:08:35.268Z",
+  "exportedAt": "2026-08-31T09:14:22.298Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -236,6 +236,8 @@
             "array"
           ],
           "description": "Item actions from generated code - maps to rowActions",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -252,11 +254,6 @@
                 ]
               },
               "navigatesTo": {
-                "types": [
-                  "string"
-                ]
-              },
-              "action": {
                 "types": [
                   "string"
                 ]
@@ -364,6 +361,8 @@
             "array"
           ],
           "description": "Row actions",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -415,6 +414,8 @@
             "array"
           ],
           "description": "Bulk actions",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -633,6 +634,8 @@
             "array"
           ],
           "description": "Item actions - schema-driven or function-based",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -662,11 +665,6 @@
                   "bulk",
                   "card",
                   "footer"
-                ]
-              },
-              "action": {
-                "types": [
-                  "string"
                 ]
               },
               "variant": {
@@ -1169,11 +1167,6 @@
               "onClick": {
                 "types": [
                   "function"
-                ]
-              },
-              "action": {
-                "types": [
-                  "string"
                 ]
               },
               "placement": {
@@ -1882,6 +1875,8 @@
             "array"
           ],
           "description": "Actions array - first action with variant='primary' (or first action) is the main action",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -4085,6 +4080,8 @@
             "array"
           ],
           "description": "Tab items",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -4242,6 +4239,8 @@
             "array"
           ],
           "description": "Tab items (alias for items - used by generated code)",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -8973,6 +8972,8 @@
           ],
           "description": "Menu items",
           "required": true,
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -10369,6 +10370,8 @@
             "array"
           ],
           "description": "Secondary action buttons config (for form-actions pattern) Accepts readonly array for compatibility with generated const arrays",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -10703,6 +10706,8 @@
             "array"
           ],
           "description": "Multiple actions. When provided, the button expands to show all of them.",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -13932,6 +13937,8 @@
             "array"
           ],
           "description": "Top-level chart actions (export, refresh, etc.)",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -14136,6 +14143,8 @@
             "array"
           ],
           "description": "Actions",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -14673,6 +14682,8 @@
             "array"
           ],
           "description": "Actions",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -14955,6 +14966,8 @@
             "array"
           ],
           "description": "Actions",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -15326,6 +15339,8 @@
             "array"
           ],
           "description": "Actions",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -16239,6 +16254,8 @@
             "array"
           ],
           "description": "Action badges in the toolbar",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -25907,9 +25924,19 @@
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
-              "name": "_payload",
-              "type": "object",
-              "required": false
+              "name": "text",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "format",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "timestamp",
+              "type": "number",
+              "required": true
             }
           ]
         },
@@ -29962,6 +29989,8 @@
             "array"
           ],
           "description": "Menu options - accepts readonly for compatibility with generated const arrays",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -30003,11 +30032,6 @@
                 ]
               },
               "subLabel": {
-                "types": [
-                  "string"
-                ]
-              },
-              "action": {
                 "types": [
                   "string"
                 ]
@@ -30023,6 +30047,8 @@
             "array"
           ],
           "description": "Alias for options (schema compatibility)",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"
@@ -30064,11 +30090,6 @@
                 ]
               },
               "subLabel": {
-                "types": [
-                  "string"
-                ]
-              },
-              "action": {
                 "types": [
                   "string"
                 ]
@@ -30130,11 +30151,6 @@
                     ]
                   },
                   "subLabel": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "action": {
                     "types": [
                       "string"
                     ]
