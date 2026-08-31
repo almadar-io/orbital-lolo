@@ -992,6 +992,26 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
             }
         }
 
+        // Knob name → declared type, from THIS orbital's own inline trait config
+        // declarations. A plain-wiring override that binds `@config.X` carries no
+        // type of its own — the parser tags it `"unknown"`, which is the
+        // structural discriminator for wiring-vs-declaration and must stay — so
+        // without this map check 3.4 below has no `got` side and silently
+        // no-ops on every reference. Same prepass shape as
+        // `entity_fields_by_name` above.
+        let mut knob_types: HashMap<String, String> = HashMap::new();
+        for tref in &orbital.traits {
+            if let TraitReference::Inline(td) = tref {
+                if let Some(cfg) = &td.config {
+                    for (k, cf) in cfg {
+                        if cf.field_type != "unknown" {
+                            knob_types.insert(k.clone(), cf.field_type.clone());
+                        }
+                    }
+                }
+            }
+        }
+
         for tref in &orbital.traits {
             let TraitReference::Reference {
                 reference: Some(ref_str),
@@ -1056,15 +1076,37 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                     // blocks format/emit and breaks formatter fixtures that pass
                     // nested config to exercise the formatter; it belongs in the
                     // validate phase, not lower. Deferred (P1).
+                    // Skipped in dev for the same reason as the unknown-member
+                    // checks above: the baked contracts slice is a publish-time
+                    // artifact and lags the live registries. Absence was already
+                    // tolerated here; a STALE TYPE has the identical cause and
+                    // was not, so changing a knob's type in the workspace made
+                    // `orb emit orb` fail on every consumer until the next
+                    // publish + rebake. The compiler re-checks this post-inline
+                    // against the live registries (`validation/config_type.rs`
+                    // via the inliner's fold at `phases/inline/trait.rs:299`),
+                    // so nothing is lost — see the doc on `dev_registries_live`.
+                    let skip_stale_contract_types = crate::registry::dev_registries_live();
                     if let Some(cfg) = config {
                         for (k, cf) in cfg {
+                            if skip_stale_contract_types {
+                                continue;
+                            }
                             // For plain wiring entries the value lives in
                             // `cf.default`; skip entries with no default
                             // (annotation-only re-declarations are valid).
                             if let Some(v) = cf.default.as_ref() {
-                                if let (Some(expected), Some(got)) =
-                                    (tc.config.get(k), orbital_core::literal_value_type(v))
-                                {
+                                // A literal types itself; a `@config.X` binding
+                                // resolves through the knob map. Before this,
+                                // `literal_value_type` returned None for every
+                                // `@`-string, so the tuple destructure failed
+                                // and the whole check was skipped — a
+                                // number-typed knob wired to a string-typed prop
+                                // validated clean and only surfaced when
+                                // something RESOLVED the reference downstream.
+                                let got = orbital_core::literal_value_type(v)
+                                    .or_else(|| config_ref_knob_type(v, &knob_types));
+                                if let (Some(expected), Some(got)) = (tc.config.get(k), got) {
                                     if !config_type_compatible(got, expected) {
                                         return Err(LowerError::ConfigTypeMismatch {
                                             reference: ref_str.clone(),
@@ -1102,6 +1144,31 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
 /// etc.); permissive for arrays/objects/`pattern`/`slot`/`SExpr`/unknown
 /// declared types so the check never false-positives on a knob it can't reason
 /// about.
+/// Resolve a `@config.X` binding to the declared type of knob `X` on this
+/// orbital, so a reference can be type-checked like a literal.
+///
+/// Scoped to `@config` deliberately. `@trait` is a sentinel the render-ui
+/// binding checker already exempts, and `@user`/`@item`/`@row`/`@callsitePayload`
+/// have no scope handler yet — each needs its own measured pass before it can
+/// reject anything.
+///
+/// A nested or indexed path (`@config.articles[0].title`) resolves to the knob's
+/// INNER shape, which this map does not carry, so it returns None rather than
+/// compare against the container's type and produce a false positive.
+fn config_ref_knob_type<'a>(
+    value: &SExpression,
+    knob_types: &'a HashMap<String, String>,
+) -> Option<&'a str> {
+    let SExpression::String(s) = value else {
+        return None;
+    };
+    let key = s.strip_prefix("@config.")?;
+    if key.contains('.') || key.contains('[') {
+        return None;
+    }
+    knob_types.get(key).map(String::as_str)
+}
+
 fn config_type_compatible(got: &str, expected: &str) -> bool {
     match got {
         "number" => !matches!(
