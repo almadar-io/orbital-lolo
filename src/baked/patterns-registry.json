@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-29T18:15:51.642Z",
+  "exportedAt": "2026-08-31T05:08:35.268Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -1488,6 +1488,8 @@
             "array"
           ],
           "description": "Unified actions array - first action with variant='primary' is the main action",
+          "kind": "event-list",
+          "eventField": "event",
           "items": {
             "types": [
               "object"

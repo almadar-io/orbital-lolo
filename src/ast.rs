@@ -251,6 +251,10 @@ pub enum ExpectsKind {
     },
     /// `expects event Trait.EVENT` — names pass through verbatim.
     Event { trait_name: String, event: String },
+    /// `expects page "/articles/:slug"` — a route a sibling orbital declares
+    /// and this one navigates to. The provider's PATTERN, which a navigate
+    /// effect's static prefix cannot supply.
+    Page { path: String },
 }
 
 /// `entity Name [:: TypeAnnotation] [persistence] { fields... }`.

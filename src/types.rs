@@ -841,7 +841,8 @@ pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
         .filter_map(|e| match &e.kind {
             ExpectsKind::Entity { name, .. } => Some(name.as_str()),
             ExpectsKind::Identity { name, .. } => name.as_deref(),
-            ExpectsKind::Event { .. } => None,
+            // Not an entity name — a route.
+            ExpectsKind::Event { .. } | ExpectsKind::Page { .. } => None,
         })
         .collect()
 }

@@ -401,6 +401,8 @@ fn lower_expects_decl(
             trait_name: trait_name.clone(),
             event: event.clone(),
         },
+        // A route pattern is a path, not an identifier — verbatim likewise.
+        ExpectsKind::Page { path } => ExpectDeclaration::Page { path: path.clone() },
     })
 }
 
@@ -1632,10 +1634,10 @@ mod tests {
     #[test]
     fn lower_expects_all_forms() {
         let s = lower(
-            "orbital O {\n  expects identity Customer {\n    role : \"store-manager\" | \"operations-director\"\n  }\n  expects entity OrderRecord {\n    totalAmount : number\n  }\n  expects entity CartItem\n  expects event Checkout.ORDER_PLACED\n  entity E { id : string! }\n}",
+            "orbital O {\n  expects identity Customer {\n    role : \"store-manager\" | \"operations-director\"\n  }\n  expects entity OrderRecord {\n    totalAmount : number\n  }\n  expects entity CartItem\n  expects event Checkout.ORDER_PLACED\n  expects page \"/articles/:slug\"\n  entity E { id : string! }\n}",
         );
         let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
-        assert_eq!(expects.len(), 4);
+        assert_eq!(expects.len(), 5);
         match &expects[0] {
             ExpectDeclaration::Identity { name, shape } => {
                 assert_eq!(name.as_deref(), Some("Customer"));
@@ -1673,6 +1675,11 @@ mod tests {
                 assert_eq!(event, "ORDER_PLACED");
             }
             other => panic!("expected event, got {other:?}"),
+        }
+        match &expects[4] {
+            // A route pattern, verbatim — `:slug` must survive lowering.
+            ExpectDeclaration::Page { path } => assert_eq!(path, "/articles/:slug"),
+            other => panic!("expected page, got {other:?}"),
         }
     }
 

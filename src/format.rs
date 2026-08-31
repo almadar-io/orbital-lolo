@@ -618,6 +618,11 @@ impl Formatter {
                 self.output.push('.');
                 self.output.push_str(event);
             }
+            ExpectsKind::Page { path } => {
+                self.output.push_str("page \"");
+                self.output.push_str(path);
+                self.output.push('"');
+            }
         }
     }
 

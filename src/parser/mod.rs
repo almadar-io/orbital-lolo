@@ -533,6 +533,12 @@ impl Parser {
 
     /// `expects` ("identity" Ident? shape? | "entity" Ident shape? | "event" Ident "." IDENT)
     /// — one expectation per line; the shape reuses the entity field parser.
+    ///
+    /// The identity name stays OPTIONAL on purpose. A program has exactly one
+    /// `[identity]` entity and it is referenced as `@user`, never by its entity
+    /// name — so the name here is informational, and requiring it would invite
+    /// authors to write `Person.role` where the language means `@user.role`.
+    /// What makes an identity expectation checkable is its SHAPE, not its name.
     fn parse_expects_decl(&mut self) -> Result<ExpectsDecl, ParseError> {
         let span = self.peek_span();
         self.expect_keyword("expects")?;
@@ -566,9 +572,25 @@ impl Parser {
                 trait_name: trait_name.to_string(),
                 event: event.to_string(),
             }
+        } else if self.check_ident("page") {
+            self.advance();
+            match self.peek().clone() {
+                TokenKind::String(path) => {
+                    self.advance();
+                    ExpectsKind::Page { path }
+                }
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "a quoted route pattern, e.g. expects page \"/articles/:slug\""
+                            .to_string(),
+                        got: format!("{:?}", other),
+                        span: self.peek_span(),
+                    })
+                }
+            }
         } else {
             return Err(ParseError::UnexpectedToken {
-                expected: "identity, entity, or event after `expects`".to_string(),
+                expected: "identity, entity, event, or page after `expects`".to_string(),
                 got: format!("{:?}", self.peek()),
                 span: self.peek_span(),
             });
@@ -656,6 +678,9 @@ fn expects_duplicate(existing: &[ExpectsDecl], new: &ExpectsDecl) -> Option<Stri
                 event: eb,
             },
         ) if ta == tb && ea == eb => Some(format!("`expects event {tb}.{eb}`")),
+        (ExpectsKind::Page { path: a }, ExpectsKind::Page { path: b }) if a == b => {
+            Some(format!("`expects page \"{b}\"`"))
+        }
         _ => None,
     })
 }
