@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-31T09:14:22.298Z",
+  "exportedAt": "2026-08-31T14:55:54.846Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -13213,6 +13213,11 @@
                   "string"
                 ]
               },
+              "navigatesTo": {
+                "types": [
+                  "string"
+                ]
+              },
               "badge": {
                 "types": [
                   "number",
@@ -13231,8 +13236,7 @@
               }
             },
             "required": [
-              "icon",
-              "event"
+              "icon"
             ]
           },
           "default": []
@@ -16514,13 +16518,7 @@
             "properties": {
               "type": {
                 "types": [
-                  "string"
-                ],
-                "enumValues": [
-                  "markdown",
-                  "code",
-                  "orbital",
-                  "quiz"
+                  "unknown"
                 ]
               },
               "content": {
@@ -16725,11 +16723,204 @@
           "callbackArgs": [
             {
               "name": "state",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "radius": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "isInitial": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "isFinal": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "id",
+                  "name",
+                  "x",
+                  "y",
+                  "radius",
+                  "isInitial",
+                  "isFinal"
+                ]
+              }
             },
             {
               "name": "config",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "nodeRadius": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "nodeSpacing": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "initialIndicatorOffset": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "arrowSize": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "colors": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "background": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "node": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "nodeBorder": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "nodeText": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "initialNode": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "finalNode": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "arrow": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "arrowText": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "effectText": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "guardText": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "initial": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "background",
+                      "node",
+                      "nodeBorder",
+                      "nodeText",
+                      "initialNode",
+                      "finalNode",
+                      "arrow",
+                      "arrowText",
+                      "effectText",
+                      "guardText",
+                      "initial"
+                    ]
+                  },
+                  "fonts": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "node": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "event": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "effect": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "node",
+                      "event",
+                      "effect"
+                    ]
+                  }
+                },
+                "required": [
+                  "nodeRadius",
+                  "nodeSpacing",
+                  "initialIndicatorOffset",
+                  "arrowSize",
+                  "colors",
+                  "fonts"
+                ]
+              }
             }
           ],
           "renderCallback": true
@@ -29673,7 +29864,79 @@
             "object"
           ],
           "description": "data prop",
-          "required": true
+          "required": true,
+          "properties": {
+            "orbitalName": {
+              "types": [
+                "string"
+              ]
+            },
+            "entityName": {
+              "types": [
+                "string"
+              ]
+            },
+            "persistence": {
+              "types": [
+                "string"
+              ]
+            },
+            "fields": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            },
+            "traits": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            },
+            "pages": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            },
+            "traitDetails": {
+              "types": [
+                "object"
+              ]
+            },
+            "externalLinks": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "orbitalName",
+            "entityName",
+            "persistence",
+            "fields",
+            "traits",
+            "pages",
+            "traitDetails",
+            "externalLinks"
+          ]
         }
       }
     },
@@ -29696,7 +29959,79 @@
             "object"
           ],
           "description": "data prop",
-          "required": true
+          "required": true,
+          "properties": {
+            "orbitalName": {
+              "types": [
+                "string"
+              ]
+            },
+            "entityName": {
+              "types": [
+                "string"
+              ]
+            },
+            "persistence": {
+              "types": [
+                "string"
+              ]
+            },
+            "fields": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            },
+            "traits": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            },
+            "pages": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            },
+            "traitDetails": {
+              "types": [
+                "object"
+              ]
+            },
+            "externalLinks": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "orbitalName",
+            "entityName",
+            "persistence",
+            "fields",
+            "traits",
+            "pages",
+            "traitDetails",
+            "externalLinks"
+          ]
         }
       }
     },
@@ -35027,6 +35362,22 @@
           "items": {
             "types": [
               "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "unknown"
+                ]
+              },
+              "content": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "content"
             ]
           }
         },
@@ -35102,7 +35453,7 @@
           "callbackArgs": [
             {
               "name": "type",
-              "type": "object"
+              "type": "string"
             },
             {
               "name": "description",
@@ -37486,13 +37837,195 @@
           "types": [
             "object"
           ],
-          "description": "3D only: scene light rig as data."
+          "description": "3D only: scene light rig as data.",
+          "properties": {
+            "ambient": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "position": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                }
+              }
+            },
+            "directional": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "position": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                }
+              }
+            },
+            "hemisphere": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "groundColor": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "points": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "intensity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "position": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "distance": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "decay": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "position"
+                ]
+              }
+            },
+            "environment": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "room",
+                "none"
+              ]
+            },
+            "toneMapping": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "aces",
+                "none"
+              ]
+            }
+          }
         },
         "post": {
           "types": [
             "object"
           ],
-          "description": "3D only: post-processing stack (bloom/vignette)."
+          "description": "3D only: post-processing stack (bloom/vignette).",
+          "properties": {
+            "bloom": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "threshold": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "smoothing": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            },
+            "vignette": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "offset": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "darkness": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            }
+          }
         },
         "nodes": {
           "types": [
@@ -38508,13 +39041,195 @@
           "types": [
             "object"
           ],
-          "description": "3D only: scene light rig as data."
+          "description": "3D only: scene light rig as data.",
+          "properties": {
+            "ambient": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "position": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                }
+              }
+            },
+            "directional": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "position": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                }
+              }
+            },
+            "hemisphere": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "groundColor": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "points": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "intensity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "position": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "distance": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "decay": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "position"
+                ]
+              }
+            },
+            "environment": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "room",
+                "none"
+              ]
+            },
+            "toneMapping": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "aces",
+                "none"
+              ]
+            }
+          }
         },
         "post": {
           "types": [
             "object"
           ],
-          "description": "3D only: post-processing stack (bloom/vignette)."
+          "description": "3D only: post-processing stack (bloom/vignette).",
+          "properties": {
+            "bloom": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "threshold": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "smoothing": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            },
+            "vignette": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "offset": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "darkness": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            }
+          }
         },
         "atoms": {
           "types": [
@@ -40565,13 +41280,195 @@
           "types": [
             "object"
           ],
-          "description": "3D only: scene light rig as data."
+          "description": "3D only: scene light rig as data.",
+          "properties": {
+            "ambient": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "position": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                }
+              }
+            },
+            "directional": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "position": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                }
+              }
+            },
+            "hemisphere": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "groundColor": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "points": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "intensity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "position": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "distance": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "decay": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "position"
+                ]
+              }
+            },
+            "environment": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "room",
+                "none"
+              ]
+            },
+            "toneMapping": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "aces",
+                "none"
+              ]
+            }
+          }
         },
         "post": {
           "types": [
             "object"
           ],
-          "description": "3D only: post-processing stack (bloom/vignette)."
+          "description": "3D only: post-processing stack (bloom/vignette).",
+          "properties": {
+            "bloom": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "threshold": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "smoothing": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            },
+            "vignette": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "offset": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "darkness": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            }
+          }
         },
         "bodies": {
           "types": [
@@ -43044,9 +43941,14 @@
         },
         "anchor": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "How the shape aligns to its projected position. Default varies by `shape`."
+          "description": "How the shape aligns to its projected position. Default varies by `shape`.",
+          "enumValues": [
+            "top-left",
+            "ground",
+            "center"
+          ]
         },
         "width": {
           "types": [
@@ -43219,6 +44121,22 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "offset": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "offset",
+                  "color"
                 ]
               }
             }
@@ -43376,6 +44294,22 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "offset": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "offset",
+                  "color"
                 ]
               }
             }
@@ -43777,9 +44711,14 @@
         },
         "anchor": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "How the sprite aligns to its projected position. Default `'top-left'`."
+          "description": "How the sprite aligns to its projected position. Default `'top-left'`.",
+          "enumValues": [
+            "top-left",
+            "ground",
+            "center"
+          ]
         },
         "width": {
           "types": [
@@ -43946,9 +44885,14 @@
         },
         "anchor": {
           "types": [
-            "object"
+            "string"
           ],
-          "description": "anchor prop"
+          "description": "anchor prop",
+          "enumValues": [
+            "top-left",
+            "ground",
+            "center"
+          ]
         },
         "offsetX": {
           "types": [
@@ -44095,7 +45039,12 @@
               },
               "anchor": {
                 "types": [
-                  "object"
+                  "string"
+                ],
+                "enumValues": [
+                  "top-left",
+                  "ground",
+                  "center"
                 ]
               },
               "width": {
@@ -44259,6 +45208,22 @@
                     "items": {
                       "types": [
                         "object"
+                      ],
+                      "properties": {
+                        "offset": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "color": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "offset",
+                        "color"
                       ]
                     }
                   }
@@ -44412,6 +45377,22 @@
                     "items": {
                       "types": [
                         "object"
+                      ],
+                      "properties": {
+                        "offset": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "color": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "offset",
+                        "color"
                       ]
                     }
                   }
@@ -44825,7 +45806,12 @@
               },
               "anchor": {
                 "types": [
-                  "object"
+                  "string"
+                ],
+                "enumValues": [
+                  "top-left",
+                  "ground",
+                  "center"
                 ]
               },
               "width": {
@@ -45005,7 +45991,12 @@
               },
               "anchor": {
                 "types": [
-                  "object"
+                  "string"
+                ],
+                "enumValues": [
+                  "top-left",
+                  "ground",
+                  "center"
                 ]
               },
               "offsetX": {
@@ -45324,13 +46315,195 @@
           "types": [
             "object"
           ],
-          "description": "3D scene light rig as data — ambient/directional/hemisphere/point lights + optional 'room' environment for PBR reflections. Omitted → the standard fixed rig."
+          "description": "3D scene light rig as data — ambient/directional/hemisphere/point lights + optional 'room' environment for PBR reflections. Omitted → the standard fixed rig.",
+          "properties": {
+            "ambient": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "position": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                }
+              }
+            },
+            "directional": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "position": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                }
+              }
+            },
+            "hemisphere": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "color": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "groundColor": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "points": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "intensity": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "color": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "position": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "distance": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "decay": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "position"
+                ]
+              }
+            },
+            "environment": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "room",
+                "none"
+              ]
+            },
+            "toneMapping": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "aces",
+                "none"
+              ]
+            }
+          }
         },
         "post": {
           "types": [
             "object"
           ],
-          "description": "3D post-processing stack — bloom (emissive glow / neon) and vignette. Omitted → no post pass."
+          "description": "3D post-processing stack — bloom (emissive glow / neon) and vignette. Omitted → no post pass.",
+          "properties": {
+            "bloom": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "intensity": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "threshold": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "smoothing": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            },
+            "vignette": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "offset": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "darkness": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            }
+          }
         },
         "tileClickEvent": {
           "types": [
