@@ -385,7 +385,7 @@ impl Parser {
         let mut traits = Vec::new();
         let mut pages = Vec::new();
         let mut body = Vec::new();
-        let mut theme: Option<String> = None;
+        let mut theme: Option<ThemeDecl> = None;
 
         loop {
             self.skip_newlines();
@@ -492,21 +492,210 @@ impl Parser {
     }
 
     /// `theme "<name>"` — the orbital's active skin (a reference to a
-    /// built-in registry theme or an orbital-declared inline theme).
-    fn parse_orbital_theme(&mut self) -> Result<String, ParseError> {
- self.expect_keyword("theme")?;
+    /// built-in registry theme), or `theme { name: "…" tokens { … }
+    /// variants { … } }` — an inline token definition the orbital carries
+    /// itself (lowers to `ThemeRef::Inline`).
+    fn parse_orbital_theme(&mut self) -> Result<ThemeDecl, ParseError> {
+        self.expect_keyword("theme")?;
         match self.peek().clone() {
             TokenKind::String(s) => {
                 self.advance();
                 self.expect_newline_or_eof()?;
-                Ok(s)
+                Ok(ThemeDecl::Reference(s))
             }
+            TokenKind::LBrace => self.parse_inline_theme(),
             other => Err(ParseError::UnexpectedToken {
-                expected: "a quoted theme key, e.g. theme \"linear-clean-light\"".to_string(),
+                expected: "a quoted theme key, e.g. theme \"linear-clean-light\", or an inline theme { … } block".to_string(),
                 got: format!("{:?}", other),
                 span: self.peek_span(),
             }),
         }
+    }
+
+    /// `{ name: "…" tokens { … } variants { dark { … } } }` — the opening
+    /// `theme` keyword is consumed; the cursor sits on the `{`.
+    fn parse_inline_theme(&mut self) -> Result<ThemeDecl, ParseError> {
+        let span = self.peek_span();
+        self.expect_kind(&TokenKind::LBrace, "'{' to open an inline theme")?;
+        let mut name: Option<String> = None;
+        let mut tokens = ThemeTokenMaps::default();
+        let mut variants: Vec<(String, ThemeTokenMaps)> = Vec::new();
+        loop {
+            self.skip_newlines();
+            match self.peek().clone() {
+                TokenKind::RBrace => {
+                    self.advance();
+                    break;
+                }
+                TokenKind::Identifier(kw) if kw == "name" => {
+                    self.advance();
+                    self.expect_kind(&TokenKind::Colon, "':' after name")?;
+                    match self.peek().clone() {
+                        TokenKind::String(s) => {
+                            self.advance();
+                            name = Some(s);
+                        }
+                        other => {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: "a quoted theme name".to_string(),
+                                got: format!("{:?}", other),
+                                span: self.peek_span(),
+                            })
+                        }
+                    }
+                    self.expect_newline_or_eof()?;
+                }
+                TokenKind::Identifier(kw) if kw == "tokens" => {
+                    self.advance();
+                    tokens = self.parse_theme_token_categories()?;
+                }
+                TokenKind::Identifier(kw) if kw == "variants" => {
+                    self.advance();
+                    self.expect_kind(&TokenKind::LBrace, "'{' to open variants")?;
+                    loop {
+                        self.skip_newlines();
+                        if matches!(self.peek(), TokenKind::RBrace) {
+                            self.advance();
+                            break;
+                        }
+                        let vname = self.expect_ident()?;
+                        let maps = self.parse_theme_token_categories()?;
+                        variants.push((vname, maps));
+                    }
+                    self.expect_newline_or_eof()?;
+                }
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "name:, tokens { … }, variants { … }, or }".to_string(),
+                        got: format!("{:?}", other),
+                        span: self.peek_span(),
+                    })
+                }
+            }
+        }
+        self.expect_newline_or_eof()?;
+        let name = name.ok_or(ParseError::UnexpectedToken {
+            expected: "an inline theme requires name: \"…\"".to_string(),
+            got: "end of theme block".to_string(),
+            span,
+        })?;
+        Ok(ThemeDecl::Inline(InlineTheme { name, tokens, variants }))
+    }
+
+    /// `{ colors { … } radii { … } spacing { … } typography { … } shadows
+    /// { … } }` — the flat token-category block shared by `tokens` and each
+    /// named variant. The cursor sits on the category block's `{`.
+    fn parse_theme_token_categories(&mut self) -> Result<ThemeTokenMaps, ParseError> {
+        self.expect_kind(&TokenKind::LBrace, "'{' to open a token category block")?;
+        let mut maps = ThemeTokenMaps::default();
+        loop {
+            self.skip_newlines();
+            match self.peek().clone() {
+                TokenKind::RBrace => {
+                    self.advance();
+                    break;
+                }
+                TokenKind::Identifier(cat) => {
+                    let cat_span = self.peek_span();
+                    self.advance();
+                    let entries = self.parse_theme_string_map()?;
+                    match cat.as_str() {
+                        "colors" => maps.colors = entries,
+                        "radii" => maps.radii = entries,
+                        "spacing" => maps.spacing = entries,
+                        "typography" => maps.typography = entries,
+                        "shadows" => maps.shadows = entries,
+                        _ => {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: "a token category: colors, radii, spacing, typography, or shadows"
+                                    .to_string(),
+                                got: cat,
+                                span: cat_span,
+                            })
+                        }
+                    }
+                }
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "a token category (colors, radii, spacing, typography, shadows) or }"
+                            .to_string(),
+                        got: format!("{:?}", other),
+                        span: self.peek_span(),
+                    })
+                }
+            }
+        }
+        self.expect_newline_or_eof()?;
+        Ok(maps)
+    }
+
+    /// `{ key: "value" … }` — one `ident: "string"` entry per line (optional
+    /// trailing comma). The cursor sits on the map's `{`.
+    fn parse_theme_string_map(&mut self) -> Result<Vec<(String, String)>, ParseError> {
+        self.expect_kind(&TokenKind::LBrace, "'{' to open a token map")?;
+        let mut entries = Vec::new();
+        loop {
+            self.skip_newlines();
+            match self.peek().clone() {
+                TokenKind::RBrace => {
+                    self.advance();
+                    break;
+                }
+                TokenKind::Identifier(key) => {
+                    self.advance();
+                    self.expect_kind(&TokenKind::Colon, "':' after a token name")?;
+                    match self.peek().clone() {
+                        TokenKind::String(value) => {
+                            self.advance();
+                            entries.push((key, value));
+                        }
+                        other => {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: "a quoted token value".to_string(),
+                                got: format!("{:?}", other),
+                                span: self.peek_span(),
+                            })
+                        }
+                    }
+                    if matches!(self.peek(), TokenKind::Comma) {
+                        self.advance();
+                    }
+                    self.expect_newline_or_eof()?;
+                }
+                TokenKind::Integer(n) => {
+                    // Numeric token keys are conventional for scale categories
+                    // (spacing { 0: … 4: … } → --space-0 … --space-4).
+                    self.advance();
+                    let key = format!("{}", n);
+                    self.expect_kind(&TokenKind::Colon, "':' after a token name")?;
+                    match self.peek().clone() {
+                        TokenKind::String(value) => {
+                            self.advance();
+                            entries.push((key, value));
+                        }
+                        other => {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: "a quoted token value".to_string(),
+                                got: format!("{:?}", other),
+                                span: self.peek_span(),
+                            })
+                        }
+                    }
+                    if matches!(self.peek(), TokenKind::Comma) {
+                        self.advance();
+                    }
+                    self.expect_newline_or_eof()?;
+                }
+                other => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "a token name or }".to_string(),
+                        got: format!("{:?}", other),
+                        span: self.peek_span(),
+                    })
+                }
+            }
+        }
+        Ok(entries)
     }
 
     fn parse_use_decl(&mut self) -> Result<UseDecl, ParseError> {
@@ -712,6 +901,18 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
             | "datetime"
             | "duration"
             | "money"
+            // A single primitive value of bounded kind:
+            // `string | number | boolean | null`. Listed here so `v : scalar`
+            // parses as a PRIMITIVE rather than an unknown named type that
+            // erases to string — the erasure that made `json` invisible.
+            | "scalar"
+            // Deliberately OPEN data — an audit snapshot of an arbitrary row, a
+            // third-party response body, an upstream event's payload at a
+            // generic wiring atom. Same wire shape as `json`, opposite intent:
+            // `json` means "not typed yet", `opaque` means "not closeable, and
+            // a struct here would be a lie". Listed so `v : opaque` parses as a
+            // primitive rather than an unknown named type.
+            | "opaque"
             // Uploaded file/attachment — a struct value at rest
             // ({name, url, mimeType, sizeBytes}); promoted 2026-08-20.
             | "file"
@@ -750,6 +951,9 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         // `@entity` self-reference: payload-positions-only, so an entity field
         // must reject it the same way it rejects the config-only brands.
         TypeExpr::BoundEntityRow => Some("@entity"),
+        TypeExpr::EventPayloadOf(_) => Some("@payload"),
+        TypeExpr::NamedEntityRow(_) => Some("@entity <knob>"),
+        TypeExpr::ExpectedIdentityRow => Some("@user"),
         TypeExpr::EntityRef => Some("entity"),
         TypeExpr::EventRef => Some("event"),
         TypeExpr::Slot => Some("slot"),
@@ -865,7 +1069,7 @@ mod tests {
     fn parse_app_header_theme_after_description() {
         let prog = p("app MyApp \"1.0.0\"\n\"A themed app\"\ntheme \"linear-clean-light\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
         assert_eq!(prog.app.description, Some("A themed app".to_string()));
-        assert_eq!(prog.app.theme, Some("linear-clean-light".to_string()));
+        assert_eq!(prog.app.theme, Some(ThemeDecl::Reference("linear-clean-light".to_string())));
         assert_eq!(prog.orbitals.len(), 1);
     }
 
@@ -873,7 +1077,7 @@ mod tests {
     fn parse_app_header_theme_without_description() {
         let prog = p("app MyApp \"1.0.0\"\ntheme \"terminal-dark\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
         assert_eq!(prog.app.description, None);
-        assert_eq!(prog.app.theme, Some("terminal-dark".to_string()));
+        assert_eq!(prog.app.theme, Some(ThemeDecl::Reference("terminal-dark".to_string())));
         assert_eq!(prog.orbitals.len(), 1);
     }
 
@@ -881,7 +1085,64 @@ mod tests {
     fn app_theme_does_not_capture_orbital_theme() {
         let prog = p("app MyApp \"1.0.0\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme \"clay-light\"\n}");
         assert_eq!(prog.app.theme, None);
-        assert_eq!(prog.orbitals[0].theme, Some("clay-light".to_string()));
+        assert_eq!(prog.orbitals[0].theme, Some(ThemeDecl::Reference("clay-light".to_string())));
+    }
+
+    #[test]
+    fn parse_inline_theme_block() {
+        let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    name: \"riya-graph-paper\"\n    tokens {\n      colors {\n        primary: \"#e11d48\"\n        background: \"#0b1020\"\n      }\n      typography {\n        fontFamily: \"future-narrow\"\n      }\n    }\n    variants {\n      dark {\n        colors {\n          background: \"#05070f\"\n        }\n      }\n    }\n  }\n}";
+        let prog = p(src);
+        let theme = prog.orbitals[0].theme.clone().expect("theme parsed");
+        match theme {
+            ThemeDecl::Inline(inline) => {
+                assert_eq!(inline.name, "riya-graph-paper");
+                assert_eq!(
+                    inline.tokens.colors,
+                    vec![
+                        ("primary".to_string(), "#e11d48".to_string()),
+                        ("background".to_string(), "#0b1020".to_string()),
+                    ]
+                );
+                assert_eq!(
+                    inline.tokens.typography,
+                    vec![("fontFamily".to_string(), "future-narrow".to_string())]
+                );
+                assert_eq!(inline.variants.len(), 1);
+                assert_eq!(inline.variants[0].0, "dark");
+                assert_eq!(
+                    inline.variants[0].1.colors,
+                    vec![("background".to_string(), "#05070f".to_string())]
+                );
+            }
+            other => panic!("expected inline theme, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn parse_inline_theme_requires_name() {
+        let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    tokens {\n      colors {\n        primary: \"#e11d48\"\n      }\n    }\n  }\n}";
+        let err = parse_str(src).expect_err("name-less inline theme must fail");
+        assert!(format!("{err}").contains("requires name"), "got: {err}");
+    }
+
+    #[test]
+    fn parse_inline_theme_numeric_spacing_keys() {
+        let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    name: \"t\"\n    tokens {\n      spacing {\n        0: \"0px\"\n        4: \"16px\"\n        12: \"48px\"\n      }\n    }\n  }\n}";
+        let prog = p(src);
+        let theme = prog.orbitals[0].theme.clone().expect("theme parsed");
+        match theme {
+            ThemeDecl::Inline(inline) => {
+                assert_eq!(
+                    inline.tokens.spacing,
+                    vec![
+                        ("0".to_string(), "0px".to_string()),
+                        ("4".to_string(), "16px".to_string()),
+                        ("12".to_string(), "48px".to_string()),
+                    ]
+                );
+            }
+            other => panic!("expected inline theme, got {:?}", other),
+        }
     }
 
     #[test]
@@ -1054,6 +1315,53 @@ mod tests {
         match &prog.type_aliases[0].body {
             TypeBody::Enum(v) => assert_eq!(v.len(), 3),
             _ => panic!("expected enum"),
+        }
+    }
+
+    #[test]
+    fn parse_type_alias_mixed_union_is_a_type_union() {
+        // A union carrying a member that could never be a vocabulary word (an
+        // array here) is unambiguously a TYPE union, so it must not collapse to
+        // the string-enum reading that `parse_type_alias` above asserts.
+        let src = "type ControlValue = string | number | [string] | FileValue\n\
+                   orbital O {\n  entity E { id : string! }\n}";
+        let prog = p(src);
+        match &prog.type_aliases[0].body {
+            TypeBody::Alias(TypeExpr::Union(parts)) => {
+                assert_eq!(parts.len(), 4);
+                assert!(matches!(parts[2], TypeExpr::Array(_)), "got {:?}", parts[2]);
+            }
+            other => panic!("expected an alias to a union, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_type_alias_all_ident_union_stays_an_enum() {
+        // The safety property: a union of bare names is indistinguishable from a
+        // vocabulary at parse time, so it MUST stay an enum here. The type
+        // reading, when there is one, is recovered later by
+        // `reclassify_struct_unions`, which can see the whole alias map.
+        // Guards `type Direction = up | down | left | right` in the live corpus.
+        let src = "type Direction = up | down | left | right\n\
+                   orbital O {\n  entity E { id : string! }\n}";
+        let prog = p(src);
+        match &prog.type_aliases[0].body {
+            TypeBody::Enum(v) => assert_eq!(v, &["up", "down", "left", "right"]),
+            other => panic!("expected enum, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn parse_type_alias_to_a_bare_array() {
+        // `type X = [string]` was rejected outright before the alias body used
+        // the general type grammar.
+        let src = "type Tags = [string]\norbital O {\n  entity E { id : string! }\n}";
+        let prog = p(src);
+        match &prog.type_aliases[0].body {
+            TypeBody::Alias(TypeExpr::Array(inner)) => {
+                assert!(matches!(**inner, TypeExpr::Primitive(ref n) if n == "string"));
+            }
+            other => panic!("expected an alias to an array, got {other:?}"),
         }
     }
 

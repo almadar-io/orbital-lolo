@@ -358,6 +358,9 @@ fn format_type_expr(te: &TypeExpr) -> String {
     match te {
         TypeExpr::Primitive(s) => format!("prim:{s}"),
         TypeExpr::BoundEntityRow => "@entity".to_string(),
+        TypeExpr::EventPayloadOf(knob) => format!("@payload({knob})"),
+        TypeExpr::NamedEntityRow(knob) => format!("@entity({knob})"),
+        TypeExpr::ExpectedIdentityRow => "@user".to_string(),
         TypeExpr::Named(s) => format!("named:{s}"),
         TypeExpr::StringLiteral(s) => format!("lit:{s:?}"),
         TypeExpr::Array(inner) => format!("[{}]", format_type_expr(inner)),
@@ -555,6 +558,11 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
                 visit_expr_refs(v, out);
             }
         }
+        // Sigil type constructors reference no NAMED type — their argument is a
+        // config knob, resolved at compile time, not a type reference.
+        TypeExpr::EventPayloadOf(_)
+        | TypeExpr::NamedEntityRow(_)
+        | TypeExpr::ExpectedIdentityRow => {}
         TypeExpr::RelationMany(n) | TypeExpr::RelationManyNonEmpty(n) => {
             out.insert(n.clone());
         }

@@ -155,17 +155,34 @@ impl Parser {
             return Ok(TypeBody::Struct(fields));
         }
 
-        // Possibly an enum: `a | b | c`. We parse the first identifier and look ahead.
-        let first = self.expect_ident()?;
-        if matches!(self.peek(), TokenKind::Pipe) {
-            let mut variants = vec![first];
-            while matches!(self.peek(), TokenKind::Pipe) {
-                self.advance();
-                variants.push(self.expect_ident()?);
+        // Everything else is an ordinary TYPE EXPRESSION. Delegating to
+        // `parse_type_expr` is what makes `[string]`, `"lit"`, `Map k v` and a
+        // mixed union like `string | number | FileValue` legal alias bodies:
+        // one grammar for every type position instead of the identifier-only
+        // subset this arm used to accept.
+        let expr = self.parse_type_expr()?;
+
+        // A union whose members are ALL bare names stays a string ENUM.
+        // `up | down | left | right` is a vocabulary, not a type union, and the
+        // parser cannot tell it from `DrawShape | DrawText` — only the assembled
+        // alias map can. So the enum reading is kept here and the TYPE reading is
+        // recovered later by `reclassify_struct_unions`, which has that map.
+        // A member that could never have been a vocabulary word (an array, a
+        // string literal, an inline object) is not ambiguous, so those unions go
+        // through as type unions directly.
+        if let TypeExpr::Union(parts) = &expr {
+            let all_names: Option<Vec<String>> = parts
+                .iter()
+                .map(|p| match p {
+                    TypeExpr::Named(n) | TypeExpr::Primitive(n) => Some(n.clone()),
+                    _ => None,
+                })
+                .collect();
+            if let Some(variants) = all_names {
+                return Ok(TypeBody::Enum(variants));
             }
-            return Ok(TypeBody::Enum(variants));
         }
-        Ok(TypeBody::Alias(TypeExpr::Named(first)))
+        Ok(TypeBody::Alias(expr))
     }
 
     /// Parse the body of a `type Foo = Entity ...` shape.
@@ -397,6 +414,31 @@ impl Parser {
         Ok(base)
     }
 
+    /// Optionally consume a `@config.<knob>` argument to a sigil type
+    /// constructor, returning the bare knob name.
+    ///
+    /// `@config.action` lexes as one `Sigil("config.action")`, so this is a
+    /// prefix strip rather than a two-token parse. Returns `None` when the next
+    /// token is not such a sigil, which is how the nullary forms (`@entity`,
+    /// `@user`) fall through — the CALLER decides whether nullary is legal for
+    /// its constructor, because arity is per-constructor.
+    fn parse_config_ref_knob_arg(&mut self) -> Result<Option<String>, ParseError> {
+        let TokenKind::Sigil(s) = self.peek().clone() else {
+            return Ok(None);
+        };
+        let Some(knob) = s.strip_prefix("config.") else {
+            return Ok(None);
+        };
+        // A dotted path (`@config.a.b`) is not a knob reference; leave it
+        // unconsumed so the caller reports it rather than silently truncating.
+        if knob.is_empty() || knob.contains('.') {
+            return Ok(None);
+        }
+        let knob = knob.to_string();
+        self.advance();
+        Ok(Some(knob))
+    }
+
     pub(crate) fn parse_type_atom(&mut self) -> Result<TypeExpr, ParseError> {
         // `[T]`
         if matches!(self.peek(), TokenKind::LBracket) {
@@ -442,12 +484,50 @@ impl Parser {
             }
             return Ok(TypeExpr::Object(fields));
         }
-        // `@entity` — bound-entity row self-reference (payload positions only;
-        // the Stage-2 checker rejects it elsewhere).
+        // Sigil type constructors. In TYPE position a sigil denotes the TYPE of
+        // the thing it names, taking arguments by juxtaposition exactly like
+        // `Map K V` below. In EXPRESSION position the same sigils keep denoting
+        // values (`@entity.field`, `@payload.x`, `@user.role`) — position is
+        // what distinguishes type from value, and this arm is the only place
+        // the type reading is produced, so the two grammars cannot overlap.
+        //
+        // Arity is part of each constructor's contract, not optional sugar:
+        // `@payload` bare would have to mean "the current event's payload", but
+        // a config knob has no current event and a payload position would be
+        // self-referential — so it is rejected here rather than allowed to
+        // lower into a dangling sentinel.
         if let TokenKind::Sigil(s) = self.peek().clone() {
-            if s == "entity" {
-                self.advance();
-                return Ok(TypeExpr::BoundEntityRow);
+            match s.as_str() {
+                // `@entity` — the bound entity's row (nullary), or
+                // `@entity <knob>` — the row of the entity that knob names.
+                "entity" => {
+                    self.advance();
+                    return match self.parse_config_ref_knob_arg()? {
+                        Some(knob) => Ok(TypeExpr::NamedEntityRow(knob)),
+                        None => Ok(TypeExpr::BoundEntityRow),
+                    };
+                }
+                // `@payload <knob>` — the payload of the event that knob names.
+                "payload" => {
+                    self.advance();
+                    return match self.parse_config_ref_knob_arg()? {
+                        Some(knob) => Ok(TypeExpr::EventPayloadOf(knob)),
+                        None => Err(ParseError::UnexpectedToken {
+                            expected: "`@payload <@config.knob>` — `@payload` needs the knob whose \
+                                       value names the event; bare `@payload` has no meaning in a \
+                                       type position"
+                                .to_string(),
+                            got: format!("@{s}"),
+                            span: self.peek_span(),
+                        }),
+                    };
+                }
+                // `@user` — the row of the identity this orbital `expects`.
+                "user" => {
+                    self.advance();
+                    return Ok(TypeExpr::ExpectedIdentityRow);
+                }
+                _ => {}
             }
         }
         let name = self.expect_ident()?;

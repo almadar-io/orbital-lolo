@@ -686,7 +686,7 @@ pub(crate) fn lower_trait(
             .as_deref()
             .is_some_and(|name| shared_entity_names.contains(name));
         check_entity_fields_have_setters(t, intrinsic_fields, entity_shared)?;
-        check_set_value_types(t, entities)?;
+        check_set_value_types(t, entities, aliases)?;
     }
 
     let mut capabilities: Vec<String> = t.capabilities.clone();

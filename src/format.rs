@@ -10,9 +10,9 @@ use std::collections::HashMap;
 
 use crate::ast::{
     AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst,
-    ExpectsDecl, ExpectsKind, Listen, Orbital, Page, Persistence, Program, State, Tick,
-    TickInterval, Trait, TraitRefData, TraitScope, Transition, TypeAlias, TypeAnnotation, TypeBody,
-    TypeExpr, UseDecl,
+    ExpectsDecl, ExpectsKind, InlineTheme, Listen, Orbital, Page, Persistence, Program, State,
+    ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait, TraitRefData, TraitScope, Transition,
+    TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
 };
 
 /// Format a `Program` AST into canonical `.lolo` source text.
@@ -20,6 +20,14 @@ pub fn format_program(program: &Program) -> String {
     let mut f = Formatter::new(program.comments.clone());
     f.fmt_program(program);
     f.finish()
+}
+
+fn theme_maps_empty(maps: &ThemeTokenMaps) -> bool {
+    maps.colors.is_empty()
+        && maps.radii.is_empty()
+        && maps.spacing.is_empty()
+        && maps.typography.is_empty()
+        && maps.shadows.is_empty()
 }
 
 struct Formatter {
@@ -157,9 +165,102 @@ impl Formatter {
         if let Some(theme) = &app.theme {
             self.write_newline();
             self.write_indent();
-            self.output.push_str("theme ");
-            self.write_quoted_string(theme);
+            self.fmt_theme_decl(theme);
         }
+    }
+
+    fn fmt_theme_decl(&mut self, decl: &ThemeDecl) {
+        match decl {
+            ThemeDecl::Reference(key) => {
+                self.output.push_str("theme ");
+                self.write_quoted_string(key);
+            }
+            ThemeDecl::Inline(inline) => {
+                self.output.push_str("theme {");
+                self.write_newline();
+                self.indent();
+                self.write_indent();
+                self.output.push_str("name: ");
+                self.write_quoted_string(&inline.name);
+                if !theme_maps_empty(&inline.tokens) {
+                    self.write_newline();
+                    self.write_indent();
+                    self.output.push_str("tokens ");
+                    self.fmt_theme_token_maps(&inline.tokens);
+                }
+                if !inline.variants.is_empty() {
+                    self.write_newline();
+                    self.write_indent();
+                    self.output.push_str("variants {");
+                    self.write_newline();
+                    self.indent();
+                    for (i, (vname, maps)) in inline.variants.iter().enumerate() {
+                        if i > 0 {
+                            self.write_newline();
+                        }
+                        self.write_indent();
+                        self.output.push_str(vname);
+                        self.output.push(' ');
+                        self.fmt_theme_token_maps(maps);
+                        self.write_newline();
+                    }
+                    self.dedent();
+                    self.write_indent();
+                    self.output.push('}');
+                }
+                self.write_newline();
+                self.dedent();
+                self.write_indent();
+                self.output.push('}');
+            }
+        }
+    }
+
+    /// `{ colors { … } … }` — a token-category block; the closing `}` is left
+    /// on its own line and the caller owns the trailing newline.
+    fn fmt_theme_token_maps(&mut self, maps: &ThemeTokenMaps) {
+        self.output.push('{');
+        self.write_newline();
+        self.indent();
+        let categories: [(&str, &[(String, String)]); 5] = [
+            ("colors", &maps.colors),
+            ("radii", &maps.radii),
+            ("spacing", &maps.spacing),
+            ("typography", &maps.typography),
+            ("shadows", &maps.shadows),
+        ];
+        let mut first = true;
+        for (cat, entries) in categories {
+            if entries.is_empty() {
+                continue;
+            }
+            if !first {
+                self.write_newline();
+            }
+            first = false;
+            self.write_indent();
+            self.output.push_str(cat);
+            self.output.push_str(" {");
+            self.write_newline();
+            self.indent();
+            for (i, (key, value)) in entries.iter().enumerate() {
+                if i > 0 {
+                    self.write_newline();
+                }
+                self.write_indent();
+                self.output.push_str(key);
+                self.output.push_str(": ");
+                self.write_quoted_string(value);
+            }
+            self.write_newline();
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+        }
+        self.write_newline();
+        self.dedent();
+        self.write_indent();
+        self.output.push('}');
     }
 
     fn fmt_type_alias(&mut self, alias: &TypeAlias) {
@@ -334,6 +435,15 @@ impl Formatter {
 
     fn fmt_type_expr(&mut self, ty: &TypeExpr) {
         match ty {
+            TypeExpr::EventPayloadOf(knob) => {
+                self.output.push_str(&format!("@payload @config.{knob}"));
+            }
+            TypeExpr::NamedEntityRow(knob) => {
+                self.output.push_str(&format!("@entity @config.{knob}"));
+            }
+            TypeExpr::ExpectedIdentityRow => {
+                self.output.push_str("@user");
+            }
             TypeExpr::Primitive(name) | TypeExpr::Named(name) => {
                 self.output.push_str(name);
             }
@@ -570,8 +680,7 @@ impl Formatter {
             }
             first = false;
             self.write_indent();
-            self.output.push_str("theme ");
-            self.write_quoted_string(theme);
+            self.fmt_theme_decl(theme);
             self.write_newline();
         }
         for expr in &orbital.body {

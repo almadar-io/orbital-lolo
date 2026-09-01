@@ -1,5 +1,16 @@
 use super::*;
 
+/// Capture which config knob an `emits { @config.<knob> -> … }` declaration
+/// named, while the reference is still spelled out.
+///
+/// L1 is the only place this is free: the inline phase later resolves the
+/// reference to a literal event name and overwrites `event`, so by L2 the
+/// provenance is gone. Downstream, a `Some(knob)` marks the emit as an atom's
+/// OFFER rather than an authored obligation.
+fn definer_knob_of(event: &str) -> Option<String> {
+    orbital_core::schema::config_ref_event_knob(event).map(str::to_string)
+}
+
 pub(crate) fn lower_emit(
     e: &Emit,
     aliases: &BTreeMap<String, TypeAliasResolved>,
@@ -50,6 +61,7 @@ pub(crate) fn lower_emit(
                 scope,
                 payload_schema: payload,
                 event_id: None,
+                definer_knob: definer_knob_of(&e.event),
             });
         }
         // No alias and no inline payload → payloadless emit.
@@ -65,6 +77,7 @@ pub(crate) fn lower_emit(
             }),
             payload_schema: None,
             event_id: None,
+            definer_knob: definer_knob_of(&e.event),
         });
     }
     // Inline payload path: each field whose type_expr is `TypeExpr::Named`
@@ -180,6 +193,7 @@ pub(crate) fn lower_emit(
             _ => None,
         }),
         payload_schema: Some(fields),
+        definer_knob: definer_knob_of(&e.event),
         event_id: None,
     })
 }
@@ -360,6 +374,8 @@ pub(crate) fn type_expr_to_payload_fields(
                 } else if let Some(nested) = struct_payload_properties(ftype, aliases, type_params)
                 {
                     ("object".to_string(), Some(nested))
+                } else if let Some(variants) = union_payload_variants(ftype, aliases, type_params) {
+                    ("union".to_string(), Some(variants))
                 } else if let Some(entity_fields) = named_entity_fields(ftype, entities_by_name) {
                     // An ENTITY named in a field position expands to
                     // `object` + its own fields — the same shape `lower_emit`'s
@@ -462,6 +478,62 @@ pub(crate) fn type_param_sentinel(te: &TypeExpr, type_params: &[&str]) -> Option
 /// as nested `PayloadField`s so codegen can emit a strict inline object type.
 /// Returns `None` for entities, primitives, arrays, etc. (those keep the
 /// existing flat / dotted-flatten handling). Recurses for nested structs.
+/// The variants of a TYPE union in PAYLOAD position, one `PayloadField` each.
+///
+/// A payload field typed `string | number | boolean | [string] | FileValue` is a
+/// union, not a vocabulary, and `type_expr_to_string` answers `"string"` for
+/// EVERY union — so before this the field lowered as a plain string and the
+/// render-ui binding checker reported the trait "declares it as 'string'",
+/// contradicting the `.lolo` it came from.
+///
+/// Uses the ONE union predicate (`entity::is_type_union`) so payload position
+/// agrees with entity position; a vocabulary (`up | down | left | right`) is not
+/// a union here either and keeps falling through to the enum/string reading.
+///
+/// No schema change: `PayloadField.properties` is a `Vec<PayloadField>` whose
+/// elements carry names, so the variants ride in it exactly as a struct's
+/// members do, tagged by `field_type: "union"` on the parent.
+pub(crate) fn union_payload_variants(
+    te: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    type_params: &[&str],
+) -> Option<Vec<PayloadField>> {
+    let parts: &Vec<TypeExpr> = match te {
+        TypeExpr::Union(parts) => parts,
+        TypeExpr::Named(n) => match aliases.get(n) {
+            Some(TypeAliasResolved::Type(TypeExpr::Union(parts))) => parts,
+            _ => return None,
+        },
+        _ => return None,
+    };
+    if !crate::lower::entity::is_type_union(parts, aliases) {
+        return None;
+    }
+    let mut out = Vec::with_capacity(parts.len());
+    for p in parts {
+        let (name, field_type, properties) = match p {
+            TypeExpr::Array(inner) => match struct_payload_properties(inner, aliases, type_params) {
+                Some(elem) => ("array".to_string(), "[object]".to_string(), Some(elem)),
+                None => ("array".to_string(), format!("[{}]", type_expr_to_string(inner)), None),
+            },
+            TypeExpr::Named(n) => match struct_payload_properties(p, aliases, type_params) {
+                Some(nested) => (n.clone(), "object".to_string(), Some(nested)),
+                None => (n.clone(), type_expr_to_string(p), None),
+            },
+            TypeExpr::Primitive(n) => (n.clone(), type_expr_to_string(p), None),
+            _ => return None,
+        };
+        out.push(PayloadField {
+            name,
+            field_type,
+            required: None,
+            description: None,
+            properties,
+        });
+    }
+    Some(out)
+}
+
 pub(crate) fn struct_payload_properties(
     te: &TypeExpr,
     aliases: &BTreeMap<String, TypeAliasResolved>,
@@ -497,6 +569,8 @@ pub(crate) fn struct_payload_properties(
             ("[object]".to_string(), Some(elem))
         } else if let Some(nested) = struct_payload_properties(ty, aliases, type_params) {
             ("object".to_string(), Some(nested))
+        } else if let Some(variants) = union_payload_variants(ty, aliases, type_params) {
+            ("union".to_string(), Some(variants))
         } else {
             (type_expr_to_string(ty), None)
         };

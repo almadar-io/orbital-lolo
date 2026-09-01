@@ -56,9 +56,40 @@ pub struct AppHeader {
     pub description: Option<String>,
     /// `theme "<key>"` on the line after the header — the APP-level skin
     /// every orbital's `@currentTheme` seeds from unless the orbital
-    /// declares its own `theme`. A full `<base>-<light|dark>` registry key.
-    pub theme: Option<String>,
+    /// declares its own `theme`. A full `<base>-<light|dark>` registry key,
+    /// or an inline `theme { … }` token definition.
+    pub theme: Option<ThemeDecl>,
     pub span: Span,
+}
+
+/// A `theme` declaration — either a registry-key reference
+/// (`theme "<key>"`, lowers to `ThemeRef::Reference`) or an inline token
+/// definition (`theme { name: "…" tokens { … } variants { … } }`, lowers to
+/// `ThemeRef::Inline`).
+#[derive(Debug, Clone, PartialEq)]
+pub enum ThemeDecl {
+    Reference(String),
+    Inline(InlineTheme),
+}
+
+/// Inline theme definition — the `.lolo` surface of `ThemeDefinition`.
+#[derive(Debug, Clone, PartialEq)]
+pub struct InlineTheme {
+    pub name: String,
+    pub tokens: ThemeTokenMaps,
+    pub variants: Vec<(String, ThemeTokenMaps)>,
+}
+
+/// The five flat token categories (`colors`/`radii`/`spacing`/`typography`/
+/// `shadows`); entries keep source order. The typed axes (density, typeScale,
+/// motion, iconography, elevation, geometry) stay `.orb`-JSON-only.
+#[derive(Debug, Clone, Default, PartialEq)]
+pub struct ThemeTokenMaps {
+    pub colors: Vec<(String, String)>,
+    pub radii: Vec<(String, String)>,
+    pub spacing: Vec<(String, String)>,
+    pub typography: Vec<(String, String)>,
+    pub shadows: Vec<(String, String)>,
 }
 
 /// `type Name [T] = ...` declaration. The optional `type_param` is the single
@@ -205,13 +236,13 @@ pub struct Orbital {
     pub extra_entities: Vec<Entity>,
     pub traits: Vec<Trait>,
     pub pages: Vec<Page>,
-    /// `theme "<name>"` — the orbital's active skin, a reference to a
-    /// theme in the built-in `@almadar-ui/themes/` registry (or an
-    /// orbital-declared inline theme). Lowers to `ThemeRef::Reference`.
+    /// `theme "<name>"` / `theme { … }` — the orbital's active skin: a
+    /// reference to a theme in the built-in `@almadar-ui/themes/` registry,
+    /// or an inline token definition carried by the orbital itself.
     /// `@currentTheme` resolves to this at render time. `None` ⇒ no skin
     /// declared (the host omits `data-theme`, or the assembler sets it via
     /// the factory `theme` param).
-    pub theme: Option<String>,
+    pub theme: Option<ThemeDecl>,
     /// Free-floating s-expression body items at the orbital level (e.g.,
     /// `(behavior/compose { ... })`). Lowered to top-level effects on the
     /// orbital that the Compose pass will resolve.
@@ -368,6 +399,30 @@ pub enum TypeExpr {
     /// exactly like an Entity-kinded type parameter's default). Only legal in
     /// event payload positions (Event alias bodies, emits/listens payloads).
     BoundEntityRow,
+    /// `@payload <knob>` — the declared payload type of the event that the
+    /// named config knob resolves to. A sigil type constructor applied by
+    /// JUXTAPOSITION, like `Map K V`; the language has exactly two application
+    /// forms (Lisp `(fn args)` in expressions, juxtaposition in types) and a
+    /// third would be an inconsistency.
+    ///
+    /// The argument is a value REFERENCE, not a type — this is the language's
+    /// first dependent type, so it is deliberately fenced: the knob must be
+    /// declared on the same trait, resolution is compile-time and total
+    /// (resolve or hard error), and there is no nesting.
+    ///
+    /// Distinct from the expression-position `@payload.x`, which reads the
+    /// CURRENT event's payload. Same word, different grammar position,
+    /// different referent — the parser change is scoped to `parse_type_atom`
+    /// so the two can never overlap.
+    EventPayloadOf(String),
+    /// `@entity <knob>` — the row type of the entity that the named config
+    /// knob resolves to. The unary sibling of `BoundEntityRow`: same sigil,
+    /// arity distinguishes "the bound entity" from "the entity that knob names".
+    NamedEntityRow(String),
+    /// `@user` — the row type of the identity this orbital `expects`. The
+    /// identity axis's counterpart to `BoundEntityRow`: lets a reusable atom
+    /// say "the acting user" without naming whose identity entity that is.
+    ExpectedIdentityRow,
     /// `T?` nullable.
     Optional(Box<TypeExpr>),
     /// `T*` one-to-many relation.

@@ -218,3 +218,182 @@ fn uppercase_type_param_names_are_rejected() {
         "expected the lowercase guidance, got {err:?}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Sigil type constructors (2026-09-01): `@payload <knob>`, `@entity <knob>`,
+// `@user`. In TYPE position a sigil denotes the type of what it names, applied
+// by juxtaposition like `Map K V`. These assert the PRE-INLINE lowering — the
+// sentinel the compiler's resolution pass later consumes.
+// ---------------------------------------------------------------------------
+
+fn config_knob_type(src: &str, knob: &str) -> String {
+    let schema = parse_and_lower_str(src).expect("must lower");
+    let TraitReference::Inline(t) = &schema.orbitals[0].traits[0] else {
+        panic!("inline trait expected")
+    };
+    t.config
+        .as_ref()
+        .expect("trait has config")
+        .get(knob)
+        .unwrap_or_else(|| panic!("knob `{knob}` missing"))
+        .field_type
+        .clone()
+}
+
+const SIGIL_SRC: &str = r#"
+orbital SigilOrbital {
+  entity SigilData [runtime] {
+    id : string!
+  }
+
+  trait SigilRender -> SigilData [interaction, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (render-ui main { type: box  padding: md })
+    }
+    config {
+      action : event = "DO_THING"
+      actionPayload : @payload @config.action
+      targetEntity : entity = "SigilData"
+      targetRow : @entity @config.targetEntity
+      actor : @user
+    }
+  }
+
+  page "/sigil" -> SigilRender
+}
+"#;
+
+#[test]
+fn payload_of_knob_lowers_to_a_knob_carrying_sentinel() {
+    // The knob NAME must survive lowering — resolution needs it to read the
+    // sibling's value, and the generic `type_expr_to_config_string` path would
+    // have thrown it away.
+    assert_eq!(config_knob_type(SIGIL_SRC, "actionPayload"), "@payload(action)");
+}
+
+#[test]
+fn entity_of_knob_lowers_to_a_knob_carrying_sentinel() {
+    assert_eq!(config_knob_type(SIGIL_SRC, "targetRow"), "@entity(targetEntity)");
+}
+
+#[test]
+fn user_lowers_to_the_identity_sentinel() {
+    assert_eq!(config_knob_type(SIGIL_SRC, "actor"), "@user");
+}
+
+#[test]
+fn bare_at_payload_in_type_position_is_rejected() {
+    // Arity is part of the constructor's contract. `@entity` bare is the bound
+    // entity; `@payload` bare would have to mean "the current event's payload",
+    // which a config knob has no notion of — so it must be a parse error, not a
+    // dangling sentinel lowered into the .orb.
+    let src = SIGIL_SRC.replace("@payload @config.action", "@payload");
+    let err = parse_and_lower_str(&src).expect_err("bare @payload must not parse");
+    let msg = format!("{err:?}");
+    assert!(
+        msg.contains("@payload"),
+        "error should name the construct, got: {msg}"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Primitive-variant unions (`scalar | FileItem`)
+// ---------------------------------------------------------------------------
+
+/// A union alias whose members are all KNOWN TYPES lowers to a real union, not
+/// to a string enum of the members' own names. Before this, `scalar | FileItem`
+/// declared a field whose only legal values were the literal words "scalar" and
+/// "FileItem" — it accepted the variant's NAME and rejected the variant's VALUE.
+#[test]
+fn union_of_primitive_and_struct_variants_lowers_to_a_union() {
+    let src = r#"
+app u "1.0.0"
+"probe"
+orbital P {
+  type FileItem = { name : string!, url : string! }
+  type Ctl = scalar | FileItem
+  entity Item [runtime] {
+    id : string!
+    v : Ctl
+  }
+  trait R -> Item [interaction, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (set @entity.v "x")
+    }
+  }
+  page "/p" as PP -> R
+}
+"#;
+    let schema = parse_and_lower_str(src).expect("union alias must lower");
+    let ent = match &schema.orbitals[0].entity {
+        orbital_core::schema::EntityRef::Inline(e) => e,
+        _ => panic!("inline entity expected"),
+    };
+    let v = ent
+        .fields
+        .iter()
+        .find(|f| f.name.as_deref() == Some("v"))
+        .expect("field v");
+    assert_eq!(
+        v.field_type,
+        orbital_core::schema::FieldType::Union,
+        "all-known-type members must lower to Union, got {:?}",
+        v.field_type
+    );
+    let props = v.properties.as_ref().expect("union carries its variants");
+    assert!(
+        props.contains_key("scalar") && props.contains_key("FileItem"),
+        "both variants must be carried, got {:?}",
+        props.keys().collect::<Vec<_>>()
+    );
+}
+
+/// The safety property. A union with even ONE member that names no type keeps
+/// its enum reading — this is what protects `format : date | currency | number`
+/// and `up | down | left | right`, both live in the corpus.
+#[test]
+fn union_with_a_non_type_member_stays_an_enum() {
+    let src = r#"
+app u "1.0.0"
+"probe"
+orbital P {
+  type Fmt = date | currency | number
+  entity Item [runtime] {
+    id : string!
+    f : Fmt
+  }
+  trait R -> Item [interaction, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (set @entity.f date)
+    }
+  }
+  page "/p" as PP -> R
+}
+"#;
+    let schema = parse_and_lower_str(src).expect("enum alias must lower");
+    let ent = match &schema.orbitals[0].entity {
+        orbital_core::schema::EntityRef::Inline(e) => e,
+        _ => panic!("inline entity expected"),
+    };
+    let f = ent
+        .fields
+        .iter()
+        .find(|x| x.name.as_deref() == Some("f"))
+        .expect("field f");
+    assert_ne!(
+        f.field_type,
+        orbital_core::schema::FieldType::Union,
+        "`currency` names no type, so this must stay a string enum"
+    );
+    assert_eq!(
+        f.values.as_deref(),
+        Some(["date", "currency", "number"].map(String::from).as_slice()),
+        "enum members must survive verbatim"
+    );
+}

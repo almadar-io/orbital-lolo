@@ -78,6 +78,7 @@ pub(crate) fn check_entity_fields_have_setters(
 pub(crate) fn check_set_value_types(
     t: &Trait,
     entities: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> Result<(), LowerError> {
     let Some(linked) = &t.linked_entity else {
         return Ok(());
@@ -141,6 +142,7 @@ pub(crate) fn check_set_value_types(
                     &emit_payloads,
                     &config_fields,
                     &HashSet::new(),
+ aliases,
                 )?;
             }
         }
@@ -156,6 +158,7 @@ pub(crate) fn check_set_value_types(
                 &emit_payloads,
                 &config_fields,
                 &HashSet::new(),
+ aliases,
             )?;
         }
     }
@@ -175,6 +178,7 @@ fn check_set_in_expr(
     emit_payloads: &HashMap<&str, &[EventField]>,
     config_fields: &HashMap<&str, &TypeExpr>,
     let_bindings: &HashSet<String>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> Result<(), LowerError> {
     if let SExpression::Array(arr) = expr {
         // `(let ((name init)…) body)` — record the bound names so a later
@@ -205,6 +209,7 @@ fn check_set_in_expr(
                     emit_payloads,
                     config_fields,
                     let_bindings,
+                    aliases,
                 )?;
                 return check_set_in_expr(
                     &arr[2],
@@ -215,6 +220,7 @@ fn check_set_in_expr(
                     emit_payloads,
                     config_fields,
                     &nested,
+                    aliases,
                 );
             }
         }
@@ -242,6 +248,7 @@ fn check_set_in_expr(
                                 config_fields,
                                 entity_fields,
                                 let_bindings,
+                                aliases,
                             )?;
                         }
                     }
@@ -258,6 +265,7 @@ fn check_set_in_expr(
                 emit_payloads,
                 config_fields,
                 let_bindings,
+ aliases,
             )?;
         }
     } else if let SExpression::Object(obj) = expr {
@@ -271,6 +279,7 @@ fn check_set_in_expr(
                 emit_payloads,
                 config_fields,
                 let_bindings,
+ aliases,
             )?;
         }
     }
@@ -293,6 +302,7 @@ fn check_one_set_value(
     config_fields: &HashMap<&str, &TypeExpr>,
     entity_fields: &HashMap<&str, &TypeExpr>,
     let_bindings: &HashSet<String>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> Result<(), LowerError> {
     // ENUM-UNENFORCED (Gap G-LOLO-ENUM-UNENFORCED): when the field declares an
     // enum (an inline `"a" | "b"` union) and the value is a plain string
@@ -303,7 +313,7 @@ fn check_one_set_value(
     // `.orb` — one rule, two call sites.
     if let SExpression::String(s) = value {
         if !s.starts_with('@') && !s.starts_with('?') {
-            if let Some(members) = enum_members_of(declared) {
+            if let Some(members) = enum_members_of(declared, aliases) {
                 if !members.is_empty() && !orbital_core::enum_value_is_member(s, &members) {
                     return Err(LowerError::EnumValueNotMember {
                         orbital: t.name.clone(),
@@ -398,14 +408,22 @@ fn check_one_set_value(
 }
 
 /// The declared enum members of a field type, or `None` when it is not a
-/// string-enum. Mirrors the `TypeExpr::Union` lowering in `entity.rs` exactly
-/// (a union of bare `Named`/`Primitive` names or `"…"` string literals becomes
-/// `values: [...]`), so the membership set checked here is identical to the one
-/// the `.orb` carries. Unwraps an `Optional` wrapper so `("a"|"b")?` still
-/// resolves its members.
-fn enum_members_of(ty: &TypeExpr) -> Option<Vec<String>> {
+/// string-enum. Mirrors the `TypeExpr::Union` lowering in `entity.rs` exactly —
+/// including its `is_type_union` gate — so the membership set checked here is
+/// the one the `.orb` actually carries. Unwraps an `Optional` wrapper so
+/// `("a"|"b")?` still resolves its members.
+///
+/// The `is_type_union` call is what keeps this honest. Without it, a field typed
+/// `string | number | FileValue` lowered as a UNION while this read it as a
+/// vocabulary, so `(set @entity.v "hello")` was rejected with *"hello" is not a
+/// declared member of v's enum [string, number, FileValue]* — a diagnostic that
+/// contradicts the field's own emitted type. One reading, one predicate.
+fn enum_members_of(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Option<Vec<String>> {
     match ty {
-        TypeExpr::Union(parts) => parts
+        TypeExpr::Union(parts) if !crate::lower::entity::is_type_union(parts, aliases) => parts
             .iter()
             .map(|p| match p {
                 TypeExpr::Named(n) => Some(n.clone()),
@@ -414,7 +432,18 @@ fn enum_members_of(ty: &TypeExpr) -> Option<Vec<String>> {
                 _ => None,
             })
             .collect(),
-        TypeExpr::Optional(inner) => enum_members_of(inner),
+        // A field typed by a NAMED alias carries its members in the alias map,
+        // not inline. Resolving one level here is what lets the check see
+        // `v : Status` at all; a type-union alias resolves to `Type(Union)` and
+        // falls through to `None`, exactly like the inline case above.
+        TypeExpr::Named(n) => match aliases.get(n) {
+            Some(TypeAliasResolved::Enum(members)) if members.len() >= 2 => {
+                Some(members.clone())
+            }
+            Some(TypeAliasResolved::Type(inner)) => enum_members_of(inner, aliases),
+            _ => None,
+        },
+        TypeExpr::Optional(inner) => enum_members_of(inner, aliases),
         _ => None,
     }
 }

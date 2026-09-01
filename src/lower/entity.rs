@@ -1,4 +1,11 @@
 use super::*;
+use std::cell::RefCell;
+
+thread_local! {
+    /// Alias names currently being lowered on this thread. Guards the
+    /// self-referential alias cycle that tagged unions make reachable.
+    static RESOLVING: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+}
 
 pub(crate) fn lower_entity(
     entity: &Entity,
@@ -90,7 +97,10 @@ pub(crate) fn lower_type_expr(
         // `@entity` is only legal in event payload positions (enforced by the
         // Stage-2 checker); an entity/config field reaching here is already an
         // error upstream — lower defensively to an opaque object.
-        TypeExpr::BoundEntityRow => (FieldType::Object, None, None, None, None),
+        TypeExpr::BoundEntityRow
+        | TypeExpr::EventPayloadOf(_)
+        | TypeExpr::NamedEntityRow(_)
+        | TypeExpr::ExpectedIdentityRow => (FieldType::Object, None, None, None, None),
         TypeExpr::Trait => (FieldType::Trait, None, None, None, None),
         TypeExpr::Slot => (FieldType::Slot, None, None, None, None),
         TypeExpr::Pattern => (FieldType::Pattern, None, None, None, None),
@@ -114,7 +124,30 @@ pub(crate) fn lower_type_expr(
                     TypeAliasResolved::Enum(values) => {
                         (FieldType::String, Some(values.clone()), None, None, None)
                     }
-                    TypeAliasResolved::Type(inner) => lower_type_expr(inner, aliases, entity_names),
+                    TypeAliasResolved::Type(inner) => {
+                        // CYCLE GUARD. A recursive alias — `DrawGroupItem.items :
+                        // [DrawItem]` where `DrawItem` includes `DrawGroupItem` —
+                        // would recurse forever here (verified: `orb validate`
+                        // aborted with a stack overflow before this existed).
+                        // A back-reference lowers to the documented by-name form:
+                        // `Union` carrying the NAME in `values` and no
+                        // `properties`, which `resolve` maps to Json rather than
+                        // expanding.
+                        if !RESOLVING.with(|r| r.borrow_mut().insert(name.clone())) {
+                            return (
+                                FieldType::Union,
+                                Some(vec![name.clone()]),
+                                None,
+                                None,
+                                None,
+                            );
+                        }
+                        let out = lower_type_expr(inner, aliases, entity_names);
+                        RESOLVING.with(|r| {
+                            r.borrow_mut().remove(name);
+                        });
+                        out
+                    }
                 }
             } else if entity_names.contains(name) {
                 // Phase 9.6.A: bare entity reference (`field : EntityName`) lowers
@@ -263,6 +296,16 @@ pub(crate) fn lower_type_expr(
             (FieldType::Object, None, None, Some(props), None)
         }
         TypeExpr::Union(parts) => {
+            // A union whose members are all STRUCT aliases is a tagged union,
+            // not a string enum. Checked FIRST: the `all_members` collapse
+            // below would otherwise turn `DrawShape | DrawText` into a field
+            // whose only legal values are those two literal WORDS — it would
+            // accept the variant's name and reject the variant's value.
+            if let Some(variants) = struct_union_variants(parts, aliases, entity_names) {
+                let names: Vec<String> = variants.iter().map(|(n, _)| n.clone()).collect();
+                let props: HashMap<String, FieldDefinition> = variants.into_iter().collect();
+                return (FieldType::Union, Some(names), None, Some(props), None);
+            }
             // If every variant is a bare Named / Primitive (`a | b | c`) or
             // a string literal (`"a" | "b" | "c"`), treat as a string enum and
             // flatten into `values: [...]` on the field.
@@ -281,11 +324,22 @@ pub(crate) fn lower_type_expr(
                 (FieldType::String, None, None, None, None)
             }
         }
-        TypeExpr::StringLiteral(_) => {
-            // A bare literal type outside a union is degenerate — lower to
-            // plain string. (Inside a union the `Union` branch above collects
-            // all literals into `values`.)
-            (FieldType::String, None, None, None, None)
+        TypeExpr::StringLiteral(lit) => {
+            // A single-literal field type is a closed vocabulary of ONE — the
+            // field's only legal value is that literal. Carrying it in `values`
+            // (rather than erasing to plain `string`) is what makes
+            // `type : "draw-shape"` a usable DISCRIMINATOR: union variant
+            // selection reads single-valued vocabularies to decide which
+            // variant a value belongs to. Erased, every variant looked
+            // untagged and a value whose tag matched nothing was silently
+            // accepted as the first variant.
+            (
+                FieldType::String,
+                Some(vec![lit.clone()]),
+                None,
+                None,
+                None,
+            )
         }
         TypeExpr::Optional(inner) => lower_type_expr(inner, aliases, entity_names),
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => {
@@ -337,6 +391,14 @@ pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
         "datetime" => FieldType::Datetime,
         "timestamp" => FieldType::Timestamp,
         "object" => FieldType::Object,
+        // The honest replacement for `json` on a dynamic-key value bag. Unlike
+        // the `json` line above (which ERASES to String and is being
+        // eliminated), this keeps its own tag all the way to codegen.
+        "scalar" => FieldType::Scalar,
+        // Open BY CONSTRUCTION — carries its own tag to codegen (which renders
+        // it exactly like `json`) so the generic gate can tell a declared
+        // openness apart from an untyped one.
+        "opaque" => FieldType::Opaque,
         _ => return None,
     })
 }
@@ -402,4 +464,108 @@ mod tests {
         let (ft, _, _, _, _) = lower(&TypeExpr::Named("json".to_string()));
         assert!(matches!(ft, FieldType::String), "scalar json stays string");
     }
+}
+
+/// Does `parts` read as a TYPE union rather than a string enum?
+///
+/// **This is the single reading of `A | B | C`, and every site that has to tell
+/// the two apart must call it.** The two readings are mutually exclusive and
+/// wildly different — a type union accepts each member's VALUES, a string enum
+/// accepts each member's NAME as a literal word — so a second, separately-worded
+/// copy of this rule is not a duplicate but a fork: the field lowers as a union
+/// while a checker still measures it against the vocabulary, and the diagnostic
+/// contradicts the type. That is exactly what
+/// `checks::enum_members_of` used to do.
+///
+/// The rule is ALL-OR-NOTHING by design. One member that names no known type
+/// and the whole union stays the enum it was authored as. That is what protects
+/// the live corpus: `format : date | currency | number | boolean | percent` has
+/// three primitive-NAMED members but `currency` names no type, so it keeps its
+/// vocabulary reading, and `type Direction = up | down | left | right` has none
+/// at all. Swept before this shipped — exactly one corpus union had
+/// all-primitive members, and it was inside a `@description` string.
+///
+/// A member counts as a type when it is a struct alias, a primitive name, or a
+/// structural expression (`[string]`), which needs no alias to be unambiguous.
+pub(crate) fn is_type_union(
+    parts: &[TypeExpr],
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> bool {
+    parts.len() >= 2
+        && parts.iter().all(|p| match p {
+            TypeExpr::Named(name) => match aliases.get(name) {
+                Some(TypeAliasResolved::Type(TypeExpr::Object(_))) => true,
+                None => primitive_field_type(name).is_some(),
+                _ => false,
+            },
+            TypeExpr::Primitive(name) => primitive_field_type(name).is_some(),
+            TypeExpr::Array(_) => true,
+            _ => false,
+        })
+}
+
+/// The variants of a TYPE union, as `(variant name, variant shape)` in
+/// declaration order. `None` when [`is_type_union`] says this is a string enum,
+/// in which case the caller falls back to the enum collapse.
+///
+/// ⚠️ Recursion is carried BY NAME, not inlined. `DrawGroup.items : [DrawItem]`
+/// refers back to the union being lowered; inlining it would recurse forever
+/// (`TypeAliasResolved::Type` lowering has no cycle guard). `lower_type_expr`
+/// is therefore called on the variant body with the union's own members marked
+/// in-progress, and a back-reference lowers to `FieldType::Union` carrying
+/// `values` (the names) and NO `properties` — a reference, not an expansion.
+fn struct_union_variants(
+    parts: &[TypeExpr],
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+) -> Option<Vec<(String, FieldDefinition)>> {
+    if parts.len() < 2 {
+        return None;
+    }
+    if !is_type_union(parts, aliases) {
+        return None;
+    }
+    let mut out = Vec::with_capacity(parts.len());
+    for p in parts {
+        let (variant_name, inner): (String, TypeExpr) = match p {
+            TypeExpr::Named(name) => match aliases.get(name) {
+                Some(TypeAliasResolved::Type(inner @ TypeExpr::Object(_))) => {
+                    (name.clone(), inner.clone())
+                }
+                // A named PRIMITIVE (`string`, `scalar`, `node`, …).
+                None if primitive_field_type(name).is_some() => {
+                    (name.clone(), TypeExpr::Primitive(name.clone()))
+                }
+                _ => return None,
+            },
+            TypeExpr::Primitive(name) if primitive_field_type(name).is_some() => {
+                (name.clone(), TypeExpr::Primitive(name.clone()))
+            }
+            // `[string]` and friends — a structural variant needs no alias.
+            TypeExpr::Array(_) => ("array".to_string(), p.clone()),
+            _ => return None,
+        };
+        let name = &variant_name;
+        let inner = &inner;
+        let (ft, values, items, props, relation) = lower_type_expr(inner, aliases, entity_names);
+        out.push((
+            name.clone(),
+            FieldDefinition {
+                name: Some(name.clone()),
+                field_type: ft,
+                required: None,
+                primary_key: None,
+                unique: None,
+                default: None,
+                values,
+                relation,
+                items,
+                properties: props,
+                intrinsic: None,
+                description: None,
+                synonyms: None,
+            },
+        ));
+    }
+    Some(out)
 }

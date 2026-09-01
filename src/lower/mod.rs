@@ -14,7 +14,8 @@ use orbital_core::schema::{
     FieldType,
     ListenDefinition, ListenSource, Orbital as CoreOrbital, OrbitalSchema, PageDefinition, PageRef,
     PageRefObject, PayloadField, Persistence as CorePersistence, RelationDefinition, SExpression,
-    StateDefinition, StateMachine, StringOrArray, StringOrNumber, TickDefinition, TraitCategory,
+    StateDefinition, StateMachine, StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef,
+    ThemeTokens, ThemeVariant, TickDefinition, TraitCategory,
     TraitDefinition, TraitReference, TransitionDefinition, UseDeclaration,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -122,6 +123,7 @@ fn lower_to_orb_names_only(
     for ta in &ast.type_aliases {
         type_aliases.insert(ta.name.clone(), resolve_type_alias(&ta.body));
     }
+    reclassify_struct_unions(&mut type_aliases);
 
     // Entity-shaped type aliases retained in their full field form so the
     // emit-payload lowerer can flatten `:: TypeName` references. The regular
@@ -182,6 +184,7 @@ fn lower_to_orb_names_only(
         for ta in &orb.type_aliases {
             local_aliases.insert(ta.name.clone(), resolve_type_alias(&ta.body));
         }
+        reclassify_struct_unions(&mut local_aliases);
         let mut local_entities = file_entity_bodies.clone();
         local_entities.extend(collect_entity_type_bodies(&orb.type_aliases));
         let mut local_events = file_event_aliases.clone();
@@ -234,11 +237,7 @@ fn lower_to_orb_names_only(
         },
         version: ast.app.version.clone(),
         description: ast.app.description.clone(),
-        theme: ast
-            .app
-            .theme
-            .clone()
-            .map(orbital_core::schema::ThemeRef::Reference),
+        theme: ast.app.theme.as_ref().map(lower_theme_decl),
         orbitals,
         metadata: None,
         ledger: None,
@@ -250,6 +249,69 @@ fn lower_to_orb_names_only(
     orbital_core::schema::normalize_fn_shapes(&mut schema);
 
     Ok(schema)
+}
+
+/// `ThemeDecl` → `ThemeRef`: a quoted key stays a reference; an inline
+/// `theme { … }` block becomes the schema's `ThemeDefinition`.
+fn lower_theme_decl(decl: &ThemeDecl) -> ThemeRef {
+    match decl {
+        ThemeDecl::Reference(key) => ThemeRef::Reference(key.clone()),
+        ThemeDecl::Inline(inline) => ThemeRef::Inline(ThemeDefinition {
+            name: inline.name.clone(),
+            tokens: lower_theme_tokens(&inline.tokens),
+            variants: if inline.variants.is_empty() {
+                None
+            } else {
+                Some(
+                    inline
+                        .variants
+                        .iter()
+                        .map(|(name, maps)| (name.clone(), lower_theme_variant(maps)))
+                        .collect(),
+                )
+            },
+        }),
+    }
+}
+
+fn theme_map(entries: &[(String, String)]) -> Option<HashMap<String, String>> {
+    if entries.is_empty() {
+        None
+    } else {
+        Some(entries.iter().cloned().collect())
+    }
+}
+
+fn lower_theme_tokens(maps: &ThemeTokenMaps) -> ThemeTokens {
+    ThemeTokens {
+        colors: theme_map(&maps.colors),
+        radii: theme_map(&maps.radii),
+        spacing: theme_map(&maps.spacing),
+        typography: theme_map(&maps.typography),
+        shadows: theme_map(&maps.shadows),
+        density: None,
+        type_scale: None,
+        motion: None,
+        iconography: None,
+        elevation: None,
+        geometry: None,
+    }
+}
+
+fn lower_theme_variant(maps: &ThemeTokenMaps) -> ThemeVariant {
+    ThemeVariant {
+        colors: theme_map(&maps.colors),
+        radii: theme_map(&maps.radii),
+        spacing: theme_map(&maps.spacing),
+        typography: theme_map(&maps.typography),
+        shadows: theme_map(&maps.shadows),
+        density: None,
+        type_scale: None,
+        motion: None,
+        iconography: None,
+        elevation: None,
+        geometry: None,
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -345,6 +407,33 @@ fn collect_entity_type_bodies(
         }
     }
     out
+}
+
+/// Reclassify `type X = A | B` from a string ENUM to a struct UNION when every
+/// member names a struct alias.
+///
+/// The parser cannot tell these apart: `A | B` with all-bare-name members is
+/// `TypeBody::Enum(["A","B"])`, indistinguishable at parse time from
+/// `active | inactive`. The difference only becomes visible once every alias in
+/// scope is known — hence a post-pass over the assembled map rather than a
+/// change in `resolve_type_alias`, which sees one body at a time.
+///
+/// Without this, `DrawShape | DrawText` declares a field whose only legal
+/// values are the literal WORDS "DrawShape"/"DrawText" — it accepts the
+/// variant's name and rejects the variant's value.
+fn reclassify_struct_unions(aliases: &mut BTreeMap<String, TypeAliasResolved>) {
+    let mut rewrites: Vec<(String, TypeExpr)> = Vec::new();
+    for (name, resolved) in aliases.iter() {
+        let TypeAliasResolved::Enum(members) = resolved else { continue };
+        let parts: Vec<TypeExpr> = members.iter().map(|m| TypeExpr::Named(m.clone())).collect();
+        if !crate::lower::entity::is_type_union(&parts, aliases) {
+            continue;
+        }
+        rewrites.push((name.clone(), TypeExpr::Union(parts)));
+    }
+    for (name, ty) in rewrites {
+        aliases.insert(name, TypeAliasResolved::Type(ty));
+    }
 }
 
 fn resolve_type_alias(body: &TypeBody) -> TypeAliasResolved {
@@ -597,9 +686,7 @@ fn lower_orbital(
         name: orb.name.clone(),
         uses,
         expects,
-        theme: orb.theme.as_ref().map(|name| {
-            orbital_core::schema::ThemeRef::Reference(name.clone())
-        }),
+        theme: orb.theme.as_ref().map(lower_theme_decl),
         services: None,
         entity: EntityRef::Inline(entity_def),
         auxiliary_entities: if extra_entity_defs.is_empty() {
@@ -660,7 +747,39 @@ mod tests {
             "formatted output lost the app theme line:\n{formatted}"
         );
         let reparsed = parse_str(&formatted).expect("reparse formatted");
-        assert_eq!(reparsed.app.theme, Some("linear-clean-light".to_string()));
+        assert_eq!(
+            reparsed.app.theme,
+            Some(crate::ast::ThemeDecl::Reference("linear-clean-light".to_string()))
+        );
+    }
+
+    #[test]
+    fn lower_inline_theme_block() {
+        let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    name: \"riya-graph-paper\"\n    tokens {\n      colors {\n        primary: \"#e11d48\"\n      }\n    }\n    variants {\n      dark {\n        colors {\n          primary: \"#fb7185\"\n        }\n      }\n    }\n  }\n}";
+        let s = lower(src);
+        let theme = s.orbitals[0].theme.as_ref().expect("orbital theme lowered");
+        match theme {
+            orbital_core::schema::ThemeRef::Inline(def) => {
+                assert_eq!(def.name, "riya-graph-paper");
+                assert_eq!(
+                    def.tokens.colors.as_ref().unwrap().get("primary"),
+                    Some(&"#e11d48".to_string())
+                );
+                let dark = def.variants.as_ref().unwrap().get("dark").unwrap();
+                assert_eq!(
+                    dark.colors.as_ref().unwrap().get("primary"),
+                    Some(&"#fb7185".to_string())
+                );
+            }
+            other => panic!("expected inline theme, got {:?}", other),
+        }
+        // Round-trip: the formatter must re-emit the block and it must reparse.
+        let ast = parse_str(src).expect("parse");
+        let formatted = crate::format::format_program(&ast);
+        let reparsed = parse_str(&formatted).unwrap_or_else(|e| {
+            panic!("formatted inline theme failed to reparse: {e}\n{formatted}")
+        });
+        assert_eq!(reparsed.orbitals[0].theme, ast.orbitals[0].theme);
     }
 
     #[test]

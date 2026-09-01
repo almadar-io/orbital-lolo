@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-08-31T14:55:54.846Z",
+  "exportedAt": "2026-09-01T15:15:34.310Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -803,7 +803,8 @@
                     "mapValue": {
                       "types": [
                         "object"
-                      ]
+                      ],
+                      "freeform": true
                     }
                   }
                 },
@@ -2370,7 +2371,15 @@
             "string"
           ],
           "description": "Event dispatch props (for trait state machine integration)",
-          "kind": "event",
+          "kind": "event-ref",
+          "entityRowField": "data",
+          "emitPayloadSchema": [
+            {
+              "name": "data",
+              "type": "@entity",
+              "required": true
+            }
+          ],
           "default": "SAVE"
         },
         "cancelEvent": {
@@ -2602,7 +2611,8 @@
               "mapValue": {
                 "types": [
                   "object"
-                ]
+                ],
+                "freeform": true
               }
             },
             "globalVariables": {
@@ -2634,7 +2644,8 @@
               "mapValue": {
                 "types": [
                   "object"
-                ]
+                ],
+                "freeform": true
               }
             }
           },
@@ -2872,7 +2883,44 @@
                   },
                   "value": {
                     "types": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "array",
                       "object"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "properties": {
+                      "name": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "url": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "mimeType": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "sizeBytes": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "url",
+                      "mimeType",
+                      "sizeBytes"
                     ]
                   },
                   "formValues": {
@@ -2882,7 +2930,8 @@
                     "mapValue": {
                       "types": [
                         "object"
-                      ]
+                      ],
+                      "freeform": true
                     }
                   }
                 },
@@ -3242,7 +3291,15 @@
             "string"
           ],
           "description": "Event dispatch props (for trait state machine integration)",
-          "kind": "event",
+          "kind": "event-ref",
+          "entityRowField": "data",
+          "emitPayloadSchema": [
+            {
+              "name": "data",
+              "type": "@entity",
+              "required": true
+            }
+          ],
           "default": "SAVE"
         },
         "cancelEvent": {
@@ -3474,7 +3531,8 @@
               "mapValue": {
                 "types": [
                   "object"
-                ]
+                ],
+                "freeform": true
               }
             },
             "globalVariables": {
@@ -3506,7 +3564,8 @@
               "mapValue": {
                 "types": [
                   "object"
-                ]
+                ],
+                "freeform": true
               }
             }
           },
@@ -3744,7 +3803,44 @@
                   },
                   "value": {
                     "types": [
+                      "string",
+                      "number",
+                      "boolean",
+                      "array",
                       "object"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "properties": {
+                      "name": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "url": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "mimeType": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "sizeBytes": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "url",
+                      "mimeType",
+                      "sizeBytes"
                     ]
                   },
                   "formValues": {
@@ -3754,7 +3850,8 @@
                     "mapValue": {
                       "types": [
                         "object"
-                      ]
+                      ],
+                      "freeform": true
                     }
                   }
                 },
@@ -3850,7 +3947,19 @@
             "string"
           ],
           "description": "Declarative search event — emits UI:{event} via eventBus on query submit (alongside canonical UI:SEARCH)",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "searchTerm",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "entity",
+              "type": "string",
+              "required": false
+            }
+          ]
         },
         "entity": {
           "types": [
@@ -4052,14 +4161,48 @@
             "string"
           ],
           "description": "Declarative filter event — emits UI:{event} via eventBus on filter change (alongside canonical UI:FILTER)",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "entity",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "field",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "value",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "query",
+              "type": "string",
+              "required": false
+            }
+          ]
         },
         "clearEvent": {
           "types": [
             "string"
           ],
           "description": "Declarative clear event — emits UI:{clearEvent} via eventBus on clear-all (alongside canonical UI:CLEAR_FILTERS)",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "entity",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "query",
+              "type": "string",
+              "required": false
+            }
+          ]
         }
       }
     },
@@ -4541,7 +4684,24 @@
             "string"
           ],
           "description": "Event emitted when a non-current crumb is clicked, with payload `{ label, href, index }` — the trait handles it with `(navigate ?href)`. Without it, stack crumbs navigate directly.",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "label",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "href",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "index",
+              "type": "number",
+              "required": true
+            }
+          ]
         },
         "separator": {
           "types": [
@@ -5526,14 +5686,28 @@
             "string"
           ],
           "description": "Emits UI:{nextEvent} when advancing to next step",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "step",
+              "type": "number",
+              "required": true
+            }
+          ]
         },
         "backEvent": {
           "types": [
             "string"
           ],
           "description": "Emits UI:{backEvent} when going to previous step",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "step",
+              "type": "number",
+              "required": true
+            }
+          ]
         },
         "completeEvent": {
           "types": [
@@ -6774,6 +6948,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "hoverEvent": {
@@ -6781,7 +6956,14 @@
             "string"
           ],
           "description": "Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "hovered",
+              "type": "boolean",
+              "required": true
+            }
+          ]
         },
         "tapReveal": {
           "types": [
@@ -7439,6 +7621,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "label": {
@@ -7745,6 +7928,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         }
       }
@@ -8143,7 +8327,14 @@
             "string"
           ],
           "description": "Declarative event name for trait dispatch",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true
+            }
+          ]
         },
         "inputType": {
           "types": [
@@ -8559,7 +8750,14 @@
             "string"
           ],
           "description": "Declarative event name for trait dispatch",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true
+            }
+          ]
         },
         "label": {
           "types": [
@@ -9985,6 +10183,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "responsive": {
@@ -10075,14 +10274,33 @@
             "string"
           ],
           "description": "Declarative event name — emits UI:{action} via eventBus on click",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "annotationId",
+              "type": "string",
+              "required": false
+            }
+          ]
         },
         "hoverEvent": {
           "types": [
             "string"
           ],
-          "description": "Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false }",
-          "kind": "event"
+          "description": "Declarative hover event — emits UI:{hoverEvent} with { hovered, annotationId }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "hovered",
+              "type": "boolean",
+              "required": true
+            },
+            {
+              "name": "annotationId",
+              "type": "string",
+              "required": false
+            }
+          ]
         }
       }
     },
@@ -10699,6 +10917,7 @@
             "object"
           ],
           "description": "Payload to include with the dispatched action event.",
+          "payloadFor": "action",
           "freeform": true
         },
         "actions": {
@@ -11003,7 +11222,14 @@
             "string"
           ],
           "description": "Declarative event name for trait dispatch",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true
+            }
+          ]
         },
         "inputType": {
           "types": [
@@ -13671,8 +13897,7 @@
           "types": [
             "string"
           ],
-          "description": "Game display-font key (future | future-narrow | pixel | blocks | mini) or a CSS font-family. Scoped override of the theme contract's --font-family-display slot: titles and numerics take this face, body text follows the active theme.",
-          "default": "future"
+          "description": "Game display-font key (pixel | fredoka | future | future-narrow | blocks | mini) or a CSS font-family. Scoped override of the theme contract's --font-family-display slot: titles and numerics take this face, body text follows the active theme. Unset = the theme token decides."
         },
         "data-theme": {
           "types": [
@@ -14669,7 +14894,17 @@
             {
               "name": "selection",
               "type": "array",
-              "required": true
+              "required": true,
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
             }
           ],
           "default": "SELECTION_CHANGE"
@@ -15163,7 +15398,10 @@
                 "properties": {
                   "kind": {
                     "types": [
-                      "unknown"
+                      "string"
+                    ],
+                    "enumValues": [
+                      "suggested"
                     ]
                   },
                   "suggestionId": {
@@ -15433,7 +15671,10 @@
                     "properties": {
                       "kind": {
                         "types": [
-                          "unknown"
+                          "string"
+                        ],
+                        "enumValues": [
+                          "suggested"
                         ]
                       },
                       "suggestionId": {
@@ -15517,7 +15758,10 @@
                     "properties": {
                       "kind": {
                         "types": [
-                          "unknown"
+                          "string"
+                        ],
+                        "enumValues": [
+                          "suggested"
                         ]
                       },
                       "suggestionId": {
@@ -15601,7 +15845,10 @@
                     "properties": {
                       "kind": {
                         "types": [
-                          "unknown"
+                          "string"
+                        ],
+                        "enumValues": [
+                          "suggested"
                         ]
                       },
                       "suggestionId": {
@@ -15685,7 +15932,10 @@
                     "properties": {
                       "kind": {
                         "types": [
-                          "unknown"
+                          "string"
+                        ],
+                        "enumValues": [
+                          "suggested"
                         ]
                       },
                       "suggestionId": {
@@ -16518,7 +16768,10 @@
             "properties": {
               "type": {
                 "types": [
-                  "unknown"
+                  "string"
+                ],
+                "enumValues": [
+                  "markdown"
                 ]
               },
               "content": {
@@ -17202,6 +17455,7 @@
           ],
           "description": "Called when an event is clicked",
           "kind": "callback",
+          "entityRowField": "event",
           "callbackArgs": [
             {
               "name": "event",
@@ -17239,6 +17493,7 @@
             "object"
           ],
           "description": "Additional payload for long-press events",
+          "payloadFor": "longPressEvent",
           "freeform": true
         },
         "swipeLeftEvent": {
@@ -18305,7 +18560,24 @@
             "string"
           ],
           "description": "Selection change event name (emits UI:{selectionEvent} with { selectedIds: string[] })",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "selectedIds",
+              "type": "array",
+              "required": true,
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          ]
         },
         "infiniteScroll": {
           "types": [
@@ -18630,7 +18902,20 @@
             "string"
           ],
           "description": "When set, the whole row is clickable and emits UI:{itemClickEvent} with { id, row } (action-button clicks stopPropagation so they still win).",
-          "kind": "event"
+          "kind": "event-ref",
+          "entityRowField": "row",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "row",
+              "type": "@entity",
+              "required": true
+            }
+          ]
         },
         "gap": {
           "types": [
@@ -19325,13 +19610,21 @@
             "string"
           ],
           "description": "Declarative event name for value changes",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "number",
+              "required": true
+            }
+          ]
         },
         "actionPayload": {
           "types": [
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "onChange": {
@@ -19667,13 +19960,21 @@
             "string"
           ],
           "description": "Declarative event name for value changes",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "number",
+              "required": true
+            }
+          ]
         },
         "actionPayload": {
           "types": [
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "className": {
@@ -19752,13 +20053,21 @@
             "string"
           ],
           "description": "Declarative event name for rating changes",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "number",
+              "required": true
+            }
+          ]
         },
         "actionPayload": {
           "types": [
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "onChange": {
@@ -19852,13 +20161,59 @@
             "string"
           ],
           "description": "Declarative event name for file selection",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "files",
+              "type": "array",
+              "required": true,
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "size": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "type": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "content": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "size",
+                    "type",
+                    "content"
+                  ]
+                }
+              }
+            }
+          ]
         },
         "actionPayload": {
           "types": [
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "onFiles": {
@@ -19870,7 +20225,17 @@
           "callbackArgs": [
             {
               "name": "files",
-              "type": "array"
+              "type": "array",
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ]
+                }
+              }
             }
           ],
           "nonEmittable": true
@@ -20006,6 +20371,7 @@
             "object"
           ],
           "description": "Optional payload to include with the load-more event",
+          "payloadFor": "loadMoreEvent",
           "freeform": true
         },
         "isLoading": {
@@ -20201,6 +20567,7 @@
             "object"
           ],
           "description": "Payload to include with the slide change event",
+          "payloadFor": "slideChangeEvent",
           "freeform": true
         },
         "className": {
@@ -20237,6 +20604,7 @@
             "object"
           ],
           "description": "Payload to include with the refresh event",
+          "payloadFor": "refreshEvent",
           "freeform": true
         },
         "threshold": {
@@ -20310,13 +20678,32 @@
           ],
           "description": "reorderEvent prop",
           "required": true,
-          "kind": "event"
+          "kind": "event-ref",
+          "entityRowField": "item",
+          "emitPayloadSchema": [
+            {
+              "name": "fromIndex",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "toIndex",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "item",
+              "type": "@entity",
+              "required": true
+            }
+          ]
         },
         "reorderPayload": {
           "types": [
             "object"
           ],
           "description": "reorderPayload prop",
+          "payloadFor": "reorderEvent",
           "freeform": true
         },
         "dragHandlePosition": {
@@ -26416,7 +26803,64 @@
           "callbackArgs": [
             {
               "name": "rules",
-              "type": "array"
+              "type": "array",
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "id": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "sourceQuestionId": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "operator": {
+                      "types": [
+                        "string"
+                      ],
+                      "enumValues": [
+                        "equals",
+                        "not-equals",
+                        "contains",
+                        "in"
+                      ]
+                    },
+                    "value": {
+                      "types": [
+                        "string",
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "targetQuestionId": {
+                      "types": [
+                        "string",
+                        "unknown"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "sourceQuestionId",
+                    "operator",
+                    "value",
+                    "targetQuestionId"
+                  ]
+                }
+              }
             }
           ]
         },
@@ -26430,7 +26874,64 @@
             {
               "name": "rules",
               "type": "array",
-              "required": true
+              "required": true,
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "id": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "sourceQuestionId": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "operator": {
+                      "types": [
+                        "string"
+                      ],
+                      "enumValues": [
+                        "equals",
+                        "not-equals",
+                        "contains",
+                        "in"
+                      ]
+                    },
+                    "value": {
+                      "types": [
+                        "string",
+                        "array"
+                      ],
+                      "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "targetQuestionId": {
+                      "types": [
+                        "string",
+                        "unknown"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "sourceQuestionId",
+                    "operator",
+                    "value",
+                    "targetQuestionId"
+                  ]
+                }
+              }
             }
           ]
         },
@@ -26930,7 +27431,10 @@
           "properties": {
             "type": {
               "types": [
-                "unknown"
+                "string"
+              ],
+              "enumValues": [
+                "single"
               ]
             },
             "required": {
@@ -26967,7 +27471,17 @@
           "callbackArgs": [
             {
               "name": "selected",
-              "type": "array"
+              "type": "array",
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
             }
           ]
         },
@@ -26981,7 +27495,17 @@
             {
               "name": "selected",
               "type": "array",
-              "required": true
+              "required": true,
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
             }
           ]
         },
@@ -29888,6 +30412,34 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "type": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "required": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "hasDefault": {
+                    "types": [
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "type",
+                  "required",
+                  "hasDefault"
                 ]
               }
             },
@@ -29898,6 +30450,56 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "stateCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "eventCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "transitionCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "emits": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "listens": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "stateCount",
+                  "eventCount",
+                  "transitionCount",
+                  "emits",
+                  "listens"
                 ]
               }
             },
@@ -29908,13 +30510,184 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "route": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "route"
                 ]
               }
             },
             "traitDetails": {
               "types": [
                 "object"
-              ]
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "linkedEntity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "states": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "name": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "isInitial": {
+                          "types": [
+                            "boolean"
+                          ]
+                        },
+                        "isTerminal": {
+                          "types": [
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "isInitial",
+                        "isTerminal"
+                      ]
+                    }
+                  },
+                  "transitions": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "from": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "to": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "event": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "guard": {
+                          "types": [
+                            "object"
+                          ],
+                          "freeform": true
+                        },
+                        "effects": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "object"
+                            ],
+                            "properties": {
+                              "type": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "args": {
+                                "types": [
+                                  "array"
+                                ],
+                                "items": {
+                                  "types": [
+                                    "object"
+                                  ],
+                                  "freeform": true
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "args"
+                            ]
+                          }
+                        },
+                        "index": {
+                          "types": [
+                            "number"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "event",
+                        "guard",
+                        "effects",
+                        "index"
+                      ]
+                    }
+                  },
+                  "emittedEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "listenedEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "linkedEntity",
+                  "states",
+                  "transitions",
+                  "emittedEvents",
+                  "listenedEvents"
+                ]
+              }
             },
             "externalLinks": {
               "types": [
@@ -29923,6 +30696,34 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "targetOrbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "eventName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "direction": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "traitName": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "targetOrbital",
+                  "eventName",
+                  "direction",
+                  "traitName"
                 ]
               }
             }
@@ -29983,6 +30784,34 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "type": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "required": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "hasDefault": {
+                    "types": [
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "type",
+                  "required",
+                  "hasDefault"
                 ]
               }
             },
@@ -29993,6 +30822,56 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "stateCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "eventCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "transitionCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "emits": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "listens": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "stateCount",
+                  "eventCount",
+                  "transitionCount",
+                  "emits",
+                  "listens"
                 ]
               }
             },
@@ -30003,13 +30882,184 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "route": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "route"
                 ]
               }
             },
             "traitDetails": {
               "types": [
                 "object"
-              ]
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "linkedEntity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "states": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "name": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "isInitial": {
+                          "types": [
+                            "boolean"
+                          ]
+                        },
+                        "isTerminal": {
+                          "types": [
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "isInitial",
+                        "isTerminal"
+                      ]
+                    }
+                  },
+                  "transitions": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "from": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "to": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "event": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "guard": {
+                          "types": [
+                            "object"
+                          ],
+                          "freeform": true
+                        },
+                        "effects": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "object"
+                            ],
+                            "properties": {
+                              "type": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "args": {
+                                "types": [
+                                  "array"
+                                ],
+                                "items": {
+                                  "types": [
+                                    "object"
+                                  ],
+                                  "freeform": true
+                                }
+                              }
+                            },
+                            "required": [
+                              "type",
+                              "args"
+                            ]
+                          }
+                        },
+                        "index": {
+                          "types": [
+                            "number"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "event",
+                        "guard",
+                        "effects",
+                        "index"
+                      ]
+                    }
+                  },
+                  "emittedEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "listenedEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "linkedEntity",
+                  "states",
+                  "transitions",
+                  "emittedEvents",
+                  "listenedEvents"
+                ]
+              }
             },
             "externalLinks": {
               "types": [
@@ -30018,6 +31068,34 @@
               "items": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "targetOrbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "eventName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "direction": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "traitName": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "targetOrbital",
+                  "eventName",
+                  "direction",
+                  "traitName"
                 ]
               }
             }
@@ -31730,6 +32808,76 @@
             "stateMachine": {
               "types": [
                 "object"
+              ],
+              "properties": {
+                "name": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "states": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "currentState": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "transitions": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "from": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "to": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "event": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "guardHint": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "to",
+                      "event"
+                    ]
+                  }
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "states",
+                "currentState",
+                "transitions"
               ]
             }
           },
@@ -32080,6 +33228,76 @@
                   "stateMachine": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "name": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "states": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "currentState": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "transitions": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "from": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "to": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "event": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "guardHint": {
+                              "types": [
+                                "string"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to",
+                            "event"
+                          ]
+                        }
+                      },
+                      "description": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "states",
+                      "currentState",
+                      "transitions"
                     ]
                   }
                 },
@@ -32236,6 +33454,76 @@
                   "stateMachine": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "name": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "states": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "currentState": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "transitions": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "from": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "to": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "event": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "guardHint": {
+                              "types": [
+                                "string"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to",
+                            "event"
+                          ]
+                        }
+                      },
+                      "description": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "states",
+                      "currentState",
+                      "transitions"
                     ]
                   }
                 },
@@ -32471,6 +33759,76 @@
               "stateMachine": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "states": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "currentState": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "transitions": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "from": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "to": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "event": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "guardHint": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "event"
+                      ]
+                    }
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "states",
+                  "currentState",
+                  "transitions"
                 ]
               }
             },
@@ -32801,6 +34159,76 @@
             "stateMachine": {
               "types": [
                 "object"
+              ],
+              "properties": {
+                "name": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "states": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "currentState": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "transitions": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "from": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "to": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "event": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "guardHint": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "from",
+                      "to",
+                      "event"
+                    ]
+                  }
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "name",
+                "states",
+                "currentState",
+                "transitions"
               ]
             }
           },
@@ -33004,6 +34432,76 @@
               "stateMachine": {
                 "types": [
                   "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "states": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "currentState": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "transitions": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "from": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "to": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "event": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "guardHint": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "from",
+                        "to",
+                        "event"
+                      ]
+                    }
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "name",
+                  "states",
+                  "currentState",
+                  "transitions"
                 ]
               }
             },
@@ -33162,6 +34660,76 @@
                   "stateMachine": {
                     "types": [
                       "object"
+                    ],
+                    "properties": {
+                      "name": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "states": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "currentState": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "transitions": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "from": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "to": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "event": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "guardHint": {
+                              "types": [
+                                "string"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "from",
+                            "to",
+                            "event"
+                          ]
+                        }
+                      },
+                      "description": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "states",
+                      "currentState",
+                      "transitions"
                     ]
                   }
                 },
@@ -34047,7 +35615,17 @@
           "callbackArgs": [
             {
               "name": "next",
-              "type": "array"
+              "type": "array",
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
             }
           ]
         },
@@ -34106,14 +35684,63 @@
             "string"
           ],
           "description": "Event emitted when a tag is added: `UI:{addEvent}` with payload `{ tag: string, value: string[] }`.",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "tag",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "value",
+              "type": "array",
+              "required": true,
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          ]
         },
         "removeEvent": {
           "types": [
             "string"
           ],
           "description": "Event emitted when a tag is removed: `UI:{removeEvent}` with payload `{ tag: string, index: number, value: string[] }`.",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "tag",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "index",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "value",
+              "type": "array",
+              "required": true,
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          ]
         }
       }
     },
@@ -34543,8 +36170,25 @@
           "types": [
             "string"
           ],
-          "description": "Event emitted on selection change: UI:{selectEvent} with { ids, rows }.",
-          "kind": "event"
+          "description": "Event emitted on selection change: UI:{selectEvent} with { selectedIds }.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "selectedIds",
+              "type": "array",
+              "required": true,
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          ]
         },
         "selectedIds": {
           "types": [
@@ -34562,7 +36206,19 @@
             "string"
           ],
           "description": "Event emitted on sortable-header click: UI:{sortEvent} with { column, direction }.",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "column",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "direction",
+              "type": "string",
+              "required": true
+            }
+          ]
         },
         "sortColumn": {
           "types": [
@@ -35366,7 +37022,10 @@
             "properties": {
               "type": {
                 "types": [
-                  "unknown"
+                  "string"
+                ],
+                "enumValues": [
+                  "markdown"
                 ]
               },
               "content": {
@@ -36915,6 +38574,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "responsive": {
@@ -37085,6 +38745,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
+          "payloadFor": "action",
           "freeform": true
         },
         "responsive": {
@@ -37494,6 +39155,58 @@
           },
           "default": []
         },
+        "drawables": {
+          "types": [
+            "array"
+          ],
+          "description": "Neutral game-canvas drawables (e.g. `draw-sprite`, `draw-fx-layer`) painted in world coordinates via the supplied `projector`. This lets the learning canvas reuse the game drawable vocabulary without reimplementing sprites/FX.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "drawableSlot": true
+          }
+        },
+        "projector": {
+          "types": [
+            "object"
+          ],
+          "description": "World-to-pixel projector for `drawables`. When absent, `drawables` are ignored.",
+          "properties": {
+            "tileWidth": {
+              "types": [
+                "number"
+              ]
+            },
+            "floorHeight": {
+              "types": [
+                "number"
+              ]
+            },
+            "diamondTopY": {
+              "types": [
+                "number"
+              ]
+            },
+            "squareGrid": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "worldPixelDirect": {
+              "types": [
+                "boolean"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "tileWidth",
+            "floorHeight",
+            "diamondTopY",
+            "squareGrid",
+            "worldPixelDirect"
+          ]
+        },
         "readouts": {
           "types": [
             "array"
@@ -37768,7 +39481,8 @@
             "message"
           ]
         }
-      }
+      },
+      "drawHost": true
     },
     "biology-canvas": {
       "type": "biology-canvas",
@@ -37831,7 +39545,93 @@
             "object"
           ],
           "description": "3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }).",
-          "freeform": true
+          "properties": {
+            "pos": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "z": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "target": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "z": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "zoom": {
+              "types": [
+                "number"
+              ]
+            },
+            "fov": {
+              "types": [
+                "number"
+              ]
+            },
+            "mode": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "isometric",
+                "perspective",
+                "top-down",
+                "front",
+                "follow",
+                "chase"
+              ]
+            },
+            "azimuth": {
+              "types": [
+                "number"
+              ]
+            },
+            "elevation": {
+              "types": [
+                "number"
+              ]
+            }
+          }
         },
         "lighting": {
           "types": [
@@ -39035,7 +40835,93 @@
             "object"
           ],
           "description": "3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }).",
-          "freeform": true
+          "properties": {
+            "pos": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "z": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "target": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "z": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "zoom": {
+              "types": [
+                "number"
+              ]
+            },
+            "fov": {
+              "types": [
+                "number"
+              ]
+            },
+            "mode": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "isometric",
+                "perspective",
+                "top-down",
+                "front",
+                "follow",
+                "chase"
+              ]
+            },
+            "azimuth": {
+              "types": [
+                "number"
+              ]
+            },
+            "elevation": {
+              "types": [
+                "number"
+              ]
+            }
+          }
         },
         "lighting": {
           "types": [
@@ -40955,6 +42841,18 @@
           },
           "default": []
         },
+        "drawables": {
+          "types": [
+            "array"
+          ],
+          "description": "Game-canvas drawables painted in math world coordinates (e.g. `draw-sprite` for a character sprite on the graph). The canvas maps their `ScenePos` through the same x/y world→pixel transform used for curves/points.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "drawableSlot": true
+          }
+        },
         "readouts": {
           "types": [
             "array"
@@ -41211,7 +43109,8 @@
             "message"
           ]
         }
-      }
+      },
+      "drawHost": true
     },
     "physics-canvas": {
       "type": "physics-canvas",
@@ -41274,7 +43173,93 @@
             "object"
           ],
           "description": "3D only: neutral camera pose ({ mode, zoom, fov, azimuth, target }).",
-          "freeform": true
+          "properties": {
+            "pos": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "z": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "target": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "z": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "zoom": {
+              "types": [
+                "number"
+              ]
+            },
+            "fov": {
+              "types": [
+                "number"
+              ]
+            },
+            "mode": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "isometric",
+                "perspective",
+                "top-down",
+                "front",
+                "follow",
+                "chase"
+              ]
+            },
+            "azimuth": {
+              "types": [
+                "number"
+              ]
+            },
+            "elevation": {
+              "types": [
+                "number"
+              ]
+            }
+          }
         },
         "lighting": {
           "types": [
@@ -42794,7 +44779,14 @@
             "string"
           ],
           "description": "Emits UI:{nodeClickEvent} with { stateId } when a node is clicked.",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "stateId",
+              "type": "string",
+              "required": true
+            }
+          ]
         },
         "className": {
           "types": [
@@ -43891,10 +45883,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-shape"
+          ]
         },
         "shape": {
           "types": [
@@ -44579,10 +46574,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-sprite"
+          ]
         },
         "position": {
           "types": [
@@ -44778,6 +46776,12 @@
           ],
           "description": "Override the sheet row's loop flag. The paint clock is wall-time, so one-shot rows hold their final frame — preview pages set `true` to cycle attack/hit/death continuously."
         },
+        "clockMs": {
+          "types": [
+            "number"
+          ],
+          "description": "Animation clock override in ms (e.g. an fx entry's age since spawn). Omitted → the host paint clock; one-shot rows anchored to wall-time would otherwise sit on their final frame."
+        },
         "flipX": {
           "types": [
             "boolean"
@@ -44842,10 +46846,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-text"
+          ]
         },
         "text": {
           "types": [
@@ -44977,10 +46984,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-shape-layer"
+          ]
         },
         "items": {
           "types": [
@@ -44995,7 +47005,10 @@
             "properties": {
               "type": {
                 "types": [
-                  "unknown"
+                  "string"
+                ],
+                "enumValues": [
+                  "draw-shape"
                 ]
               },
               "shape": {
@@ -45662,10 +47675,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-sprite-layer"
+          ]
         },
         "items": {
           "types": [
@@ -45680,7 +47696,10 @@
             "properties": {
               "type": {
                 "types": [
-                  "unknown"
+                  "string"
+                ],
+                "enumValues": [
+                  "draw-sprite"
                 ]
               },
               "position": {
@@ -45867,6 +47886,11 @@
                   "boolean"
                 ]
               },
+              "clockMs": {
+                "types": [
+                  "number"
+                ]
+              },
               "flipX": {
                 "types": [
                   "boolean"
@@ -45936,10 +47960,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-text-layer"
+          ]
         },
         "items": {
           "types": [
@@ -45954,7 +47981,10 @@
             "properties": {
               "type": {
                 "types": [
-                  "unknown"
+                  "string"
+                ],
+                "enumValues": [
+                  "draw-text"
                 ]
               },
               "text": {
@@ -46100,7 +48130,93 @@
             "object"
           ],
           "description": "Neutral camera pose. Mapped to the underlying host's framing + zoom.",
-          "freeform": true
+          "properties": {
+            "pos": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "z": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "target": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "x": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "y": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "z": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ]
+            },
+            "zoom": {
+              "types": [
+                "number"
+              ]
+            },
+            "fov": {
+              "types": [
+                "number"
+              ]
+            },
+            "mode": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "isometric",
+                "perspective",
+                "top-down",
+                "front",
+                "follow",
+                "chase"
+              ]
+            },
+            "azimuth": {
+              "types": [
+                "number"
+              ]
+            },
+            "elevation": {
+              "types": [
+                "number"
+              ]
+            }
+          }
         },
         "projection": {
           "types": [
@@ -46513,8 +48629,23 @@
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
-              "name": "_payload",
-              "type": "object",
+              "name": "x",
+              "type": "number",
+              "required": false
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": false
+            },
+            {
+              "name": "tileId",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "z",
+              "type": "number",
               "required": false
             }
           ]
@@ -46527,8 +48658,18 @@
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
-              "name": "_payload",
-              "type": "object",
+              "name": "unitId",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": false
+            },
+            {
+              "name": "z",
+              "type": "number",
               "required": false
             }
           ]
@@ -46541,8 +48682,23 @@
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
-              "name": "_payload",
-              "type": "object",
+              "name": "x",
+              "type": "number",
+              "required": false
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": false
+            },
+            {
+              "name": "tileId",
+              "type": "string",
+              "required": false
+            },
+            {
+              "name": "z",
+              "type": "number",
               "required": false
             }
           ]
@@ -47017,7 +49173,17 @@
           "callbackArgs": [
             {
               "name": "files",
-              "type": "array"
+              "type": "array",
+              "schema": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ]
+                }
+              }
             }
           ],
           "nonEmittable": true
@@ -47063,10 +49229,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-group"
+          ]
         },
         "position": {
           "types": [
@@ -47276,7 +49445,14 @@
             "string"
           ],
           "description": "Declarative event name — picking an emoji emits UI:{pickEvent} with { emoji } via eventBus",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "emoji",
+              "type": "string",
+              "required": true
+            }
+          ]
         },
         "position": {
           "types": [
@@ -47333,10 +49509,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-mesh"
+          ]
         },
         "shape": {
           "types": [
@@ -48514,10 +50693,13 @@
         },
         "type": {
           "types": [
-            "unknown"
+            "string"
           ],
           "description": "type prop",
-          "required": true
+          "required": true,
+          "enumValues": [
+            "draw-fx-layer"
+          ]
         },
         "items": {
           "types": [
@@ -48653,6 +50835,11 @@
                 "types": [
                   "number"
                 ]
+              },
+              "animation": {
+                "types": [
+                  "string"
+                ]
               }
             },
             "required": [
@@ -48759,6 +50946,11 @@
               "particleCount": {
                 "types": [
                   "number"
+                ]
+              },
+              "animation": {
+                "types": [
+                  "string"
                 ]
               }
             },
@@ -49298,7 +51490,18 @@
             {
               "name": "patch",
               "type": "object",
-              "required": true
+              "required": true,
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "object"
+                  ],
+                  "freeform": true
+                }
+              }
             }
           ]
         },
