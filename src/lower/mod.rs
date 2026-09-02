@@ -22,7 +22,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 mod checks;
 mod emit_listen;
-mod entity;
+pub(crate) mod entity;
 mod page;
 mod payload_contract;
 mod r#trait;

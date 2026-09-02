@@ -695,6 +695,18 @@ fn check_named_payload_ref(
     let resolved = resolve_named(name, &[], ctx, span)?;
     match resolved {
         TypeBody::Entity { .. } | TypeBody::Struct(_) => Ok(()),
+        // A named TYPE union (`type DecisionMatch = scalar | [float]`) is
+        // legal in payload position: the same union authored inline lowers
+        // there already (`union_payload_variants`), and an alias must stay
+        // transparent to it. A vocabulary (`up | down`) is not a type union
+        // and keeps its enum reading — rejected here as before.
+        TypeBody::Alias(TypeExpr::Union(parts))
+            if crate::lower::entity::is_type_union_with(&parts, |n| {
+                ctx.lookup(n).map(|a| matches!(&a.body, TypeBody::Struct(_)))
+            }) =>
+        {
+            Ok(())
+        }
         _ => Err(TypeError::KindMismatch {
             expected: TypeKindName::Entity,
             actual: kind_label(kind_from_alias(ctx, name)),
@@ -1128,6 +1140,43 @@ type Mixed = Foo & Bar
 orbital OrbZ {
   entity Rec :: Mixed [persistent: recs] { id : string! }
   trait R -> Rec [interaction] { state s { INIT -> s (ref Rec) } }
+  page "/rs" -> R
+}
+"#;
+        let err = check(src).unwrap_err();
+        assert!(matches!(err, TypeError::KindMismatch { .. }));
+    }
+
+    #[test]
+    fn ok_type_union_alias_in_payload_position() {
+        let src = r#"
+orbital OrbU {
+  type DecisionMatch = scalar | [float]
+  entity Rec { id : string! }
+  trait R -> Rec [interaction] {
+    state s { INIT -> s (ref Rec) }
+    emits {
+      DECIDED -> external { matched : DecisionMatch!, label : string }
+    }
+  }
+  page "/rs" -> R
+}
+"#;
+        check(src).unwrap();
+    }
+
+    #[test]
+    fn err_vocabulary_alias_in_payload_position_still_rejected() {
+        let src = r#"
+orbital OrbV {
+  type Direction = up | down | left | right
+  entity Rec { id : string! }
+  trait R -> Rec [interaction] {
+    state s { INIT -> s (ref Rec) }
+    emits {
+      MOVED -> external { dir : Direction! }
+    }
+  }
   page "/rs" -> R
 }
 "#;

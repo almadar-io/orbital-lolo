@@ -491,12 +491,28 @@ pub(crate) fn is_type_union(
     parts: &[TypeExpr],
     aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> bool {
+    is_type_union_with(parts, |name| match aliases.get(name) {
+        Some(TypeAliasResolved::Type(TypeExpr::Object(_))) => Some(true),
+        Some(_) => Some(false),
+        None => None,
+    })
+}
+
+/// Core of [`is_type_union`], parameterized over alias lookup so the L1 check
+/// phase (`types.rs`, which sees `ResolveCtx` rather than the lowered alias
+/// map) applies the ONE predicate instead of keeping a copy.
+/// `named_is_struct`: `Some(true)` = resolves to a struct alias, `Some(false)`
+/// = resolves to any other alias kind, `None` = unknown name (falls through to
+/// the primitive-name check).
+pub(crate) fn is_type_union_with(
+    parts: &[TypeExpr],
+    named_is_struct: impl Fn(&str) -> Option<bool>,
+) -> bool {
     parts.len() >= 2
         && parts.iter().all(|p| match p {
-            TypeExpr::Named(name) => match aliases.get(name) {
-                Some(TypeAliasResolved::Type(TypeExpr::Object(_))) => true,
+            TypeExpr::Named(name) => match named_is_struct(name) {
+                Some(is_struct) => is_struct,
                 None => primitive_field_type(name).is_some(),
-                _ => false,
             },
             TypeExpr::Primitive(name) => primitive_field_type(name).is_some(),
             TypeExpr::Array(_) => true,

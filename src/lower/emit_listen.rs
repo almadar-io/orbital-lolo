@@ -128,6 +128,25 @@ pub(crate) fn lower_emit(
                 description: None,
                 properties: Some(props),
             });
+        } else if let Some(variants) =
+            union_payload_variants(&f.type_expr, aliases, trait_type_params)
+        {
+            // A TYPE union — inline (`a | [b]`) or via a named alias — lowers
+            // the same way the alias-restatement path already does: parent
+            // tagged `union`, variants riding in `properties`.
+            if !seen.insert(f.name.clone()) {
+                return Err(LowerError::PayloadFieldCollision {
+                    event: e.event.clone(),
+                    field: f.name.clone(),
+                });
+            }
+            fields.push(PayloadField {
+                name: f.name.clone(),
+                field_type: "union".to_string(),
+                required: if f.required { Some(true) } else { None },
+                description: None,
+                properties: Some(variants),
+            });
         } else if let TypeExpr::Named(type_name) = &f.type_expr {
             let nested = resolve_payload_type(type_name, aliases, entities_by_name)?;
             if !seen.insert(f.name.clone()) {
