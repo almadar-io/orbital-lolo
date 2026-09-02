@@ -257,7 +257,17 @@ impl Parser {
                     span: kind_span,
                 });
             }
-            params.push(TraitTypeParam { name: pname, kind });
+            // Gap C: optional `= <ident>` declaration default — a single
+            // identifier token (primitive/entity/alias NAME), same value
+            // vocabulary as a call-site `::` arg. No inline `{...}`/`Map K V`
+            // in this increment.
+            let default = if matches!(self.peek(), TokenKind::Equals) {
+                self.advance();
+                Some(self.expect_ident()?)
+            } else {
+                None
+            };
+            params.push(TraitTypeParam { name: pname, kind, default });
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }

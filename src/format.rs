@@ -826,6 +826,10 @@ impl Formatter {
                 self.output.push_str(&p.name);
                 self.output.push_str(" : ");
                 self.output.push_str(&p.kind);
+                if let Some(default) = &p.default {
+                    self.output.push_str(" = ");
+                    self.output.push_str(default);
+                }
             }
             self.output.push(')');
         }

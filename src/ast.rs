@@ -468,6 +468,10 @@ pub enum TypeExpr {
 pub struct TraitTypeParam {
     pub name: String,
     pub kind: String,
+    /// Gap C: optional `= <ident>` declaration default — a primitive name
+    /// (incl. `scalar`), an entity name, or a struct-alias name, all
+    /// resolved in the atom's own file.
+    pub default: Option<String>,
 }
 
 /// `trait Name [:: TypeAnnotation] -> Entity [category] { ... }` or

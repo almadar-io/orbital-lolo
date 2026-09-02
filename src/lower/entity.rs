@@ -4,7 +4,11 @@ use std::cell::RefCell;
 thread_local! {
     /// Alias names currently being lowered on this thread. Guards the
     /// self-referential alias cycle that tagged unions make reachable.
-    static RESOLVING: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
+    /// `pub(crate)` so `emit_listen.rs`'s payload-position struct lowering
+    /// (`struct_payload_properties` and friends) shares this ONE guard
+    /// instead of a second copy — same cycle, same set, checked from a
+    /// different call site.
+    pub(crate) static RESOLVING: RefCell<HashSet<String>> = RefCell::new(HashSet::new());
 }
 
 pub(crate) fn lower_entity(
@@ -463,6 +467,146 @@ mod tests {
         // The array-element refinement must not change the scalar `json` type.
         let (ft, _, _, _, _) = lower(&TypeExpr::Named("json".to_string()));
         assert!(matches!(ft, FieldType::String), "scalar json stays string");
+    }
+
+    /// Recursive named struct types (feature test 1): a PLAIN struct
+    /// self-reference — `type MenuItem = { label : string!, subMenu :
+    /// [MenuItem] }`, no union involved — must fire the SAME RESOLVING cycle
+    /// guard the DrawItem tagged-union recursion introduced it for. Before
+    /// this feature the guard already covered `TypeExpr::Named` generically
+    /// (not union-specific), so this pins that behavior rather than changing
+    /// it: full expansion at the root, a by-name `Union` back-reference
+    /// (`values: ["MenuItem"]`, no `properties`) at the recursion point.
+    #[test]
+    fn plain_struct_self_reference_lowers_to_full_expansion_plus_backref() {
+        let mut aliases = BTreeMap::new();
+        aliases.insert(
+            "MenuItem".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(vec![
+                ("label".to_string(), TypeExpr::Primitive("string".to_string()), true),
+                (
+                    "subMenu".to_string(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
+                    false,
+                ),
+            ])),
+        );
+        let (ft, _values, _items, props, _rel) = lower_type_expr(
+            &TypeExpr::Named("MenuItem".to_string()),
+            &aliases,
+            &HashSet::new(),
+        );
+        assert!(
+            matches!(ft, FieldType::Object),
+            "root MenuItem expands fully to an object, got {:?}",
+            ft
+        );
+        let props = props.expect("root struct carries its fields");
+        let sub_menu = props.get("subMenu").expect("subMenu field present");
+        assert!(matches!(sub_menu.field_type, FieldType::Array));
+        let item = sub_menu
+            .items
+            .as_ref()
+            .expect("subMenu is an array with an item schema");
+        assert!(
+            matches!(item.field_type, FieldType::Union),
+            "the recursion point degrades to the by-name Union back-reference, got {:?}",
+            item.field_type
+        );
+        assert_eq!(
+            item.values.as_deref(),
+            Some(["MenuItem".to_string()].as_slice()),
+            "the back-reference names the alias it re-enters"
+        );
+        assert!(
+            item.properties.is_none(),
+            "a back-reference carries NO properties — it's a reference, not an expansion"
+        );
+        // The guard must be fully released after lowering completes, so a
+        // SECOND top-level use of the same alias (e.g. a sibling field on the
+        // same entity) also gets the full expansion, not a spurious
+        // back-reference from a leaked guard entry.
+        let (ft2, _, _, props2, _) = lower_type_expr(
+            &TypeExpr::Named("MenuItem".to_string()),
+            &aliases,
+            &HashSet::new(),
+        );
+        assert!(matches!(ft2, FieldType::Object));
+        assert!(props2.is_some(), "guard release lets a second use re-expand");
+    }
+
+    /// DrawItem regression (feature test 4): the pre-existing TAGGED-UNION
+    /// recursion — `DrawItem = DrawShape | DrawGroup`, `DrawGroup.items :
+    /// [DrawItem]` — must lower to the EXACT same `.orb` wire shape it did
+    /// before this feature: `FieldType::Union` at the root with variant names
+    /// in `values` and shapes in `properties`, and the SAME by-name
+    /// `FieldType::Union { values: ["DrawItem"], properties: None }`
+    /// back-reference at the recursion point that a plain struct
+    /// self-reference now also produces. This feature changes what
+    /// `orbital-compiler`'s resolve phase does with that back-reference
+    /// (`Json` → `TypeRef`) — never the lowered bytes themselves.
+    #[test]
+    fn tagged_union_self_reference_still_lowers_to_by_name_backref() {
+        let mut aliases = BTreeMap::new();
+        aliases.insert(
+            "DrawShape".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(vec![(
+                "kind".to_string(),
+                TypeExpr::StringLiteral("shape".to_string()),
+                true,
+            )])),
+        );
+        aliases.insert(
+            "DrawGroup".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(vec![
+                (
+                    "kind".to_string(),
+                    TypeExpr::StringLiteral("group".to_string()),
+                    true,
+                ),
+                (
+                    "items".to_string(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("DrawItem".to_string()))),
+                    false,
+                ),
+            ])),
+        );
+        aliases.insert(
+            "DrawItem".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Union(vec![
+                TypeExpr::Named("DrawShape".to_string()),
+                TypeExpr::Named("DrawGroup".to_string()),
+            ])),
+        );
+        let (ft, values, _items, props, _rel) = lower_type_expr(
+            &TypeExpr::Named("DrawItem".to_string()),
+            &aliases,
+            &HashSet::new(),
+        );
+        assert!(matches!(ft, FieldType::Union), "root DrawItem is a tagged union, got {:?}", ft);
+        let names = values.expect("union carries variant names");
+        assert_eq!(
+            names,
+            vec!["DrawShape".to_string(), "DrawGroup".to_string()]
+        );
+        let props = props.expect("union carries variant shapes");
+        let group = props.get("DrawGroup").expect("DrawGroup variant present");
+        let group_props = group.properties.as_ref().expect("DrawGroup fields");
+        let items_field = group_props.get("items").expect("items field");
+        let item = items_field
+            .items
+            .as_ref()
+            .expect("items is an array with an element schema");
+        assert!(
+            matches!(item.field_type, FieldType::Union),
+            "the recursion point re-enters DrawItem as a by-name back-reference, got {:?}",
+            item.field_type
+        );
+        assert_eq!(item.values.as_deref(), Some(["DrawItem".to_string()].as_slice()));
+        assert!(
+            item.properties.is_none(),
+            "a back-reference carries NO properties — unchanged from before this feature"
+        );
     }
 }
 

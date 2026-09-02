@@ -741,6 +741,7 @@ pub(crate) fn lower_trait(
                     .map(|p| orbital_core::schema::TraitTypeParamDef {
                         name: p.name.clone(),
                         kind: p.kind.clone(),
+                        default: p.default.clone(),
                     })
                     .collect(),
             )

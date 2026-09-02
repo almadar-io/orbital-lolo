@@ -228,3 +228,125 @@ fn alias_conformance_mismatch_still_errors() {
         "expected AnnotationMismatch, got {err:?}"
     );
 }
+
+// ---------------------------------------------------------------------------
+// Gap A: orbital-scope struct aliases survive L1 onto `Orbital.types`.
+// ---------------------------------------------------------------------------
+
+const STRUCT_ALIAS_ORBITAL_SRC: &str = r#"
+type FileScopeShape = { label : string! }
+
+orbital ApprovalOrbital {
+  type LocalShape = { id : string!, note : string }
+
+  entity ApprovalRecord [runtime] {
+    id : string!
+  }
+
+  trait ApprovalRun -> ApprovalRecord [lifecycle, instance] {
+    state idle {
+      INIT -> idle (ref ApprovalRecord)
+    }
+  }
+
+  page "/approvals" -> ApprovalRun
+}
+"#;
+
+#[test]
+fn orbital_scope_and_file_scope_struct_aliases_populate_types_map() {
+    let schema = parse_and_lower_str(STRUCT_ALIAS_ORBITAL_SRC).expect("parse_and_lower must succeed");
+    let types = schema.orbitals[0]
+        .types
+        .as_ref()
+        .expect("Orbital.types must be populated with struct aliases visible in this scope");
+    let local = types.get("LocalShape").expect("orbital-scope alias must be carried");
+    let local_names: Vec<&str> = local.iter().map(|f| f.name.as_str()).collect();
+    assert_eq!(local_names, vec!["id", "note"]);
+
+    let file_scope = types
+        .get("FileScopeShape")
+        .expect("file-scope alias visible from this orbital must be carried too");
+    assert_eq!(file_scope[0].name, "label");
+}
+
+#[test]
+fn orbital_with_no_struct_aliases_has_no_types_map() {
+    let schema = parse_and_lower_str(MULTI_PARAM_SRC).expect("parse_and_lower must succeed");
+    assert!(
+        schema.orbitals[0].types.is_none(),
+        "an orbital declaring no struct aliases must not grow a types map"
+    );
+}
+
+// ---------------------------------------------------------------------------
+// Gap C: `(name : Kind = <default>)` declaration defaults.
+// ---------------------------------------------------------------------------
+
+const PARAM_DEFAULT_SRC: &str = r#"
+orbital MLRungsDefaulted {
+  type ApprovalDemoPayload = { note : string }
+
+  entity KeyLookup [runtime] {
+    id : string!
+  }
+
+  trait LookupRun (v : Type = ApprovalDemoPayload, r : Type = scalar) -> KeyLookup [lifecycle, instance] {
+    state idle {
+      INIT -> idle (ref KeyLookup)
+    }
+    emits
+      CandidateFound { candidate : v, request : r }
+  }
+
+  page "/lookup" -> LookupRun
+}
+"#;
+
+#[test]
+fn declaration_default_parses_and_lowers_onto_type_param_def() {
+    let program = parse_str(PARAM_DEFAULT_SRC).expect("parse");
+    let orbital = &program.orbitals[0];
+    let trait_decl = orbital
+        .traits
+        .iter()
+        .find(|t| t.name == "LookupRun")
+        .expect("LookupRun trait");
+    assert_eq!(trait_decl.type_params[0].default.as_deref(), Some("ApprovalDemoPayload"));
+    assert_eq!(trait_decl.type_params[1].default.as_deref(), Some("scalar"));
+
+    let schema = parse_and_lower_str(PARAM_DEFAULT_SRC).expect("parse_and_lower must succeed");
+    let TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
+        panic!("expected an inline trait definition");
+    };
+    let type_params = trait_def.type_params.as_ref().expect("typeParams must be populated");
+    assert_eq!(type_params[0].default.as_deref(), Some("ApprovalDemoPayload"));
+    assert_eq!(type_params[1].default.as_deref(), Some("scalar"));
+}
+
+#[test]
+fn param_with_no_default_lowers_default_none() {
+    let schema = parse_and_lower_str(MULTI_PARAM_SRC).expect("parse_and_lower must succeed");
+    let TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
+        panic!("expected an inline trait definition");
+    };
+    let type_params = trait_def.type_params.as_ref().expect("typeParams must be populated");
+    assert!(type_params[0].default.is_none());
+    assert!(type_params[1].default.is_none());
+}
+
+#[test]
+fn unknown_declaration_default_name_is_a_lower_error() {
+    let src = PARAM_DEFAULT_SRC.replace("v : Type = ApprovalDemoPayload", "v : Type = NoSuchAlias");
+    let err = parse_and_lower_str(&src).expect_err("unknown default name must error");
+    assert!(
+        matches!(
+            err,
+            LoloError::Lower {
+                inner: LowerError::Type(TypeError::UnknownType { ref name, .. }),
+                ..
+            } if name == "NoSuchAlias"
+        ),
+        "expected UnknownType(\"NoSuchAlias\"), got {err:?}"
+    );
+}

@@ -923,6 +923,28 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
             // spuriously raise `UnknownType`.
             let trait_type_params: BTreeSet<String> =
                 trt.type_params.iter().map(|p| p.name.clone()).collect();
+            // Gap C: a declared param default must resolve — a primitive
+            // name (incl. `scalar`), an entity name, or a struct-alias name
+            // declared in this atom's own file. Same value vocabulary a
+            // call-site `::` arg accepts (`resolve_type_arg_value` in the
+            // compiler mirrors this at L2).
+            for p in &trt.type_params {
+                if let Some(default) = &p.default {
+                    if is_primitive(default)
+                        || entity_names.contains(default)
+                        || ctx.lookup(default).is_some()
+                    {
+                        continue;
+                    }
+                    let mut haystack = ctx.known_names();
+                    haystack.extend(entity_names.iter().cloned());
+                    return Err(TypeError::UnknownType {
+                        name: default.clone(),
+                        suggestion: closest_name(default, &haystack),
+                        span: trt.span,
+                    });
+                }
+            }
             for cf in &trt.config {
                 check_field_type_refs(&cf.type_expr, cf.span, &ctx, &entity_names, &trait_type_params)?;
             }

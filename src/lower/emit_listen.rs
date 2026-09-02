@@ -62,6 +62,7 @@ pub(crate) fn lower_emit(
                 payload_schema: payload,
                 event_id: None,
                 definer_knob: definer_knob_of(&e.event),
+                scope_overridden: None,
             });
         }
         // No alias and no inline payload → payloadless emit.
@@ -78,6 +79,7 @@ pub(crate) fn lower_emit(
             payload_schema: None,
             event_id: None,
             definer_knob: definer_knob_of(&e.event),
+            scope_overridden: None,
         });
     }
     // Inline payload path: each field whose type_expr is `TypeExpr::Named`
@@ -214,6 +216,7 @@ pub(crate) fn lower_emit(
         payload_schema: Some(fields),
         definer_knob: definer_knob_of(&e.event),
         event_id: None,
+        scope_overridden: None,
     })
 }
 
@@ -408,6 +411,8 @@ pub(crate) fn type_expr_to_payload_fields(
                     // `payload_fields_mismatch_norm` normalized the two for
                     // COMPARISON only; nothing normalized what was emitted.
                     ("object".to_string(), Some(entity_fields))
+                } else if is_cyclic_ref(ftype) {
+                    (type_expr_to_string(ftype), Some(Vec::new()))
                 } else {
                     (type_expr_to_string(ftype), None)
                 };
@@ -533,10 +538,16 @@ pub(crate) fn union_payload_variants(
         let (name, field_type, properties) = match p {
             TypeExpr::Array(inner) => match struct_payload_properties(inner, aliases, type_params) {
                 Some(elem) => ("array".to_string(), "[object]".to_string(), Some(elem)),
+                None if is_cyclic_ref(p) => (
+                    "array".to_string(),
+                    format!("[{}]", type_expr_to_string(inner)),
+                    Some(Vec::new()),
+                ),
                 None => ("array".to_string(), format!("[{}]", type_expr_to_string(inner)), None),
             },
             TypeExpr::Named(n) => match struct_payload_properties(p, aliases, type_params) {
                 Some(nested) => (n.clone(), "object".to_string(), Some(nested)),
+                None if is_cyclic_ref(p) => (n.clone(), type_expr_to_string(p), Some(Vec::new())),
                 None => (n.clone(), type_expr_to_string(p), None),
             },
             TypeExpr::Primitive(n) => (n.clone(), type_expr_to_string(p), None),
@@ -553,19 +564,55 @@ pub(crate) fn union_payload_variants(
     Some(out)
 }
 
+/// True when `ty` is `Named(name)` or `Array(Named(name))` and `name` is
+/// currently mid-expansion on this thread (`lower/entity.rs`'s `RESOLVING`
+/// cycle guard, shared with this module's own struct/union walkers below).
+/// Distinguishes "a `None` here was a CYCLE" from "a `None` here is a
+/// genuine miss" (an entity name, an unresolved identifier, a primitive) —
+/// the two must degrade differently: a cycle keeps its by-name reference
+/// (`properties: Some([])`, the marker `resolve.rs`'s
+/// `payload_field_to_oir_type` reads as `OirType::TypeRef`), a genuine miss
+/// stays the historical bare string (`properties: None`).
+fn is_cyclic_ref(ty: &TypeExpr) -> bool {
+    let name = match ty {
+        TypeExpr::Named(n) => n.as_str(),
+        TypeExpr::Array(inner) => match inner.as_ref() {
+            TypeExpr::Named(n) => n.as_str(),
+            _ => return false,
+        },
+        _ => return false,
+    };
+    crate::lower::entity::RESOLVING.with(|r| r.borrow().contains(name))
+}
+
 pub(crate) fn struct_payload_properties(
     te: &TypeExpr,
     aliases: &BTreeMap<String, TypeAliasResolved>,
     type_params: &[&str],
 ) -> Option<Vec<PayloadField>> {
-    let items: &Vec<(String, TypeExpr, bool)> = match te {
-        TypeExpr::Object(items) => items,
+    let (guard_name, items): (Option<&str>, &Vec<(String, TypeExpr, bool)>) = match te {
+        TypeExpr::Object(items) => (None, items),
         TypeExpr::Named(n) => match aliases.get(n) {
-            Some(TypeAliasResolved::Type(TypeExpr::Object(items))) => items,
+            Some(TypeAliasResolved::Type(TypeExpr::Object(items))) => (Some(n.as_str()), items),
             _ => return None,
         },
         _ => return None,
     };
+    // CYCLE GUARD — the payload-position twin of `lower/entity.rs`'s
+    // RESOLVING guard (same thread-local, same rule): re-entering a struct
+    // alias that's still being expanded would recurse forever (`type
+    // MenuItem = { subMenu : [MenuItem] }`; verified: stack overflow before
+    // this existed). Only a NAMED entry has a name to guard on — the literal
+    // `TypeExpr::Object` form (`lower/mod.rs`'s orbital-scope `types` map
+    // calls this with the alias's own body directly, not a `Named` reference
+    // to it) has none at THIS frame; its recursion still terminates one
+    // level down, the next time the same alias is reached through a `Named`
+    // child.
+    if let Some(n) = guard_name {
+        if !crate::lower::entity::RESOLVING.with(|r| r.borrow_mut().insert(n.to_string())) {
+            return None; // cycle — caller degrades to the by-name marker
+        }
+    }
     let mut props = Vec::with_capacity(items.len());
     for (name, ty, req) in items {
         // An array-of-struct field (`[StructAlias]` / `[{ … }]`) carries the
@@ -590,6 +637,12 @@ pub(crate) fn struct_payload_properties(
             ("object".to_string(), Some(nested))
         } else if let Some(variants) = union_payload_variants(ty, aliases, type_params) {
             ("union".to_string(), Some(variants))
+        } else if is_cyclic_ref(ty) {
+            // The by-name back-reference marker: `field_type` keeps the
+            // bare/array name string, `properties` is Some-but-EMPTY (never
+            // produced by a genuine miss) so `resolve.rs` can tell this apart
+            // from an unresolved identifier and emit `OirType::TypeRef`.
+            (type_expr_to_string(ty), Some(Vec::new()))
         } else {
             (type_expr_to_string(ty), None)
         };
@@ -599,6 +652,11 @@ pub(crate) fn struct_payload_properties(
             required: if *req { Some(true) } else { None },
             description: None,
             properties,
+        });
+    }
+    if let Some(n) = guard_name {
+        crate::lower::entity::RESOLVING.with(|r| {
+            r.borrow_mut().remove(n);
         });
     }
     Some(props)
@@ -721,5 +779,94 @@ pub(crate) fn lower_tick(t: &Tick) -> TickDefinition {
         effects: t.effects.clone(),
         applies_to: None,
         description: None,
+    }
+}
+
+#[cfg(test)]
+mod recursive_struct_payload_tests {
+    use super::*;
+
+    fn menu_item_aliases() -> BTreeMap<String, TypeAliasResolved> {
+        let mut aliases = BTreeMap::new();
+        aliases.insert(
+            "MenuItem".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(vec![
+                (
+                    "label".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
+                (
+                    "subMenu".to_string(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
+                    false,
+                ),
+            ])),
+        );
+        aliases
+    }
+
+    /// Feature test 1 (payload half): a payload field typed directly by a
+    /// self-referential struct alias must TERMINATE (no infinite recursion —
+    /// `struct_payload_properties` previously had no cycle guard on this
+    /// path, verified: hung/stack-overflowed before this fix) and carry the
+    /// by-name back-reference marker (`properties: Some([])`) at the
+    /// recursion point, mirroring `lower/entity.rs`'s entity-side shape.
+    #[test]
+    fn recursive_struct_payload_field_terminates_with_backref_marker() {
+        let aliases = menu_item_aliases();
+        let props = struct_payload_properties(
+            &TypeExpr::Named("MenuItem".to_string()),
+            &aliases,
+            &[],
+        )
+        .expect("MenuItem is a struct alias");
+        let sub_menu = props
+            .iter()
+            .find(|f| f.name == "subMenu")
+            .expect("subMenu field present");
+        assert_eq!(sub_menu.field_type, "[MenuItem]");
+        assert!(
+            matches!(&sub_menu.properties, Some(p) if p.is_empty()),
+            "the recursion point carries the EMPTY (not absent) properties marker"
+        );
+
+        // The guard must release after each top-level call, so resolving the
+        // SAME alias twice in a row (e.g. two payload fields both typed
+        // MenuItem) doesn't see a leaked guard entry and wrongly treat the
+        // second call as a cycle too.
+        let props2 = struct_payload_properties(
+            &TypeExpr::Named("MenuItem".to_string()),
+            &aliases,
+            &[],
+        )
+        .expect("guard release lets a second use re-expand");
+        assert_eq!(props2.len(), 2, "second call fully expands MenuItem again");
+    }
+
+    /// `type_expr_to_payload_fields`'s `Object` branch (an inline `{ … }`
+    /// event payload with a FIELD typed by the recursive alias — the shape
+    /// `emits { EVENT { row : MenuItem } }` produces) must also terminate
+    /// and carry the same by-name marker.
+    #[test]
+    fn type_expr_to_payload_fields_object_branch_terminates_on_recursive_field() {
+        let aliases = menu_item_aliases();
+        let entities: BTreeMap<String, Vec<(String, TypeExpr, bool)>> = BTreeMap::new();
+        let payload = TypeExpr::Object(vec![(
+            "row".to_string(),
+            TypeExpr::Named("MenuItem".to_string()),
+            true,
+        )]);
+        let fields = type_expr_to_payload_fields("ItemPicked", &payload, &aliases, &entities, &[])
+            .expect("payload resolves");
+        let row = fields.iter().find(|f| f.name == "row").expect("row field");
+        assert_eq!(row.field_type, "object");
+        let props = row.properties.as_ref().expect("row carries MenuItem's fields");
+        let sub_menu = props
+            .iter()
+            .find(|f| f.name == "subMenu")
+            .expect("subMenu present");
+        assert_eq!(sub_menu.field_type, "[MenuItem]");
+        assert!(matches!(&sub_menu.properties, Some(p) if p.is_empty()));
     }
 }

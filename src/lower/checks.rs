@@ -1228,3 +1228,65 @@ fn config_type_compatible(got: &str, expected: &str) -> bool {
         _ => true,
     }
 }
+
+#[cfg(test)]
+mod recursive_type_safety_tests {
+    use super::*;
+    use crate::ast::TypeExpr;
+    use std::collections::BTreeMap;
+
+    /// Safety test (feature tests 2 & 3): a field declared by a recursive
+    /// STRUCT alias must never be readable as a string enum — a
+    /// `(set @entity.x "MenuItem")` literal must not be silently accepted as
+    /// a legal "enum member" just because the alias re-enters itself.
+    /// `enum_members_of` resolves one level through `TypeAliasResolved::Type`
+    /// and the inner shape is `Object`, which every arm falls through to
+    /// `None` for — this pins that behavior rather than changing it.
+    #[test]
+    fn struct_alias_field_is_never_an_enum() {
+        let mut aliases = BTreeMap::new();
+        aliases.insert(
+            "MenuItem".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(vec![
+                (
+                    "label".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
+                (
+                    "subMenu".to_string(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
+                    false,
+                ),
+            ])),
+        );
+        assert_eq!(
+            enum_members_of(&TypeExpr::Named("MenuItem".to_string()), &aliases),
+            None,
+            "a self-referential struct alias must never resolve to enum members"
+        );
+    }
+
+    /// Safety half's companion: the fix above must not regress the ordinary
+    /// case — `type Direction = up | down | left | right` (no aliases
+    /// involved) still reads as a plain string enum.
+    #[test]
+    fn plain_string_enum_still_reads_as_enum() {
+        let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        let direction = TypeExpr::Union(vec![
+            TypeExpr::Named("up".to_string()),
+            TypeExpr::Named("down".to_string()),
+            TypeExpr::Named("left".to_string()),
+            TypeExpr::Named("right".to_string()),
+        ]);
+        assert_eq!(
+            enum_members_of(&direction, &aliases),
+            Some(vec![
+                "up".to_string(),
+                "down".to_string(),
+                "left".to_string(),
+                "right".to_string(),
+            ])
+        );
+    }
+}

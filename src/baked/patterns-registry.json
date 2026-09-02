@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-01T15:15:34.310Z",
+  "exportedAt": "2026-09-02T02:13:40.776Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -804,7 +804,8 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true
+                      "freeform": true,
+                      "controlValue": true
                     }
                   }
                 },
@@ -2169,7 +2170,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               },
               "options": {
                 "types": [
@@ -2612,7 +2614,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               }
             },
             "globalVariables": {
@@ -2623,7 +2626,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               }
             },
             "localVariables": {
@@ -2634,7 +2638,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               }
             },
             "entity": {
@@ -2645,7 +2650,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               }
             }
           },
@@ -2727,7 +2733,8 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true
+                      "freeform": true,
+                      "controlValue": true
                     },
                     "options": {
                       "types": [
@@ -2931,7 +2938,8 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true
+                      "freeform": true,
+                      "controlValue": true
                     }
                   }
                 },
@@ -3089,7 +3097,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               },
               "options": {
                 "types": [
@@ -3532,7 +3541,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               }
             },
             "globalVariables": {
@@ -3543,7 +3553,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               }
             },
             "localVariables": {
@@ -3554,7 +3565,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               }
             },
             "entity": {
@@ -3565,7 +3577,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "controlValue": true
               }
             }
           },
@@ -3647,7 +3660,8 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true
+                      "freeform": true,
+                      "controlValue": true
                     },
                     "options": {
                       "types": [
@@ -3851,7 +3865,8 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true
+                      "freeform": true,
+                      "controlValue": true
                     }
                   }
                 },
@@ -5152,20 +5167,50 @@
                           },
                           "defaultValue": {
                             "types": [
+                              "string",
+                              "number",
+                              "boolean",
+                              "array",
                               "object"
-                            ],
-                            "freeform": true
-                          },
-                          "condition": {
-                            "types": [
-                              "array"
                             ],
                             "items": {
                               "types": [
-                                "object"
-                              ],
-                              "freeform": true
-                            }
+                                "string"
+                              ]
+                            },
+                            "properties": {
+                              "name": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "url": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "mimeType": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "sizeBytes": {
+                                "types": [
+                                  "number"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "url",
+                              "mimeType",
+                              "sizeBytes"
+                            ]
+                          },
+                          "condition": {
+                            "types": [
+                              "sexpr"
+                            ]
                           },
                           "placeholder": {
                             "types": [
@@ -5191,7 +5236,13 @@
                             "types": [
                               "object"
                             ],
-                            "freeform": true
+                            "mapValue": {
+                              "types": [
+                                "object"
+                              ],
+                              "freeform": true,
+                              "controlValue": true
+                            }
                           },
                           "displayFields": {
                             "types": [
@@ -5207,7 +5258,13 @@
                             "types": [
                               "object"
                             ],
-                            "freeform": true
+                            "mapValue": {
+                              "types": [
+                                "object"
+                              ],
+                              "freeform": true,
+                              "controlValue": true
+                            }
                           },
                           "hiddenCalculations": {
                             "types": [
@@ -5244,19 +5301,37 @@
                             "types": [
                               "object"
                             ],
-                            "freeform": true
+                            "mapValue": {
+                              "types": [
+                                "object"
+                              ],
+                              "freeform": true,
+                              "controlValue": true
+                            }
                           },
                           "displayTemplate": {
                             "types": [
                               "object"
                             ],
-                            "freeform": true
+                            "mapValue": {
+                              "types": [
+                                "object"
+                              ],
+                              "freeform": true,
+                              "controlValue": true
+                            }
                           },
                           "lawReference": {
                             "types": [
                               "object"
                             ],
-                            "freeform": true
+                            "mapValue": {
+                              "types": [
+                                "object"
+                              ],
+                              "freeform": true,
+                              "controlValue": true
+                            }
                           },
                           "contextMenu": {
                             "types": [
@@ -5272,7 +5347,13 @@
                             "types": [
                               "object"
                             ],
-                            "freeform": true
+                            "mapValue": {
+                              "types": [
+                                "object"
+                              ],
+                              "freeform": true,
+                              "controlValue": true
+                            }
                           },
                           "readOnly": {
                             "types": [
@@ -5281,9 +5362,8 @@
                           },
                           "minDate": {
                             "types": [
-                              "object"
-                            ],
-                            "freeform": true
+                              "string"
+                            ]
                           },
                           "stats": {
                             "types": [
@@ -5301,9 +5381,45 @@
                                 },
                                 "value": {
                                   "types": [
+                                    "string",
+                                    "number",
+                                    "boolean",
+                                    "array",
                                     "object"
                                   ],
-                                  "freeform": true
+                                  "items": {
+                                    "types": [
+                                      "string"
+                                    ]
+                                  },
+                                  "properties": {
+                                    "name": {
+                                      "types": [
+                                        "string"
+                                      ]
+                                    },
+                                    "url": {
+                                      "types": [
+                                        "string"
+                                      ]
+                                    },
+                                    "mimeType": {
+                                      "types": [
+                                        "string"
+                                      ]
+                                    },
+                                    "sizeBytes": {
+                                      "types": [
+                                        "number"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "name",
+                                    "url",
+                                    "mimeType",
+                                    "sizeBytes"
+                                  ]
                                 },
                                 "icon": {
                                   "types": [
@@ -5338,9 +5454,8 @@
                                 },
                                 "autoCheck": {
                                   "types": [
-                                    "object"
-                                  ],
-                                  "freeform": true
+                                    "boolean"
+                                  ]
                                 }
                               },
                               "required": [
@@ -5369,14 +5484,8 @@
                     },
                     "condition": {
                       "types": [
-                        "array"
-                      ],
-                      "items": {
-                        "types": [
-                          "object"
-                        ],
-                        "freeform": true
-                      }
+                        "sexpr"
+                      ]
                     },
                     "repeatable": {
                       "types": [
@@ -5428,7 +5537,13 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true
+                      "mapValue": {
+                        "types": [
+                          "object"
+                        ],
+                        "freeform": true,
+                        "controlValue": true
+                      }
                     },
                     "readOnly": {
                       "types": [
@@ -5519,14 +5634,8 @@
                   "properties": {
                     "condition": {
                       "types": [
-                        "array"
-                      ],
-                      "items": {
-                        "types": [
-                          "object"
-                        ],
-                        "freeform": true
-                      }
+                        "sexpr"
+                      ]
                     },
                     "message": {
                       "types": [
@@ -9831,25 +9940,49 @@
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "freeform": true,
+                "controlValue": true
+              }
             },
             "globalVariables": {
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "freeform": true,
+                "controlValue": true
+              }
             },
             "localVariables": {
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "freeform": true,
+                "controlValue": true
+              }
             },
             "entity": {
               "types": [
                 "object"
               ],
-              "freeform": true
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "freeform": true,
+                "controlValue": true
+              }
             }
           },
           "propertyRequired": [
@@ -20474,7 +20607,8 @@
             "types": [
               "object"
             ],
-            "freeform": true
+            "freeform": true,
+            "genericParam": true
           }
         },
         "renderItem": {
@@ -20781,7 +20915,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "eventPayloadBrand": true
               }
             },
             "required": [
@@ -20834,7 +20969,8 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true
+                "freeform": true,
+                "eventPayloadBrand": true
               }
             },
             "required": [
@@ -20863,7 +20999,8 @@
             "object"
           ],
           "description": "itemData prop",
-          "freeform": true
+          "freeform": true,
+          "eventPayloadBrand": true
         },
         "className": {
           "types": [
@@ -30606,9 +30743,8 @@
                         },
                         "guard": {
                           "types": [
-                            "object"
-                          ],
-                          "freeform": true
+                            "sexpr"
+                          ]
                         },
                         "effects": {
                           "types": [
@@ -30630,9 +30766,8 @@
                                 ],
                                 "items": {
                                   "types": [
-                                    "object"
-                                  ],
-                                  "freeform": true
+                                    "sexpr"
+                                  ]
                                 }
                               }
                             },
@@ -30978,9 +31113,8 @@
                         },
                         "guard": {
                           "types": [
-                            "object"
-                          ],
-                          "freeform": true
+                            "sexpr"
+                          ]
                         },
                         "effects": {
                           "types": [
@@ -31002,9 +31136,8 @@
                                 ],
                                 "items": {
                                   "types": [
-                                    "object"
-                                  ],
-                                  "freeform": true
+                                    "sexpr"
+                                  ]
                                 }
                               }
                             },
@@ -48887,7 +49020,8 @@
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "freeform": true,
+                  "controlValue": true
                 }
               },
               "parentRef": {
@@ -51499,7 +51633,8 @@
                   "types": [
                     "object"
                   ],
-                  "freeform": true
+                  "freeform": true,
+                  "controlValue": true
                 }
               }
             }

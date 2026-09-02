@@ -32,7 +32,9 @@ pub(crate) use checks::{
     check_behavior_contracts, check_button_transitions, check_emit_payload_literals,
     check_entity_fields_have_setters, check_listens_integrity, check_set_value_types,
 };
-pub(crate) use emit_listen::{lower_emit, lower_listen, lower_tick, type_expr_to_payload_fields};
+pub(crate) use emit_listen::{
+    lower_emit, lower_listen, lower_tick, struct_payload_properties, type_expr_to_payload_fields,
+};
 pub(crate) use entity::{lower_entity, lower_field, lower_type_expr, primitive_field_type};
 pub(crate) use page::lower_page_decl;
 pub(crate) use r#trait::lower_trait_decl;
@@ -682,6 +684,21 @@ fn lower_orbital(
         Some(orb.pages.iter().map(lower_page_decl).collect::<Vec<_>>())
     };
 
+    // Gap A: carry every struct-shaped alias visible in this orbital's scope
+    // (file-level + orbital-local, already merged into `aliases`) so a `::`
+    // type-param arg naming a local struct alias survives L1 — the `.orb`
+    // otherwise has no record of type aliases at all. Enum/primitive/entity
+    // aliases are not legal `::` args and are excluded.
+    let mut types_map: BTreeMap<String, Vec<PayloadField>> = BTreeMap::new();
+    for (name, resolved) in aliases {
+        if let TypeAliasResolved::Type(te @ TypeExpr::Object(_)) = resolved {
+            if let Some(props) = struct_payload_properties(te, aliases, &[]) {
+                types_map.insert(name.clone(), props);
+            }
+        }
+    }
+    let types = if types_map.is_empty() { None } else { Some(types_map) };
+
     Ok(CoreOrbital {
         name: orb.name.clone(),
         uses,
@@ -707,6 +724,7 @@ fn lower_orbital(
         domain_context: None,
         design: None,
         id: None,
+        types,
     })
 }
 
