@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-03T03:26:05.097Z",
+  "exportedAt": "2026-09-03T14:38:50.148Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -32708,6 +32708,20 @@
             "role",
             "category"
           ]
+        },
+        "toggleEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event dispatched via event bus on toggle, carrying the new muted state.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "muted",
+              "type": "boolean",
+              "required": true
+            }
+          ]
         }
       }
     },
@@ -37810,6 +37824,92 @@
             ]
           }
         },
+        "editable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "--- Scene-edit mode (a game studio selecting/dragging drawables). Purely",
+          "default": false
+        },
+        "selectedId": {
+          "types": [
+            "string"
+          ],
+          "description": "The currently-selected drawable id (controlled); `null`/undefined = none.",
+          "default": null
+        },
+        "onSelect": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired on a click that changes selection — before `selectEvent`.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        },
+        "onMove": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired once per drag gesture, on drop — before `moveEvent`.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            }
+          ]
+        },
+        "selectEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative selection event, `UI:{selectEvent} { id }`.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "moveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative move event, `UI:{moveEvent} { id, x, y }` — fired once on drop.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
         "camera": {
           "types": [
             "string"
@@ -38985,6 +39085,12 @@
           ],
           "description": "Background color (default transparent)."
         },
+        "fontFamily": {
+          "types": [
+            "string"
+          ],
+          "description": "Canvas text font family. Falls back to the theme's --font-family-body."
+        },
         "shapes": {
           "types": [
             "array"
@@ -39107,6 +39213,11 @@
               "fontSize": {
                 "types": [
                   "number"
+                ]
+              },
+              "fontFamily": {
+                "types": [
+                  "string"
                 ]
               },
               "align": {
@@ -40481,6 +40592,11 @@
                   "number"
                 ]
               },
+              "fontFamily": {
+                "types": [
+                  "string"
+                ]
+              },
               "align": {
                 "types": [
                   "string"
@@ -41756,6 +41872,11 @@
                   "number"
                 ]
               },
+              "fontFamily": {
+                "types": [
+                  "string"
+                ]
+              },
               "align": {
                 "types": [
                   "string"
@@ -42231,6 +42352,12 @@
           ],
           "description": "Base font size in px for all other canvas annotations (points, vectors, guides, curves, regions, angles, hops; default 12).",
           "default": 12
+        },
+        "fontFamily": {
+          "types": [
+            "string"
+          ],
+          "description": "Canvas text font family. Accepts a known game-font key (e.g. \"future-narrow\") or a CSS font-family string."
         },
         "showCurveLabels": {
           "types": [
@@ -42807,6 +42934,11 @@
               "fontSize": {
                 "types": [
                   "number"
+                ]
+              },
+              "fontFamily": {
+                "types": [
+                  "string"
                 ]
               },
               "align": {
@@ -44344,6 +44476,11 @@
                   "number"
                 ]
               },
+              "fontFamily": {
+                "types": [
+                  "string"
+                ]
+              },
               "align": {
                 "types": [
                   "string"
@@ -45551,6 +45688,11 @@
               "fontSize": {
                 "types": [
                   "number"
+                ]
+              },
+              "fontFamily": {
+                "types": [
+                  "string"
                 ]
               },
               "align": {
@@ -48835,6 +48977,90 @@
             ]
           }
         },
+        "editable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "--- Scene-edit mode (a game studio selecting/dragging drawables). Purely"
+        },
+        "selectedId": {
+          "types": [
+            "string"
+          ],
+          "description": "The currently-selected drawable id (controlled); `null`/undefined = none."
+        },
+        "onSelect": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired on a click that changes selection — before `selectEvent`.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        },
+        "onMove": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired once per drag gesture, on drop — before `moveEvent`.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "x",
+              "type": "number"
+            },
+            {
+              "name": "y",
+              "type": "number"
+            }
+          ]
+        },
+        "selectEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative selection event, `UI:{selectEvent} { id }`.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "moveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative move event, `UI:{moveEvent} { id, x, y }` — fired once on drop.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "x",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "y",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
         "children": {
           "types": [
             "node"
@@ -50363,6 +50589,11 @@
                   "number"
                 ]
               },
+              "fontFamily": {
+                "types": [
+                  "string"
+                ]
+              },
               "align": {
                 "types": [
                   "string"
@@ -51679,6 +51910,11 @@
                 "types": [
                   "boolean"
                 ]
+              },
+              "testId": {
+                "types": [
+                  "string"
+                ]
               }
             },
             "required": [
@@ -51933,6 +52169,279 @@
             "string"
           ],
           "description": "secondarySidebarClassName prop"
+        }
+      }
+    },
+    "command-palette": {
+      "type": "command-palette",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "CommandPalette component",
+      "suggestedFor": [
+        "command",
+        "palette",
+        "command palette"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "open": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether the palette overlay is open",
+          "required": true
+        },
+        "onOpenChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Called to open/close the overlay (Escape, overlay click, or a selection)",
+          "required": true,
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "open",
+              "type": "boolean"
+            }
+          ]
+        },
+        "commands": {
+          "types": [
+            "array"
+          ],
+          "description": "Commands listed in the palette, filtered as the user types",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "shortcut": {
+                "types": [
+                  "string"
+                ]
+              },
+              "keywords": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "group": {
+                "types": [
+                  "string"
+                ]
+              },
+              "disabled": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ]
+              },
+              "action": {
+                "types": [
+                  "string"
+                ]
+              },
+              "actionPayload": {
+                "types": [
+                  "object"
+                ],
+                "freeform": true,
+                "eventPayloadBrand": true
+              }
+            },
+            "required": [
+              "id",
+              "label"
+            ]
+          }
+        },
+        "onSelect": {
+          "types": [
+            "function"
+          ],
+          "description": "Called with the selected command (click, or Enter on the highlighted row)",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "command",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "icon": {
+                    "types": [
+                      "icon",
+                      "string"
+                    ]
+                  },
+                  "shortcut": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "keywords": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "group": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "disabled": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "action": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "actionPayload": {
+                    "types": [
+                      "object"
+                    ],
+                    "freeform": true,
+                    "eventPayloadBrand": true
+                  }
+                },
+                "required": [
+                  "id",
+                  "label"
+                ]
+              }
+            }
+          ]
+        },
+        "placeholder": {
+          "types": [
+            "string"
+          ],
+          "description": "Search field placeholder. Consumers own i18n — plain string prop, no package-internal translation (matches FloatingToolbar's convention).",
+          "default": "Type a command..."
+        },
+        "emptyLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Label shown when no command matches the query",
+          "default": "No matching commands"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes on the overlay's dialog"
+        }
+      }
+    },
+    "game-audio-cue": {
+      "type": "game-audio-cue",
+      "category": "game",
+      "tier": "atoms",
+      "family": "game",
+      "description": "GameAudioCue component",
+      "suggestedFor": [
+        "game",
+        "audio",
+        "cue",
+        "game audio cue"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "cue": {
+          "types": [
+            "string"
+          ],
+          "description": "Manifest key played as a one-shot SFX each time `cueSeq` advances."
+        },
+        "cueSeq": {
+          "types": [
+            "number"
+          ],
+          "description": "Monotonically increasing counter — bumping it re-triggers `cue`."
+        },
+        "music": {
+          "types": [
+            "string"
+          ],
+          "description": "Manifest key to crossfade to as looping background music; unset/empty stops music."
+        },
+        "muted": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Muted state, owned externally and mirrored into the hook."
+        },
+        "volume": {
+          "types": [
+            "number"
+          ],
+          "description": "Master volume 0-1, owned externally and mirrored into the hook."
+        },
+        "manifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Sound manifest — keys mapped to sound definitions (path, volume, loop, ...).",
+          "required": true
+        },
+        "baseUrl": {
+          "types": [
+            "string"
+          ],
+          "description": "Base URL prepended to every manifest path."
         }
       }
     }
