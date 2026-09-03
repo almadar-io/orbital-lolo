@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-02T20:03:03.703Z",
+  "exportedAt": "2026-09-03T03:26:05.097Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -26138,6 +26138,28 @@
           ],
           "description": "Accessible label/tooltip for the row hover action."
         },
+        "onNodeReorder": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when a row is dropped onto another, in flat `items` mode; carries the moved node's id, its new parent id (`null` for a root drop), and its index within the new parent's children. Presence-gated: binding this prop is what turns on row dragging.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "newParentId",
+              "type": "string"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            }
+          ],
+          "default": ""
+        },
         "className": {
           "types": [
             "string"
@@ -35157,6 +35179,19 @@
             "string"
           ],
           "description": "Class for right/bottom pane"
+        },
+        "onRatioChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Called with the new ratio while dragging. Providing this makes `ratio` controlled — the rendered split always tracks the prop instead of internal state, mirroring a controlled input. Omit for uncontrolled (self-tracked) behavior.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "ratio",
+              "type": "number"
+            }
+          ]
         }
       }
     },
@@ -42182,6 +42217,20 @@
           ],
           "description": "Draw numeric labels on grid lines (default false).",
           "default": false
+        },
+        "tickLabelFontSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Font size in px for axis tick labels (default 10).",
+          "default": 10
+        },
+        "labelFontSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Base font size in px for all other canvas annotations (points, vectors, guides, curves, regions, angles, hops; default 12).",
+          "default": 12
         },
         "showCurveLabels": {
           "types": [
@@ -51561,6 +51610,329 @@
             "string"
           ],
           "description": "className prop"
+        }
+      }
+    },
+    "floating-toolbar": {
+      "type": "floating-toolbar",
+      "category": "component",
+      "tier": "molecules",
+      "family": "core",
+      "description": "FloatingToolbar component",
+      "suggestedFor": [
+        "floating",
+        "toolbar",
+        "floating toolbar"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "items": {
+          "types": [
+            "array"
+          ],
+          "description": "Tool items rendered as icon buttons",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ]
+              },
+              "action": {
+                "types": [
+                  "string"
+                ]
+              },
+              "actionPayload": {
+                "types": [
+                  "object"
+                ],
+                "freeform": true,
+                "eventPayloadBrand": true
+              },
+              "active": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "disabled": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "icon",
+              "label"
+            ]
+          }
+        },
+        "position": {
+          "types": [
+            "string"
+          ],
+          "description": "Strip position within the app frame.",
+          "enumValues": [
+            "bottom-center",
+            "bottom-left",
+            "bottom-right"
+          ],
+          "default": "bottom-center"
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "Custom cells appended after the items, separated by a divider"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes on the positioned root"
+        }
+      }
+    },
+    "dock-layout": {
+      "type": "dock-layout",
+      "category": "layout",
+      "tier": "organisms",
+      "family": "core",
+      "description": "DockLayout component",
+      "suggestedFor": [
+        "dock",
+        "layout",
+        "dock layout"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "rail": {
+          "types": [
+            "node"
+          ],
+          "description": "Fixed-width far-left vertical strip (e.g. an icon nav rail)."
+        },
+        "sidebar": {
+          "types": [
+            "node"
+          ],
+          "description": "Collapsible, resizable left sidebar."
+        },
+        "main": {
+          "types": [
+            "node"
+          ],
+          "description": "Required center region.",
+          "required": true
+        },
+        "bottomPanel": {
+          "types": [
+            "node"
+          ],
+          "description": "Collapsible, resizable-height bottom panel."
+        },
+        "statusBar": {
+          "types": [
+            "node"
+          ],
+          "description": "Slim strip pinned to the bottom of the frame, below the bottom panel."
+        },
+        "secondarySidebar": {
+          "types": [
+            "node"
+          ],
+          "description": "Collapsible right sidebar."
+        },
+        "railWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Width of `rail` in pixels. @default 56",
+          "default": 56
+        },
+        "secondarySidebarWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Width of `secondarySidebar` in pixels (fixed — not resizable). @default 280",
+          "default": 280
+        },
+        "sidebarCollapsed": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether `sidebar` is collapsed. @default false",
+          "default": false
+        },
+        "onSidebarCollapsedChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onSidebarCollapsedChange prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "collapsed",
+              "type": "boolean"
+            }
+          ]
+        },
+        "sidebarWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Sidebar size as a SplitPane ratio (0-100, percentage of the sidebar/main split). @default 20",
+          "default": 20
+        },
+        "onSidebarWidthChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onSidebarWidthChange prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "width",
+              "type": "number"
+            }
+          ]
+        },
+        "sidebarMinSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Minimum sidebar size in pixels, forwarded to SplitPane's `minSize`. @default 160",
+          "default": 160
+        },
+        "bottomPanelCollapsed": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether `bottomPanel` is collapsed. @default false",
+          "default": false
+        },
+        "onBottomPanelCollapsedChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onBottomPanelCollapsedChange prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "collapsed",
+              "type": "boolean"
+            }
+          ]
+        },
+        "bottomPanelHeight": {
+          "types": [
+            "number"
+          ],
+          "description": "Bottom panel size as a SplitPane ratio (0-100, percentage given to the panel). @default 30",
+          "default": 30
+        },
+        "onBottomPanelHeightChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onBottomPanelHeightChange prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "height",
+              "type": "number"
+            }
+          ]
+        },
+        "bottomPanelMinSize": {
+          "types": [
+            "number"
+          ],
+          "description": "Minimum bottom panel size in pixels, forwarded to SplitPane's `minSize`. @default 120",
+          "default": 120
+        },
+        "secondarySidebarCollapsed": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether `secondarySidebar` is collapsed. @default false",
+          "default": false
+        },
+        "onSecondarySidebarCollapsedChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onSecondarySidebarCollapsedChange prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "collapsed",
+              "type": "boolean"
+            }
+          ]
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes on the root frame."
+        },
+        "railClassName": {
+          "types": [
+            "string"
+          ],
+          "description": "railClassName prop"
+        },
+        "sidebarClassName": {
+          "types": [
+            "string"
+          ],
+          "description": "sidebarClassName prop"
+        },
+        "mainClassName": {
+          "types": [
+            "string"
+          ],
+          "description": "mainClassName prop"
+        },
+        "bottomPanelClassName": {
+          "types": [
+            "string"
+          ],
+          "description": "bottomPanelClassName prop"
+        },
+        "statusBarClassName": {
+          "types": [
+            "string"
+          ],
+          "description": "statusBarClassName prop"
+        },
+        "secondarySidebarClassName": {
+          "types": [
+            "string"
+          ],
+          "description": "secondarySidebarClassName prop"
         }
       }
     }

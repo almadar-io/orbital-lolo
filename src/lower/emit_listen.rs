@@ -262,20 +262,18 @@ pub(crate) fn lower_emit(
 /// Returns `Some(detail)` naming the first divergence, `None` when they
 /// agree. Sentinels (`$v`, `@entity`) compare as their literal strings —
 /// alias and inline lower them identically, so honest restatements match.
-pub(crate) fn payload_fields_mismatch(
-    inline: &[PayloadField],
-    alias: &[PayloadField],
-) -> Option<String> {
-    payload_fields_mismatch_norm(inline, alias, &BTreeMap::new(), &BTreeMap::new())
-}
-
-/// Like [`payload_fields_mismatch`] but normalizes NAMED field types first:
-/// the two lowering paths resolve names against different scopes, so the
-/// same authored shape (`data : [ObjectSpec]`, `row : TradeOrder`) can
-/// arrive as a bare/bracketed NAME on one side and a flattened
-/// `object`/`[object]` + properties on the other. Both entity names
+///
+/// Normalizes NAMED field types first: the two lowering paths resolve names
+/// against different scopes, so the same authored shape (`data : [ObjectSpec]`,
+/// `row : TradeOrder`) can arrive as a bare/bracketed NAME on one side and a
+/// flattened `object`/`[object]` + properties on the other. Both entity names
 /// (`entities_by_name`) and struct aliases (`aliases`) flatten before
-/// comparing.
+/// comparing — at EVERY nesting depth: the recursive call for a nested
+/// `properties` pair (below) threads the same two maps through rather than
+/// resolving against an empty registry, which previously left a depth-2+
+/// bare name unresolved on one side while the other had already flattened it
+/// via its own (correctly recursive) lowering path, reporting a false
+/// mismatch (`C-EVENT-ALIAS-NESTED-STRUCT-DEPTH2`).
 pub(crate) fn payload_fields_mismatch_norm(
     inline: &[PayloadField],
     alias: &[PayloadField],
@@ -360,7 +358,7 @@ pub(crate) fn payload_fields_mismatch_norm(
         }
         match (&fa.properties, &fb.properties) {
             (Some(pa), Some(pb)) => {
-                if let Some(d) = payload_fields_mismatch(pa, pb) {
+                if let Some(d) = payload_fields_mismatch_norm(pa, pb, entities_by_name, aliases) {
                     return Some(format!("field '{}': {}", fa.name, d));
                 }
             }
@@ -920,5 +918,149 @@ mod recursive_struct_payload_tests {
             .expect("subMenu present");
         assert_eq!(sub_menu.field_type, "[MenuItem]");
         assert!(matches!(&sub_menu.properties, Some(p) if p.is_empty()));
+    }
+
+    /// `C-EVENT-ALIAS-NESTED-STRUCT-DEPTH2`: an event payload with a
+    /// depth-2 nested struct alias (`containers : [ContainerItem]` where
+    /// `ContainerItem` itself has `ports : [PortItem]`, both plain struct
+    /// aliases — no entity involved) must round-trip when the trait's
+    /// `emits { }` block RESTATES the alias's payload inline (the shape
+    /// `lolo-service`-generated service atoms author, and any hand-authored
+    /// atom that restates a `type X = Event { … }` alias for readability).
+    ///
+    /// Before the fix, `payload_fields_mismatch_norm`'s recursive
+    /// nested-`properties` comparison called `payload_fields_mismatch`,
+    /// which hardcoded EMPTY `entities_by_name`/`aliases` maps instead of
+    /// threading the real ones through — so `ports`'s bare `[PortItem]`
+    /// name (produced by `lower_emit`'s inline-payload loop, which has no
+    /// array-of-named-struct branch and falls back to a bare type string)
+    /// could not be re-flattened at depth 2 the way it already was at depth
+    /// 1, and a real match false-mismatched as
+    /// `ORB_EMIT_PAYLOAD_FIELD_TYPE_MISMATCH`-shaped `PayloadAliasMismatch`.
+    #[test]
+    fn depth2_nested_struct_alias_inline_restatement_matches_alias() {
+        let port_item = TypeAliasResolved::Type(TypeExpr::Object(vec![
+            (
+                "privatePort".to_string(),
+                TypeExpr::Primitive("number".to_string()),
+                true,
+            ),
+            (
+                "publicPort".to_string(),
+                TypeExpr::Primitive("number".to_string()),
+                true,
+            ),
+        ]));
+        let container_item = TypeAliasResolved::Type(TypeExpr::Object(vec![
+            (
+                "id".to_string(),
+                TypeExpr::Primitive("string".to_string()),
+                true,
+            ),
+            (
+                "ports".to_string(),
+                TypeExpr::Array(Box::new(TypeExpr::Named("PortItem".to_string()))),
+                true,
+            ),
+        ]));
+        let mut aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        aliases.insert("PortItem".to_string(), port_item);
+        aliases.insert("ContainerItem".to_string(), container_item);
+
+        let mut event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
+        event_aliases.insert(
+            "ListDone".to_string(),
+            EventTypeResolved {
+                payload: TypeExpr::Object(vec![(
+                    "containers".to_string(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("ContainerItem".to_string()))),
+                    true,
+                )]),
+                scope: None,
+                description: None,
+                type_param: None,
+            },
+        );
+
+        let entities_by_name: BTreeMap<String, Vec<(String, TypeExpr, bool)>> = BTreeMap::new();
+
+        // The trait's `emits { ListDone -> internal { containers : [ContainerItem] } }`
+        // restatement — same field/type as the alias, authored inline.
+        let emit = Emit {
+            event: "ListDone".to_string(),
+            scope: Some("internal".to_string()),
+            payload: vec![EventField {
+                name: "containers".to_string(),
+                type_expr: TypeExpr::Array(Box::new(TypeExpr::Named(
+                    "ContainerItem".to_string(),
+                ))),
+                required: true,
+                span: Span::dummy(),
+            }],
+            description: None,
+            synonyms: None,
+            tier: None,
+            span: Span::dummy(),
+        };
+
+        // Before the fix: `Err(LowerError::PayloadAliasMismatch)` — the
+        // depth-2 `ports` field false-mismatched even though both sides
+        // name the same real type. After the fix: the honest restatement
+        // lowers cleanly.
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[])
+            .expect("an honest inline restatement of the alias must lower, not PayloadAliasMismatch");
+        let payload = def.payload_schema.expect("payload present");
+        assert!(payload.iter().any(|f| f.name == "containers"));
+
+        // Direct unit coverage of the actual fix: the mismatch comparator
+        // itself must treat the alias's fully-resolved depth-2 shape and an
+        // inline restatement that leaves the same depth-2 field as a bare
+        // name (`lower_emit`'s inline-payload loop has no array-of-named-
+        // struct branch, so it falls back to a type string exactly like
+        // this) as EQUIVALENT, not a mismatch — the recursive comparison
+        // must resolve `[PortItem]` against real `aliases`, not an empty map.
+        let alias_fields = type_expr_to_payload_fields(
+            "ListDone",
+            &event_aliases.get("ListDone").unwrap().payload,
+            &aliases,
+            &entities_by_name,
+            &[],
+        )
+        .expect("alias payload resolves");
+        let inline_fields_bare_at_depth2 = vec![PayloadField {
+            name: "containers".to_string(),
+            field_type: "[object]".to_string(),
+            required: Some(true),
+            description: None,
+            properties: Some(vec![
+                PayloadField {
+                    name: "id".to_string(),
+                    field_type: "string".to_string(),
+                    required: Some(true),
+                    description: None,
+                    properties: None,
+                    type_when: None,
+                },
+                PayloadField {
+                    name: "ports".to_string(),
+                    field_type: "[PortItem]".to_string(),
+                    required: Some(true),
+                    description: None,
+                    properties: None,
+                    type_when: None,
+                },
+            ]),
+            type_when: None,
+        }];
+        assert_eq!(
+            payload_fields_mismatch_norm(
+                &inline_fields_bare_at_depth2,
+                &alias_fields,
+                &entities_by_name,
+                &aliases,
+            ),
+            None,
+            "a depth-2 bare struct-alias name must still resolve as equivalent to the alias's fully-expanded shape"
+        );
     }
 }
