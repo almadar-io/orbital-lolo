@@ -4,9 +4,9 @@
 //! name aux entities, intrinsic exemptions follow the trait's binding, and
 //! the formatter round-trips extra entity blocks.
 
-use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use orbital_lolo::types::check_program;
 use orbital_lolo::TypeError;
+use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use serde_json::Value;
 
 fn lower_json(src: &str) -> Value {
@@ -182,5 +182,8 @@ fn multi_entity_orbital_formatter_round_trips() {
     let reparsed = parse_str(&formatted).expect("reparse formatted");
     assert_eq!(reparsed.orbitals[0].extra_entities.len(), 1);
     let refmt = format_program(&reparsed);
-    assert_eq!(formatted, refmt, "formatter not idempotent on multi-entity orbital");
+    assert_eq!(
+        formatted, refmt,
+        "formatter not idempotent on multi-entity orbital"
+    );
 }

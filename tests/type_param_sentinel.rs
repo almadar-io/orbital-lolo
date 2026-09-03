@@ -211,7 +211,8 @@ orbital ThingOrbital {
 
 #[test]
 fn uppercase_type_param_names_are_rejected() {
-    let src = "type Foo (E : Entity) = Event { row : E }\norbital O {\n  entity T { id : string! }\n}";
+    let src =
+        "type Foo (E : Entity) = Event { row : E }\norbital O {\n  entity T { id : string! }\n}";
     let err = parse_and_lower_str(src).expect_err("uppercase param must be a parse error");
     assert!(
         format!("{err:?}").contains("lowercase-initial"),
@@ -270,12 +271,18 @@ fn payload_of_knob_lowers_to_a_knob_carrying_sentinel() {
     // The knob NAME must survive lowering — resolution needs it to read the
     // sibling's value, and the generic `type_expr_to_config_string` path would
     // have thrown it away.
-    assert_eq!(config_knob_type(SIGIL_SRC, "actionPayload"), "@payload(action)");
+    assert_eq!(
+        config_knob_type(SIGIL_SRC, "actionPayload"),
+        "@payload(action)"
+    );
 }
 
 #[test]
 fn entity_of_knob_lowers_to_a_knob_carrying_sentinel() {
-    assert_eq!(config_knob_type(SIGIL_SRC, "targetRow"), "@entity(targetEntity)");
+    assert_eq!(
+        config_knob_type(SIGIL_SRC, "targetRow"),
+        "@entity(targetEntity)"
+    );
 }
 
 #[test]

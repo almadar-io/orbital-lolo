@@ -112,7 +112,10 @@ mod tests {
 
     #[test]
     fn behavior_key_from_canonical_and_browse_paths() {
-        assert_eq!(behavior_key_from_path("std/behaviors/std-modal"), "std-modal");
+        assert_eq!(
+            behavior_key_from_path("std/behaviors/std-modal"),
+            "std-modal"
+        );
         assert_eq!(behavior_key_from_path("./local/thing.orb"), "thing");
         assert_eq!(
             behavior_key_from_path("@std/ui/core/atoms/std-stats.lolo"),

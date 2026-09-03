@@ -454,6 +454,79 @@ pub enum TypeExpr {
     /// `SExpr` TypeScript type (inlined as a local alias in codegen, like
     /// `TraitFieldRef`). Allowed only in `config { ... }` blocks.
     SExpr,
+    /// `match @config.<knob> { <pattern> -> <type> ... }` — a compile-time
+    /// conditional TYPE selected by a config knob's resolved literal (§25).
+    /// Replaces `@typeWhen` outright: one concept, one spelling. The `_`
+    /// arm is mandatory and must be last; it lowers to the field's base
+    /// `field_type`, and every other arm lowers to one entry of the
+    /// unchanged `PayloadTypeWhen` wire list (`lower_match_field_type`).
+    /// Legal only as an event-payload field's WHOLE type (`emits`/local
+    /// `listens`); forbidden everywhere else in the type grammar (entity
+    /// fields, `expects`, config fields, type-alias/Event-alias bodies,
+    /// nested inside another type) — see `check_match_types` +
+    /// `type_expr_config_only_type`/`type_expr_contains_match`.
+    Match { knob: String, arms: Vec<MatchArm> },
+}
+
+/// One arm of a type-level `match` (`TypeExpr::Match`). `ty` is restricted
+/// to `Primitive`/`[Primitive]` in v1 — anything else is
+/// `ELOLO_MATCH_ARM_TYPE_UNSUPPORTED` (`check_match_types`).
+#[derive(Debug, Clone)]
+pub struct MatchArm {
+    pub pattern: MatchPattern,
+    pub ty: TypeExpr,
+    pub span: Span,
+}
+
+/// A type-level match arm's pattern. Compared against a resolved config
+/// literal's canonical spelling (`orbital_core::schema::config_literal_spelling`)
+/// via `spelling()` below — `Str`/`Word` are interchangeable spellings of the
+/// same literal (`"number"` and `number` both spell `"number"`).
+#[derive(Debug, Clone)]
+pub enum MatchPattern {
+    Str(String),
+    Word(String),
+    Bool(bool),
+    Int(i64),
+    Wildcard,
+}
+
+impl MatchPattern {
+    /// Canonical spelling for duplicate/vocabulary-membership comparison,
+    /// mirroring `config_literal_spelling`'s output exactly (`Str`/`Word`
+    /// compare as their own text, `Bool` as `"true"`/`"false"`, `Int` as its
+    /// decimal spelling). `None` for `Wildcard` — it has no literal spelling.
+    pub fn spelling(&self) -> Option<String> {
+        match self {
+            MatchPattern::Str(s) | MatchPattern::Word(s) => Some(s.clone()),
+            MatchPattern::Bool(b) => Some(b.to_string()),
+            MatchPattern::Int(n) => Some(n.to_string()),
+            MatchPattern::Wildcard => None,
+        }
+    }
+
+    /// This pattern's literal value as the `SExpression` a synthesized `==`
+    /// guard compares a scrutinee against — typed, not stringified
+    /// (`Bool`/`Int` stay `SExpression::Bool`/`Number`), matching how
+    /// hand-written guards compare typed fields (`(== @entity.playing
+    /// true)`). `Wildcard` lowers to the `"_"` sentinel string — never used
+    /// in a `==` guard (callers special-case `Wildcard` before reaching
+    /// there), but needed verbatim by expression-match's arm encoding
+    /// (Phase 3b, `parser::expression::parse_expr_match`), which embeds a
+    /// pattern atom as one element of an ordinary `SExpression::Array` arm
+    /// `[pattern, value]` — `"_"` can never collide with a `Word`/`Str`
+    /// spelling because the parser always reads a bare `_` as `Wildcard`,
+    /// never `Word("_")`. One converter, shared by term-level `match`
+    /// (Phase 2, transition guards) and expression-level `match` (Phase 3b,
+    /// value positions) — neither duplicates it.
+    pub fn literal_sexpr(&self) -> SExpression {
+        match self {
+            MatchPattern::Str(s) | MatchPattern::Word(s) => SExpression::String(s.clone()),
+            MatchPattern::Bool(b) => SExpression::Bool(*b),
+            MatchPattern::Int(n) => SExpression::Number(*n as f64),
+            MatchPattern::Wildcard => SExpression::String("_".to_string()),
+        }
+    }
 }
 
 /// One trait-level type parameter (Increment 3-II): `(V : Type)` in
@@ -614,6 +687,95 @@ pub struct Transition {
     /// Parallel to `effects`: `effect_spans[i]` holds the trail/span pairs
     /// captured while parsing `effects[i]`.
     pub effect_spans: Vec<Vec<(String, Span)>>,
+    /// `EVENT -> target match @entity.<f> { … }` sugar (Phase 2, pattern-
+    /// matching doc §1(a)) — mutually exclusive with `guard`/`effects`, which
+    /// stay `None`/empty when this is `Some` (`parser::trait_::parse_transition`
+    /// enforces the exclusion; `when` + `match` together is a parse error).
+    /// Pure L1 sugar: `lower::expand_term_match` turns each arm into one
+    /// ordinary guarded `Transition` before anything downstream ever sees it.
+    pub term_match: Option<TermMatch>,
+}
+
+/// Transition-position term-level `match` (Phase 2). Dispatches on a VALUE
+/// (`@entity.<f>`/`@payload.<f>`, v1) rather than Phase 1's config-resolved
+/// TYPE — same `MatchPattern` arm vocabulary, reused as-is.
+#[derive(Debug, Clone)]
+pub struct TermMatch {
+    pub scrutinee: MatchScrutinee,
+    pub arms: Vec<TermMatchArm>,
+    pub span: Span,
+}
+
+/// A term-match scrutinee: `@entity.<field>` / `@payload.<field>`, or the
+/// Phase-3a dotted destructuring form `@entity.<field>.<member>` /
+/// `@payload.<field>.<member>` where `<field>`'s declared type is a tagged
+/// struct union and `<member>` is its discriminating member (each variant's
+/// single-valued closed member, e.g. `type : "draw-shape"`). `@config.<knob>`
+/// (degenerate constant dispatch; use type-level `match` or a plain guard)
+/// and `@user.<field>` (fail-open class needs its own design pass) are parse
+/// errors, see `parser::trait_::parse_term_match_scrutinee`.
+#[derive(Debug, Clone)]
+pub enum MatchScrutinee {
+    Entity {
+        field: String,
+        member: Option<String>,
+    },
+    Payload {
+        field: String,
+        member: Option<String>,
+    },
+}
+
+impl MatchScrutinee {
+    /// The base field name this scrutinee names, irrespective of root and of
+    /// any dotted `<member>` segment.
+    pub fn field(&self) -> &str {
+        match self {
+            MatchScrutinee::Entity { field, .. } | MatchScrutinee::Payload { field, .. } => field,
+        }
+    }
+
+    /// The dotted discriminant member (`type` in `@payload.item.type`), when
+    /// this is the Phase-3a destructuring form.
+    pub fn member(&self) -> Option<&str> {
+        match self {
+            MatchScrutinee::Entity { member, .. } | MatchScrutinee::Payload { member, .. } => {
+                member.as_deref()
+            }
+        }
+    }
+
+    /// The OWNER value's sigil spelling — the base field without the
+    /// discriminant segment (`@payload.item` for `@payload.item.type`).
+    /// This is the value that flow-refines to the selected variant inside
+    /// each arm (Phase 3c).
+    pub fn owner_sigil(&self) -> String {
+        match self {
+            MatchScrutinee::Entity { field, .. } => format!("@entity.{field}"),
+            MatchScrutinee::Payload { field, .. } => format!("@payload.{field}"),
+        }
+    }
+
+    /// Full sigil spelling, discriminant segment included — used both by the
+    /// synthesized `(== <sigil> <lit>)` guard and the formatter.
+    pub fn sigil(&self) -> String {
+        let owner = self.owner_sigil();
+        match self.member() {
+            Some(m) => format!("{owner}.{m}"),
+            None => owner,
+        }
+    }
+}
+
+/// One arm of a term-level `match`. `effects` mirrors `Transition::effects`
+/// (zero or more s-expressions, authoring order); `effect_spans` mirrors
+/// `Transition::effect_spans`.
+#[derive(Debug, Clone)]
+pub struct TermMatchArm {
+    pub pattern: MatchPattern,
+    pub effects: Vec<SExpression>,
+    pub effect_spans: Vec<Vec<(String, Span)>>,
+    pub span: Span,
 }
 
 /// One entry in an `emits { }` block.

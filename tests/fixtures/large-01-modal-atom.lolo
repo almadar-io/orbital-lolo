@@ -72,7 +72,7 @@ orbital ModalRecordOrbital {
     ;; (so (persist update X @payload.data) can find the right row).
 
     emits {
-      SAVE  { data : object! }
+      SAVE  { data : opaque! }
         @description "Indicates a successful data save operation."
         @synonyms "submit, persist, confirm"
         @tier "essential"
@@ -94,7 +94,7 @@ orbital ModalRecordOrbital {
         @description "A request to display the modal window."
         @synonyms "show, display, present, reveal"
         @tier "essential"
-      SAVE { data : object! }
+      SAVE { data : opaque! }
         @description "Indicates a successful data submission or confirmation."
         @synonyms "submit, confirm, accept, persist"
         @tier "essential"

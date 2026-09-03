@@ -62,7 +62,9 @@ fn early_trait_close_gets_brace_hint() {
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("closed the trait early")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("closed the trait early")),
         "expected early-close hint, got {suggestion:?} for {err:?}"
     );
     assert!(fix.as_deref().is_some_and(|f| f.contains("surplus `}`")));
@@ -76,7 +78,9 @@ fn annotation_inside_payload_gets_placement_hint() {
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("AFTER the payload block")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("AFTER the payload block")),
         "expected annotation-placement hint, got {suggestion:?} for {err:?}"
     );
     assert!(fix.as_deref().is_some_and(|f| f.contains("field : type")));
@@ -90,7 +94,9 @@ fn bare_paren_group_gets_do_hint() {
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("grouping block")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("grouping block")),
         "expected bare-paren hint, got {suggestion:?} for {err:?}"
     );
     assert!(fix.as_deref().is_some_and(|f| f.contains("(do")));
@@ -103,7 +109,9 @@ fn parenthesized_value_gets_operator_hint() {
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("operator call")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("operator call")),
         "expected parenthesized-value hint, got {suggestion:?} for {err:?}"
     );
 }
@@ -115,7 +123,9 @@ fn brace_lambda_body_gets_do_hint() {
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("not a code block")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("not a code block")),
         "expected brace-body hint, got {suggestion:?} for {err:?}"
     );
     assert!(fix.as_deref().is_some_and(|f| f.contains("(do")));
@@ -128,10 +138,14 @@ fn unquoted_multiword_value_gets_quote_hint() {
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("must be quoted")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("must be quoted")),
         "expected quoting hint, got {suggestion:?} for {err:?}"
     );
-    assert!(fix.as_deref().is_some_and(|f| f.contains("\\\"") || f.contains('"')));
+    assert!(fix
+        .as_deref()
+        .is_some_and(|f| f.contains("\\\"") || f.contains('"')));
 }
 
 #[test]
@@ -142,7 +156,9 @@ fn emits_form_in_listens_gets_direction_hint() {
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("belongs to `emits`")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("belongs to `emits`")),
         "expected listens-form hint, got {suggestion:?} for {err:?}"
     );
     assert!(fix.as_deref().is_some_and(|f| f.contains("drop the `->")));
@@ -155,7 +171,9 @@ fn single_quoted_string_gets_double_quote_hint() {
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("double-quoted")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("double-quoted")),
         "expected quote hint, got {suggestion:?} for {err:?}"
     );
 }
@@ -167,7 +185,9 @@ fn unquoted_multiword_value_before_newline_gets_quote_hint() {
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("must be quoted")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("must be quoted")),
         "expected quoting hint, got {suggestion:?} for {err:?}"
     );
 }
@@ -175,14 +195,19 @@ fn unquoted_multiword_value_before_newline_gets_quote_hint() {
 #[test]
 fn bare_uses_gets_from_hint() {
     // Observed live (W-USES-BARE): `uses std-event-log` with no from clause.
-    let src = "orbital O {\n  uses std-event-log\n  entity E [runtime] {\n    x : number = 0\n  }\n}";
+    let src =
+        "orbital O {\n  uses std-event-log\n  entity E [runtime] {\n    x : number = 0\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("from \"std/behaviors/")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("from \"std/behaviors/")),
         "expected uses-from hint, got {suggestion:?} for {err:?}"
     );
-    assert!(fix.as_deref().is_some_and(|f| f.contains("flat canonical form")));
+    assert!(fix
+        .as_deref()
+        .is_some_and(|f| f.contains("flat canonical form")));
 }
 
 #[test]
@@ -193,7 +218,9 @@ fn early_orbital_close_gets_brace_hint() {
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("closed the orbital early")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("closed the orbital early")),
         "expected orbital-early-close hint, got {suggestion:?} for {err:?}"
     );
     assert!(fix.as_deref().is_some_and(|f| f.contains("surplus `}`")));
@@ -207,7 +234,9 @@ fn rparen_inside_object_gets_missing_brace_hint() {
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     assert!(
-        suggestion.as_deref().is_some_and(|s| s.contains("missing its `}`") || s.contains("still open")),
+        suggestion
+            .as_deref()
+            .is_some_and(|s| s.contains("missing its `}`") || s.contains("still open")),
         "expected missing-brace hint, got {suggestion:?} for {err:?}"
     );
 }

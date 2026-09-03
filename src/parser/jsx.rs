@@ -620,7 +620,7 @@ mod tests {
   entity E [runtime] {
     id : string!
     displayIndex : number
-    rows : [object]
+    rows : [{ title : string }]
   }
   trait T -> E {
     state s {

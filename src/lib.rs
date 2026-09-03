@@ -28,8 +28,8 @@ pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
 pub use format::format_program;
 pub use lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
 pub use lower::{
-    lower_to_orb, lower_to_orb_with_map, lower_to_orb_with_prior,
-    lower_to_orb_with_prior_and_map, stamp_schema_identity,
+    lower_to_orb, lower_to_orb_with_map, lower_to_orb_with_prior, lower_to_orb_with_prior_and_map,
+    stamp_schema_identity,
 };
 pub use parser::{parse, parse_str};
 pub use source_map::LoloSourceMap;

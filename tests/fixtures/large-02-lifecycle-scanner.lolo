@@ -13,7 +13,7 @@ orbital LifecycleOrbital {
     headStatus    : string  @description "Scratch: the status applied to the current record." @synonyms "new status, to status" = ""
   }
 
-  type ScanRecordsLoaded     = Event { data : [object] }                       "Internal: target records matching the lifecycle filter."
+  type ScanRecordsLoaded     = Event { data : [opaque] }                       "Internal: target records matching the lifecycle filter."
   type ScanFailed            = Event { error : string, code : string }         "Internal: scan fetch / persist failed."
   type LifecycleStepped      = Event { id : string }                           "Internal: one record transitioned; drives the next loop pass."
   type LifecycleTransitioned = Event { entityId : string, status : string }    "Re-emitted per record as it transitions; rename to wire downstream listeners."
@@ -78,12 +78,12 @@ orbital LifecycleOrbital {
     }
     emits {
       LifecycleTransitioned -> external { entityId : string, status : string }
-      ScanRecordsLoaded   { data : [object] }
+      ScanRecordsLoaded   { data : [opaque] }
       ScanFailed          { error : string, code : string }
       LifecycleStepped    { id : string }
     }
     listens {
-      ScanRecordsLoaded   { data : [object] }
+      ScanRecordsLoaded   { data : [opaque] }
       ScanFailed          { error : string, code : string }
       LifecycleStepped    { id : string }
     }

@@ -11,6 +11,38 @@ fn definer_knob_of(event: &str) -> Option<String> {
     orbital_core::schema::config_ref_event_knob(event).map(str::to_string)
 }
 
+/// Lower a field's `type_expr` to its wire `(field_type, type_when)` pair.
+/// For a plain type this is just `(type_expr_to_string(te), None)` — the
+/// two already agree by construction, since `type_expr_to_string` itself
+/// delegates a `Match`'s base type to its `_` arm. For `TypeExpr::Match`
+/// this ALSO builds the `PayloadTypeWhen` list from the non-wildcard arms,
+/// in authoring order (first-match-wins is `resolve_payload_type_when`'s
+/// linear `find_map`, unchanged — see `orbital-core/src/schema/types.rs`).
+/// Zero IR change: this is match's ONLY lowered form. Shared by
+/// `lower_emit`'s inline scalar branch and the local-`listens` payload
+/// lowering in `lower/trait.rs` — one conversion, not two copies.
+pub(crate) fn lower_match_field_type(
+    te: &TypeExpr,
+) -> (String, Option<Vec<orbital_core::schema::PayloadTypeWhen>>) {
+    let base = type_expr_to_string(te);
+    let TypeExpr::Match { knob, arms } = te else {
+        return (base, None);
+    };
+    let conditions: Vec<orbital_core::schema::PayloadTypeWhen> = arms
+        .iter()
+        .filter_map(|arm| {
+            arm.pattern
+                .spelling()
+                .map(|equals| orbital_core::schema::PayloadTypeWhen {
+                    knob: knob.clone(),
+                    equals,
+                    ty: type_expr_to_string(&arm.ty),
+                })
+        })
+        .collect();
+    (base, (!conditions.is_empty()).then_some(conditions))
+}
+
 pub(crate) fn lower_emit(
     e: &Emit,
     aliases: &BTreeMap<String, TypeAliasResolved>,
@@ -105,6 +137,7 @@ pub(crate) fn lower_emit(
                 required: if f.required { Some(true) } else { None },
                 description: None,
                 properties: None,
+                type_when: None,
             });
             continue;
         }
@@ -129,6 +162,7 @@ pub(crate) fn lower_emit(
                 required: if f.required { Some(true) } else { None },
                 description: None,
                 properties: Some(props),
+                type_when: None,
             });
         } else if let Some(variants) =
             union_payload_variants(&f.type_expr, aliases, trait_type_params)
@@ -148,6 +182,7 @@ pub(crate) fn lower_emit(
                 required: if f.required { Some(true) } else { None },
                 description: None,
                 properties: Some(variants),
+                type_when: None,
             });
         } else if let TypeExpr::Named(type_name) = &f.type_expr {
             let nested = resolve_payload_type(type_name, aliases, entities_by_name)?;
@@ -163,6 +198,7 @@ pub(crate) fn lower_emit(
                 required: if f.required { Some(true) } else { None },
                 description: None,
                 properties: Some(nested),
+                type_when: None,
             });
         } else {
             if !seen.insert(f.name.clone()) {
@@ -171,12 +207,14 @@ pub(crate) fn lower_emit(
                     field: f.name.clone(),
                 });
             }
+            let (field_type, type_when) = lower_match_field_type(&f.type_expr);
             fields.push(PayloadField {
                 name: f.name.clone(),
-                field_type: type_expr_to_string(&f.type_expr),
+                field_type,
                 required: if f.required { Some(true) } else { None },
                 description: None,
                 properties: None,
+                type_when,
             });
         }
     }
@@ -255,6 +293,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                         required: if *req { Some(true) } else { None },
                         description: None,
                         properties: None,
+                        type_when: None,
                     })
                     .collect(),
             );
@@ -278,6 +317,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                     required: f.required,
                     description: None,
                     properties: Some(props),
+                    type_when: None,
                 };
             }
         }
@@ -291,7 +331,10 @@ pub(crate) fn payload_fields_mismatch_norm(
     b.sort_by(|x, y| x.name.cmp(&y.name));
     if a.len() != b.len() {
         let names = |v: &[&PayloadField]| {
-            v.iter().map(|f| f.name.as_str()).collect::<Vec<_>>().join(", ")
+            v.iter()
+                .map(|f| f.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
         };
         return Some(format!(
             "inline declares fields [{}], alias declares [{}]",
@@ -313,10 +356,7 @@ pub(crate) fn payload_fields_mismatch_norm(
             ));
         }
         if fa.required.unwrap_or(false) != fb.required.unwrap_or(false) {
-            return Some(format!(
-                "field '{}': required flags disagree",
-                fa.name
-            ));
+            return Some(format!("field '{}': required flags disagree", fa.name));
         }
         match (&fa.properties, &fb.properties) {
             (Some(pa), Some(pb)) => {
@@ -359,6 +399,7 @@ pub(crate) fn type_expr_to_payload_fields(
             required: None,
             description: None,
             properties: None,
+            type_when: None,
         }]);
     }
     match payload {
@@ -386,7 +427,9 @@ pub(crate) fn type_expr_to_payload_fields(
                 // resolves as a struct alias.
                 let sentinel = type_param_sentinel(ftype, type_params);
                 let array_elem = match ftype {
-                    TypeExpr::Array(inner) => struct_payload_properties(inner, aliases, type_params),
+                    TypeExpr::Array(inner) => {
+                        struct_payload_properties(inner, aliases, type_params)
+                    }
                     _ => None,
                 };
                 let (field_type, properties) = if let Some(s) = sentinel {
@@ -422,6 +465,7 @@ pub(crate) fn type_expr_to_payload_fields(
                     required: if *freq { Some(true) } else { None },
                     description: None,
                     properties,
+                    type_when: None,
                 });
             }
             Ok(flat)
@@ -437,6 +481,7 @@ pub(crate) fn type_expr_to_payload_fields(
                 required: None,
                 description: None,
                 properties: None,
+                type_when: None,
             }])
         }
     }
@@ -467,6 +512,7 @@ pub(crate) fn named_entity_fields(
                 required: if *req { Some(true) } else { None },
                 description: None,
                 properties: None,
+                type_when: None,
             })
             .collect(),
     )
@@ -536,15 +582,21 @@ pub(crate) fn union_payload_variants(
     let mut out = Vec::with_capacity(parts.len());
     for p in parts {
         let (name, field_type, properties) = match p {
-            TypeExpr::Array(inner) => match struct_payload_properties(inner, aliases, type_params) {
-                Some(elem) => ("array".to_string(), "[object]".to_string(), Some(elem)),
-                None if is_cyclic_ref(p) => (
-                    "array".to_string(),
-                    format!("[{}]", type_expr_to_string(inner)),
-                    Some(Vec::new()),
-                ),
-                None => ("array".to_string(), format!("[{}]", type_expr_to_string(inner)), None),
-            },
+            TypeExpr::Array(inner) => {
+                match struct_payload_properties(inner, aliases, type_params) {
+                    Some(elem) => ("array".to_string(), "[object]".to_string(), Some(elem)),
+                    None if is_cyclic_ref(p) => (
+                        "array".to_string(),
+                        format!("[{}]", type_expr_to_string(inner)),
+                        Some(Vec::new()),
+                    ),
+                    None => (
+                        "array".to_string(),
+                        format!("[{}]", type_expr_to_string(inner)),
+                        None,
+                    ),
+                }
+            }
             TypeExpr::Named(n) => match struct_payload_properties(p, aliases, type_params) {
                 Some(nested) => (n.clone(), "object".to_string(), Some(nested)),
                 None if is_cyclic_ref(p) => (n.clone(), type_expr_to_string(p), Some(Vec::new())),
@@ -559,6 +611,7 @@ pub(crate) fn union_payload_variants(
             required: None,
             description: None,
             properties,
+            type_when: None,
         });
     }
     Some(out)
@@ -652,6 +705,7 @@ pub(crate) fn struct_payload_properties(
             required: if *req { Some(true) } else { None },
             description: None,
             properties,
+            type_when: None,
         });
     }
     if let Some(n) = guard_name {
@@ -682,6 +736,7 @@ fn resolve_payload_type(
                 required: if *req { Some(true) } else { None },
                 description: None,
                 properties: None,
+                type_when: None,
             })
             .collect());
     }
@@ -697,7 +752,7 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
         Some(
             l.payload_mapping
                 .iter()
-                .cloned()
+                .map(|(k, v)| (k.clone(), desugar_expr_match(v)))
                 .collect::<HashMap<String, SExpression>>(),
         )
     };
@@ -720,7 +775,7 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
         synonyms: l.synonyms.clone(),
         tier: l.tier.clone(),
         payload_mapping,
-        guard: l.guard.clone(),
+        guard: l.guard.as_ref().map(desugar_expr_match),
         source,
         event_id: None,
         triggers_id: None,
@@ -775,8 +830,8 @@ pub(crate) fn lower_tick(t: &Tick) -> TickDefinition {
     TickDefinition {
         name: t.name.clone(),
         interval,
-        guard: t.guard.clone(),
-        effects: t.effects.clone(),
+        guard: t.guard.as_ref().map(desugar_expr_match),
+        effects: t.effects.iter().map(desugar_expr_match).collect(),
         applies_to: None,
         description: None,
     }
@@ -815,12 +870,9 @@ mod recursive_struct_payload_tests {
     #[test]
     fn recursive_struct_payload_field_terminates_with_backref_marker() {
         let aliases = menu_item_aliases();
-        let props = struct_payload_properties(
-            &TypeExpr::Named("MenuItem".to_string()),
-            &aliases,
-            &[],
-        )
-        .expect("MenuItem is a struct alias");
+        let props =
+            struct_payload_properties(&TypeExpr::Named("MenuItem".to_string()), &aliases, &[])
+                .expect("MenuItem is a struct alias");
         let sub_menu = props
             .iter()
             .find(|f| f.name == "subMenu")
@@ -835,12 +887,9 @@ mod recursive_struct_payload_tests {
         // SAME alias twice in a row (e.g. two payload fields both typed
         // MenuItem) doesn't see a leaked guard entry and wrongly treat the
         // second call as a cycle too.
-        let props2 = struct_payload_properties(
-            &TypeExpr::Named("MenuItem".to_string()),
-            &aliases,
-            &[],
-        )
-        .expect("guard release lets a second use re-expand");
+        let props2 =
+            struct_payload_properties(&TypeExpr::Named("MenuItem".to_string()), &aliases, &[])
+                .expect("guard release lets a second use re-expand");
         assert_eq!(props2.len(), 2, "second call fully expands MenuItem again");
     }
 
@@ -861,7 +910,10 @@ mod recursive_struct_payload_tests {
             .expect("payload resolves");
         let row = fields.iter().find(|f| f.name == "row").expect("row field");
         assert_eq!(row.field_type, "object");
-        let props = row.properties.as_ref().expect("row carries MenuItem's fields");
+        let props = row
+            .properties
+            .as_ref()
+            .expect("row carries MenuItem's fields");
         let sub_menu = props
             .iter()
             .find(|f| f.name == "subMenu")

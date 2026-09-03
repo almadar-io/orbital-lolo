@@ -132,7 +132,7 @@ const MULTI_PARTY_LOLO: &str = r#"orbital PartyOrbital {
 
   entity PartyBoard [runtime] {
     id : string!
-    parties : [object]
+    parties : [{ title : string }]
   }
 
   trait PartyList -> PartyBoard {
@@ -255,7 +255,7 @@ fn multi_party_party_binding_outside_lambda_still_rejected() {
 const STATEFUL_IN_LAMBDA_LOLO: &str = r#"orbital TogglerOrbital {
   entity PartyBoard [runtime] {
     id : string!
-    parties : [object]
+    parties : [{ title : string }]
     on : boolean
   }
 

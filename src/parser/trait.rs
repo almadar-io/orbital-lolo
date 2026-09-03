@@ -267,7 +267,11 @@ impl Parser {
             } else {
                 None
             };
-            params.push(TraitTypeParam { name: pname, kind, default });
+            params.push(TraitTypeParam {
+                name: pname,
+                kind,
+                default,
+            });
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }
@@ -695,6 +699,30 @@ impl Parser {
             guard = Some(g);
             guard_spans = spans;
         }
+        // `match @entity.<f> { … }` / `match @payload.<f> { … }` sugar
+        // (Phase 2, pattern-matching doc §1(a)) — mutually exclusive with
+        // `when`: one dispatch mechanism per arm set.
+        if self.check_ident("match") {
+            if guard.is_some() {
+                return Err(ParseError::InvalidSExpr {
+                    message: "ELOLO_MATCH_TERM_WITH_WHEN: a transition can't combine `when` \
+                              and `match` — pick one dispatch mechanism per arm set"
+                        .to_string(),
+                    span: self.peek_span(),
+                });
+            }
+            let term_match = self.parse_term_match()?;
+            return Ok(Transition {
+                event,
+                target,
+                guard: None,
+                effects: Vec::new(),
+                span,
+                guard_spans: Vec::new(),
+                effect_spans: Vec::new(),
+                term_match: Some(term_match),
+            });
+        }
         // Optional newline before effects.
         if matches!(self.peek(), TokenKind::Newline) {
             self.advance();
@@ -706,7 +734,9 @@ impl Parser {
         loop {
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::LParen) {
+                let eff_span = self.peek_span();
                 let (eff, spans) = self.capture_expr_spans(|p| p.parse_sexpr())?;
+                reject_match_effect_head(&eff, eff_span)?;
                 effects.push(eff);
                 effect_spans.push(spans);
                 if matches!(self.peek(), TokenKind::Newline) {
@@ -724,7 +754,144 @@ impl Parser {
             span,
             guard_spans,
             effect_spans,
+            term_match: None,
         })
+    }
+
+    /// Parse a term-level `match` body after the leading `match` keyword
+    /// (already confirmed present, not yet consumed): scrutinee, then
+    /// `{ <pattern> -> <effects...> ... }` arms in authoring order. Each
+    /// arm's effects loop mirrors `parse_transition`'s own effects loop
+    /// exactly (zero or more leading-`(` s-expressions, one per line).
+    fn parse_term_match(&mut self) -> Result<TermMatch, ParseError> {
+        let match_span = self.peek_span();
+        self.advance();
+        let scrutinee = self.parse_term_match_scrutinee()?;
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut arms = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            let arm_span = self.peek_span();
+            let pattern = self.parse_match_pattern()?;
+            if !matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "`->` after a match arm pattern".to_string(),
+                    got: format!("{:?}", self.peek()),
+                    span: self.peek_span(),
+                });
+            }
+            self.advance();
+            let mut effects = Vec::new();
+            let mut effect_spans = Vec::new();
+            loop {
+                self.skip_newlines();
+                if matches!(self.peek(), TokenKind::LParen) {
+                    let eff_span = self.peek_span();
+                    let (eff, spans) = self.capture_expr_spans(|p| p.parse_sexpr())?;
+                    reject_match_effect_head(&eff, eff_span)?;
+                    effects.push(eff);
+                    effect_spans.push(spans);
+                } else {
+                    break;
+                }
+            }
+            arms.push(TermMatchArm {
+                pattern,
+                effects,
+                effect_spans,
+                span: arm_span,
+            });
+        }
+        Ok(TermMatch {
+            scrutinee,
+            arms,
+            span: match_span,
+        })
+    }
+
+    /// Parse a term-match scrutinee: `@entity.<field>` or `@payload.<field>`
+    /// (v1). `@config.<knob>` is rejected — a term match on a compose-
+    /// resolved knob is a degenerate constant dispatch; use type-level
+    /// `match @config.<knob>` (§25) or a plain `when (== @config.<knob>
+    /// ...)` guard instead. `@user.<field>` is rejected — the fail-open
+    /// identity-resolution class needs its own design pass.
+    fn parse_term_match_scrutinee(&mut self) -> Result<MatchScrutinee, ParseError> {
+        let span = self.peek_span();
+        let TokenKind::Sigil(s) = self.peek().clone() else {
+            return Err(ParseError::UnexpectedToken {
+                expected: "`@entity.<field>` or `@payload.<field>` after `match`".to_string(),
+                got: format!("{:?}", self.peek()),
+                span,
+            });
+        };
+        if let Some(path) = s.strip_prefix("entity.") {
+            let (field, member) = Self::split_term_match_path(path, "@entity", span)?;
+            self.advance();
+            return Ok(MatchScrutinee::Entity { field, member });
+        }
+        if let Some(path) = s.strip_prefix("payload.") {
+            let (field, member) = Self::split_term_match_path(path, "@payload", span)?;
+            self.advance();
+            return Ok(MatchScrutinee::Payload { field, member });
+        }
+        if s == "config" || s.starts_with("config.") {
+            return Err(ParseError::InvalidSExpr {
+                message: "ELOLO_MATCH_TERM_SCRUTINEE_CONFIG: a term match can't dispatch on \
+                          `@config.<knob>` — a compose-resolved knob is a constant, so this \
+                          would be a degenerate dispatch; use type-level `match \
+                          @config.<knob>` (for a payload TYPE) or a plain `when (== \
+                          @config.<knob> ...)` guard instead"
+                    .to_string(),
+                span,
+            });
+        }
+        if s == "user" || s.starts_with("user.") {
+            return Err(ParseError::InvalidSExpr {
+                message: "ELOLO_MATCH_TERM_SCRUTINEE_USER: `@user.<field>` scrutinees aren't \
+                          supported yet — the fail-open identity-resolution class needs its \
+                          own design pass"
+                    .to_string(),
+                span,
+            });
+        }
+        Err(ParseError::InvalidSExpr {
+            message: format!(
+                "ELOLO_MATCH_TERM_SCRUTINEE_UNSUPPORTED: `match` needs an `@entity.<field>` \
+                 or `@payload.<field>` scrutinee, got `@{s}`"
+            ),
+            span,
+        })
+    }
+
+    /// Split a term-match scrutinee path into its base field and optional
+    /// discriminant member: one segment (`op`) or two (`item.type`, the
+    /// Phase-3a tagged-union destructuring form). Anything else is malformed.
+    fn split_term_match_path(
+        path: &str,
+        root: &str,
+        span: Span,
+    ) -> Result<(String, Option<String>), ParseError> {
+        let mut segments = path.split('.');
+        let field = segments.next().unwrap_or("");
+        let member = segments.next();
+        let ok = !field.is_empty()
+            && member.map(|m| !m.is_empty()).unwrap_or(true)
+            && segments.next().is_none();
+        if !ok {
+            return Err(ParseError::InvalidSExpr {
+                message: format!(
+                    "ELOLO_MATCH_TERM_SCRUTINEE_INVALID: `match {root}.<field>` needs one \
+                     field segment, or `{root}.<field>.<member>` to dispatch on a tagged \
+                     struct union's discriminating member"
+                ),
+                span,
+            });
+        }
+        Ok((field.to_string(), member.map(str::to_string)))
     }
 
     pub(crate) fn parse_emits_block(&mut self) -> Result<Vec<Emit>, ParseError> {
@@ -885,6 +1052,21 @@ impl Parser {
             } else {
                 false
             };
+            // `match` is legal here as the field's WHOLE type only — a
+            // nested occurrence (`[match ...]`, a union member, an object
+            // field) is the same forbidden-position class as config/alias
+            // positions, just caught at this call site instead of theirs.
+            if !matches!(type_expr, TypeExpr::Match { .. }) && type_expr_contains_match(&type_expr)
+            {
+                return Err(ParseError::InvalidType {
+                    span,
+                    message: format!(
+                        "ELOLO_MATCH_POSITION_UNSUPPORTED: field '{}' nests `match` inside \
+                         another type — match must be the field's whole type",
+                        name
+                    ),
+                });
+            }
             fields.push(EventField {
                 name,
                 type_expr,
@@ -1111,7 +1293,9 @@ impl Parser {
                 loop {
                     self.skip_newlines();
                     if matches!(self.peek(), TokenKind::LParen) {
+                        let eff_span = self.peek_span();
                         let (eff, spans) = self.capture_expr_spans(|p| p.parse_sexpr())?;
+                        reject_match_effect_head(&eff, eff_span)?;
                         effects.push(eff);
                         effect_spans.push(spans);
                         if matches!(self.peek(), TokenKind::Newline) {
@@ -1188,6 +1372,17 @@ impl Parser {
                 }
                 self.expect_kind(&TokenKind::Colon, ":")?;
                 let type_expr = self.parse_type_expr()?;
+                if type_expr_contains_match(&type_expr) {
+                    return Err(ParseError::InvalidType {
+                        span,
+                        message: format!(
+                            "ELOLO_MATCH_POSITION_UNSUPPORTED: config field '{}' cannot use \
+                             `match` — match is only legal as an emits/listens payload \
+                             field's whole type",
+                            name
+                        ),
+                    });
+                }
                 let required = if matches!(self.peek(), TokenKind::Bang) {
                     self.advance();
                     true

@@ -41,11 +41,21 @@ impl Parser {
             SExpression::String(s) => Some(s.clone()),
             _ => None,
         };
+        // `(match <scrutinee> (<pattern> <value>) … (_ <value>))` — Phase 3b
+        // expression-level match sugar. Reserved head, like `let`/`fn` above:
+        // recognized before generic arg parsing so its arm grammar (`(pattern
+        // value)` pairs, not a fixed arg budget) can differ from every other
+        // call form. The opening `(` is already consumed; this returns the
+        // whole expression, including its own closing `)`.
+        if head.as_deref() == Some("match") {
+            return self.parse_expr_match(span);
+        }
         let mut items = vec![op];
         // Special case: `(let ((x v) (y w)) body)` — the second arg is a list of bindings.
         let is_let = matches!(items.first(), Some(SExpression::String(s)) if s == "let");
         let has_let_bindings = is_let && matches!(self.peek(), TokenKind::LParen);
-        let is_lambda = matches!(items.first(), Some(SExpression::String(s)) if s == "fn" || s == "lambda");
+        let is_lambda =
+            matches!(items.first(), Some(SExpression::String(s)) if s == "fn" || s == "lambda");
         // Both forms open a lexical scope that stays live for the body args
         // parsed by the loop below.
         let mut opened_scope = false;
@@ -148,6 +158,74 @@ impl Parser {
                     }
                 }
             }
+        }
+        Ok(SExpression::Array(items))
+    }
+
+    /// Parse the body of an expression-level `match` (Phase 3b, pattern-
+    /// matching doc §3b): `<scrutinee> (<pattern> <value>) … (_ <value>)`,
+    /// including the closing `)`. The leading `(match` is already consumed;
+    /// `open_span` is the whole expression's opening-paren span (for
+    /// unclosed-delimiter reporting).
+    ///
+    /// Encodes the result as an ordinary `["match", scrutinee, [pattern,
+    /// value], …]` `SExpression::Array` — reusing the exact grammar shape
+    /// every other sexpr call already has — so every existing generic tree
+    /// walker (the set/emit/button-action checks, `collect_entity_field_refs`,
+    /// the formatter) recurses through a match's scrutinee and arm values
+    /// unchanged; only the dedicated desugar (`lower::desugar_expr_match`)
+    /// and check (`lower::checks::check_expr_match_types`) know the shape
+    /// means anything. Arm-reachability/exhaustiveness needs the trait's own
+    /// config/entity types, so that's an L1 *lowering*-phase check, not a
+    /// parse one: this function only enforces what needs no such context —
+    /// scrutinee purity and "at least one non-wildcard arm".
+    pub(crate) fn parse_expr_match(&mut self, open_span: Span) -> Result<SExpression, ParseError> {
+        let scrutinee_span = self.peek_span();
+        let scrutinee = self.parse_sexpr_or_value()?;
+        if !is_pure_match_scrutinee(&scrutinee) {
+            return Err(ParseError::InvalidSExpr {
+                message: "ELOLO_MATCH_EXPR_SCRUTINEE_IMPURE: a `match` scrutinee must be a pure \
+                          reference (@entity.<f>, @payload.<f>, @config.<k>, or ?field) or a \
+                          literal — re-evaluating an arbitrary expression once per arm isn't \
+                          free, so this v1 requires a pure read; a general-expression scrutinee \
+                          needs let-binding support in the desugar (a follow-up)"
+                    .to_string(),
+                span: scrutinee_span,
+            });
+        }
+
+        let mut items = vec![SExpression::String("match".to_string()), scrutinee];
+        let mut non_wildcard = 0usize;
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RParen) {
+                self.advance();
+                break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '(',
+                    closer: ')',
+                    open_span,
+                    found: "end of file".to_string(),
+                });
+            }
+            self.expect_kind(&TokenKind::LParen, "(")?;
+            let pattern = self.parse_match_pattern()?;
+            if !matches!(pattern, MatchPattern::Wildcard) {
+                non_wildcard += 1;
+            }
+            let value = self.parse_sexpr_or_value()?;
+            self.expect_kind(&TokenKind::RParen, ")")?;
+            items.push(SExpression::Array(vec![pattern.literal_sexpr(), value]));
+        }
+        if non_wildcard == 0 {
+            return Err(ParseError::InvalidSExpr {
+                message: "ELOLO_MATCH_EXPR_NO_ARMS: a `match` needs at least one non-wildcard \
+                          arm"
+                .to_string(),
+                span: open_span,
+            });
         }
         Ok(SExpression::Array(items))
     }
@@ -515,8 +593,7 @@ impl Parser {
                 });
             }
             let index = items.len();
-            let value =
-                self.with_trail_seg(format!("[{index}]"), |p| p.parse_sexpr_or_value())?;
+            let value = self.with_trail_seg(format!("[{index}]"), |p| p.parse_sexpr_or_value())?;
             items.push(value);
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -554,6 +631,27 @@ impl Parser {
             }
         };
         Ok(duration_to_ms(n, &suf))
+    }
+}
+
+/// Expression-match (Phase 3b) scrutinee purity gate: a pure reference
+/// (`@entity.<f>` / `@payload.<f>` / `@config.<k>` — `?field` lexes to the
+/// same `@payload.<f>` string, see `PayloadSigil` in `parse_sexpr_or_value`)
+/// or a literal. Re-evaluating the scrutinee once per arm (the nested-`if`
+/// desugar's cost) is only observationally free for these — an operator call
+/// or other sigil (`@user.*`/`@row.*`) needs let-binding support in the
+/// desugar first, so v1 rejects those at parse time rather than silently
+/// re-running side-effecting reads. A bare word passes as a literal: unbound
+/// it compares as a constant string, and a `let`-bound name resolves to its
+/// already-evaluated binding — a pure read either way.
+fn is_pure_match_scrutinee(expr: &SExpression) -> bool {
+    match expr {
+        SExpression::String(s) if s.starts_with('@') => {
+            s.starts_with("@entity.") || s.starts_with("@payload.") || s.starts_with("@config.")
+        }
+        SExpression::String(_) => true,
+        SExpression::Number(_) | SExpression::Bool(_) | SExpression::Null => true,
+        SExpression::Array(_) | SExpression::Object(_) => false,
     }
 }
 

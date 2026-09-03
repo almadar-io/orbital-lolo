@@ -10,13 +10,13 @@ use crate::patterns_meta::event_prop_names;
 use crate::types::check_program;
 use orbital_core::schema::{
     Cardinality, ConfigField as SchemaConfigField, EmitDefinition, EntityDefinition,
-    EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration, FieldDefinition,
-    FieldType,
-    ListenDefinition, ListenSource, Orbital as CoreOrbital, OrbitalSchema, PageDefinition, PageRef,
-    PageRefObject, PayloadField, Persistence as CorePersistence, RelationDefinition, SExpression,
-    StateDefinition, StateMachine, StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef,
-    ThemeTokens, ThemeVariant, TickDefinition, TraitCategory,
-    TraitDefinition, TraitReference, TransitionDefinition, UseDeclaration,
+    EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration,
+    FieldDefinition, FieldType, ListenDefinition, ListenSource, Orbital as CoreOrbital,
+    OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
+    Persistence as CorePersistence, RelationDefinition, SExpression, StateDefinition, StateMachine,
+    StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef, ThemeTokens, ThemeVariant,
+    TickDefinition, TraitCategory, TraitDefinition, TraitReference, TransitionDefinition,
+    UseDeclaration,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 
@@ -30,14 +30,17 @@ mod type_helpers;
 
 pub(crate) use checks::{
     check_behavior_contracts, check_button_transitions, check_emit_payload_literals,
-    check_entity_fields_have_setters, check_listens_integrity, check_set_value_types,
+    check_entity_fields_have_setters, check_expr_match_types, check_listens_integrity,
+    check_match_types, check_set_value_types, check_term_match_types,
 };
 pub(crate) use emit_listen::{
     lower_emit, lower_listen, lower_tick, struct_payload_properties, type_expr_to_payload_fields,
 };
 pub(crate) use entity::{lower_entity, lower_field, lower_type_expr, primitive_field_type};
 pub(crate) use page::lower_page_decl;
-pub(crate) use r#trait::lower_trait_decl;
+pub(crate) use r#trait::{
+    desugar_expr_match, expand_term_match, is_expr_match_array, lower_trait_decl,
+};
 pub(crate) use type_helpers::{
     emit_primitive_compatible, humanize_event_key, type_expr_to_compat_str,
     type_expr_to_config_string, type_expr_to_config_values, type_expr_to_string,
@@ -426,7 +429,9 @@ fn collect_entity_type_bodies(
 fn reclassify_struct_unions(aliases: &mut BTreeMap<String, TypeAliasResolved>) {
     let mut rewrites: Vec<(String, TypeExpr)> = Vec::new();
     for (name, resolved) in aliases.iter() {
-        let TypeAliasResolved::Enum(members) = resolved else { continue };
+        let TypeAliasResolved::Enum(members) = resolved else {
+            continue;
+        };
         let parts: Vec<TypeExpr> = members.iter().map(|m| TypeExpr::Named(m.clone())).collect();
         if !crate::lower::entity::is_type_union(&parts, aliases) {
             continue;
@@ -697,7 +702,11 @@ fn lower_orbital(
             }
         }
     }
-    let types = if types_map.is_empty() { None } else { Some(types_map) };
+    let types = if types_map.is_empty() {
+        None
+    } else {
+        Some(types_map)
+    };
 
     Ok(CoreOrbital {
         name: orb.name.clone(),
@@ -767,7 +776,9 @@ mod tests {
         let reparsed = parse_str(&formatted).expect("reparse formatted");
         assert_eq!(
             reparsed.app.theme,
-            Some(crate::ast::ThemeDecl::Reference("linear-clean-light".to_string()))
+            Some(crate::ast::ThemeDecl::Reference(
+                "linear-clean-light".to_string()
+            ))
         );
     }
 
@@ -1783,7 +1794,12 @@ mod tests {
                 assert_eq!(shape[0].name.as_deref(), Some("role"));
                 assert_eq!(
                     shape[0].values.as_deref(),
-                    Some(&["store-manager".to_string(), "operations-director".to_string()][..])
+                    Some(
+                        &[
+                            "store-manager".to_string(),
+                            "operations-director".to_string()
+                        ][..]
+                    )
                 );
             }
             other => panic!("expected identity, got {other:?}"),

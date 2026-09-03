@@ -18,7 +18,11 @@ fn canonicalize(value: Value) -> Value {
     // These tests assert *semantic* preservation across a reformat; ids are
     // minted fresh each (independent) lowering and are not semantic content.
     fn is_identity_key(k: &str) -> bool {
-        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id") || k.ends_with("Ids")
+        k == "id"
+            || k == "ledger"
+            || k == "schemaVersion"
+            || k.ends_with("Id")
+            || k.ends_with("Ids")
     }
     match value {
         Value::Object(map) => {
@@ -251,11 +255,16 @@ fn page_annotations_round_trip() {
     let ast = parse_str(src).expect("parse original");
     let formatted = format_program(&ast);
     // The annotation surface must appear in the formatted output.
-    assert!(formatted.contains("@icon \"users\""), "@icon missing: {formatted}");
-    assert!(formatted.contains("@label \"Foo\""), "@label missing: {formatted}");
+    assert!(
+        formatted.contains("@icon \"users\""),
+        "@icon missing: {formatted}"
+    );
+    assert!(
+        formatted.contains("@label \"Foo\""),
+        "@label missing: {formatted}"
+    );
     let schema1 = parse_and_lower_str(src).expect("lower original");
-    let schema2 =
-        parse_and_lower_str(&formatted).expect("lower formatted");
+    let schema2 = parse_and_lower_str(&formatted).expect("lower formatted");
     let v1 = canonicalize(strip_nulls(serde_json::to_value(&schema1).unwrap()));
     let v2 = canonicalize(strip_nulls(serde_json::to_value(&schema2).unwrap()));
     assert_eq!(v1, v2, "page annotation lost in round-trip");
@@ -488,16 +497,31 @@ orbital TicketOrbital {
     let schema2 = parse_and_lower_str(&formatted).expect("lower formatted");
     let v1 = canonicalize(strip_nulls(serde_json::to_value(&schema1).unwrap()));
     let v2 = canonicalize(strip_nulls(serde_json::to_value(&schema2).unwrap()));
-    assert_eq!(v1, v2, "access directives changed semantics across a reformat");
+    assert_eq!(
+        v1, v2,
+        "access directives changed semantics across a reformat"
+    );
 
     let ticket = schema1.orbitals[0]
         .entity
         .as_inline()
         .expect("inline entity");
-    assert!(ticket.read_policy.is_some(), "read_policy did not reach the IR");
-    assert!(ticket.create_policy.is_some(), "create_policy did not reach the IR");
-    assert!(ticket.update_policy.is_some(), "update_policy did not reach the IR");
-    assert!(ticket.delete_policy.is_some(), "delete_policy did not reach the IR");
+    assert!(
+        ticket.read_policy.is_some(),
+        "read_policy did not reach the IR"
+    );
+    assert!(
+        ticket.create_policy.is_some(),
+        "create_policy did not reach the IR"
+    );
+    assert!(
+        ticket.update_policy.is_some(),
+        "update_policy did not reach the IR"
+    );
+    assert!(
+        ticket.delete_policy.is_some(),
+        "delete_policy did not reach the IR"
+    );
 }
 
 /// A duplicate directive of the same kind is a parse error.
@@ -548,8 +572,12 @@ orbital PersonOrbital {{
 }}
 "#
         );
-        let schema = parse_and_lower_str(&source).unwrap_or_else(|e| panic!("{tag} must parse: {e:?}"));
-        let entity = schema.orbitals[0].entity.as_inline().expect("inline entity");
+        let schema =
+            parse_and_lower_str(&source).unwrap_or_else(|e| panic!("{tag} must parse: {e:?}"));
+        let entity = schema.orbitals[0]
+            .entity
+            .as_inline()
+            .expect("inline entity");
         assert!(entity.identity, "{tag} did not set identity");
         assert_eq!(
             entity.shared,
@@ -633,6 +661,8 @@ orbital ProductOrbital {
 
     // Idempotent: formatting the formatted output changes nothing.
     let formatted2 = format_program(&parse_str(&formatted).expect("parse formatted"));
-    assert_eq!(formatted, formatted2, "formatter is not idempotent over expects");
+    assert_eq!(
+        formatted, formatted2,
+        "formatter is not idempotent over expects"
+    );
 }
-

@@ -11,12 +11,12 @@ impl Parser {
         // Optional `:: TypeName [args]` annotation above the body.
         let type_annotation = self.try_parse_type_annotation()?;
 
-        let (persistence, collection, shared, identity) = if matches!(self.peek(), TokenKind::LBracket)
-        {
-            self.parse_persistence_tag()?
-        } else {
-            (None, None, false, false)
-        };
+        let (persistence, collection, shared, identity) =
+            if matches!(self.peek(), TokenKind::LBracket) {
+                self.parse_persistence_tag()?
+            } else {
+                (None, None, false, false)
+            };
 
         let brace_form = matches!(self.peek(), TokenKind::LBrace);
         if brace_form {

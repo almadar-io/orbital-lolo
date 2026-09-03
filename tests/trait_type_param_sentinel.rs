@@ -195,8 +195,8 @@ orbital MyOrbital {
 
 #[test]
 fn alias_conformance_annotation_on_a_reference_is_unaffected() {
-    let schema =
-        parse_and_lower_str(ALIAS_CONFORMANCE_SRC).expect("known alias-conformance trait must still lower");
+    let schema = parse_and_lower_str(ALIAS_CONFORMANCE_SRC)
+        .expect("known alias-conformance trait must still lower");
     let TraitReference::Reference { type_args, .. } = &schema.orbitals[0].traits[0] else {
         panic!("expected a trait reference");
     };
@@ -255,12 +255,15 @@ orbital ApprovalOrbital {
 
 #[test]
 fn orbital_scope_and_file_scope_struct_aliases_populate_types_map() {
-    let schema = parse_and_lower_str(STRUCT_ALIAS_ORBITAL_SRC).expect("parse_and_lower must succeed");
+    let schema =
+        parse_and_lower_str(STRUCT_ALIAS_ORBITAL_SRC).expect("parse_and_lower must succeed");
     let types = schema.orbitals[0]
         .types
         .as_ref()
         .expect("Orbital.types must be populated with struct aliases visible in this scope");
-    let local = types.get("LocalShape").expect("orbital-scope alias must be carried");
+    let local = types
+        .get("LocalShape")
+        .expect("orbital-scope alias must be carried");
     let local_names: Vec<&str> = local.iter().map(|f| f.name.as_str()).collect();
     assert_eq!(local_names, vec!["id", "note"]);
 
@@ -312,15 +315,24 @@ fn declaration_default_parses_and_lowers_onto_type_param_def() {
         .iter()
         .find(|t| t.name == "LookupRun")
         .expect("LookupRun trait");
-    assert_eq!(trait_decl.type_params[0].default.as_deref(), Some("ApprovalDemoPayload"));
+    assert_eq!(
+        trait_decl.type_params[0].default.as_deref(),
+        Some("ApprovalDemoPayload")
+    );
     assert_eq!(trait_decl.type_params[1].default.as_deref(), Some("scalar"));
 
     let schema = parse_and_lower_str(PARAM_DEFAULT_SRC).expect("parse_and_lower must succeed");
     let TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
         panic!("expected an inline trait definition");
     };
-    let type_params = trait_def.type_params.as_ref().expect("typeParams must be populated");
-    assert_eq!(type_params[0].default.as_deref(), Some("ApprovalDemoPayload"));
+    let type_params = trait_def
+        .type_params
+        .as_ref()
+        .expect("typeParams must be populated");
+    assert_eq!(
+        type_params[0].default.as_deref(),
+        Some("ApprovalDemoPayload")
+    );
     assert_eq!(type_params[1].default.as_deref(), Some("scalar"));
 }
 
@@ -330,7 +342,10 @@ fn param_with_no_default_lowers_default_none() {
     let TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
         panic!("expected an inline trait definition");
     };
-    let type_params = trait_def.type_params.as_ref().expect("typeParams must be populated");
+    let type_params = trait_def
+        .type_params
+        .as_ref()
+        .expect("typeParams must be populated");
     assert!(type_params[0].default.is_none());
     assert!(type_params[1].default.is_none());
 }

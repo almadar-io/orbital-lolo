@@ -16,7 +16,12 @@ pub(crate) const VALID_TYPE_PARAM_KINDS: [&str; 6] =
 /// `E`. Lowercase variables (`e`, `v`) make variable-vs-concrete obvious at
 /// the use site (the Haskell convention, adopted 2026-08-18).
 pub(crate) fn type_param_name_error(name: &str, span: crate::ast::Span) -> Option<ParseError> {
-    if name.chars().next().map(|c| c.is_lowercase()).unwrap_or(false) {
+    if name
+        .chars()
+        .next()
+        .map(|c| c.is_lowercase())
+        .unwrap_or(false)
+    {
         None
     } else {
         Some(ParseError::UnexpectedToken {
@@ -72,6 +77,19 @@ impl Parser {
         };
         self.expect_kind(&TokenKind::Equals, "=")?;
         let body = self.parse_type_body()?;
+        if type_body_contains_match(&body) {
+            return Err(ParseError::InvalidType {
+                span,
+                message: format!(
+                    "ELOLO_MATCH_POSITION_UNSUPPORTED: type alias '{}' cannot use `match` — \
+                     match is only legal as an emits/listens payload field's whole type, never \
+                     inside a type-alias body (an `Event` alias's payload especially: the \
+                     alias-resolution lowering path never reads a match's conditional list, so \
+                     it would silently drop)",
+                    name
+                ),
+            });
+        }
         self.expect_newline_or_eof()?;
         Ok(TypeAlias {
             name,
@@ -513,10 +531,11 @@ impl Parser {
                     return match self.parse_config_ref_knob_arg()? {
                         Some(knob) => Ok(TypeExpr::EventPayloadOf(knob)),
                         None => Err(ParseError::UnexpectedToken {
-                            expected: "`@payload <@config.knob>` — `@payload` needs the knob whose \
+                            expected:
+                                "`@payload <@config.knob>` — `@payload` needs the knob whose \
                                        value names the event; bare `@payload` has no meaning in a \
                                        type position"
-                                .to_string(),
+                                    .to_string(),
                             got: format!("@{s}"),
                             span: self.peek_span(),
                         }),
@@ -529,6 +548,14 @@ impl Parser {
                 }
                 _ => {}
             }
+        }
+        // `match @config.<knob> { ... }` — type-level match (§25). Reserved
+        // keyword like `Map`/`trait`/`slot` below; checked before
+        // `expect_ident` consumes the name so the arm-block parse can follow
+        // immediately.
+        if self.check_ident("match") {
+            self.advance();
+            return self.parse_match_type();
         }
         let name = self.expect_ident()?;
         // `Map K V` — reserved built-in dynamic-key map constructor, applied by
@@ -600,6 +627,108 @@ impl Parser {
             _ => {}
         }
         Ok(base)
+    }
+
+    /// Parse a type-level `match` body: `@config.<knob> { <pattern> ->
+    /// <type> ... }`. The leading `match` keyword is already consumed by
+    /// the caller. Scrutinee is mandatory and restricted to `@config.<knob>`
+    /// (v1) — reuses `parse_config_ref_knob_arg`, the same sigil-stripping
+    /// helper `@entity <knob>`/`@payload <knob>` use. Per-arm `!` is a hard
+    /// parse error; the whole-field `!` (after the match's closing `}`) is
+    /// parsed by the field-list caller, unaffected by this function.
+    fn parse_match_type(&mut self) -> Result<TypeExpr, ParseError> {
+        let scrutinee_span = self.peek_span();
+        let knob = self
+            .parse_config_ref_knob_arg()?
+            .ok_or_else(|| ParseError::InvalidType {
+                span: scrutinee_span,
+                message: "ELOLO_MATCH_SCRUTINEE_REQUIRED: `match` needs an `@config.<knob>` \
+                          scrutinee, e.g. `match @config.inputType { ... }`"
+                    .to_string(),
+            })?;
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut arms = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            let arm_span = self.peek_span();
+            let pattern = self.parse_match_pattern()?;
+            if !matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "`->` after a match arm pattern".to_string(),
+                    got: format!("{:?}", self.peek()),
+                    span: self.peek_span(),
+                });
+            }
+            self.advance();
+            let ty = self.parse_type_expr()?;
+            if matches!(self.peek(), TokenKind::Bang) {
+                return Err(ParseError::InvalidType {
+                    span: self.peek_span(),
+                    message: "ELOLO_MATCH_ARM_BANG_FORBIDDEN: a match arm's type cannot carry \
+                              its own `!` — the whole field's `!` goes after the match's \
+                              closing `}`"
+                        .to_string(),
+                });
+            }
+            arms.push(MatchArm {
+                pattern,
+                ty,
+                span: arm_span,
+            });
+            if matches!(self.peek(), TokenKind::Newline) {
+                self.advance();
+            }
+        }
+        Ok(TypeExpr::Match { knob, arms })
+    }
+
+    /// Parse one match-arm pattern: a string literal, a bare word, `true`/
+    /// `false`, an integer, or `_` (wildcard). A float literal is a hard
+    /// error — arm patterns compare against a config literal's canonical
+    /// spelling, which has no fractional form. `pub(crate)` — reused by
+    /// term-level `match` (Phase 2, `parser::trait_::parse_term_match`),
+    /// which dispatches the SAME arm-pattern vocabulary on a value instead
+    /// of a type.
+    pub(crate) fn parse_match_pattern(&mut self) -> Result<MatchPattern, ParseError> {
+        match self.peek().clone() {
+            TokenKind::String(s) => {
+                self.advance();
+                Ok(MatchPattern::Str(s))
+            }
+            TokenKind::Boolean(b) => {
+                self.advance();
+                Ok(MatchPattern::Bool(b))
+            }
+            TokenKind::Integer(n) => {
+                self.advance();
+                Ok(MatchPattern::Int(n))
+            }
+            TokenKind::Number(_) => Err(ParseError::InvalidType {
+                span: self.peek_span(),
+                message: "ELOLO_MATCH_ARM_PATTERN_INVALID: a match arm pattern must be an \
+                          integer, not a float"
+                    .to_string(),
+            }),
+            TokenKind::Identifier(name) if name == "_" => {
+                self.advance();
+                Ok(MatchPattern::Wildcard)
+            }
+            TokenKind::Identifier(name) => {
+                self.advance();
+                Ok(MatchPattern::Word(name))
+            }
+            other => Err(ParseError::UnexpectedToken {
+                expected: "a match arm pattern (string literal, bare word, true/false, \
+                           integer, or `_`)"
+                    .to_string(),
+                got: format!("{:?}", other),
+                span: self.peek_span(),
+            }),
+        }
     }
 
     /// Read a dotted identifier sequence: `ident (Dot ident)*` joined with `.`.

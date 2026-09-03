@@ -163,9 +163,8 @@ fn sibling_keys_still_reject_a_bare_bound_name() {
 
 #[test]
 fn type_key_exemption_does_not_leak_into_nested_expressions() {
-    let err = parse_err(
-        "(render-ui main { renderItem: (fn card { children: [{ type: (do card) }] }) })",
-    );
+    let err =
+        parse_err("(render-ui main { renderItem: (fn card { children: [{ type: (do card) }] }) })");
     assert!(
         err.contains("BareBindingReference") && err.contains("\"card\""),
         "a bare bound name nested under a type: value must still error, got: {err}"

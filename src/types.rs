@@ -393,6 +393,14 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::Secret => "secret".to_string(),
         TypeExpr::SExpr => "SExpr".to_string(),
+        TypeExpr::Match { knob, arms } => {
+            let mut parts: Vec<String> = arms
+                .iter()
+                .map(|a| format!("{:?}:{}", a.pattern.spelling(), format_type_expr(&a.ty)))
+                .collect();
+            parts.sort();
+            format!("match:{knob}:{{{}}}", parts.join(","))
+        }
     }
 }
 
@@ -577,6 +585,15 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         | TypeExpr::Pattern
         | TypeExpr::Secret
         | TypeExpr::SExpr => {}
+        // Visit every arm's type — v1 caps arms to Primitive/[Primitive]
+        // (no NAMED refs reach here in a well-formed match), but a
+        // not-yet-validated match shouldn't hide a reference from cycle
+        // detection.
+        TypeExpr::Match { arms, .. } => {
+            for arm in arms {
+                visit_expr_refs(&arm.ty, out);
+            }
+        }
     }
 }
 
@@ -676,7 +693,13 @@ pub fn check_emit_payload_types(
 ) -> Result<(), TypeError> {
     for f in &emit.payload {
         if let TypeExpr::Named(name) = &f.type_expr {
-            check_named_payload_ref(name.as_str(), f.span, ctx, own_entity_names, trait_type_params)?;
+            check_named_payload_ref(
+                name.as_str(),
+                f.span,
+                ctx,
+                own_entity_names,
+                trait_type_params,
+            )?;
         }
     }
     Ok(())
@@ -702,7 +725,8 @@ fn check_named_payload_ref(
         // and keeps its enum reading — rejected here as before.
         TypeBody::Alias(TypeExpr::Union(parts))
             if crate::lower::entity::is_type_union_with(&parts, |n| {
-                ctx.lookup(n).map(|a| matches!(&a.body, TypeBody::Struct(_)))
+                ctx.lookup(n)
+                    .map(|a| matches!(&a.body, TypeBody::Struct(_)))
             }) =>
         {
             Ok(())
@@ -870,9 +894,76 @@ pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
 /// Walk the whole program and run resolution + annotation checks. Runs after
 /// the lowerer has collected both scopes; failures are returned as the first
 /// error encountered.
+/// Gate C's L1 half: the compiled-path validator (`ORB_T_GENERIC_TYPE_DEPRECATED`,
+/// hard error since 2026-09-01) rejects generic types in every declaration
+/// position the `.orb` carries — but the L1 lowerer ERASES an authored scalar
+/// `json`/`any` entity field to `string` before that gate can see it, so the
+/// authoring site was accepted-and-lying. Rejecting the SPELLING here (rung 1
+/// of the prevention ladder) closes that loophole at its source; `opaque`,
+/// `scalar`, `node`, and shaped types are the sanctioned vocabulary.
+fn reject_generic_types(te: &TypeExpr, position: &str, span: Span) -> Result<(), TypeError> {
+    match te {
+        TypeExpr::Primitive(n) | TypeExpr::Named(n)
+            if n == "json" || n == "any" || n == "object" =>
+        {
+            Err(TypeError::GenericTypeForbidden {
+                name: n.clone(),
+                position: position.to_string(),
+                span,
+            })
+        }
+        TypeExpr::Array(t) | TypeExpr::Optional(t) => reject_generic_types(t, position, span),
+        TypeExpr::Map(k, v) => {
+            reject_generic_types(k, position, span)?;
+            reject_generic_types(v, position, span)
+        }
+        TypeExpr::Object(fields) => {
+            for (_, t, _) in fields {
+                reject_generic_types(t, position, span)?;
+            }
+            Ok(())
+        }
+        TypeExpr::Union(parts) => {
+            for t in parts {
+                reject_generic_types(t, position, span)?;
+            }
+            Ok(())
+        }
+        TypeExpr::Match { arms, .. } => {
+            for arm in arms {
+                reject_generic_types(&arm.ty, position, arm.span)?;
+            }
+            Ok(())
+        }
+        _ => Ok(()),
+    }
+}
+
+fn reject_generic_alias_body(ta: &TypeAlias) -> Result<(), TypeError> {
+    let position = format!("type alias {:?}", ta.name);
+    match &ta.body {
+        TypeBody::Alias(te) => reject_generic_types(te, &position, ta.span),
+        TypeBody::Struct(fields) => {
+            for (_, te, _) in fields {
+                reject_generic_types(te, &position, ta.span)?;
+            }
+            Ok(())
+        }
+        TypeBody::Entity { fields, .. } => {
+            for f in fields {
+                reject_generic_types(&f.type_expr, &position, f.span)?;
+            }
+            Ok(())
+        }
+        TypeBody::Event { payload, .. } => reject_generic_types(payload, &position, ta.span),
+        _ => Ok(()),
+    }
+}
+
 pub fn check_program(program: &Program) -> Result<(), TypeError> {
     let mut file = TypeRegistry::new();
     for ta in &program.type_aliases {
+        reject_generic_alias_body(ta)?;
         file.insert(ta.clone());
     }
     // All declared entity names — legal targets for a field's relation/type
@@ -894,6 +985,7 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
     for orb in &program.orbitals {
         let mut orbital = TypeRegistry::new();
         for ta in &orb.type_aliases {
+            reject_generic_alias_body(ta)?;
             orbital.insert(ta.clone());
         }
         let ctx = ResolveCtx {
@@ -909,6 +1001,11 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
                 check_entity_annotation(ann, entity, &ctx)?;
             }
             for f in &entity.fields {
+                reject_generic_types(
+                    &f.type_expr,
+                    &format!("entity {:?} field {:?}", entity.name, f.name),
+                    f.span,
+                )?;
                 check_field_type_refs(&f.type_expr, f.span, &ctx, &entity_names, &BTreeSet::new())?;
             }
         }
@@ -946,7 +1043,42 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
                 }
             }
             for cf in &trt.config {
-                check_field_type_refs(&cf.type_expr, cf.span, &ctx, &entity_names, &trait_type_params)?;
+                reject_generic_types(
+                    &cf.type_expr,
+                    &format!("trait {:?} config {:?}", trt.name, cf.name),
+                    cf.span,
+                )?;
+                check_field_type_refs(
+                    &cf.type_expr,
+                    cf.span,
+                    &ctx,
+                    &entity_names,
+                    &trait_type_params,
+                )?;
+            }
+            for emit in &trt.emits {
+                for f in &emit.payload {
+                    reject_generic_types(
+                        &f.type_expr,
+                        &format!(
+                            "trait {:?} emit {:?} payload field {:?}",
+                            trt.name, emit.event, f.name
+                        ),
+                        f.span,
+                    )?;
+                }
+            }
+            for listen in &trt.listens {
+                for f in &listen.payload {
+                    reject_generic_types(
+                        &f.type_expr,
+                        &format!(
+                            "trait {:?} listen {:?} payload field {:?}",
+                            trt.name, listen.event, f.name
+                        ),
+                        f.span,
+                    )?;
+                }
             }
             // Validate emit-payload type references against the registry.
             // Entity- or struct-kind only. Other kinds (trait/page/orbital)
@@ -968,6 +1100,20 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
         for page in &orb.pages {
             if let Some(ann) = &page.type_annotation {
                 check_page_annotation(ann, page, &ctx)?;
+            }
+        }
+        for exp in &orb.expects {
+            let shape = match &exp.kind {
+                crate::ast::ExpectsKind::Identity { shape, .. }
+                | crate::ast::ExpectsKind::Entity { shape, .. } => shape.as_ref(),
+                _ => None,
+            };
+            for f in shape.into_iter().flatten() {
+                reject_generic_types(
+                    &f.type_expr,
+                    &format!("expects contract field {:?}", f.name),
+                    f.span,
+                )?;
             }
         }
     }
@@ -1054,6 +1200,90 @@ orbital OrbY {
 "#;
         let err = check(src).unwrap_err();
         assert!(matches!(err, TypeError::UnknownType { .. }), "got {err:?}");
+    }
+
+    /// Gate C's L1 half: authored `json`/`any`/bare `object` are rejected at
+    /// the type system, in every declaration position — closing the erasure
+    /// loophole where a scalar `json` entity field lowered to `string` before
+    /// the compiled-path gate could see it.
+    #[test]
+    fn err_generic_types_rejected_in_every_authoring_position() {
+        let positions = [
+            ("data : json", "entity Order [persistent: orders] {\n    id : string!\n    data : json\n  }"),
+            ("rows : [any]", "entity Order [persistent: orders] {\n    id : string!\n    rows : [any]\n  }"),
+            ("alias member", "entity Order [persistent: orders] { id : string! }\n  type Node = { name : string!, children : [object] }"),
+        ];
+        for (label, body) in positions {
+            let src = format!(
+                r#"
+orbital OrbG {{
+  {body}
+  trait OrderTrait -> Order [interaction] {{ state idle {{ INIT -> idle (ref Order) }} }}
+  page "/orders" -> OrderTrait
+}}
+"#
+            );
+            let err = check(&src).unwrap_err();
+            assert!(
+                matches!(err, TypeError::GenericTypeForbidden { .. }),
+                "{label}: got {err:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn err_generic_type_rejected_in_payload_and_config() {
+        let src = r#"
+orbital OrbH {
+  entity Rec [persistent: recs] { id : string! }
+  trait RecTrait -> Rec [interaction] {
+    config { extra : json }
+    state idle { INIT -> idle (ref Rec) }
+  }
+  page "/recs" -> RecTrait
+}
+"#;
+        let err = check(src).unwrap_err();
+        assert!(
+            matches!(err, TypeError::GenericTypeForbidden { .. }),
+            "config: got {err:?}"
+        );
+
+        let src = r#"
+orbital OrbI {
+  entity Rec [persistent: recs] { id : string! }
+  trait RecTrait -> Rec [interaction] {
+    emits { DONE -> external { value : any! } }
+    state idle { INIT -> idle (ref Rec) }
+  }
+  page "/recs" -> RecTrait
+}
+"#;
+        let err = check(src).unwrap_err();
+        assert!(
+            matches!(err, TypeError::GenericTypeForbidden { .. }),
+            "emit payload: got {err:?}"
+        );
+    }
+
+    /// The sanctioned vocabulary must keep passing: `opaque` (declared
+    /// openness), `scalar` (bounded primitive), and shaped types.
+    #[test]
+    fn ok_opaque_scalar_and_shaped_types_pass() {
+        let src = r#"
+orbital OrbJ {
+  entity Rec [persistent: recs] {
+    id : string!
+    snapshot : opaque
+    value : scalar
+    meta : Map string scalar
+    point : { x : number!, y : number! }
+  }
+  trait RecTrait -> Rec [interaction] { state idle { INIT -> idle (ref Rec) } }
+  page "/recs" -> RecTrait
+}
+"#;
+        check(src).unwrap();
     }
 
     #[test]

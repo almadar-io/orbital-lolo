@@ -26,12 +26,21 @@ pub(crate) fn check_entity_fields_have_setters(
 
     for state in &t.states {
         for tr in &state.transitions {
-            let event = tr.event.as_str();
-            if let Some(guard) = &tr.guard {
-                guard.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, event);
-            }
-            for effect in &tr.effects {
-                effect.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, event);
+            // Term-match sugar (Phase 2) expands to one guarded Transition per
+            // arm — a no-op for every ordinary transition — so a match arm's
+            // `(set @entity.X ...)` is checked exactly like a hand-guarded one.
+            for tr in expand_term_match(tr) {
+                let event = tr.event.as_str();
+                if let Some(guard) = &tr.guard {
+                    guard.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, event);
+                }
+                for effect in &tr.effects {
+                    effect.collect_entity_field_refs(
+                        &mut referenced_fields,
+                        &mut set_fields,
+                        event,
+                    );
+                }
             }
         }
     }
@@ -132,18 +141,40 @@ pub(crate) fn check_set_value_types(
 
     for state in &t.states {
         for tr in &state.transitions {
-            for effect in &tr.effects {
-                check_set_in_expr(
-                    effect,
-                    &tr.event,
+            // Term-match sugar (Phase 2) expands to one guarded Transition
+            // per arm — a no-op for every ordinary transition. Phase 3c: a
+            // destructuring match additionally refines the scrutinee's owner
+            // to each arm's selected variant, index-aligned with the
+            // expansion, so member reads inside an arm are checked against
+            // that variant's fields.
+            let refinements = match &tr.term_match {
+                Some(tm) => term_match_arm_refinements(
                     t,
-                    &entity_field_types,
+                    &tr.event,
+                    tm,
+                    Some(entity_fields),
                     &listen_payloads,
                     &emit_payloads,
-                    &config_fields,
-                    &HashSet::new(),
- aliases,
-                )?;
+                    aliases,
+                ),
+                None => vec![],
+            };
+            for (i, tr) in expand_term_match(tr).iter().enumerate() {
+                let refinement = refinements.get(i).and_then(Option::as_ref);
+                for effect in &tr.effects {
+                    check_set_in_expr(
+                        effect,
+                        &tr.event,
+                        t,
+                        &entity_field_types,
+                        &listen_payloads,
+                        &emit_payloads,
+                        &config_fields,
+                        &HashSet::new(),
+                        refinement,
+                        aliases,
+                    )?;
+                }
             }
         }
     }
@@ -158,7 +189,8 @@ pub(crate) fn check_set_value_types(
                 &emit_payloads,
                 &config_fields,
                 &HashSet::new(),
- aliases,
+                None,
+                aliases,
             )?;
         }
     }
@@ -168,7 +200,10 @@ pub(crate) fn check_set_value_types(
 /// Recursively search for `["set", "@entity.X", <value>]` SExpressions
 /// and validate each one. Descends into nested arrays and objects so
 /// `(set ...)` calls inside `(if cond ...)` / `(do ...)` / nested
-/// render-ui patterns are caught.
+/// render-ui patterns are caught. `refinement` (Phase 3c) is the enclosing
+/// term-match arm's owner→variant refinement, `None` outside a
+/// destructuring match arm.
+#[allow(clippy::too_many_arguments)]
 fn check_set_in_expr(
     expr: &SExpression,
     event: &str,
@@ -178,6 +213,7 @@ fn check_set_in_expr(
     emit_payloads: &HashMap<&str, &[EventField]>,
     config_fields: &HashMap<&str, &TypeExpr>,
     let_bindings: &HashSet<String>,
+    refinement: Option<&ArmRefinement>,
     aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> Result<(), LowerError> {
     if let SExpression::Array(arr) = expr {
@@ -209,6 +245,7 @@ fn check_set_in_expr(
                     emit_payloads,
                     config_fields,
                     let_bindings,
+                    refinement,
                     aliases,
                 )?;
                 return check_set_in_expr(
@@ -220,6 +257,7 @@ fn check_set_in_expr(
                     emit_payloads,
                     config_fields,
                     &nested,
+                    refinement,
                     aliases,
                 );
             }
@@ -248,6 +286,7 @@ fn check_set_in_expr(
                                 config_fields,
                                 entity_fields,
                                 let_bindings,
+                                refinement,
                                 aliases,
                             )?;
                         }
@@ -265,7 +304,8 @@ fn check_set_in_expr(
                 emit_payloads,
                 config_fields,
                 let_bindings,
- aliases,
+                refinement,
+                aliases,
             )?;
         }
     } else if let SExpression::Object(obj) = expr {
@@ -279,7 +319,8 @@ fn check_set_in_expr(
                 emit_payloads,
                 config_fields,
                 let_bindings,
- aliases,
+                refinement,
+                aliases,
             )?;
         }
     }
@@ -291,6 +332,7 @@ fn check_set_in_expr(
 /// `LowerError::SetValueTypeMismatch`. Bindings whose source isn't
 /// declared in the trait (cross-orbital, unknown event, etc.) skip
 /// silently — those defer to L2's F3 binding resolver.
+#[allow(clippy::too_many_arguments)]
 fn check_one_set_value(
     t: &Trait,
     field: &str,
@@ -302,6 +344,7 @@ fn check_one_set_value(
     config_fields: &HashMap<&str, &TypeExpr>,
     entity_fields: &HashMap<&str, &TypeExpr>,
     let_bindings: &HashSet<String>,
+    refinement: Option<&ArmRefinement>,
     aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> Result<(), LowerError> {
     // ENUM-UNENFORCED (Gap G-LOLO-ENUM-UNENFORCED): when the field declares an
@@ -345,7 +388,42 @@ fn check_one_set_value(
         }
         SExpression::Null => None,
         SExpression::String(s) => {
-            if let Some(rest) = s.strip_prefix("@payload.") {
+            // Phase 3c flow refinement: a member read under the enclosing
+            // arm's refined OWNER resolves against the SELECTED variant's
+            // fields, not the conservative union. A member the variant
+            // doesn't declare is a hard error — the read can never see it in
+            // this arm. Runs FIRST so the refined path never falls through
+            // to the generic sigil branches (which would defer a dotted path
+            // to L2 silently). Paths nesting deeper than one member keep
+            // today's defer-to-L2 posture.
+            if let Some((r, rest)) = refinement.and_then(|r| {
+                s.strip_prefix(&r.owner)
+                    .and_then(|x| x.strip_prefix('.'))
+                    .map(|rest| (r, rest))
+            }) {
+                match resolve_top_segment(rest) {
+                    Some(member) => match r.fields.iter().find(|(n, _, _)| *n == member) {
+                        Some((_, ty, _)) => {
+                            Some((type_expr_to_compat_str(ty), format!("{}.{member}", r.owner)))
+                        }
+                        None => {
+                            let mut names: Vec<&str> =
+                                r.fields.iter().map(|(n, _, _)| n.as_str()).collect();
+                            names.sort_unstable();
+                            return Err(LowerError::MatchRefinedMemberUnknown {
+                                trait_name: t.name.clone(),
+                                scrutinee: r.scrutinee.clone(),
+                                arm: r.arm.clone(),
+                                owner: r.owner.clone(),
+                                member,
+                                variant: r.variant.clone(),
+                                fields: names.join(", "),
+                            });
+                        }
+                    },
+                    None => None,
+                }
+            } else if let Some(rest) = s.strip_prefix("@payload.") {
                 resolve_top_segment(rest).and_then(|f| {
                     // Resolve `@payload.X` against the declared payload schema
                     // for the firing event. A `listens` entry wins; otherwise
@@ -437,15 +515,801 @@ fn enum_members_of(
         // `v : Status` at all; a type-union alias resolves to `Type(Union)` and
         // falls through to `None`, exactly like the inline case above.
         TypeExpr::Named(n) => match aliases.get(n) {
-            Some(TypeAliasResolved::Enum(members)) if members.len() >= 2 => {
-                Some(members.clone())
-            }
+            Some(TypeAliasResolved::Enum(members)) if members.len() >= 2 => Some(members.clone()),
             Some(TypeAliasResolved::Type(inner)) => enum_members_of(inner, aliases),
             _ => None,
         },
         TypeExpr::Optional(inner) => enum_members_of(inner, aliases),
         _ => None,
     }
+}
+
+/// L1 exhaustiveness/correctness checks for type-level `match` (§25). Runs
+/// unconditionally per trait — a match knob needs no `linkedEntity` — over
+/// every `emits`/local-`listens` payload field. Carries ZERO knob-name or
+/// pattern-name knowledge: every rule below is over the match's own
+/// structure (arm count, arm spellings, arm types) and the trait's own
+/// declared `config`, never a specific knob's name.
+pub(crate) fn check_match_types(
+    t: &Trait,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Result<(), LowerError> {
+    let config: HashMap<&str, &ConfigField> =
+        t.config.iter().map(|cf| (cf.name.as_str(), cf)).collect();
+    for e in &t.emits {
+        for f in &e.payload {
+            check_one_match_field(t, &f.type_expr, &config, aliases)?;
+        }
+    }
+    for l in &t.listens {
+        for f in &l.payload {
+            check_one_match_field(t, &f.type_expr, &config, aliases)?;
+        }
+    }
+    Ok(())
+}
+
+fn check_one_match_field(
+    t: &Trait,
+    type_expr: &TypeExpr,
+    config: &HashMap<&str, &ConfigField>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Result<(), LowerError> {
+    let TypeExpr::Match { knob, arms } = type_expr else {
+        return Ok(());
+    };
+    let Some(cf) = config.get(knob.as_str()) else {
+        return Err(LowerError::MatchKnobUndeclared {
+            trait_name: t.name.clone(),
+            knob: knob.clone(),
+        });
+    };
+    let vocabulary = closed_vocabulary_of(&cf.type_expr, aliases);
+    let scrutinee = format!("@config.{knob}");
+
+    let mut seen_spellings: HashSet<String> = HashSet::new();
+    let mut wildcard_seen = false;
+    for arm in arms {
+        check_arm_pattern_reachable(
+            &t.name,
+            &scrutinee,
+            knob,
+            &arm.pattern,
+            &vocabulary,
+            &mut seen_spellings,
+            &mut wildcard_seen,
+        )?;
+        check_match_arm_type(t, knob, &arm.ty)?;
+    }
+    if !wildcard_seen {
+        return Err(LowerError::MatchWildcardRequired {
+            trait_name: t.name.clone(),
+            scrutinee,
+        });
+    }
+    Ok(())
+}
+
+/// Structural pattern-reachability check for ONE match arm: rejects an arm
+/// following `_` (already unreachable), a duplicate literal spelling, or a
+/// spelling outside the scrutinee's closed vocabulary. Shared by type-level
+/// `match` (`check_one_match_field`, §25) and Phase 2's term-level `match`
+/// (`check_one_term_match`) — both dispatch the SAME `MatchPattern`
+/// vocabulary; only what an arm carries (a type vs effects) differs, and
+/// that's the caller's concern, not this function's. `scrutinee` is the
+/// full spelling for the outer error text (`@config.op` / `@entity.op`);
+/// `owner_label` is the bare name used in the "not one of `X`'s declared
+/// values" detail (`op`, either way) — matching each check family's
+/// pre-existing wording exactly. Threads `seen_spellings`/`wildcard_seen`
+/// through by reference so callers can layer their own per-arm checks (a
+/// type check, here) around this one without re-deriving state.
+#[allow(clippy::too_many_arguments)]
+fn check_arm_pattern_reachable(
+    trait_name: &str,
+    scrutinee: &str,
+    owner_label: &str,
+    pattern: &MatchPattern,
+    vocabulary: &Option<HashSet<String>>,
+    seen_spellings: &mut HashSet<String>,
+    wildcard_seen: &mut bool,
+) -> Result<(), LowerError> {
+    if *wildcard_seen {
+        return Err(LowerError::MatchArmUnreachable {
+            trait_name: trait_name.to_string(),
+            scrutinee: scrutinee.to_string(),
+            detail: "an arm follows the `_` wildcard, which already matches everything — `_` \
+                     must be last"
+                .to_string(),
+        });
+    }
+    match pattern {
+        MatchPattern::Wildcard => *wildcard_seen = true,
+        other => {
+            let spelling = other
+                .spelling()
+                .expect("non-wildcard MatchPattern always has a spelling");
+            if !seen_spellings.insert(spelling.clone()) {
+                return Err(LowerError::MatchArmDuplicate {
+                    trait_name: trait_name.to_string(),
+                    scrutinee: scrutinee.to_string(),
+                    spelling,
+                });
+            }
+            if let Some(vocab) = vocabulary {
+                if !vocab.contains(&spelling) {
+                    let mut members: Vec<&str> = vocab.iter().map(String::as_str).collect();
+                    members.sort_unstable();
+                    return Err(LowerError::MatchArmUnreachable {
+                        trait_name: trait_name.to_string(),
+                        scrutinee: scrutinee.to_string(),
+                        detail: format!(
+                            "arm {spelling:?} is not one of `{owner_label}`'s declared values \
+                             [{}]",
+                            members.join(", ")
+                        ),
+                    });
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+/// v1 caps match arm types to `Primitive`/`[Primitive]` — no post-selection
+/// expansion path exists yet for objects/unions/aliases/`Map`/nested
+/// `match`/sigils/`$param`.
+fn check_match_arm_type(t: &Trait, knob: &str, ty: &TypeExpr) -> Result<(), LowerError> {
+    let supported = match ty {
+        TypeExpr::Primitive(_) => true,
+        TypeExpr::Array(inner) => matches!(inner.as_ref(), TypeExpr::Primitive(_)),
+        _ => false,
+    };
+    if supported {
+        Ok(())
+    } else {
+        Err(LowerError::MatchArmTypeUnsupported {
+            trait_name: t.name.clone(),
+            knob: knob.to_string(),
+            ty: type_expr_to_string(ty),
+        })
+    }
+}
+
+/// A scrutinee's closed vocabulary of literal spellings, or `None` when its
+/// declared type is open (nothing to check arm reachability/exhaustiveness
+/// against). A boolean is the two-value vocabulary `{"true","false"}`;
+/// everything else defers to `enum_members_of` — the SAME reading `(set
+/// @entity.X "literal")`'s enum-membership check uses, so a field's closed
+/// vocabulary is read identically wherever it's checked. Shared by
+/// type-level `match` (a config knob's type) and Phase 2's term-level
+/// `match` (an entity/payload field's type).
+fn closed_vocabulary_of(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Option<HashSet<String>> {
+    match ty {
+        TypeExpr::Primitive(p) if p == "boolean" || p == "bool" => Some(
+            ["true".to_string(), "false".to_string()]
+                .into_iter()
+                .collect(),
+        ),
+        _ => enum_members_of(ty, aliases).map(|members| members.into_iter().collect()),
+    }
+}
+
+/// The variants of a TAGGED STRUCT UNION field type, as `(variant name,
+/// variant fields)` in declaration order — `None` for anything else (a
+/// string enum, a primitive, a primitive/mixed type union, an inline
+/// struct). Resolution mirrors `enum_members_of`'s posture exactly: unwrap
+/// `Optional`, resolve `Named` through the alias map, and read `A | B`
+/// through `is_type_union` (the single reading of a union) — then demand
+/// every member be a NAMED STRUCT alias, the shape `struct_union_variants`
+/// lowers to `FieldType::Union` + `values`/`properties` on the wire.
+fn tagged_struct_union_variants<'a>(
+    ty: &TypeExpr,
+    aliases: &'a BTreeMap<String, TypeAliasResolved>,
+) -> Option<Vec<(String, &'a Vec<(String, TypeExpr, bool)>)>> {
+    match ty {
+        TypeExpr::Optional(inner) => tagged_struct_union_variants(inner, aliases),
+        TypeExpr::Named(n) => match aliases.get(n) {
+            Some(TypeAliasResolved::Type(inner)) => tagged_struct_union_variants(inner, aliases),
+            _ => None,
+        },
+        TypeExpr::Union(parts) if crate::lower::entity::is_type_union(parts, aliases) => {
+            let mut out = Vec::with_capacity(parts.len());
+            for p in parts {
+                let TypeExpr::Named(name) = p else {
+                    return None;
+                };
+                let Some(TypeAliasResolved::Type(TypeExpr::Object(fields))) = aliases.get(name)
+                else {
+                    return None;
+                };
+                out.push((name.clone(), fields));
+            }
+            Some(out)
+        }
+        _ => None,
+    }
+}
+
+/// The per-variant literals of a tagged struct union's discriminating member
+/// `disc`, as `(literal, variant name)` in declaration order. Every variant
+/// must declare `disc` as a single-valued closed member (a string-literal
+/// type — the discriminator contract `lower_type_expr` documents on
+/// `TypeExpr::StringLiteral`), and every literal must select exactly one
+/// variant. `Err(detail)` names the first violation.
+fn union_discriminant_literals(
+    variants: &[(String, &Vec<(String, TypeExpr, bool)>)],
+    disc: &str,
+) -> Result<Vec<(String, String)>, String> {
+    let mut out: Vec<(String, String)> = Vec::with_capacity(variants.len());
+    for (vname, fields) in variants {
+        let Some((_, ty, _)) = fields.iter().find(|(n, _, _)| n == disc) else {
+            return Err(format!(
+                "variant {vname:?} has no member {disc:?}, so {disc:?} can't be the union's \
+                 discriminant"
+            ));
+        };
+        let lit = match ty {
+            TypeExpr::StringLiteral(s) => s.clone(),
+            other => {
+                return Err(format!(
+                    "variant {vname:?}'s member {disc:?} is typed `{}` — a discriminant must \
+                     be a single-valued closed member (a string-literal type like \
+                     `\"draw-shape\"`)",
+                    type_expr_to_string(other)
+                ));
+            }
+        };
+        if let Some((_, prior)) = out.iter().find(|(l, _)| *l == lit) {
+            return Err(format!(
+                "variants {prior:?} and {vname:?} both spell {disc:?} = {lit:?} — the \
+                 discriminant must select exactly one variant"
+            ));
+        }
+        out.push((lit, vname.clone()));
+    }
+    Ok(out)
+}
+
+/// Arm-scoped flow refinement (Phase 3c): inside arm N of a term match whose
+/// scrutinee is the dotted destructuring form, the OWNER value
+/// (`@payload.item` in `match @payload.item.type`) is known to be the
+/// variant arm N selects, so member reads under it resolve against that
+/// variant's declared fields instead of the conservative union. L1
+/// validation-time only — zero `.orb` change, zero L2 change, zero runtime
+/// change.
+struct ArmRefinement<'a> {
+    /// The refined owner's sigil spelling (`@payload.item`).
+    owner: String,
+    /// The arm's literal spelling, for error text.
+    arm: String,
+    /// Full scrutinee spelling, for error text.
+    scrutinee: String,
+    variant: String,
+    fields: &'a Vec<(String, TypeExpr, bool)>,
+}
+
+/// Per-arm refinements for one transition's term match, aligned index-for-
+/// index with `expand_term_match`'s output. All-`None` when the scrutinee is
+/// flat (no destructuring → no variant selection to refine) or doesn't
+/// resolve to a valid tagged union with a valid discriminant (those cases
+/// already hard-errored in `check_term_match_types`, which runs first — this
+/// only degrades, never re-reports). A `_` arm is also `None`: the wildcard
+/// selects no single variant, so its reads keep the conservative posture.
+fn term_match_arm_refinements<'a>(
+    t: &Trait,
+    event: &str,
+    tm: &TermMatch,
+    entity_fields: Option<&'a Vec<(String, TypeExpr, bool)>>,
+    listen_payloads: &HashMap<&str, &'a [EventField]>,
+    emit_payloads: &HashMap<&str, &'a [EventField]>,
+    aliases: &'a BTreeMap<String, TypeAliasResolved>,
+) -> Vec<Option<ArmRefinement<'a>>> {
+    let unrefined = |tm: &TermMatch| tm.arms.iter().map(|_| None).collect::<Vec<_>>();
+    let Some(disc) = tm.scrutinee.member() else {
+        return unrefined(tm);
+    };
+    let Ok(base_ty) = resolve_term_scrutinee_type(
+        t,
+        event,
+        &tm.scrutinee,
+        entity_fields,
+        listen_payloads,
+        emit_payloads,
+    ) else {
+        return unrefined(tm);
+    };
+    let Some(variants) = tagged_struct_union_variants(base_ty, aliases) else {
+        return unrefined(tm);
+    };
+    let Ok(discs) = union_discriminant_literals(&variants, disc) else {
+        return unrefined(tm);
+    };
+    tm.arms
+        .iter()
+        .map(|arm| {
+            let spelling = arm.pattern.spelling()?;
+            let (_, vname) = discs.iter().find(|(lit, _)| *lit == spelling)?;
+            let (_, fields) = variants.iter().find(|(n, _)| n == vname)?;
+            Some(ArmRefinement {
+                owner: tm.scrutinee.owner_sigil(),
+                arm: spelling,
+                scrutinee: tm.scrutinee.sigil(),
+                variant: vname.clone(),
+                fields,
+            })
+        })
+        .collect()
+}
+
+/// L1 exhaustiveness/correctness checks for transition-position term-level
+/// `match` (Phase 2, pattern-matching doc §1(a)). Parallel to
+/// `check_match_types` but dispatches on a VALUE (`@entity.<f>`/
+/// `@payload.<f>`) rather than a config-resolved TYPE: same arm-pattern
+/// vocabulary and duplicate/unreachable machinery
+/// (`check_arm_pattern_reachable`), different scrutinee resolution (an
+/// entity/payload field's declared type, not a config knob's) and a
+/// different exhaustiveness rule — `_` is required only when the
+/// scrutinee's type is OPEN; a CLOSED type (declared enum / boolean) may
+/// skip `_` when the arms already cover every member (`MatchInexhaustive`
+/// otherwise). Unlike Phase 1, a term match has no L2 fallback (zero
+/// orbital-compiler involvement per the design), so every scrutinee either
+/// resolves here or hard-errors — no "defer to L2" branch.
+pub(crate) fn check_term_match_types(
+    t: &Trait,
+    entities: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Result<(), LowerError> {
+    let entity_fields: Option<&Vec<(String, TypeExpr, bool)>> = t
+        .linked_entity
+        .as_deref()
+        .and_then(|name| entities.get(name));
+
+    // Per-firing-event payload schema lookup, same construction as
+    // `check_set_value_types`'s: a `listens` entry wins; `emits` is the
+    // fallback for emit-sourced payload fields.
+    let mut listen_payloads: HashMap<&str, &[EventField]> = HashMap::new();
+    for listen in &t.listens {
+        let key = listen.triggers.as_deref().unwrap_or(&listen.event);
+        if !listen.payload.is_empty() {
+            listen_payloads.insert(key, listen.payload.as_slice());
+        }
+    }
+    let mut emit_payloads: HashMap<&str, &[EventField]> = HashMap::new();
+    for emit in &t.emits {
+        if !emit.payload.is_empty() {
+            emit_payloads.insert(emit.event.as_str(), emit.payload.as_slice());
+        }
+    }
+
+    for state in &t.states {
+        for tr in &state.transitions {
+            let Some(tm) = &tr.term_match else {
+                continue;
+            };
+            check_one_term_match(
+                t,
+                &tr.event,
+                tm,
+                entity_fields,
+                &listen_payloads,
+                &emit_payloads,
+                aliases,
+            )?;
+        }
+    }
+    Ok(())
+}
+
+/// Resolve a term-match scrutinee's BASE field declared type — `@entity.<f>`
+/// against the linked entity's fields, `@payload.<f>` against the firing
+/// event's declared payload. The dotted `<member>` segment (Phase 3a) plays
+/// no part here; callers layer variant resolution on top. Shared by
+/// `check_one_term_match` (which surfaces the errors) and
+/// `term_match_arm_refinements` (which silently degrades — the same errors
+/// already fired in `check_term_match_types`, which runs first).
+fn resolve_term_scrutinee_type<'a>(
+    t: &Trait,
+    event: &str,
+    scrutinee: &MatchScrutinee,
+    entity_fields: Option<&'a Vec<(String, TypeExpr, bool)>>,
+    listen_payloads: &HashMap<&str, &'a [EventField]>,
+    emit_payloads: &HashMap<&str, &'a [EventField]>,
+) -> Result<&'a TypeExpr, LowerError> {
+    let sigil = scrutinee.sigil();
+    match scrutinee {
+        MatchScrutinee::Entity { field, .. } => {
+            let Some(fields) = entity_fields else {
+                return Err(LowerError::MatchScrutineeUndeclared {
+                    trait_name: t.name.clone(),
+                    scrutinee: sigil,
+                    detail: "this trait has no `linkedEntity`, so `@entity.*` has no field to \
+                             resolve"
+                        .to_string(),
+                });
+            };
+            let Some((_, ty, _)) = fields.iter().find(|(name, _, _)| name == field) else {
+                return Err(LowerError::MatchScrutineeUndeclared {
+                    trait_name: t.name.clone(),
+                    scrutinee: sigil,
+                    detail: format!(
+                        "field {field:?} is not declared on entity {:?}",
+                        t.linked_entity.as_deref().unwrap_or("")
+                    ),
+                });
+            };
+            Ok(ty)
+        }
+        MatchScrutinee::Payload { field, .. } => {
+            let Some(payload) = listen_payloads
+                .get(event)
+                .or_else(|| emit_payloads.get(event))
+            else {
+                return Err(LowerError::MatchScrutineeUndeclared {
+                    trait_name: t.name.clone(),
+                    scrutinee: sigil,
+                    detail: format!(
+                        "event {event:?} has no declared payload in this file \
+                         (`listens`/`emits`)"
+                    ),
+                });
+            };
+            let Some(pf) = payload.iter().find(|pf| pf.name == *field) else {
+                return Err(LowerError::MatchScrutineeUndeclared {
+                    trait_name: t.name.clone(),
+                    scrutinee: sigil,
+                    detail: format!("field {field:?} is not declared on event {event:?}'s payload"),
+                });
+            };
+            Ok(&pf.type_expr)
+        }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn check_one_term_match(
+    t: &Trait,
+    event: &str,
+    tm: &TermMatch,
+    entity_fields: Option<&Vec<(String, TypeExpr, bool)>>,
+    listen_payloads: &HashMap<&str, &[EventField]>,
+    emit_payloads: &HashMap<&str, &[EventField]>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Result<(), LowerError> {
+    let scrutinee = tm.scrutinee.sigil();
+    let resolved_ty = resolve_term_scrutinee_type(
+        t,
+        event,
+        &tm.scrutinee,
+        entity_fields,
+        listen_payloads,
+        emit_payloads,
+    )?;
+
+    // Dotted destructuring scrutinee (Phase 3a): the base field must be a
+    // tagged struct union whose variants all carry `<member>` as their
+    // single-valued closed discriminant; the closed vocabulary is then the
+    // discriminant literal set (total coverage or `_`). A flat scrutinee
+    // keeps Phase 2's field-type vocabulary.
+    let vocabulary = match tm.scrutinee.member() {
+        Some(disc) => {
+            let Some(variants) = tagged_struct_union_variants(resolved_ty, aliases) else {
+                return Err(LowerError::MatchScrutineeNotUnion {
+                    trait_name: t.name.clone(),
+                    scrutinee,
+                    detail: format!(
+                        "field {:?}'s declared type is not a tagged struct union (a `A | B` \
+                         union of named struct aliases), so member {disc:?} has no variants \
+                         to dispatch over",
+                        tm.scrutinee.field()
+                    ),
+                });
+            };
+            let discs = union_discriminant_literals(&variants, disc).map_err(|detail| {
+                LowerError::MatchDiscriminantInvalid {
+                    trait_name: t.name.clone(),
+                    scrutinee: scrutinee.clone(),
+                    detail,
+                }
+            })?;
+            Some(discs.into_iter().map(|(lit, _)| lit).collect())
+        }
+        None => closed_vocabulary_of(resolved_ty, aliases),
+    };
+
+    // Bare owner label for the "not one of `X`'s declared values" detail —
+    // the dotted spelling when destructuring, the field name otherwise.
+    let owner_label = match tm.scrutinee.member() {
+        Some(m) => format!("{}.{m}", tm.scrutinee.field()),
+        None => tm.scrutinee.field().to_string(),
+    };
+
+    let mut seen_spellings: HashSet<String> = HashSet::new();
+    let mut wildcard_seen = false;
+    for arm in &tm.arms {
+        check_arm_pattern_reachable(
+            &t.name,
+            &scrutinee,
+            &owner_label,
+            &arm.pattern,
+            &vocabulary,
+            &mut seen_spellings,
+            &mut wildcard_seen,
+        )?;
+    }
+    if wildcard_seen {
+        return Ok(());
+    }
+    match &vocabulary {
+        Some(vocab) => {
+            let mut missing: Vec<&str> = vocab
+                .iter()
+                .filter(|m| !seen_spellings.contains(m.as_str()))
+                .map(String::as_str)
+                .collect();
+            if missing.is_empty() {
+                Ok(())
+            } else {
+                missing.sort_unstable();
+                Err(LowerError::MatchInexhaustive {
+                    trait_name: t.name.clone(),
+                    scrutinee,
+                    missing: missing.join(", "),
+                })
+            }
+        }
+        None => Err(LowerError::MatchWildcardRequired {
+            trait_name: t.name.clone(),
+            scrutinee,
+        }),
+    }
+}
+
+/// Per-trait resolution context for expression-level `match` (Phase 3b)
+/// exhaustiveness checks — the same lookup maps `check_set_value_types`
+/// builds, gathered once and threaded through the recursive tree walk below
+/// instead of rebuilt per occurrence.
+struct ExprMatchCtx<'a> {
+    trait_name: &'a str,
+    entity_fields: Option<&'a Vec<(String, TypeExpr, bool)>>,
+    listen_payloads: &'a HashMap<&'a str, &'a [EventField]>,
+    emit_payloads: &'a HashMap<&'a str, &'a [EventField]>,
+    config_fields: &'a HashMap<&'a str, &'a TypeExpr>,
+    aliases: &'a BTreeMap<String, TypeAliasResolved>,
+}
+
+/// L1 exhaustiveness/correctness checks for expression-level `match` (Phase
+/// 3b, pattern-matching doc §3b) — s-expression sugar legal in VALUE
+/// positions, parsed verbatim into an ordinary `["match", scrutinee, [pat,
+/// val], …]` SExpression array (`parser::expression::parse_expr_match`) and
+/// desugared to nested `if`/`==` at lowering (`desugar_expr_match`). Walks
+/// every guard/effect/config-default SExpression this trait owns hunting
+/// for that shape (`is_expr_match_array`) and validates each one found —
+/// reuses the SAME arm-pattern vocabulary and reachability machinery as
+/// Phase 1/2 (`check_arm_pattern_reachable`, `closed_vocabulary_of`); only
+/// scrutinee resolution differs (a value reference read anywhere in the
+/// trait, not a config-knob TYPE or a fixed per-transition field).
+pub(crate) fn check_expr_match_types(
+    t: &Trait,
+    entities: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Result<(), LowerError> {
+    let entity_fields: Option<&Vec<(String, TypeExpr, bool)>> = t
+        .linked_entity
+        .as_deref()
+        .and_then(|name| entities.get(name));
+
+    let mut listen_payloads: HashMap<&str, &[EventField]> = HashMap::new();
+    for listen in &t.listens {
+        let key = listen.triggers.as_deref().unwrap_or(&listen.event);
+        if !listen.payload.is_empty() {
+            listen_payloads.insert(key, listen.payload.as_slice());
+        }
+    }
+    let mut emit_payloads: HashMap<&str, &[EventField]> = HashMap::new();
+    for emit in &t.emits {
+        if !emit.payload.is_empty() {
+            emit_payloads.insert(emit.event.as_str(), emit.payload.as_slice());
+        }
+    }
+    let config_fields: HashMap<&str, &TypeExpr> = t
+        .config
+        .iter()
+        .map(|cf| (cf.name.as_str(), &cf.type_expr))
+        .collect();
+
+    let ctx = ExprMatchCtx {
+        trait_name: &t.name,
+        entity_fields,
+        listen_payloads: &listen_payloads,
+        emit_payloads: &emit_payloads,
+        config_fields: &config_fields,
+        aliases,
+    };
+
+    for state in &t.states {
+        for tr in &state.transitions {
+            for tr in expand_term_match(tr) {
+                if let Some(guard) = &tr.guard {
+                    check_expr_matches_in(guard, &tr.event, &ctx)?;
+                }
+                for effect in &tr.effects {
+                    check_expr_matches_in(effect, &tr.event, &ctx)?;
+                }
+            }
+        }
+    }
+    for tick in &t.ticks {
+        if let Some(guard) = &tick.guard {
+            check_expr_matches_in(guard, "TICK", &ctx)?;
+        }
+        for effect in &tick.effects {
+            check_expr_matches_in(effect, "TICK", &ctx)?;
+        }
+    }
+    for cf in &t.config {
+        if let Some(default) = &cf.default {
+            check_expr_matches_in(default, "", &ctx)?;
+        }
+    }
+    for listen in &t.listens {
+        if let Some(guard) = &listen.guard {
+            check_expr_matches_in(guard, &listen.event, &ctx)?;
+        }
+        for (_, mapping) in &listen.payload_mapping {
+            check_expr_matches_in(mapping, &listen.event, &ctx)?;
+        }
+    }
+    Ok(())
+}
+
+/// Recursively hunt an SExpression tree for `is_expr_match_array` shapes and
+/// validate each one found, descending into every array/object child
+/// (including a validated match's own scrutinee and arm values) so a match
+/// nested anywhere — an operator arg, a let body, a nested arm value — is
+/// caught, mirroring `check_set_in_expr`'s walk style.
+fn check_expr_matches_in(
+    expr: &SExpression,
+    event: &str,
+    ctx: &ExprMatchCtx,
+) -> Result<(), LowerError> {
+    if let SExpression::Array(arr) = expr {
+        if crate::lower::is_expr_match_array(arr) {
+            check_one_expr_match(arr, event, ctx)?;
+        }
+        for item in arr {
+            check_expr_matches_in(item, event, ctx)?;
+        }
+    } else if let SExpression::Object(obj) = expr {
+        for value in obj.values() {
+            check_expr_matches_in(value, event, ctx)?;
+        }
+    }
+    Ok(())
+}
+
+/// Validate one expression-match occurrence: `arr` is `["match", scrutinee,
+/// [pattern, value], …]`. Resolves the scrutinee's closed vocabulary (when
+/// it's a reference whose declared type is known and closed) and runs the
+/// shared arm-reachability check per arm, then the same exhaustiveness rule
+/// Phase 2's term match uses — `_` present is always fine; otherwise a
+/// closed vocabulary must be fully covered (`MatchInexhaustive` naming what's
+/// missing) and an open/unresolvable one requires `_` (`MatchWildcardRequired`).
+fn check_one_expr_match(
+    arr: &[SExpression],
+    event: &str,
+    ctx: &ExprMatchCtx,
+) -> Result<(), LowerError> {
+    let scrutinee_expr = &arr[1];
+    let scrutinee_label = expr_match_scrutinee_label(scrutinee_expr);
+    let vocabulary = resolve_expr_match_vocabulary(scrutinee_expr, event, ctx);
+
+    let mut seen_spellings: HashSet<String> = HashSet::new();
+    let mut wildcard_seen = false;
+    for arm in &arr[2..] {
+        let SExpression::Array(pair) = arm else {
+            continue; // malformed — the parser never produces this; skip defensively
+        };
+        if pair.len() != 2 {
+            continue;
+        }
+        let pattern = pattern_from_literal_sexpr(&pair[0]);
+        check_arm_pattern_reachable(
+            ctx.trait_name,
+            &scrutinee_label,
+            &scrutinee_label,
+            &pattern,
+            &vocabulary,
+            &mut seen_spellings,
+            &mut wildcard_seen,
+        )?;
+    }
+    if wildcard_seen {
+        return Ok(());
+    }
+    match &vocabulary {
+        Some(vocab) => {
+            let mut missing: Vec<&str> = vocab
+                .iter()
+                .filter(|m| !seen_spellings.contains(m.as_str()))
+                .map(String::as_str)
+                .collect();
+            if missing.is_empty() {
+                Ok(())
+            } else {
+                missing.sort_unstable();
+                Err(LowerError::MatchInexhaustive {
+                    trait_name: ctx.trait_name.to_string(),
+                    scrutinee: scrutinee_label,
+                    missing: missing.join(", "),
+                })
+            }
+        }
+        None => Err(LowerError::MatchWildcardRequired {
+            trait_name: ctx.trait_name.to_string(),
+            scrutinee: scrutinee_label,
+        }),
+    }
+}
+
+/// Reconstruct the `MatchPattern` an arm's literal-encoded atom represents —
+/// the inverse of `MatchPattern::literal_sexpr`. Only ever called on atoms
+/// `parse_expr_match` produced via that exact method, so every case here is
+/// exhaustive by construction (a float, an array, or an object can never
+/// reach this — `parse_match_pattern` rejects those at parse time).
+fn pattern_from_literal_sexpr(e: &SExpression) -> MatchPattern {
+    match e {
+        SExpression::String(s) if s == "_" => MatchPattern::Wildcard,
+        SExpression::String(s) => MatchPattern::Str(s.clone()),
+        SExpression::Bool(b) => MatchPattern::Bool(*b),
+        SExpression::Number(n) => MatchPattern::Int(*n as i64),
+        _ => unreachable!("parse_expr_match only ever encodes MatchPattern::literal_sexpr atoms"),
+    }
+}
+
+/// Human-readable label for an expr-match's scrutinee, used in error text —
+/// the sigil path for a reference, or a generic `<literal>` tag for a
+/// literal scrutinee (which carries no vocabulary to check against anyway).
+fn expr_match_scrutinee_label(expr: &SExpression) -> String {
+    match expr {
+        SExpression::String(s) => s.clone(),
+        _ => "<literal>".to_string(),
+    }
+}
+
+/// Resolve an expr-match scrutinee's closed vocabulary, or `None` when it's
+/// open/unresolvable (a literal scrutinee, an unknown field, or a
+/// `@payload.<f>` whose firing event has no declared payload in this file —
+/// each degrades to requiring `_` rather than erroring, matching L1's
+/// "defer, don't false-positive" posture elsewhere in this file).
+fn resolve_expr_match_vocabulary(
+    scrutinee: &SExpression,
+    event: &str,
+    ctx: &ExprMatchCtx,
+) -> Option<HashSet<String>> {
+    let SExpression::String(s) = scrutinee else {
+        return None;
+    };
+    if let Some(f) = s.strip_prefix("@entity.").and_then(resolve_top_segment) {
+        let fields = ctx.entity_fields?;
+        let (_, ty, _) = fields.iter().find(|(name, _, _)| *name == f)?;
+        return closed_vocabulary_of(ty, ctx.aliases);
+    }
+    if let Some(f) = s.strip_prefix("@payload.").and_then(resolve_top_segment) {
+        let payload = ctx
+            .listen_payloads
+            .get(event)
+            .or_else(|| ctx.emit_payloads.get(event))?;
+        let pf = payload.iter().find(|pf| pf.name == f)?;
+        return closed_vocabulary_of(&pf.type_expr, ctx.aliases);
+    }
+    if let Some(f) = s.strip_prefix("@config.").and_then(resolve_top_segment) {
+        let ty = ctx.config_fields.get(f.as_str())?;
+        return closed_vocabulary_of(ty, ctx.aliases);
+    }
+    None
 }
 
 /// Extract the top segment of a binding path, returning `None` when the
@@ -1010,8 +1874,8 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
         // (or a compose-time `expects entity`) is absent from the map and its
         // check is skipped (compiler backstop covers it).
         let mut entity_fields_by_name: HashMap<String, HashSet<String>> = HashMap::new();
-        for ent_ref in std::iter::once(&orbital.entity)
-            .chain(orbital.auxiliary_entities.iter().flatten())
+        for ent_ref in
+            std::iter::once(&orbital.entity).chain(orbital.auxiliary_entities.iter().flatten())
         {
             if let EntityRef::Inline(ed) = ent_ref {
                 entity_fields_by_name.insert(

@@ -1,5 +1,136 @@
 use super::*;
 
+/// Expand a transition's term-match sugar (Phase 2, pattern-matching doc
+/// §1(a)) into ordered guarded `Transition`s, or return it unchanged
+/// (cloned) when it carries no `term_match`. Pure syntactic desugar: each
+/// arm becomes one `Transition` sharing the outer `event`/`target`, with a
+/// synthesized `(== <scrutinee> <lit>)` guard mirroring the corpus's own
+/// hand-written guard shape (`["==", "@config.op", "set"]` in the .orb) —
+/// `_` lowers to the unguarded transition, always last (the parser/L1
+/// checks — `check_arm_pattern_reachable`'s "must be last" rule — guarantee
+/// `_`, if present, is the final arm). Reused by every pass that reads a
+/// trait's per-transition guard/effects (the L1 entity-field/set-value
+/// checks below and the main state-machine lowering) so term-match never
+/// needs its own parallel code path downstream — the whole point of "pure
+/// L1 sugar, zero evaluator/codegen work".
+pub(crate) fn expand_term_match(tr: &Transition) -> Vec<Transition> {
+    let Some(tm) = &tr.term_match else {
+        return vec![tr.clone()];
+    };
+    let scrutinee_sigil = tm.scrutinee.sigil();
+    tm.arms
+        .iter()
+        .map(|arm| {
+            let guard = match &arm.pattern {
+                MatchPattern::Wildcard => None,
+                other => Some(SExpression::Array(vec![
+                    SExpression::String("==".to_string()),
+                    SExpression::String(scrutinee_sigil.clone()),
+                    other.literal_sexpr(),
+                ])),
+            };
+            Transition {
+                event: tr.event.clone(),
+                target: tr.target.clone(),
+                guard,
+                effects: arm.effects.clone(),
+                span: arm.span,
+                guard_spans: Vec::new(),
+                effect_spans: arm.effect_spans.clone(),
+                term_match: None,
+            }
+        })
+        .collect()
+}
+
+/// True when `arr` is the `["match", scrutinee, [pattern, value], …]` shape
+/// `parser::expression::parse_expr_match` (Phase 3b) produces. `match` is a
+/// reserved sexpr HEAD (parsed specially, never a legal runtime op) — but
+/// the string `"match"` itself is an ordinary identifier everywhere else in
+/// the grammar, and a `let` binding pair is ALSO a bare 2-element
+/// `[String(name), value]` array (`parser::expression::parse_let_bindings`)
+/// that never goes through the reserved-head check (only a call's OPERATOR
+/// position is reserved, not a binding NAME) — so `(let ((match (array/
+/// first …))) …)`, a real corpus idiom (`std-civics-checks.lolo`,
+/// `std-learn-derivation.lolo` both bind a local named `match`), parses to
+/// the SAME shape as a zero-arm match. Full shape check, not just the head:
+/// at least one arm (head + scrutinee + ≥1 arm = len ≥ 3 — the parser
+/// itself enforces ≥1 non-wildcard arm) AND every element past the
+/// scrutinee is itself a 2-element `[pattern, value]` array — a let-binding
+/// pair is always exactly 2 elements, so it can never satisfy `len >= 3`.
+/// Shared by the desugar below and `checks::check_expr_match_types`.
+pub(crate) fn is_expr_match_array(arr: &[SExpression]) -> bool {
+    matches!(arr.first(), Some(SExpression::String(s)) if s == "match")
+        && arr.len() >= 3
+        && arr[2..]
+            .iter()
+            .all(|arm| matches!(arm, SExpression::Array(pair) if pair.len() == 2))
+}
+
+/// Recursively desugar expression-level `match` sugar (Phase 3b, pattern-
+/// matching doc §3b) — `(match <scrutinee> (<pattern> <value>) … (_
+/// <value>))`, parsed verbatim into an ordinary `["match", scrutinee, [pat,
+/// val], …]` SExpression array — into nested `(if (== <scrutinee> <lit>)
+/// <val> <else>)`, anywhere it appears in an SExpression tree (a value
+/// position can nest arbitrarily deep: operator args, let bodies, object/
+/// array literal values). Bottom-up: a nested match inside an arm's value
+/// desugars before the outer match wraps it, so nesting composes for free.
+/// Applied at the point each guard/effect/default is embedded into the
+/// output schema — never mutates the parsed AST itself, so the formatter
+/// (which reads that AST) still round-trips the original sugar.
+pub(crate) fn desugar_expr_match(expr: &SExpression) -> SExpression {
+    match expr {
+        SExpression::Array(arr) if is_expr_match_array(arr) => {
+            let scrutinee = desugar_expr_match(&arr[1]);
+            let arms: Vec<(SExpression, SExpression)> = arr[2..]
+                .iter()
+                .map(|arm| match arm {
+                    SExpression::Array(pair) if pair.len() == 2 => {
+                        (pair[0].clone(), desugar_expr_match(&pair[1]))
+                    }
+                    _ => unreachable!("malformed match arm reached desugar"),
+                })
+                .collect();
+            build_nested_if(&scrutinee, &arms)
+        }
+        SExpression::Array(arr) => SExpression::Array(arr.iter().map(desugar_expr_match).collect()),
+        SExpression::Object(obj) => SExpression::Object(
+            obj.iter()
+                .map(|(k, v)| (k.clone(), desugar_expr_match(v)))
+                .collect(),
+        ),
+        other => other.clone(),
+    }
+}
+
+/// Build the nested `if`/`==` chain for one expr-match's (already-desugared)
+/// arms. The last arm — `_` or, when the vocabulary is exhaustively covered
+/// without a wildcard (Phase 2/3b share this allowance), the final
+/// non-wildcard arm — needs no guard: it's the unconditional base case, so
+/// it's returned bare rather than wrapped in a redundant `(if true …)`.
+fn build_nested_if(scrutinee: &SExpression, arms: &[(SExpression, SExpression)]) -> SExpression {
+    let (head, rest) = arms
+        .split_first()
+        .expect("expr-match desugar needs at least one arm (parser enforces this)");
+    let (pattern, value) = head;
+    let is_wildcard = matches!(pattern, SExpression::String(s) if s == "_");
+    if is_wildcard || rest.is_empty() {
+        return value.clone();
+    }
+    let cond = SExpression::Array(vec![
+        SExpression::String("==".to_string()),
+        scrutinee.clone(),
+        pattern.clone(),
+    ]);
+    let else_branch = build_nested_if(scrutinee, rest);
+    SExpression::Array(vec![
+        SExpression::String("if".to_string()),
+        cond,
+        value.clone(),
+        else_branch,
+    ])
+}
+
 /// Dispatch a `Trait` AST node to either an inline definition or a reference,
 /// returning the `TraitReference` shape that the core schema expects.
 pub(crate) fn lower_trait_decl(
@@ -140,7 +271,7 @@ pub(crate) fn lower_trait_reference(
             let schema_field = if is_plain_wiring {
                 SchemaConfigField {
                     field_type: "unknown".to_string(),
-                    default: cf.default.clone(),
+                    default: cf.default.as_ref().map(desugar_expr_match),
                     label: None,
                     description: None,
                     synonyms: None,
@@ -161,7 +292,7 @@ pub(crate) fn lower_trait_reference(
                     lower_type_expr(&cf.type_expr, aliases, entity_names);
                 SchemaConfigField {
                     field_type: type_expr_to_config_string(&cf.type_expr),
-                    default: cf.default.clone(),
+                    default: cf.default.as_ref().map(desugar_expr_match),
                     label: cf.label.clone(),
                     description: cf.description.clone(),
                     synonyms: cf.synonyms.clone(),
@@ -254,37 +385,45 @@ pub(crate) fn lower_trait(
             if event_seen.insert(tr.event.clone()) {
                 event_keys.push(tr.event.clone());
             }
-            // Index into `transitions` this push lands at — used both as the
-            // TransitionDefinition's own array index (matching L2's
-            // `stateMachine.transitions[k]` path) and to key the source-map
-            // inserts below.
-            let k = transitions.len();
-            for (suffix, sp) in &tr.guard_spans {
-                source_map.insert(
-                    format!("{base}.stateMachine.transitions[{k}].guard{suffix}"),
-                    *sp,
-                );
-            }
-            for (e_idx, spans) in tr.effect_spans.iter().enumerate() {
-                for (suffix, sp) in spans {
+            // Term-match sugar (Phase 2) expands to one ordinary Transition
+            // per arm, in authoring order, BEFORE anything below runs — see
+            // `expand_term_match`. A no-op (`vec![tr.clone()]`) for every
+            // transition that doesn't use `match`.
+            for tr in expand_term_match(tr) {
+                // Index into `transitions` this push lands at — used both as the
+                // TransitionDefinition's own array index (matching L2's
+                // `stateMachine.transitions[k]` path) and to key the source-map
+                // inserts below.
+                let k = transitions.len();
+                for (suffix, sp) in &tr.guard_spans {
                     source_map.insert(
-                        format!("{base}.stateMachine.transitions[{k}].effects[{e_idx}]{suffix}"),
+                        format!("{base}.stateMachine.transitions[{k}].guard{suffix}"),
                         *sp,
                     );
                 }
+                for (e_idx, spans) in tr.effect_spans.iter().enumerate() {
+                    for (suffix, sp) in spans {
+                        source_map.insert(
+                            format!(
+                                "{base}.stateMachine.transitions[{k}].effects[{e_idx}]{suffix}"
+                            ),
+                            *sp,
+                        );
+                    }
+                }
+                transitions.push(TransitionDefinition {
+                    from: StringOrArray::Single(state.name.clone()),
+                    to: tr.target.clone(),
+                    event: tr.event.clone(),
+                    event_id: None,
+                    guard: tr.guard.as_ref().map(desugar_expr_match),
+                    effects: if tr.effects.is_empty() {
+                        None
+                    } else {
+                        Some(tr.effects.iter().map(desugar_expr_match).collect())
+                    },
+                });
             }
-            transitions.push(TransitionDefinition {
-                from: StringOrArray::Single(state.name.clone()),
-                to: tr.target.clone(),
-                event: tr.event.clone(),
-                event_id: None,
-                guard: tr.guard.clone(),
-                effects: if tr.effects.is_empty() {
-                    None
-                } else {
-                    Some(tr.effects.clone())
-                },
-            });
         }
 
         // Time-bound: auto-generate TIMEOUT transition that targets whatever
@@ -364,18 +503,24 @@ pub(crate) fn lower_trait(
                     // a shapeless `object` (Gate B finding).
                     let array_elem = match &f.type_expr {
                         crate::ast::TypeExpr::Array(inner) => {
-                            emit_listen::struct_payload_properties(inner, aliases, &trait_type_params)
+                            emit_listen::struct_payload_properties(
+                                inner,
+                                aliases,
+                                &trait_type_params,
+                            )
                         }
                         _ => None,
                     };
-                    let (field_type, properties) = if let Some(s) = sentinel {
-                        (s, None)
+                    let (field_type, properties, type_when) = if let Some(s) = sentinel {
+                        (s, None, None)
                     } else if let Some(elem) = array_elem {
-                        ("[object]".to_string(), Some(elem))
-                    } else if let Some(nested) =
-                        emit_listen::struct_payload_properties(&f.type_expr, aliases, &trait_type_params)
-                    {
-                        ("object".to_string(), Some(nested))
+                        ("[object]".to_string(), Some(elem), None)
+                    } else if let Some(nested) = emit_listen::struct_payload_properties(
+                        &f.type_expr,
+                        aliases,
+                        &trait_type_params,
+                    ) {
+                        ("object".to_string(), Some(nested), None)
                     } else if let Some(entity_fields) =
                         emit_listen::named_entity_fields(&f.type_expr, entities)
                     {
@@ -386,9 +531,11 @@ pub(crate) fn lower_trait(
                         // they disagreed (`object` + properties vs a raw entity
                         // name), so one event carried two shapes depending on
                         // which block declared it.
-                        ("object".to_string(), Some(entity_fields))
+                        ("object".to_string(), Some(entity_fields), None)
                     } else {
-                        (type_expr_to_string(&f.type_expr), None)
+                        let (field_type, type_when) =
+                            emit_listen::lower_match_field_type(&f.type_expr);
+                        (field_type, None, type_when)
                     };
                     PayloadField {
                         name: f.name.clone(),
@@ -396,6 +543,7 @@ pub(crate) fn lower_trait(
                         required: if f.required { Some(true) } else { None },
                         description: None,
                         properties,
+                        type_when,
                     }
                 })
                 .collect()
@@ -494,14 +642,12 @@ pub(crate) fn lower_trait(
                                 entities,
                                 &alias_param,
                             )?;
-                            if let Some(detail) =
-                                emit_listen::payload_fields_mismatch_norm(
-                                    &fields,
-                                    &alias_fields,
-                                    entities,
-                                    aliases,
-                                )
-                            {
+                            if let Some(detail) = emit_listen::payload_fields_mismatch_norm(
+                                &fields,
+                                &alias_fields,
+                                entities,
+                                aliases,
+                            ) {
                                 return Err(LowerError::PayloadAliasMismatch {
                                     event: k.clone(),
                                     detail,
@@ -660,7 +806,7 @@ pub(crate) fn lower_trait(
                 cf.name.clone(),
                 SchemaConfigField {
                     field_type,
-                    default: cf.default.clone(),
+                    default: cf.default.as_ref().map(desugar_expr_match),
                     label: cf.label.clone(),
                     description: cf.description.clone(),
                     synonyms: cf.synonyms.clone(),
@@ -675,6 +821,25 @@ pub(crate) fn lower_trait(
         }
         Some(map)
     };
+
+    // Type-level `match` (§25) exhaustiveness/correctness — unconditional,
+    // unlike the entity-binding checks below: a match knob needs no
+    // linkedEntity.
+    check_match_types(t, aliases)?;
+
+    // Term-level `match` (Phase 2) exhaustiveness/correctness — also
+    // unconditional here: `@payload.<f>` scrutinees need no linkedEntity,
+    // and an `@entity.<f>` scrutinee on a trait with none is itself the
+    // MatchScrutineeUndeclared case, not a reason to skip the check.
+    check_term_match_types(t, entities, aliases)?;
+
+    // Expression-level `match` (Phase 3b) exhaustiveness/correctness —
+    // walks every guard/effect/config-default this trait owns hunting for
+    // the sugar (`is_expr_match_array`) and validates each occurrence found;
+    // also unconditional (a `@payload.<f>`/`@config.<k>` scrutinee needs no
+    // linkedEntity, and an unresolvable `@entity.<f>` scrutinee just widens
+    // to the open-vocabulary `_`-required case rather than erroring here).
+    check_expr_match_types(t, entities, aliases)?;
 
     // Explicit-binding rule (L1): every @entity.<field> read must be backed
     // by an explicit (set @entity.<field> ...) somewhere in the trait. The L2
@@ -765,12 +930,18 @@ pub(crate) fn infer_entity_contract(
     let mut set_fields: HashSet<String> = HashSet::new();
     for state in &t.states {
         for tr in &state.transitions {
-            let event = tr.event.as_str();
-            if let Some(guard) = &tr.guard {
-                guard.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, event);
-            }
-            for effect in &tr.effects {
-                effect.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, event);
+            for tr in expand_term_match(tr) {
+                let event = tr.event.as_str();
+                if let Some(guard) = &tr.guard {
+                    guard.collect_entity_field_refs(&mut referenced_fields, &mut set_fields, event);
+                }
+                for effect in &tr.effects {
+                    effect.collect_entity_field_refs(
+                        &mut referenced_fields,
+                        &mut set_fields,
+                        event,
+                    );
+                }
             }
         }
     }

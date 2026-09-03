@@ -10,9 +10,9 @@ use std::collections::HashMap;
 
 use crate::ast::{
     AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst,
-    ExpectsDecl, ExpectsKind, InlineTheme, Listen, Orbital, Page, Persistence, Program, State,
-    ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait, TraitRefData, TraitScope, Transition,
-    TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
+    ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, Persistence, Program, State,
+    TermMatch, ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait, TraitRefData, TraitScope,
+    Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
 };
 
 /// Format a `Program` AST into canonical `.lolo` source text.
@@ -520,6 +520,33 @@ impl Formatter {
             }
             TypeExpr::SExpr => {
                 self.output.push_str("SExpr");
+            }
+            TypeExpr::Match { knob, arms } => {
+                self.output.push_str(&format!("match @config.{knob} {{"));
+                self.write_newline();
+                self.indent();
+                let rendered: Vec<String> = arms
+                    .iter()
+                    .map(|a| render_match_pattern(&a.pattern))
+                    .collect();
+                let width = rendered
+                    .iter()
+                    .map(|s| s.chars().count())
+                    .max()
+                    .unwrap_or(0);
+                for (arm, pat) in arms.iter().zip(rendered.iter()) {
+                    self.write_indent();
+                    self.output.push_str(pat);
+                    for _ in pat.chars().count()..width {
+                        self.output.push(' ');
+                    }
+                    self.output.push_str(" -> ");
+                    self.fmt_type_expr(&arm.ty);
+                    self.write_newline();
+                }
+                self.dedent();
+                self.write_indent();
+                self.output.push('}');
             }
         }
     }
@@ -1163,6 +1190,11 @@ impl Formatter {
         self.output.push_str(&tr.event);
         self.output.push_str(" -> ");
         self.output.push_str(&tr.target);
+        if let Some(tm) = &tr.term_match {
+            self.output.push(' ');
+            self.fmt_term_match(tm);
+            return;
+        }
         if let Some(guard) = &tr.guard {
             self.output.push_str(" when ");
             self.fmt_sexpr(guard);
@@ -1179,6 +1211,38 @@ impl Formatter {
             }
             self.dedent();
         }
+    }
+
+    /// `match @entity.<f> { … }` / `match @payload.<f> { … }` transition
+    /// sugar (Phase 2). `{` opens on the `match` line — materializer-safe,
+    /// mirroring `fmt_type_expr`'s `TypeExpr::Match` printing.
+    fn fmt_term_match(&mut self, tm: &TermMatch) {
+        self.output.push_str("match ");
+        self.output.push_str(&tm.scrutinee.sigil());
+        self.output.push_str(" {");
+        self.write_newline();
+        self.indent();
+        for arm in &tm.arms {
+            self.write_indent();
+            self.output.push_str(&render_match_pattern(&arm.pattern));
+            self.output.push_str(" ->");
+            if !arm.effects.is_empty() {
+                self.write_newline();
+                self.indent();
+                for (i, eff) in arm.effects.iter().enumerate() {
+                    self.write_indent();
+                    self.fmt_sexpr(eff);
+                    if i < arm.effects.len() - 1 {
+                        self.write_newline();
+                    }
+                }
+                self.dedent();
+            }
+            self.write_newline();
+        }
+        self.dedent();
+        self.write_indent();
+        self.output.push('}');
     }
 
     fn fmt_emit(&mut self, emit: &Emit) {
@@ -1980,8 +2044,8 @@ impl Formatter {
         // Lambda: parameters print bare, the body sees them as bound. Handles
         // both the grouped `["fn", ["a", "b"], body]` and flat
         // `["fn", "a", "b", body]` shapes.
-        let is_lambda =
-            matches!(&arr[0], SExpression::String(s) if s == "fn" || s == "lambda") && arr.len() >= 3;
+        let is_lambda = matches!(&arr[0], SExpression::String(s) if s == "fn" || s == "lambda")
+            && arr.len() >= 3;
         if is_lambda {
             let (params, body) = arr.split_at(arr.len() - 1);
             let names: Vec<String> = match &params[1] {
@@ -2138,6 +2202,38 @@ impl Formatter {
 // ------------------------------------------------------------------
 // Helpers
 // ------------------------------------------------------------------
+
+/// Render one `MatchPattern`: `Str` quoted (same escaping as
+/// `write_quoted_string`), `Word`/`Bool`/`Int` bare, `Wildcard` as `_`.
+/// Shared by `fmt_type_expr`'s `TypeExpr::Match` branch (§25) and
+/// `fmt_term_match`'s transition-position `match` (Phase 2) — same arm
+/// vocabulary, two syntax positions. A free function (not a formatter
+/// method) so `fmt_type_expr` can measure the type-level arm column width
+/// before any of it is written.
+fn render_match_pattern(pattern: &MatchPattern) -> String {
+    match pattern {
+        MatchPattern::Str(s) => {
+            let mut out = String::with_capacity(s.len() + 2);
+            out.push('"');
+            for c in s.chars() {
+                match c {
+                    '\\' => out.push_str("\\\\"),
+                    '"' => out.push_str("\\\""),
+                    '\n' => out.push_str("\\n"),
+                    '\t' => out.push_str("\\t"),
+                    '\r' => out.push_str("\\r"),
+                    c => out.push(c),
+                }
+            }
+            out.push('"');
+            out
+        }
+        MatchPattern::Word(w) => w.clone(),
+        MatchPattern::Bool(b) => b.to_string(),
+        MatchPattern::Int(n) => n.to_string(),
+        MatchPattern::Wildcard => "_".to_string(),
+    }
+}
 
 /// True if `s` is a sigil that can be printed unquoted: an `@`-prefixed clean
 /// dotted path (`@config.foo.bar`, `@now`, `@user.id`). Sigils carrying anything

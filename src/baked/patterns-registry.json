@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-02T02:13:40.776Z",
+  "exportedAt": "2026-09-02T20:03:03.703Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -261,10 +261,6 @@
               "placement": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "row",
-                  "bulk"
                 ]
               },
               "icon": {
@@ -276,13 +272,6 @@
               "variant": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "default",
-                  "primary",
-                  "secondary",
-                  "ghost",
-                  "danger"
                 ]
               },
               "onClick": {
@@ -659,12 +648,6 @@
               "placement": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "row",
-                  "bulk",
-                  "card",
-                  "footer"
                 ]
               },
               "variant": {
@@ -1174,22 +1157,11 @@
               "placement": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "card",
-                  "footer",
-                  "row"
                 ]
               },
               "variant": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "primary",
-                  "secondary",
-                  "ghost",
-                  "danger"
                 ]
               }
             },
@@ -2114,11 +2086,7 @@
           "types": [
             "string"
           ],
-          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'.",
-          "enumValues": [
-            "create",
-            "edit"
-          ]
+          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'."
         },
         "fields": {
           "types": [
@@ -3041,11 +3009,7 @@
           "types": [
             "string"
           ],
-          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'.",
-          "enumValues": [
-            "create",
-            "edit"
-          ]
+          "description": "Form mode — 'create' for new records, 'edit' for updating existing. Accepts `string` so schema-driven callers (whose `config.mode` is typed as `string` per the trait's declared config block) compile cleanly. The runtime treats anything other than 'edit' as 'create'."
         },
         "fields": {
           "types": [
@@ -5599,12 +5563,6 @@
                   "mode": {
                     "types": [
                       "string"
-                    ],
-                    "enumValues": [
-                      "search_or_create",
-                      "create_multiple",
-                      "select_one",
-                      "update"
                     ]
                   },
                   "parentField": {
@@ -6458,13 +6416,6 @@
             "string"
           ],
           "description": "Width (CSS value or preset size)",
-          "enumValues": [
-            "sm",
-            "md",
-            "lg",
-            "xl",
-            "full"
-          ],
           "default": "md"
         },
         "showCloseButton": {
@@ -8086,15 +8037,7 @@
           "types": [
             "string"
           ],
-          "description": "Semantic palette token or an arbitrary Tailwind color class.",
-          "enumValues": [
-            "primary",
-            "secondary",
-            "success",
-            "warning",
-            "error",
-            "muted"
-          ]
+          "description": "Semantic palette token or an arbitrary Tailwind color class."
         },
         "animation": {
           "types": [
@@ -8435,13 +8378,20 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name for trait dispatch",
+          "description": "Declarative event name for trait dispatch.",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
               "name": "value",
               "type": "string",
-              "required": true
+              "required": true,
+              "typeWhen": [
+                {
+                  "knob": "inputType",
+                  "equals": "number",
+                  "type": "number"
+                }
+              ]
             }
           ]
         },
@@ -8730,8 +8680,26 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name for trait dispatch",
-          "kind": "event"
+          "description": "Declarative event name for trait dispatch — emits `{ value }` on selection commit (same gestures as `onChange`).",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true,
+              "schema": {
+                "types": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          ]
         },
         "error": {
           "types": [
@@ -11051,7 +11019,8 @@
           ],
           "description": "Payload to include with the dispatched action event.",
           "payloadFor": "action",
-          "freeform": true
+          "freeform": true,
+          "eventPayloadBrand": true
         },
         "actions": {
           "types": [
@@ -11150,14 +11119,6 @@
             "string"
           ],
           "description": "Button position",
-          "enumValues": [
-            "bottom-right",
-            "bottom-left",
-            "bottom-center",
-            "top-right",
-            "top-left",
-            "top-center"
-          ],
           "default": "bottom-right"
         },
         "className": {
@@ -11354,13 +11315,20 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name for trait dispatch",
+          "description": "Declarative event name for trait dispatch.",
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
               "name": "value",
               "type": "string",
-              "required": true
+              "required": true,
+              "typeWhen": [
+                {
+                  "knob": "inputType",
+                  "equals": "number",
+                  "type": "number"
+                }
+              ]
             }
           ]
         },
@@ -25622,14 +25590,6 @@
             "string"
           ],
           "description": "Semantic palette token or a raw CSS color value for the stroke.",
-          "enumValues": [
-            "primary",
-            "secondary",
-            "success",
-            "warning",
-            "error",
-            "muted"
-          ],
           "default": "primary"
         },
         "strokeWidth": {
@@ -26917,8 +26877,7 @@
               },
               "targetQuestionId": {
                 "types": [
-                  "string",
-                  "unknown"
+                  "string"
                 ]
               }
             },
@@ -26984,8 +26943,7 @@
                     },
                     "targetQuestionId": {
                       "types": [
-                        "string",
-                        "unknown"
+                        "string"
                       ]
                     }
                   },
@@ -27055,8 +27013,7 @@
                     },
                     "targetQuestionId": {
                       "types": [
-                        "string",
-                        "unknown"
+                        "string"
                       ]
                     }
                   },
@@ -27158,7 +27115,8 @@
               "types": [
                 "object",
                 "array"
-              ]
+              ],
+              "cyclic": true
             }
           }
         },
@@ -28161,12 +28119,6 @@
             "string"
           ],
           "description": "Size variant",
-          "enumValues": [
-            "sm",
-            "md",
-            "lg",
-            "xl"
-          ],
           "default": "md"
         },
         "shape": {
@@ -28174,11 +28126,6 @@
             "string"
           ],
           "description": "Shape variant",
-          "enumValues": [
-            "circle",
-            "rounded",
-            "square"
-          ],
           "default": "circle"
         },
         "variant": {
@@ -28186,11 +28133,6 @@
             "string"
           ],
           "description": "Visual variant",
-          "enumValues": [
-            "primary",
-            "secondary",
-            "ghost"
-          ],
           "default": "secondary"
         },
         "onPress": {
@@ -30461,15 +30403,7 @@
           "types": [
             "string"
           ],
-          "description": "Semantic palette token or a raw CSS color value. Defaults to 'primary'.",
-          "enumValues": [
-            "primary",
-            "secondary",
-            "success",
-            "warning",
-            "error",
-            "muted"
-          ]
+          "description": "Semantic palette token or a raw CSS color value. Defaults to 'primary'."
         },
         "className": {
           "types": [
@@ -31263,12 +31197,7 @@
           "types": [
             "string"
           ],
-          "description": "Position of the HUD",
-          "enumValues": [
-            "top",
-            "bottom",
-            "corners"
-          ]
+          "description": "Position of the HUD"
         },
         "stats": {
           "types": [
@@ -31565,11 +31494,6 @@
               "variant": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "primary",
-                  "secondary",
-                  "ghost"
                 ]
               },
               "disabled": {
@@ -31623,11 +31547,6 @@
               "variant": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "primary",
-                  "secondary",
-                  "ghost"
                 ]
               },
               "disabled": {
@@ -31684,11 +31603,6 @@
                   "variant": {
                     "types": [
                       "string"
-                    ],
-                    "enumValues": [
-                      "primary",
-                      "secondary",
-                      "ghost"
                     ]
                   },
                   "disabled": {
@@ -32058,12 +31972,6 @@
             "string"
           ],
           "description": "Display format",
-          "enumValues": [
-            "number",
-            "hearts",
-            "bar",
-            "text"
-          ],
           "default": "number"
         },
         "icon": {
@@ -32078,11 +31986,6 @@
             "string"
           ],
           "description": "Size variant",
-          "enumValues": [
-            "sm",
-            "md",
-            "lg"
-          ],
           "default": "md"
         },
         "variant": {
@@ -32090,13 +31993,6 @@
             "string"
           ],
           "description": "Visual variant",
-          "enumValues": [
-            "default",
-            "primary",
-            "success",
-            "warning",
-            "danger"
-          ],
           "default": "default"
         },
         "className": {
@@ -36846,11 +36742,6 @@
               "format": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "currency",
-                  "percent",
-                  "number"
                 ]
               }
             },
@@ -38142,11 +38033,6 @@
               "variant": {
                 "types": [
                   "string"
-                ],
-                "enumValues": [
-                  "primary",
-                  "secondary",
-                  "ghost"
                 ]
               }
             },

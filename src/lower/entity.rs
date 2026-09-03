@@ -114,6 +114,11 @@ pub(crate) fn lower_type_expr(
         // an entity context they fall back — SExpr to an opaque object, the
         // entity/event name refs to a plain string value.
         TypeExpr::SExpr => (FieldType::Object, None, None, None, None),
+        // Payload-position-only (gated by `type_expr_config_only_type` in
+        // parser/mod.rs); an entity field reaching here is already an error
+        // upstream — lower defensively to an opaque object, same treatment
+        // as the other config/payload-only brands above.
+        TypeExpr::Match { .. } => (FieldType::Object, None, None, None, None),
         TypeExpr::EntityRef => (FieldType::String, None, None, None, None),
         // Phase B: an `event`-typed struct-alias field (e.g. `ItemAction.event`)
         // keeps its type tag through lowering instead of erasing to `string` —
@@ -138,13 +143,7 @@ pub(crate) fn lower_type_expr(
                         // `properties`, which `resolve` maps to Json rather than
                         // expanding.
                         if !RESOLVING.with(|r| r.borrow_mut().insert(name.clone())) {
-                            return (
-                                FieldType::Union,
-                                Some(vec![name.clone()]),
-                                None,
-                                None,
-                                None,
-                            );
+                            return (FieldType::Union, Some(vec![name.clone()]), None, None, None);
                         }
                         let out = lower_type_expr(inner, aliases, entity_names);
                         RESOLVING.with(|r| {
@@ -337,13 +336,7 @@ pub(crate) fn lower_type_expr(
             // variant a value belongs to. Erased, every variant looked
             // untagged and a value whose tag matched nothing was silently
             // accepted as the first variant.
-            (
-                FieldType::String,
-                Some(vec![lit.clone()]),
-                None,
-                None,
-                None,
-            )
+            (FieldType::String, Some(vec![lit.clone()]), None, None, None)
         }
         TypeExpr::Optional(inner) => lower_type_expr(inner, aliases, entity_names),
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => {
@@ -483,7 +476,11 @@ mod tests {
         aliases.insert(
             "MenuItem".to_string(),
             TypeAliasResolved::Type(TypeExpr::Object(vec![
-                ("label".to_string(), TypeExpr::Primitive("string".to_string()), true),
+                (
+                    "label".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
                 (
                     "subMenu".to_string(),
                     TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
@@ -532,7 +529,10 @@ mod tests {
             &HashSet::new(),
         );
         assert!(matches!(ft2, FieldType::Object));
-        assert!(props2.is_some(), "guard release lets a second use re-expand");
+        assert!(
+            props2.is_some(),
+            "guard release lets a second use re-expand"
+        );
     }
 
     /// DrawItem regression (feature test 4): the pre-existing TAGGED-UNION
@@ -583,7 +583,11 @@ mod tests {
             &aliases,
             &HashSet::new(),
         );
-        assert!(matches!(ft, FieldType::Union), "root DrawItem is a tagged union, got {:?}", ft);
+        assert!(
+            matches!(ft, FieldType::Union),
+            "root DrawItem is a tagged union, got {:?}",
+            ft
+        );
         let names = values.expect("union carries variant names");
         assert_eq!(
             names,
@@ -602,7 +606,10 @@ mod tests {
             "the recursion point re-enters DrawItem as a by-name back-reference, got {:?}",
             item.field_type
         );
-        assert_eq!(item.values.as_deref(), Some(["DrawItem".to_string()].as_slice()));
+        assert_eq!(
+            item.values.as_deref(),
+            Some(["DrawItem".to_string()].as_slice())
+        );
         assert!(
             item.properties.is_none(),
             "a back-reference carries NO properties — unchanged from before this feature"

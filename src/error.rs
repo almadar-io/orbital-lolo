@@ -768,7 +768,153 @@ pub enum LowerError {
          reinterpreted as type-parameter call-site arguments (`:: V string R Booking`), each \
          name needs a paired value"
     )]
-    OddTypeArgCount { trait_name: String, args: Vec<String> },
+    OddTypeArgCount {
+        trait_name: String,
+        args: Vec<String>,
+    },
+
+    /// Type-level `match` (§25) — `check_match_types`'s five checks. A
+    /// match arm's declared type is anything other than `Primitive` or
+    /// `[Primitive]` (v1 has no post-selection expansion path for objects/
+    /// unions/aliases/`Map`/nested `match`/sigils/`$param`).
+    #[error(
+        "ELOLO_MATCH_ARM_TYPE_UNSUPPORTED: trait {trait_name:?}'s `match @config.{knob}` has an \
+         arm typed {ty:?} — v1 match arms are Primitive or [Primitive] only"
+    )]
+    MatchArmTypeUnsupported {
+        trait_name: String,
+        knob: String,
+        ty: String,
+    },
+
+    /// The knob a `match` scrutinizes isn't declared in the trait's own
+    /// `config { }` block.
+    #[error(
+        "ELOLO_MATCH_KNOB_UNDECLARED: trait {trait_name:?}'s `match @config.{knob}` names a \
+         knob not declared in this trait's own `config {{ }}` block"
+    )]
+    MatchKnobUndeclared { trait_name: String, knob: String },
+
+    /// Two arms of the same `match` spell the same literal (`"number"` and
+    /// bare `number` are the SAME spelling, per `MatchPattern::spelling`).
+    /// `scrutinee` is the full spelling (`@config.op` for type-level match,
+    /// `@entity.op`/`@payload.op` for Phase 2's term-level match) — this
+    /// variant is shared by both `check_match_types` (type-level, §25) and
+    /// `check_term_match_types` (term-level, Phase 2).
+    #[error(
+        "ELOLO_MATCH_ARM_DUPLICATE: trait {trait_name:?}'s `match {scrutinee}` declares the \
+         arm {spelling:?} more than once"
+    )]
+    MatchArmDuplicate {
+        trait_name: String,
+        scrutinee: String,
+        spelling: String,
+    },
+
+    /// An arm can never fire: either its spelling falls outside the
+    /// scrutinee's own closed vocabulary (a boolean's `{true,false}`, or a
+    /// declared enum/literal-union), or it follows the `_` wildcard, which
+    /// already matches everything. Shared by type-level and term-level
+    /// `match` — see `MatchArmDuplicate`.
+    #[error("ELOLO_MATCH_ARM_UNREACHABLE: trait {trait_name:?}'s `match {scrutinee}`: {detail}")]
+    MatchArmUnreachable {
+        trait_name: String,
+        scrutinee: String,
+        detail: String,
+    },
+
+    /// A `match` over an OPEN vocabulary has no `_` arm. Unconditional in
+    /// type-level v1 (the wildcard IS the field's base type, not an
+    /// optional fallback); in term-level Phase 2 this fires only when the
+    /// scrutinee's declared type has no closed vocabulary to exhaust —
+    /// a closed vocabulary with no `_` gets `MatchInexhaustive` instead.
+    /// Shared by type-level and term-level `match` — see `MatchArmDuplicate`.
+    #[error(
+        "ELOLO_MATCH_WILDCARD_REQUIRED: trait {trait_name:?}'s `match {scrutinee}` is missing \
+         the required `_` arm (must be present and last)"
+    )]
+    MatchWildcardRequired {
+        trait_name: String,
+        scrutinee: String,
+    },
+
+    /// Term-level `match` (Phase 2) only: the scrutinee's declared type has
+    /// a closed vocabulary (a boolean, or a declared enum), the arms don't
+    /// cover every member, and there's no `_` arm to cover the rest. Unlike
+    /// type-level v1, `_` is optional when the arms are already exhaustive
+    /// — this is that payoff's failure case, naming what's still missing.
+    #[error(
+        "ELOLO_MATCH_INEXHAUSTIVE: trait {trait_name:?}'s `match {scrutinee}` doesn't cover \
+         every declared value and has no `_` arm — missing: {missing}"
+    )]
+    MatchInexhaustive {
+        trait_name: String,
+        scrutinee: String,
+        missing: String,
+    },
+
+    /// Term-level `match` (Phase 2) only: the scrutinee's field isn't
+    /// resolvable at L1 in this file — not one of `@entity.<f>` (the
+    /// trait's own `linkedEntity` declares `f`) or `@payload.<f>` (the
+    /// firing event's declared `listens`/`emits` payload declares `f`).
+    /// Unlike Phase 1's config-knob checks, term-match has no L2 fallback
+    /// (zero orbital-compiler involvement), so an unresolved scrutinee is a
+    /// hard L1 error rather than a deferral.
+    #[error(
+        "ELOLO_MATCH_SCRUTINEE_UNDECLARED: trait {trait_name:?}'s `match {scrutinee}`: {detail}"
+    )]
+    MatchScrutineeUndeclared {
+        trait_name: String,
+        scrutinee: String,
+        detail: String,
+    },
+
+    /// Phase 3a (dotted destructuring scrutinee) only: the base field of a
+    /// `match @entity.<f>.<m>` / `@payload.<f>.<m>` scrutinee resolves, but
+    /// its declared type is not a tagged struct union (a `A | B` union of
+    /// named struct aliases), so there are no variants to dispatch over.
+    #[error(
+        "ELOLO_MATCH_SCRUTINEE_NOT_UNION: trait {trait_name:?}'s `match {scrutinee}`: {detail}"
+    )]
+    MatchScrutineeNotUnion {
+        trait_name: String,
+        scrutinee: String,
+        detail: String,
+    },
+
+    /// Phase 3a only: the dotted scrutinee's base field IS a tagged struct
+    /// union, but the named member is not its discriminating member — some
+    /// variant lacks it, it isn't a single-valued closed (string-literal)
+    /// member on every variant, or two variants share the same literal so it
+    /// can't select exactly one variant.
+    #[error(
+        "ELOLO_MATCH_DISCRIMINANT_INVALID: trait {trait_name:?}'s `match {scrutinee}`: {detail}"
+    )]
+    MatchDiscriminantInvalid {
+        trait_name: String,
+        scrutinee: String,
+        detail: String,
+    },
+
+    /// Phase 3c (flow refinement) only: inside a term-match arm the
+    /// scrutinee's owner value is refined to the arm's selected variant, and
+    /// an effect reads a member that variant doesn't declare. The same read
+    /// in the RIGHT arm (or outside the match, where no refinement applies)
+    /// is not this error.
+    #[error(
+        "ELOLO_MATCH_REFINED_MEMBER_UNKNOWN: trait {trait_name:?}: inside the {arm:?} arm of \
+         `match {scrutinee}`, `{owner}.{member}` resolves against variant {variant:?}, which \
+         has no member {member:?} (variant fields: [{fields}])"
+    )]
+    MatchRefinedMemberUnknown {
+        trait_name: String,
+        scrutinee: String,
+        arm: String,
+        owner: String,
+        member: String,
+        variant: String,
+        fields: String,
+    },
 
     /// Error from the type-system resolver. See `TypeError` for variants.
     /// Carries a span so the CLI can surface `file:line:col: …`.
@@ -836,6 +982,20 @@ pub enum TypeError {
         actual: TypeKindName,
         span: Span,
     },
+
+    #[error(
+        "ELOLO_T_GENERIC_TYPE: {position} declares the generic type `{name}` — `json`, bare \
+         `object`, and `any` are not allowed in a declaration position. Replace it: renderable \
+         content → `node`; structured data → an inline `{{ k: T }}` shape, a named `type` alias, \
+         or `Map K V`; a single primitive of unknown kind → `scalar`; data whose shape is \
+         genuinely not yours to close (an audit snapshot, a third-party response body, an \
+         upstream event's payload at a generic wiring atom) → `opaque`"
+    )]
+    GenericTypeForbidden {
+        name: String,
+        position: String,
+        span: Span,
+    },
 }
 
 /// String label for the `TypeBody` kind — used only in error messages so we
@@ -878,7 +1038,8 @@ impl TypeError {
             | TypeError::AnnotationMismatch { span, .. }
             | TypeError::UnknownTypeParam { span, .. }
             | TypeError::WrongTypeArgCount { span, .. }
-            | TypeError::EventTypeWrongKind { span, .. } => *span,
+            | TypeError::EventTypeWrongKind { span, .. }
+            | TypeError::GenericTypeForbidden { span, .. } => *span,
         }
     }
 }

@@ -78,8 +78,8 @@ fn config_reference_is_typechecked_against_the_knob_it_names() {
         None => std::env::remove_var("ALMADAR_DEV"),
     }
 
-    let err = mismatched
-        .expect_err("a number-typed knob wired to a string-typed prop must be rejected");
+    let err =
+        mismatched.expect_err("a number-typed knob wired to a string-typed prop must be rejected");
     let msg = err.to_string();
     assert!(
         msg.contains("title"),

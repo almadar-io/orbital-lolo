@@ -297,7 +297,10 @@ fn config_ref_ids_stamp_entity_typed_knob() {
         .as_ref()
         .and_then(|c| c.get("targetEntity"))
         .expect("targetEntity config field");
-    assert_eq!(cf.field_type, "entity", "config field lowered to entity type");
+    assert_eq!(
+        cf.field_type, "entity",
+        "config field lowered to entity type"
+    );
     assert_eq!(
         cf.ref_id.as_ref(),
         Some(&account_id),
@@ -381,7 +384,11 @@ fn reference_form_declarations_mint_local_ids_and_page_refs_resolve() {
         }]
     });
     let mut schema: OrbitalSchema = serde_json::from_value(raw).expect("schema parses");
-    orbital_core::stamp::stamp_schema_identity(&mut schema, None, &std::collections::HashSet::new());
+    orbital_core::stamp::stamp_schema_identity(
+        &mut schema,
+        None,
+        &std::collections::HashSet::new(),
+    );
 
     let orbital = &schema.orbitals[0];
     // Both Reference-form declarations carry a local declaration id — the
@@ -395,9 +402,19 @@ fn reference_form_declarations_mint_local_ids_and_page_refs_resolve() {
 
     // The ledger backs both rows under the LOCAL names.
     let ledger = schema.ledger.as_ref().expect("ledger present");
-    let row_names: Vec<&str> = ledger.entries.values().map(|e| e.baked_name.as_str()).collect();
-    assert!(row_names.contains(&"DefaultRevenueChart"), "ledger rows: {row_names:?}");
-    assert!(row_names.contains(&"GraphItemGraph"), "ledger rows: {row_names:?}");
+    let row_names: Vec<&str> = ledger
+        .entries
+        .values()
+        .map(|e| e.baked_name.as_str())
+        .collect();
+    assert!(
+        row_names.contains(&"DefaultRevenueChart"),
+        "ledger rows: {row_names:?}"
+    );
+    assert!(
+        row_names.contains(&"GraphItemGraph"),
+        "ledger rows: {row_names:?}"
+    );
 
     // Page trait refs resolve their refId to the DECLARATION ids.
     let page_traits: &Vec<TraitReference> = match orbital.pages.as_ref().and_then(|p| p.first()) {
@@ -406,16 +423,32 @@ fn reference_form_declarations_mint_local_ids_and_page_refs_resolve() {
         other => panic!("expected a page with traits, got {other:?}"),
     };
     let page_ref_ids: Vec<Option<&str>> = page_traits.iter().map(|t| t.trait_ref_id()).collect();
-    assert_eq!(page_ref_ids[0], decl_ids[0], "page ref must resolve to the declaration id");
+    assert_eq!(
+        page_ref_ids[0], decl_ids[0],
+        "page ref must resolve to the declaration id"
+    );
     assert_eq!(page_ref_ids[1], decl_ids[1]);
 
     // Re-stamp with prior = byte-stable ids (reuse by (kind, bakedName)).
     let prior = schema.clone();
-    let mut restamped: OrbitalSchema = serde_json::from_value(serde_json::to_value(&schema).unwrap()).unwrap();
-    orbital_core::stamp::stamp_schema_identity(&mut restamped, Some(&prior), &std::collections::HashSet::new());
+    let mut restamped: OrbitalSchema =
+        serde_json::from_value(serde_json::to_value(&schema).unwrap()).unwrap();
+    orbital_core::stamp::stamp_schema_identity(
+        &mut restamped,
+        Some(&prior),
+        &std::collections::HashSet::new(),
+    );
     assert_eq!(
-        restamped.orbitals[0].traits.iter().map(|t| t.trait_decl_id().map(str::to_string)).collect::<Vec<_>>(),
-        schema.orbitals[0].traits.iter().map(|t| t.trait_decl_id().map(str::to_string)).collect::<Vec<_>>(),
+        restamped.orbitals[0]
+            .traits
+            .iter()
+            .map(|t| t.trait_decl_id().map(str::to_string))
+            .collect::<Vec<_>>(),
+        schema.orbitals[0]
+            .traits
+            .iter()
+            .map(|t| t.trait_decl_id().map(str::to_string))
+            .collect::<Vec<_>>(),
         "re-stamp with prior must reuse Reference-decl ids verbatim"
     );
 }

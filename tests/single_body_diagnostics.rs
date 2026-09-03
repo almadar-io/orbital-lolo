@@ -46,7 +46,10 @@ fn multi_body_let_is_too_many_args() {
     let err = parse_err("(let ((x 1)) (set @entity.total 1) (set @entity.total 2))");
     match &err {
         ParseError::TooManyArgs {
-            head, max, got, span,
+            head,
+            max,
+            got,
+            span,
         } => {
             assert_eq!(head, "let");
             assert_eq!(*max, 2);
@@ -67,7 +70,9 @@ fn multi_body_let_is_too_many_args() {
 
 #[test]
 fn four_arg_if_is_too_many_args() {
-    let err = parse_err("(if @entity.total (set @entity.total 1) (set @entity.total 2) (set @entity.total 3))");
+    let err = parse_err(
+        "(if @entity.total (set @entity.total 1) (set @entity.total 2) (set @entity.total 3))",
+    );
     match &err {
         ParseError::TooManyArgs { head, max, got, .. } => {
             assert_eq!(head, "if");
@@ -159,7 +164,5 @@ fn two_arg_if_must_still_parse() {
 #[test]
 fn cond_with_many_arms_parses() {
     // `cond` is untouched by this check — variable arity is legitimate.
-    parse_ok(
-        "(set @entity.total (cond (eq @entity.total 1) 1 (eq @entity.total 2) 2 3))",
-    );
+    parse_ok("(set @entity.total (cond (eq @entity.total 1) 1 (eq @entity.total 2) 2 3))");
 }

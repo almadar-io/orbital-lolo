@@ -34,15 +34,14 @@ orbital PersonOrbital {{
     )
 }
 
-
 /// The inline `TicketReply` definition, wherever it is declared.
-fn ticket_reply(schema: &orbital_core::schema::OrbitalSchema) -> &orbital_core::schema::EntityDefinition {
+fn ticket_reply(
+    schema: &orbital_core::schema::OrbitalSchema,
+) -> &orbital_core::schema::EntityDefinition {
     schema
         .orbitals
         .iter()
-        .flat_map(|orb| {
-            std::iter::once(&orb.entity).chain(orb.auxiliary_entities.iter().flatten())
-        })
+        .flat_map(|orb| std::iter::once(&orb.entity).chain(orb.auxiliary_entities.iter().flatten()))
         .find_map(|r| match r {
             EntityRef::Inline(def) if def.name == "TicketReply" => Some(def),
             _ => None,
@@ -80,7 +79,8 @@ fn a_waiver_without_a_reason_is_rejected() {
 
 #[test]
 fn an_empty_reason_is_rejected() {
-    let err = parse_and_lower_str(&entity_source(r#"    @read none """#)).expect_err("must not parse");
+    let err =
+        parse_and_lower_str(&entity_source(r#"    @read none """#)).expect_err("must not parse");
     assert!(
         format!("{err}").contains("ELOLO_ACCESS_WAIVER_NEEDS_REASON"),
         "expected the missing-reason error, got: {err}"

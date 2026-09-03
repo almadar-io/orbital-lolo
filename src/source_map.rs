@@ -140,7 +140,10 @@ mod tests {
     #[test]
     fn lookup_longest_prefix_fallback() {
         let mut map = LoloSourceMap::new();
-        map.insert("orbitals[0].traits[0].stateMachine.transitions[1]", Span::new(9, 3, 1));
+        map.insert(
+            "orbitals[0].traits[0].stateMachine.transitions[1]",
+            Span::new(9, 3, 1),
+        );
         // A deeper path than anything tracked falls back to the nearest
         // tracked ancestor.
         assert_eq!(
@@ -166,7 +169,10 @@ mod tests {
     #[test]
     fn lookup_detailed_reports_exactness() {
         let mut map = LoloSourceMap::new();
-        map.insert("orbitals[0].traits[0].stateMachine.transitions[1]", Span::new(9, 3, 1));
+        map.insert(
+            "orbitals[0].traits[0].stateMachine.transitions[1]",
+            Span::new(9, 3, 1),
+        );
         assert_eq!(
             map.lookup_detailed("orbitals[0].traits[0].stateMachine.transitions[1]"),
             Some((Span::new(9, 3, 1), true))

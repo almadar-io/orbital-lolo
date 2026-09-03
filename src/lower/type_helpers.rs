@@ -1,5 +1,16 @@
 use super::*;
 
+/// The `_` arm's type of a `match`, or `None` when malformed (no wildcard —
+/// `check_match_types` is the source of truth on well-formedness; these
+/// rendering helpers just need to never panic on input it hasn't run
+/// against yet). Shared by every `TypeExpr` rendering function below: a
+/// `Match`'s string/compat/config form all delegate to its `_` arm.
+fn match_wildcard_type(arms: &[MatchArm]) -> Option<&TypeExpr> {
+    arms.iter()
+        .find(|a| matches!(a.pattern, MatchPattern::Wildcard))
+        .map(|a| &a.ty)
+}
+
 /// Render a `TypeExpr` as the string form the resolve phase expects in
 /// `ConfigField.field_type` ("string", "[string]", "number", etc.).
 /// Mirrors the strings recognized by
@@ -36,6 +47,9 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::Secret => "secret".to_string(),
         TypeExpr::SExpr => "SExpr".to_string(),
+        TypeExpr::Match { arms, .. } => match_wildcard_type(arms)
+            .map(type_expr_to_config_string)
+            .unwrap_or_else(|| "string".to_string()),
     }
 }
 
@@ -110,6 +124,9 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
         TypeExpr::Secret => "secret".to_string(),
         // SExpr is a structured value at the bus-payload level.
         TypeExpr::SExpr => "object".to_string(),
+        TypeExpr::Match { arms, .. } => match_wildcard_type(arms)
+            .map(type_expr_to_compat_str)
+            .unwrap_or_else(|| "string".to_string()),
     }
 }
 
@@ -178,6 +195,9 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::Secret => "secret".to_string(),
         TypeExpr::SExpr => "SExpr".to_string(),
+        TypeExpr::Match { arms, .. } => match_wildcard_type(arms)
+            .map(type_expr_to_string)
+            .unwrap_or_else(|| "string".to_string()),
     }
 }
 

@@ -27,7 +27,10 @@ fn truncated_mid_paren_reports_opening_paren() {
         } => {
             assert_eq!(delimiter, '(');
             assert_eq!(closer, ')');
-            assert_eq!(open_span.line, 8, "must point at the `(` that opened `(set ...`");
+            assert_eq!(
+                open_span.line, 8,
+                "must point at the `(` that opened `(set ...`"
+            );
         }
         other => panic!("expected UnclosedDelimiter('(', ')'), got {other:?}"),
     }
@@ -50,7 +53,10 @@ fn missing_paren_mid_file_reports_opening_paren() {
             assert_eq!(delimiter, '(');
             assert_eq!(closer, ')');
             assert_eq!(found, "`}`");
-            assert_eq!(open_span.line, 8, "must point at the `(` that opened `(set ...`");
+            assert_eq!(
+                open_span.line, 8,
+                "must point at the `(` that opened `(set ...`"
+            );
         }
         other => panic!("expected UnclosedDelimiter('(', ')'), got {other:?}"),
     }
@@ -106,13 +112,7 @@ fn nested_unclosed_reports_innermost_opener() {
             // on the same line, so distinguish by column: the inner `(add`
             // opens strictly after the outer `(set`.
             assert_eq!(open_span.line, 8);
-            let outer_open_col = src
-                .lines()
-                .nth(7)
-                .unwrap()
-                .find("(set")
-                .unwrap() as u32
-                + 1;
+            let outer_open_col = src.lines().nth(7).unwrap().find("(set").unwrap() as u32 + 1;
             assert!(
                 open_span.col > outer_open_col,
                 "expected the INNER `(add` opener (col > {outer_open_col}), got col {}",

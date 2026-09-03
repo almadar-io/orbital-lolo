@@ -579,7 +579,11 @@ impl Parser {
             got: "end of theme block".to_string(),
             span,
         })?;
-        Ok(ThemeDecl::Inline(InlineTheme { name, tokens, variants }))
+        Ok(ThemeDecl::Inline(InlineTheme {
+            name,
+            tokens,
+            variants,
+        }))
     }
 
     /// `{ colors { … } radii { … } spacing { … } typography { … } shadows
@@ -605,20 +609,20 @@ impl Parser {
                         "spacing" => maps.spacing = entries,
                         "typography" => maps.typography = entries,
                         "shadows" => maps.shadows = entries,
-                        _ => {
-                            return Err(ParseError::UnexpectedToken {
-                                expected: "a token category: colors, radii, spacing, typography, or shadows"
+                        _ => return Err(ParseError::UnexpectedToken {
+                            expected:
+                                "a token category: colors, radii, spacing, typography, or shadows"
                                     .to_string(),
-                                got: cat,
-                                span: cat_span,
-                            })
-                        }
+                            got: cat,
+                            span: cat_span,
+                        }),
                     }
                 }
                 other => {
                     return Err(ParseError::UnexpectedToken {
-                        expected: "a token category (colors, radii, spacing, typography, shadows) or }"
-                            .to_string(),
+                        expected:
+                            "a token category (colors, radii, spacing, typography, shadows) or }"
+                                .to_string(),
                         got: format!("{:?}", other),
                         span: self.peek_span(),
                     })
@@ -887,6 +891,33 @@ pub(crate) fn duration_to_ms(n: u64, suf: &str) -> u64 {
     }
 }
 
+/// Reject `match` as an EFFECT — a top-level entry in a transition's/tick's/
+/// term-match-arm's effect list. Expression-match (Phase 3b) produces a
+/// VALUE, never an effect list (arms are single expressions, not
+/// `Vec<SExpression>`), so a bare `(match …)` there would need a second,
+/// ad-hoc "arm = effects" grammar living outside the state machine —
+/// control flow belongs in guards + transitions, not a value-producing
+/// construct. Called at every effect-parsing call site (`parse_transition`,
+/// `parse_term_match`, `parse_ticks`) right after each effect sexpr is
+/// parsed; a nested `(match …)` used AS A VALUE inside an ordinary effect
+/// (e.g. `(set @entity.x (match …))`) is unaffected — this only looks at
+/// the effect's own head.
+pub(crate) fn reject_match_effect_head(eff: &SExpression, span: Span) -> Result<(), ParseError> {
+    if matches!(eff, SExpression::Array(arr) if matches!(arr.first(), Some(SExpression::String(s)) if s == "match"))
+    {
+        return Err(ParseError::InvalidSExpr {
+            message: "ELOLO_MATCH_EXPR_EFFECT_HEAD: `match` can't be an effect — it produces a \
+                      VALUE, not a list of effects; control flow lives in the state machine \
+                      (guards + transitions, or transition-position `match`), not a \
+                      value-producing expression. Use it as a value inside an effect instead, \
+                      e.g. `(set @entity.x (match …))`"
+                .to_string(),
+            span,
+        });
+    }
+    Ok(())
+}
+
 pub(crate) fn is_primitive_type(name: &str) -> bool {
     matches!(
         name,
@@ -960,6 +991,10 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         TypeExpr::Pattern => Some("pattern"),
         TypeExpr::Secret => Some("secret"),
         TypeExpr::SExpr => Some("SExpr"),
+        // `match` is payload-position-only (emits/local-listens fields);
+        // entity fields and `expects` shapes reject it the same way they
+        // reject the other payload-only sigils above.
+        TypeExpr::Match { .. } => Some("match"),
         TypeExpr::Array(inner) => type_expr_config_only_type(inner),
         TypeExpr::Map(key, value) => {
             type_expr_config_only_type(key).or_else(|| type_expr_config_only_type(value))
@@ -974,6 +1009,59 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         | TypeExpr::StringLiteral(_)
         | TypeExpr::RelationMany(_)
         | TypeExpr::RelationManyNonEmpty(_) => None,
+    }
+}
+
+/// True when `t` is (or nests, at any depth) a `TypeExpr::Match`. Does NOT
+/// descend into a `Match`'s own arm types — an arm nesting another `match`
+/// is a distinct, later check (`ELOLO_MATCH_ARM_TYPE_UNSUPPORTED`, v1 caps
+/// arms to `Primitive`/`[Primitive]`). Used to gate match OUT of every
+/// position except an event-payload field's own whole type: config fields,
+/// type-alias bodies (including `Event` alias payloads — the position a
+/// match there would otherwise silently drop its conditional through, since
+/// the alias-resolution lowering path never reads `type_when`), and nested
+/// inside another type.
+pub(crate) fn type_expr_contains_match(t: &TypeExpr) -> bool {
+    match t {
+        TypeExpr::Match { .. } => true,
+        TypeExpr::Array(inner) | TypeExpr::Optional(inner) => type_expr_contains_match(inner),
+        TypeExpr::Map(key, value) => {
+            type_expr_contains_match(key) || type_expr_contains_match(value)
+        }
+        TypeExpr::Union(parts) => parts.iter().any(type_expr_contains_match),
+        TypeExpr::Object(fields) => fields.iter().any(|(_, ty, _)| type_expr_contains_match(ty)),
+        _ => false,
+    }
+}
+
+/// True when any `TypeExpr` reachable from a type-alias body contains
+/// `match` — the single gate point for `parse_type_alias` (covers `Entity`/
+/// `Event`/`Trait`/`Page`/`Orbital`/struct/alias/composition bodies alike,
+/// so a `type X = Event { value: match ... }` is rejected at the SOURCE of
+/// the alias rather than trusted to every consumer).
+pub(crate) fn type_body_contains_match(b: &TypeBody) -> bool {
+    match b {
+        TypeBody::Enum(_) => false,
+        TypeBody::Struct(fields) => fields.iter().any(|(_, ty, _)| type_expr_contains_match(ty)),
+        TypeBody::Alias(ty) => type_expr_contains_match(ty),
+        TypeBody::Entity { fields, .. } => fields
+            .iter()
+            .any(|f| type_expr_contains_match(&f.type_expr)),
+        TypeBody::Trait { linked_entity, .. } => {
+            linked_entity.as_ref().is_some_and(type_expr_contains_match)
+        }
+        TypeBody::Page { trait_types, .. } => trait_types.iter().any(type_expr_contains_match),
+        TypeBody::Orbital {
+            entity,
+            trait_types,
+            page_type,
+        } => {
+            entity.as_ref().is_some_and(type_expr_contains_match)
+                || trait_types.iter().any(type_expr_contains_match)
+                || page_type.as_ref().is_some_and(type_expr_contains_match)
+        }
+        TypeBody::Event { payload, .. } => type_expr_contains_match(payload),
+        TypeBody::Composition(parts) => parts.iter().any(type_body_contains_match),
     }
 }
 
@@ -1069,7 +1157,10 @@ mod tests {
     fn parse_app_header_theme_after_description() {
         let prog = p("app MyApp \"1.0.0\"\n\"A themed app\"\ntheme \"linear-clean-light\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
         assert_eq!(prog.app.description, Some("A themed app".to_string()));
-        assert_eq!(prog.app.theme, Some(ThemeDecl::Reference("linear-clean-light".to_string())));
+        assert_eq!(
+            prog.app.theme,
+            Some(ThemeDecl::Reference("linear-clean-light".to_string()))
+        );
         assert_eq!(prog.orbitals.len(), 1);
     }
 
@@ -1077,7 +1168,10 @@ mod tests {
     fn parse_app_header_theme_without_description() {
         let prog = p("app MyApp \"1.0.0\"\ntheme \"terminal-dark\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
         assert_eq!(prog.app.description, None);
-        assert_eq!(prog.app.theme, Some(ThemeDecl::Reference("terminal-dark".to_string())));
+        assert_eq!(
+            prog.app.theme,
+            Some(ThemeDecl::Reference("terminal-dark".to_string()))
+        );
         assert_eq!(prog.orbitals.len(), 1);
     }
 
@@ -1085,7 +1179,10 @@ mod tests {
     fn app_theme_does_not_capture_orbital_theme() {
         let prog = p("app MyApp \"1.0.0\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme \"clay-light\"\n}");
         assert_eq!(prog.app.theme, None);
-        assert_eq!(prog.orbitals[0].theme, Some(ThemeDecl::Reference("clay-light".to_string())));
+        assert_eq!(
+            prog.orbitals[0].theme,
+            Some(ThemeDecl::Reference("clay-light".to_string()))
+        );
     }
 
     #[test]
@@ -1548,8 +1645,7 @@ mod tests {
 
     #[test]
     fn parse_expects_named_identity_without_shape() {
-        let prog =
-            p("orbital O {\n  expects identity Customer\n  entity E { id : string! }\n}");
+        let prog = p("orbital O {\n  expects identity Customer\n  entity E { id : string! }\n}");
         match &prog.orbitals[0].expects[0].kind {
             ExpectsKind::Identity { name, shape } => {
                 assert_eq!(name.as_deref(), Some("Customer"));
@@ -1587,7 +1683,8 @@ mod tests {
 
     #[test]
     fn parse_expects_duplicate_bare_identity_errors() {
-        let src = "orbital O {\n  expects identity\n  expects identity\n  entity E { id : string! }\n}";
+        let src =
+            "orbital O {\n  expects identity\n  expects identity\n  entity E { id : string! }\n}";
         let err = parse_str(src).expect_err("duplicate must fail");
         assert!(
             err.to_string().contains("ELOLO_DUPLICATE_EXPECTATION"),

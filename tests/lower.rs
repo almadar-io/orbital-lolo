@@ -22,7 +22,11 @@ fn fixtures_dir() -> PathBuf {
 /// id minted fresh each lowering cannot be a stable golden value.
 fn canonicalize(value: Value) -> Value {
     fn is_identity_key(k: &str) -> bool {
-        k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id") || k.ends_with("Ids")
+        k == "id"
+            || k == "ledger"
+            || k == "schemaVersion"
+            || k.ends_with("Id")
+            || k.ends_with("Ids")
     }
     match value {
         Value::Object(map) => {
@@ -446,7 +450,6 @@ orbital Demo {
         "expected placement hint, got: {msg}"
     );
 }
-
 
 // An `expects entity` name is a legal field type standalone: the declaration
 // promises the entity exists at compose time, so `customer : Customer` lowers
