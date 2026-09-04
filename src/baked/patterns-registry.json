@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-03T18:09:00.573Z",
+  "exportedAt": "2026-09-04T03:53:29.561Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -16401,7 +16401,7 @@
           "types": [
             "object"
           ],
-          "description": "GAP-80: line-level error/warning highlights for editable mode. Map of 1-based line number → severity. The overlay paints a colored background on each line: error = red, warning = yellow. Pass undefined (default) to disable. The consumer is responsible for computing the path → line map from the schema + validation results.",
+          "description": "GAP-80: line-level error/warning highlights. Map of 1-based line number → severity. Paints a colored background on each line: error = red, warning = yellow. Honored by the editable overlay and (GAP-84) by viewer mode's non-diff highlight; pass undefined (default) to disable. The consumer is responsible for computing the path → line map from the schema + validation results.",
           "nonAuthorable": true
         },
         "title": {
@@ -16690,6 +16690,265 @@
             "boolean"
           ],
           "description": "Show copy button (viewer alias for showCopyButton)"
+        },
+        "editorId": {
+          "types": [
+            "string"
+          ],
+          "description": "Stable identity for the keyboard router / plugin host to target this editor. Unset = this instance never receives capability events.",
+          "tier": "presentation"
+        },
+        "onEditorFocus": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative bus emit fired when this editor gains focus.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "editorId",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "default": "EDITOR_FOCUS",
+          "tier": "presentation"
+        },
+        "onEditorBlur": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative bus emit fired when this editor loses focus.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "editorId",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "default": "EDITOR_BLUR",
+          "tier": "presentation"
+        },
+        "onMotion": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative bus listen: move the cursor per the vim-style motion vocabulary.",
+          "kind": "event-listen",
+          "listenPayloadSchema": [
+            {
+              "name": "editorId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "motion",
+              "type": "string",
+              "required": true,
+              "enumValues": [
+                "left",
+                "right",
+                "up",
+                "down",
+                "word-forward",
+                "word-back",
+                "word-end",
+                "line-start",
+                "line-end",
+                "first-nonblank",
+                "doc-start",
+                "doc-end",
+                "paragraph-forward",
+                "paragraph-back",
+                "line",
+                "selection"
+              ]
+            },
+            {
+              "name": "count",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "MOTION",
+          "tier": "presentation"
+        },
+        "onOperate": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative bus listen: apply a text operator over a motion's range.",
+          "kind": "event-listen",
+          "listenPayloadSchema": [
+            {
+              "name": "editorId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "operator",
+              "type": "string",
+              "required": true,
+              "enumValues": [
+                "delete",
+                "yank",
+                "change"
+              ]
+            },
+            {
+              "name": "motion",
+              "type": "string",
+              "required": true,
+              "enumValues": [
+                "left",
+                "right",
+                "up",
+                "down",
+                "word-forward",
+                "word-back",
+                "word-end",
+                "line-start",
+                "line-end",
+                "first-nonblank",
+                "doc-start",
+                "doc-end",
+                "paragraph-forward",
+                "paragraph-back",
+                "line",
+                "selection"
+              ]
+            },
+            {
+              "name": "count",
+              "type": "number",
+              "required": true
+            }
+          ],
+          "default": "OPERATE",
+          "tier": "presentation"
+        },
+        "onInsertText": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative bus listen: insert literal text at the cursor.",
+          "kind": "event-listen",
+          "listenPayloadSchema": [
+            {
+              "name": "editorId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "text",
+              "type": "string",
+              "required": true
+            }
+          ],
+          "default": "INSERT_TEXT",
+          "tier": "presentation"
+        },
+        "onSetMode": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative bus listen: switch editor mode and caret style.",
+          "kind": "event-listen",
+          "listenPayloadSchema": [
+            {
+              "name": "editorId",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "mode",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "caret",
+              "type": "string",
+              "required": true,
+              "enumValues": [
+                "bar",
+                "block",
+                "underline"
+              ]
+            }
+          ],
+          "default": "SET_MODE",
+          "tier": "presentation"
+        },
+        "motions": {
+          "types": [
+            "array"
+          ],
+          "description": "Motion vocabulary this editor accepts. Default: the full `EditorMotion` set.",
+          "items": {
+            "types": [
+              "string"
+            ],
+            "enumValues": [
+              "left",
+              "right",
+              "up",
+              "down",
+              "word-forward",
+              "word-back",
+              "word-end",
+              "line-start",
+              "line-end",
+              "first-nonblank",
+              "doc-start",
+              "doc-end",
+              "paragraph-forward",
+              "paragraph-back",
+              "line",
+              "selection"
+            ]
+          },
+          "default": [
+            "left",
+            "right",
+            "up",
+            "down",
+            "word-forward",
+            "word-back",
+            "word-end",
+            "line-start",
+            "line-end",
+            "first-nonblank",
+            "doc-start",
+            "doc-end",
+            "paragraph-forward",
+            "paragraph-back",
+            "line",
+            "selection"
+          ],
+          "tier": "presentation"
+        },
+        "operators": {
+          "types": [
+            "array"
+          ],
+          "description": "Operator vocabulary this editor accepts. Default: the full `EditorOperator` set.",
+          "items": {
+            "types": [
+              "string"
+            ],
+            "enumValues": [
+              "delete",
+              "yank",
+              "change"
+            ]
+          },
+          "default": [
+            "delete",
+            "yank",
+            "change"
+          ],
+          "tier": "presentation"
         }
       }
     },
@@ -26752,7 +27011,12 @@
             {
               "name": "next",
               "type": "string",
-              "required": true
+              "required": true,
+              "enumValues": [
+                "up",
+                "down",
+                "none"
+              ]
             }
           ]
         },
@@ -27220,7 +27484,12 @@
             {
               "name": "vote",
               "type": "string",
-              "required": true
+              "required": true,
+              "enumValues": [
+                "up",
+                "down",
+                "none"
+              ]
             }
           ]
         },
@@ -36294,7 +36563,11 @@
             {
               "name": "direction",
               "type": "string",
-              "required": true
+              "required": true,
+              "enumValues": [
+                "asc",
+                "desc"
+              ]
             }
           ]
         },
@@ -38258,7 +38531,13 @@
             {
               "name": "direction",
               "type": "string",
-              "required": true
+              "required": true,
+              "enumValues": [
+                "up",
+                "down",
+                "left",
+                "right"
+              ]
             },
             {
               "name": "pressed",
@@ -39289,6 +39568,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -40666,6 +40946,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -41946,6 +42227,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -42417,6 +42699,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -42702,6 +42985,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -43010,6 +43294,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -44550,6 +44835,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -45764,6 +46050,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -50663,6 +50950,7 @@
                   "string"
                 ],
                 "enumValues": [
+                  "solid",
                   "dashed",
                   "dotted"
                 ]
@@ -52439,6 +52727,52 @@
           "mapValue": {
             "types": [
               "object"
+            ],
+            "properties": {
+              "path": {
+                "types": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "volume": {
+                "types": [
+                  "number"
+                ]
+              },
+              "loop": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "poolSize": {
+                "types": [
+                  "number"
+                ]
+              },
+              "autostart": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "crossfade": {
+                "types": [
+                  "boolean"
+                ]
+              },
+              "crossfadeDurationMs": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "path"
             ]
           }
         },
