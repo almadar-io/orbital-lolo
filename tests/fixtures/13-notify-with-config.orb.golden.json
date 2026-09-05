@@ -17,6 +17,11 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "notify"
+            }
+          ],
           "linkedEntity": "Toast",
           "name": "Notifier",
           "scope": "instance",

@@ -281,6 +281,18 @@ pub(crate) fn payload_fields_mismatch_norm(
     aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> Option<String> {
     let flatten_name = |name: &str| -> Option<Vec<PayloadField>> {
+        // CYCLE GUARD — the same `RESOLVING` thread-local `lower/entity.rs`
+        // and `struct_payload_properties` already share, applied to the
+        // ENTITY branch below (which resolves through `entities_by_name`, not
+        // through `struct_payload_properties`, so it was the one path the
+        // guard did not cover). A relation whose target is still being
+        // flattened on this path — `entity Tag { parentId : Tag }`, the
+        // ordinary way the corpus models a hierarchy — is an ID REFERENCE,
+        // not a nested row; flattening it again both overstates the payload
+        // and never terminates (verified: stack overflow, §75).
+        if crate::lower::entity::RESOLVING.with(|r| r.borrow().contains(name)) {
+            return None;
+        }
         if let Some(fields) = entities_by_name.get(name) {
             return Some(
                 fields
@@ -298,39 +310,44 @@ pub(crate) fn payload_fields_mismatch_norm(
         }
         struct_payload_properties(&TypeExpr::Named(name.to_string()), aliases, &[])
     };
-    let normalize = |f: &PayloadField| -> PayloadField {
+    // Paired with the name it flattened (`None` when nothing was), so the
+    // nested comparison can add that name to `expanding`.
+    let normalize = |f: &PayloadField| -> (PayloadField, Option<String>) {
         if f.properties.is_none() {
             let (base, is_array) = match f.field_type.strip_prefix('[') {
                 Some(rest) => (rest.trim_end_matches(']'), true),
                 None => (f.field_type.as_str(), false),
             };
             if let Some(props) = flatten_name(base) {
-                return PayloadField {
-                    name: f.name.clone(),
-                    field_type: if is_array {
-                        "[object]".to_string()
-                    } else {
-                        "object".to_string()
+                return (
+                    PayloadField {
+                        name: f.name.clone(),
+                        field_type: if is_array {
+                            "[object]".to_string()
+                        } else {
+                            "object".to_string()
+                        },
+                        required: f.required,
+                        description: None,
+                        properties: Some(props),
+                        type_when: None,
                     },
-                    required: f.required,
-                    description: None,
-                    properties: Some(props),
-                    type_when: None,
-                };
+                    Some(base.to_string()),
+                );
             }
         }
-        f.clone()
+        (f.clone(), None)
     };
-    let an: Vec<PayloadField> = inline.iter().map(normalize).collect();
-    let bn: Vec<PayloadField> = alias.iter().map(normalize).collect();
-    let mut a: Vec<&PayloadField> = an.iter().collect();
-    let mut b: Vec<&PayloadField> = bn.iter().collect();
-    a.sort_by(|x, y| x.name.cmp(&y.name));
-    b.sort_by(|x, y| x.name.cmp(&y.name));
+    let an: Vec<(PayloadField, Option<String>)> = inline.iter().map(normalize).collect();
+    let bn: Vec<(PayloadField, Option<String>)> = alias.iter().map(normalize).collect();
+    let mut a: Vec<&(PayloadField, Option<String>)> = an.iter().collect();
+    let mut b: Vec<&(PayloadField, Option<String>)> = bn.iter().collect();
+    a.sort_by(|x, y| x.0.name.cmp(&y.0.name));
+    b.sort_by(|x, y| x.0.name.cmp(&y.0.name));
     if a.len() != b.len() {
-        let names = |v: &[&PayloadField]| {
+        let names = |v: &[&(PayloadField, Option<String>)]| {
             v.iter()
-                .map(|f| f.name.as_str())
+                .map(|f| f.0.name.as_str())
                 .collect::<Vec<_>>()
                 .join(", ")
         };
@@ -340,7 +357,9 @@ pub(crate) fn payload_fields_mismatch_norm(
             names(&b)
         ));
     }
-    for (fa, fb) in a.iter().zip(b.iter()) {
+    for (pair_a, pair_b) in a.iter().zip(b.iter()) {
+        let (fa, flattened) = (&pair_a.0, pair_a.1.as_deref());
+        let fb = &pair_b.0;
         if fa.name != fb.name {
             return Some(format!(
                 "inline field '{}' vs alias field '{}'",
@@ -358,7 +377,21 @@ pub(crate) fn payload_fields_mismatch_norm(
         }
         match (&fa.properties, &fb.properties) {
             (Some(pa), Some(pb)) => {
-                if let Some(d) = payload_fields_mismatch_norm(pa, pb, entities_by_name, aliases) {
+                // Mark the name whose fields produced this nested pair, so a
+                // relation back to it is left as a reference one level down —
+                // insert/recurse/remove, the same discipline
+                // `struct_payload_properties` uses.
+                let guarded = flattened.filter(|n| {
+                    crate::lower::entity::RESOLVING
+                        .with(|r| r.borrow_mut().insert((*n).to_string()))
+                });
+                let nested = payload_fields_mismatch_norm(pa, pb, entities_by_name, aliases);
+                if let Some(n) = guarded {
+                    crate::lower::entity::RESOLVING.with(|r| {
+                        r.borrow_mut().remove(n);
+                    });
+                }
+                if let Some(d) = nested {
                     return Some(format!("field '{}': {}", fa.name, d));
                 }
             }
@@ -922,7 +955,58 @@ mod recursive_struct_payload_tests {
 
     /// `C-EVENT-ALIAS-NESTED-STRUCT-DEPTH2`: an event payload with a
     /// depth-2 nested struct alias (`containers : [ContainerItem]` where
-    /// `ContainerItem` itself has `ports : [PortItem]`, both plain struct
+     /// A self-referential relation — `entity Tag { parentId : Tag }`, the
+    /// ordinary way the corpus models a hierarchy — must not send the payload
+    /// comparator into unbounded recursion.
+    ///
+    /// `payload_fields_mismatch_norm` normalizes a field whose type NAMES an
+    /// entity by inlining that entity's fields. On `Tag` that produces another
+    /// `parentId : Tag`, which the nested comparison then normalizes again:
+    /// before the cycle guard this overflowed the stack outright (10 corpus
+    /// behaviors could not be compiled at all, §75 in
+    /// `docs/Almadar_Compiler_Gaps.md`), and no stack size helped because the
+    /// recursion has no bottom. A relation is an ID REFERENCE, not a nested
+    /// row, so the guard leaves it as its named type on the second encounter.
+    #[test]
+    fn a_self_referential_relation_terminates() {
+        let mut entities_by_name: BTreeMap<String, Vec<(String, TypeExpr, bool)>> = BTreeMap::new();
+        entities_by_name.insert(
+            "Tag".to_string(),
+            vec![
+                (
+                    "id".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
+                (
+                    "name".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
+                // The recursion: a Tag field whose type is Tag.
+                ("parentId".to_string(), TypeExpr::Named("Tag".to_string()), false),
+            ],
+        );
+        let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+
+        let side = vec![PayloadField {
+            name: "row".to_string(),
+            field_type: "Tag".to_string(),
+            required: Some(true),
+            description: None,
+            properties: None,
+            type_when: None,
+        }];
+
+        // Terminating at all is the assertion; agreeing is the consequence.
+        assert_eq!(
+            payload_fields_mismatch_norm(&side, &side, &entities_by_name, &aliases),
+            None,
+            "a row typed by a self-referential entity matches itself"
+        );
+    }
+
+   /// `ContainerItem` itself has `ports : [PortItem]`, both plain struct
     /// aliases — no entity involved) must round-trip when the trait's
     /// `emits { }` block RESTATES the alias's payload inline (the shape
     /// `lolo-service`-generated service atoms author, and any hand-authored

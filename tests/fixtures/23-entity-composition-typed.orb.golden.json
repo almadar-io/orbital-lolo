@@ -61,6 +61,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "render-ui",
+              "resource": "main"
+            }
+          ],
           "linkedEntity": "Patient",
           "name": "PatientManage",
           "scope": "instance",

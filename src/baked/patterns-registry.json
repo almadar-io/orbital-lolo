@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-04T03:53:29.561Z",
+  "exportedAt": "2026-09-05T01:37:56.135Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -9281,6 +9281,11 @@
                   "boolean"
                 ]
               },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
               "onClick": {
                 "types": [
                   "function"
@@ -16762,7 +16767,8 @@
                 "paragraph-forward",
                 "paragraph-back",
                 "line",
-                "selection"
+                "selection",
+                "match-bracket"
               ]
             },
             {
@@ -16793,7 +16799,16 @@
               "enumValues": [
                 "delete",
                 "yank",
-                "change"
+                "change",
+                "put",
+                "put-before",
+                "undo",
+                "redo",
+                "join",
+                "toggle-case",
+                "indent",
+                "dedent",
+                "replace"
               ]
             },
             {
@@ -16816,7 +16831,8 @@
                 "paragraph-forward",
                 "paragraph-back",
                 "line",
-                "selection"
+                "selection",
+                "match-bracket"
               ]
             },
             {
@@ -16905,7 +16921,8 @@
               "paragraph-forward",
               "paragraph-back",
               "line",
-              "selection"
+              "selection",
+              "match-bracket"
             ]
           },
           "default": [
@@ -16924,7 +16941,8 @@
             "paragraph-forward",
             "paragraph-back",
             "line",
-            "selection"
+            "selection",
+            "match-bracket"
           ],
           "tier": "presentation"
         },
@@ -16940,13 +16958,31 @@
             "enumValues": [
               "delete",
               "yank",
-              "change"
+              "change",
+              "put",
+              "put-before",
+              "undo",
+              "redo",
+              "join",
+              "toggle-case",
+              "indent",
+              "dedent",
+              "replace"
             ]
           },
           "default": [
             "delete",
             "yank",
-            "change"
+            "change",
+            "put",
+            "put-before",
+            "undo",
+            "redo",
+            "join",
+            "toggle-case",
+            "indent",
+            "dedent",
+            "replace"
           ],
           "tier": "presentation"
         }
@@ -52220,7 +52256,10 @@
           "enumValues": [
             "bottom-center",
             "bottom-left",
-            "bottom-right"
+            "bottom-right",
+            "top-center",
+            "top-left",
+            "top-right"
           ],
           "default": "bottom-center"
         },
@@ -52781,6 +52820,139 @@
             "string"
           ],
           "description": "Base URL prepended to every manifest path."
+        }
+      }
+    },
+    "ui-slot-component": {
+      "type": "ui-slot-component",
+      "category": "layout",
+      "tier": "organisms",
+      "family": "core",
+      "description": "UISlotComponent component",
+      "suggestedFor": [
+        "slot",
+        "component",
+        "u i slot component"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "slot": {
+          "types": [
+            "object"
+          ],
+          "description": "slot prop",
+          "required": true
+        },
+        "portal": {
+          "types": [
+            "boolean"
+          ],
+          "description": "portal prop",
+          "default": false
+        },
+        "position": {
+          "types": [
+            "string"
+          ],
+          "description": "position prop",
+          "enumValues": [
+            "left",
+            "right",
+            "top-right",
+            "top-left",
+            "bottom-right",
+            "bottom-left"
+          ]
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "draggable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "draggable prop"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "isLoading prop"
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "error prop",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ]
+        },
+        "entity": {
+          "types": [
+            "string"
+          ],
+          "description": "entity prop"
+        },
+        "children": {
+          "types": [
+            "node"
+          ],
+          "description": "Compiled mode: render children directly instead of resolving from context"
+        },
+        "pattern": {
+          "types": [
+            "string"
+          ],
+          "description": "Pattern type for data-pattern attribute (compiled mode)"
+        },
+        "sourceTrait": {
+          "types": [
+            "string"
+          ],
+          "description": "Source trait name for data-source-trait attribute (compiled mode)"
+        },
+        "fallback": {
+          "types": [
+            "node"
+          ],
+          "description": "Host-supplied stock content for a slot-host region (Studio V4 §14 Part I2). Ignored whenever `children` is passed — `children` (compiled mode) always wins, so a compiled organism's slot can never be silently shadowed by a host `fallback`. In `portal` mode `fallback` never portals: it paints inline at this component's own position in the tree, while slot content (if present) still portals as usual — a plugin filling `modal` doesn't relocate the host's inline empty-state."
+        },
+        "mode": {
+          "types": [
+            "string"
+          ],
+          "description": "`'replace'` (default): slot content when present, else `fallback`. `'append'`: `fallback` first, then slot content when present — both render together, so `fallback` is a fixture, not just a placeholder.",
+          "enumValues": [
+            "replace",
+            "append"
+          ],
+          "default": "replace"
         }
       }
     }

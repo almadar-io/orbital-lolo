@@ -22,6 +22,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "render-ui",
+              "resource": "main"
+            }
+          ],
           "linkedEntity": "Task",
           "name": "TaskList",
           "scope": "instance",

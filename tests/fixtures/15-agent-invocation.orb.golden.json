@@ -17,6 +17,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "call-service",
+              "resource": "openai.chat"
+            }
+          ],
           "linkedEntity": "AgentTask",
           "name": "AgentRunner",
           "scope": "instance",

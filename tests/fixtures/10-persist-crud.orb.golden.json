@@ -22,6 +22,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "persist",
+              "resource": "User"
+            }
+          ],
           "linkedEntity": "User",
           "name": "UserCrud",
           "scope": "instance",

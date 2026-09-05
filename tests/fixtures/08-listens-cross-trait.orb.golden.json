@@ -21,6 +21,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "emit",
+              "resource": "ORDER_SHIPPED"
+            }
+          ],
           "emits": [
             {
               "event": "ORDER_SHIPPED",
@@ -80,6 +86,12 @@
         },
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "set",
+              "resource": "@message"
+            }
+          ],
           "linkedEntity": "Notification",
           "listens": [
             {

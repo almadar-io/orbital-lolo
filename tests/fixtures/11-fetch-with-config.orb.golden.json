@@ -18,6 +18,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "Product"
+            }
+          ],
           "linkedEntity": "Product",
           "name": "ProductFetch",
           "scope": "instance",

@@ -17,6 +17,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "set",
+              "resource": "@id"
+            }
+          ],
           "linkedEntity": "Order",
           "name": "ConfirmFlow",
           "scope": "instance",

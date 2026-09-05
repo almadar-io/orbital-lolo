@@ -32,6 +32,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "set",
+              "resource": "@items"
+            }
+          ],
           "linkedEntity": "Inventory",
           "name": "InventoryActions",
           "scope": "instance",

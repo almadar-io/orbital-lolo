@@ -21,6 +21,16 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "render-ui",
+              "resource": "modal"
+            },
+            {
+              "kind": "set",
+              "resource": "@pendingId"
+            }
+          ],
           "linkedEntity": "ConfirmAction",
           "name": "ConfirmActionConfirmation",
           "scope": "instance",

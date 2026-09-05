@@ -33,6 +33,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "Place"
+            }
+          ],
           "emits": [
             {
               "event": "PLACE_SELECTED",

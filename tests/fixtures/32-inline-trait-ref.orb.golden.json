@@ -39,6 +39,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "render-ui",
+              "resource": "main"
+            }
+          ],
           "linkedEntity": "Widget",
           "name": "WidgetView",
           "scope": "instance",

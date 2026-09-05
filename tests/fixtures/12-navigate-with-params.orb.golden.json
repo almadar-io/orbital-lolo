@@ -37,6 +37,16 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "navigate",
+              "resource": "/home"
+            },
+            {
+              "kind": "navigate",
+              "resource": "/order/:id"
+            }
+          ],
           "linkedEntity": "Page",
           "name": "Router",
           "scope": "instance",

@@ -8,6 +8,7 @@ use crate::ast::*;
 use crate::error::LowerError;
 use crate::patterns_meta::event_prop_names;
 use crate::types::check_program;
+use orbital_core::effects::{EffectRow, EffectRowBuilder, EffectSite};
 use orbital_core::schema::{
     Cardinality, ConfigField as SchemaConfigField, EmitDefinition, EntityDefinition,
     EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration,
@@ -635,6 +636,9 @@ fn lower_orbital(
             name: "__Composition".to_string(),
             entity_rebindable: None,
             entity_contract: None,
+            // Synthetic carrier for `behavior/*` composition directives, not a
+            // real effect surface — downstream passes ignore this trait.
+            effect_row: None,
             category: None,
             capabilities: Vec::new(),
             description: None,

@@ -22,6 +22,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "set",
+              "resource": "@status"
+            }
+          ],
           "linkedEntity": "Order",
           "name": "OrderLifecycle",
           "scope": "instance",

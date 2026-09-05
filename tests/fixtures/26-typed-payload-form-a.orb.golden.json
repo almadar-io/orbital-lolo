@@ -33,6 +33,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "Account"
+            }
+          ],
           "emits": [
             {
               "event": "USER_LOADED",

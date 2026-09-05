@@ -26,6 +26,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "set",
+              "resource": "@status"
+            }
+          ],
           "linkedEntity": "StatusItem",
           "name": "StatusActions",
           "scope": "instance",

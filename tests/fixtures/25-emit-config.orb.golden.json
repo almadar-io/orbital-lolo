@@ -22,6 +22,27 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "call-service",
+              "resource": "notify.sendEmail"
+            },
+            {
+              "kind": "fetch",
+              "resource": "Patient"
+            },
+            {
+              "kind": "os/watch-http"
+            },
+            {
+              "kind": "persist",
+              "resource": "Patient"
+            },
+            {
+              "kind": "set",
+              "resource": "@entity.status"
+            }
+          ],
           "linkedEntity": "Patient",
           "name": "PatientLoader",
           "scope": "instance",

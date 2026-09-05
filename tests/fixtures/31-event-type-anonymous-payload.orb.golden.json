@@ -28,6 +28,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "emit",
+              "resource": "ReportFailed"
+            }
+          ],
           "emits": [
             {
               "event": "ReportFailed",

@@ -876,6 +876,7 @@ pub(crate) fn lower_trait(
         name: t.name.clone(),
         entity_rebindable,
         entity_contract,
+        effect_row: infer_effect_row(t),
         category,
         capabilities,
         description: None,
@@ -922,6 +923,41 @@ pub(crate) fn lower_trait(
 /// `id`/`createdAt`/`updatedAt` are already excluded from reads by the
 /// collector (auto-managed fields every entity has). Both lists sorted +
 /// deduped for a deterministic `.orb`.
+/// Infer the trait's effect row from its own effects — the one answer to "what
+/// does composing this trait bring along?" that a consumer can read without
+/// opening the atom.
+///
+/// Mirrors `infer_entity_contract` deliberately: same traversal (states →
+/// transitions → `expand_term_match`, then ticks), same "inferred, never
+/// authored" discipline, and it reuses the single canonical walker
+/// (`collect_effect_uses`) rather than growing a second one. Guards are NOT
+/// walked — a guard decides whether an effect runs, it is not itself an effect.
+///
+/// A `@config.*` resource stays unresolved here by design: L1 knows one file and
+/// cannot see a call site's config. The compiler re-resolves those post-inline.
+/// Returns `None` for a trait that produces no effects, so traits without one
+/// stay byte-identical in the `.orb`.
+pub(crate) fn infer_effect_row(t: &Trait) -> Option<EffectRow> {
+    let mut builder = EffectRowBuilder::new();
+
+    for state in &t.states {
+        for tr in &state.transitions {
+            for tr in expand_term_match(tr) {
+                builder.add_effects(EffectSite::Transition, &tr.effects);
+            }
+        }
+    }
+
+    if !t.ticks.is_empty() {
+        builder.declare_ticks();
+    }
+    for tick in &t.ticks {
+        builder.add_effects(EffectSite::Tick, &tick.effects);
+    }
+
+    builder.finish()
+}
+
 pub(crate) fn infer_entity_contract(
     t: &Trait,
     intrinsic_fields: &HashSet<String>,

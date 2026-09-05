@@ -40,6 +40,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "Task"
+            }
+          ],
           "linkedEntity": "Task",
           "name": "TaskBrowse",
           "scope": "collection",
@@ -73,6 +79,12 @@
         },
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "persist",
+              "resource": "Task"
+            }
+          ],
           "linkedEntity": "Task",
           "name": "TaskEdit",
           "scope": "instance",

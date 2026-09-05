@@ -33,6 +33,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "persist",
+              "resource": "Order"
+            }
+          ],
           "emits": [
             {
               "event": "OrderShipped",

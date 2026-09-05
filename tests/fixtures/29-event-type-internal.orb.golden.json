@@ -36,6 +36,12 @@
       "traits": [
         {
           "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "BrowseItem"
+            }
+          ],
           "emits": [
             {
               "event": "BrowseItemLoaded",
