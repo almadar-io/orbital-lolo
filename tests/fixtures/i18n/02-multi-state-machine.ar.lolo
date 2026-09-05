@@ -1,0 +1,28 @@
+تطبيق OrderApp
+مدار OrderOrbital {
+  كيان طلب [دائم: orders] {
+    id : نص!
+    status : نص
+  }
+  سمة OrderLifecycle -> طلب [تفاعل] {
+    أولي: pending
+    حالة pending {
+      تأكيد -> confirmed
+        (تعيين @status "confirmed")
+      CANCEL -> cancelled
+        (تعيين @status "cancelled")
+    }
+    حالة confirmed {
+      SHIP -> shipped
+        (تعيين @status "shipped")
+    }
+    حالة shipped {
+      DELIVER -> delivered
+        (تعيين @status "delivered")
+    }
+    حالة delivered {
+    }
+    حالة cancelled {
+    }
+  }
+}

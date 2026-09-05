@@ -1,0 +1,28 @@
+aplikacija OrderApp
+orbitala OrderOrbital {
+  entiteta Order [trajno: orders] {
+    id : niz!
+    status : niz
+  }
+  znacilnost OrderLifecycle -> Order [interakcija] {
+    zacetno: pending
+    stanje pending {
+      CONFIRM -> confirmed
+        (nastavi @status "confirmed")
+      CANCEL -> cancelled
+        (nastavi @status "cancelled")
+    }
+    stanje confirmed {
+      SHIP -> shipped
+        (nastavi @status "shipped")
+    }
+    stanje shipped {
+      DELIVER -> delivered
+        (nastavi @status "delivered")
+    }
+    stanje delivered {
+    }
+    stanje cancelled {
+    }
+  }
+}

@@ -444,6 +444,7 @@ impl Parser {
         let TokenKind::Sigil(s) = self.peek().clone() else {
             return Ok(None);
         };
+        let s = self.canon_sigil_root(&s);
         let Some(knob) = s.strip_prefix("config.") else {
             return Ok(None);
         };
@@ -514,7 +515,8 @@ impl Parser {
         // a config knob has no current event and a payload position would be
         // self-referential — so it is rejected here rather than allowed to
         // lower into a dangling sentinel.
-        if let TokenKind::Sigil(s) = self.peek().clone() {
+        if let TokenKind::Sigil(raw_s) = self.peek().clone() {
+            let s = self.canon_sigil_root(&raw_s);
             match s.as_str() {
                 // `@entity` — the bound entity's row (nullary), or
                 // `@entity <knob>` — the row of the entity that knob names.
@@ -558,6 +560,11 @@ impl Parser {
             return self.parse_match_type();
         }
         let name = self.expect_ident()?;
+        let name = self
+            .lang
+            .canon_type(&name)
+            .map(str::to_string)
+            .unwrap_or(name);
         // `Map K V` — reserved built-in dynamic-key map constructor, applied by
         // juxtaposition (Haskell `Map k v` style): parse the key type-atom then
         // the value type-atom. Lowers to `Record<K, V>`. Reserved like the
@@ -717,7 +724,16 @@ impl Parser {
                 self.advance();
                 Ok(MatchPattern::Wildcard)
             }
-            TokenKind::Identifier(name) => {
+            // A native `true`/`false` lexes as an identifier; canonicalize it like the s-expression parser does.
+            TokenKind::Identifier(name) if self.lang.canon_literal(&name) == Some("true") => {
+                self.advance();
+                Ok(MatchPattern::Bool(true))
+            }
+            TokenKind::Identifier(name) if self.lang.canon_literal(&name) == Some("false") => {
+                self.advance();
+                Ok(MatchPattern::Bool(false))
+            }
+            TokenKind::Identifier(name) if self.lang.canon_literal(&name).is_none() => {
                 self.advance();
                 Ok(MatchPattern::Word(name))
             }

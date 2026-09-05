@@ -16,6 +16,7 @@
 pub mod ast;
 pub mod error;
 pub mod format;
+pub mod keywords;
 pub mod lexer;
 pub mod lower;
 pub mod parser;
@@ -31,7 +32,7 @@ pub use lower::{
     lower_to_orb, lower_to_orb_with_map, lower_to_orb_with_prior, lower_to_orb_with_prior_and_map,
     stamp_schema_identity,
 };
-pub use parser::{parse, parse_str};
+pub use parser::{detect_language, parse, parse_str};
 pub use source_map::LoloSourceMap;
 
 pub mod source_map;

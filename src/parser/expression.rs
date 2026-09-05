@@ -18,6 +18,15 @@ impl Parser {
         let op = match self.peek().clone() {
             TokenKind::Identifier(name) => {
                 self.advance();
+                // The head is either a built-in effect word or an
+                // `ns/name` operator — canonicalize it here (once) so every
+                // later `head.as_deref()` match in this function, and every
+                // lower-phase match on the emitted `.orb`, sees only English.
+                let name = self
+                    .lang
+                    .canon_head(&name)
+                    .map(str::to_string)
+                    .unwrap_or(name);
                 SExpression::String(name)
             }
             TokenKind::Equals => {
@@ -156,6 +165,18 @@ impl Parser {
                     if matches!(inner.first(), Some(SExpression::String(s)) if s == "set") {
                         return Err(ParseError::SetNestedValue { span: arg_spans[1] });
                     }
+                }
+            }
+        }
+        // `(persist create|update|delete …)` — the action word (items[1])
+        // is a `capabilities`-section word, canonicalized here rather than
+        // at the generic bare-atom position (`parse_sexpr_or_value`'s
+        // `Identifier` arm never canonicalizes: it can't tell an action
+        // word from an ordinary event/entity/slot name at that position).
+        if head.as_deref() == Some("persist") {
+            if let Some(SExpression::String(s)) = items.get_mut(1) {
+                if let Some(canon) = self.lang.canon_capability(s) {
+                    *s = canon.to_string();
                 }
             }
         }
@@ -372,6 +393,7 @@ impl Parser {
             }
             TokenKind::Sigil(name) => {
                 self.advance();
+                let name = self.canon_sigil_root(&name);
                 Ok(SExpression::String(format!("@{}", lower_self_sigil(&name))))
             }
             TokenKind::PayloadSigil(name) => {
@@ -391,6 +413,19 @@ impl Parser {
                 }
                 let span = self.peek_span();
                 self.advance();
+                // A native rendering of `true`/`false`/`null` lexes as a
+                // plain identifier (the lexer stays language-free); the
+                // parser is the one place that knows the current language,
+                // so it canonicalizes here — same reservation English's
+                // literal words already get at the lexer.
+                if let Some(literal) = self.lang.canon_literal(&name) {
+                    return Ok(match literal {
+                        "true" => SExpression::Bool(true),
+                        "false" => SExpression::Bool(false),
+                        "null" => SExpression::Null,
+                        other => unreachable!("unknown canonical literal: {other}"),
+                    });
+                }
                 // A bare identifier that names an enclosing `let`/lambda
                 // binding reads as the literal string of its own name in both
                 // evaluators — silently, and green under every validator.
@@ -401,8 +436,9 @@ impl Parser {
                 }
                 // Bare identifiers in argument position are atoms (event names,
                 // entity names, slot names, mode names). Special atoms `now`
-                // and `state` lower to bindings.
-                let atom = match name.as_str() {
+                // and `state` (also translated via the `sigils` section) lower
+                // to bindings.
+                let atom = match self.lang.canon_sigil(&name).unwrap_or(name.as_str()) {
                     "now" => "@now".to_string(),
                     "state" => "@state".to_string(),
                     _ => name,

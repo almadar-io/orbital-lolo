@@ -101,7 +101,14 @@ impl Parser {
         loop {
             self.skip_newlines();
             let annotation = match self.peek().clone() {
-                TokenKind::Sigil(s) if s == "icon" || s == "label" => s,
+                TokenKind::Sigil(raw) => {
+                    let s = self.canon_annotation_sigil(&raw);
+                    if s == "icon" || s == "label" {
+                        s
+                    } else {
+                        break;
+                    }
+                }
                 _ => break,
             };
             self.advance();

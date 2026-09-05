@@ -266,7 +266,7 @@ impl Lexer {
                     // `?` could be the bare payload sigil or `?field`.
                     self.advance();
                     if let Some(ch) = self.peek() {
-                        if ch.is_ascii_alphabetic() || ch == '_' {
+                        if ch.is_alphabetic() || ch == '_' {
                             let start_col = col + 1;
                             let name = self.read_dotted_ident();
                             self.tokens.push(Token {
@@ -426,7 +426,7 @@ impl Lexer {
                         span: Span::new(line, col, 1),
                     });
                 }
-                _ if c.is_ascii_alphabetic() || c == '_' => {
+                _ if c.is_alphabetic() || c == '_' => {
                     self.lex_identifier_or_keyword(line, col);
                 }
                 _ => {
@@ -494,7 +494,7 @@ impl Lexer {
     fn read_dotted_ident(&mut self) -> String {
         let mut buf = String::new();
         while let Some(c) = self.peek() {
-            if c.is_ascii_alphanumeric() || c == '_' || c == '.' {
+            if c.is_alphanumeric() || c == '_' || c == '.' {
                 buf.push(c);
                 self.advance();
             } else {
@@ -591,7 +591,7 @@ impl Lexer {
     fn lex_identifier_or_keyword(&mut self, line: u32, col: u32) {
         let mut buf = String::new();
         while let Some(c) = self.peek() {
-            if c.is_ascii_alphanumeric() || c == '_' || c == '/' || c == '-' {
+            if c.is_alphanumeric() || c == '_' || c == '/' || c == '-' {
                 buf.push(c);
                 self.advance();
             } else {

@@ -535,7 +535,10 @@ mod tests {
     use super::*;
 
     fn parse_value(src: &str) -> SExpression {
-        let mut p = Parser::new(crate::lexer::tokenize(src).unwrap());
+        let mut p = Parser::new(
+            crate::lexer::tokenize(src).unwrap(),
+            orbital_core::i18n::lang::english(),
+        );
         p.skip_newlines();
         p.parse_sexpr_or_value().expect("parse value")
     }
@@ -594,8 +597,10 @@ mod tests {
 
     #[test]
     fn named_trait_ref_rejects_props() {
-        let mut p =
-            Parser::new(crate::lexer::tokenize("<trait.FileTextIcon label=\"x\" />").unwrap());
+        let mut p = Parser::new(
+            crate::lexer::tokenize("<trait.FileTextIcon label=\"x\" />").unwrap(),
+            orbital_core::i18n::lang::english(),
+        );
         assert!(p.parse_jsx_element().is_err());
     }
 
@@ -774,13 +779,19 @@ mod tests {
 
     #[test]
     fn raw_text_child_rejected() {
-        let mut p = Parser::new(crate::lexer::tokenize("<Stack>raw text</Stack>").unwrap());
+        let mut p = Parser::new(
+            crate::lexer::tokenize("<Stack>raw text</Stack>").unwrap(),
+            orbital_core::i18n::lang::english(),
+        );
         assert!(p.parse_jsx_element().is_err());
     }
 
     #[test]
     fn mismatched_closing_tag() {
-        let mut p = Parser::new(crate::lexer::tokenize("<Stack>\n  <Badge />\n</Badge>").unwrap());
+        let mut p = Parser::new(
+            crate::lexer::tokenize("<Stack>\n  <Badge />\n</Badge>").unwrap(),
+            orbital_core::i18n::lang::english(),
+        );
         assert!(p.parse_jsx_element().is_err());
     }
 

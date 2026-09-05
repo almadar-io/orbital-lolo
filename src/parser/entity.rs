@@ -36,7 +36,8 @@ impl Parser {
                 self.advance();
                 break;
             }
-            if let TokenKind::Sigil(name) = self.peek().clone() {
+            if let TokenKind::Sigil(raw_name) = self.peek().clone() {
+                let name = self.canon_annotation_sigil(&raw_name);
                 if matches!(name.as_str(), "read" | "create" | "update" | "delete") {
                     let directive_span = self.peek_span();
                     self.advance();
@@ -184,6 +185,11 @@ impl Parser {
         loop {
             let tag_span = self.peek_span();
             let kind = self.expect_ident()?;
+            let kind = self
+                .lang
+                .canon_tag(&kind)
+                .map(str::to_string)
+                .unwrap_or(kind);
             match kind.as_str() {
                 "shared" => shared = true,
                 "identity" => identity = true,
@@ -258,21 +264,22 @@ impl Parser {
         let mut is_intrinsic = false;
         let mut description = None;
         let mut synonyms = None;
-        loop {
-            match self.peek().clone() {
-                TokenKind::Sigil(name) if name == "key" => {
+        while let TokenKind::Sigil(raw) = self.peek().clone() {
+            let name = self.canon_annotation_sigil(&raw);
+            match name.as_str() {
+                "key" => {
                     is_key = true;
                     self.advance();
                 }
-                TokenKind::Sigil(name) if name == "unique" => {
+                "unique" => {
                     is_unique = true;
                     self.advance();
                 }
-                TokenKind::Sigil(name) if name == "intrinsic" => {
+                "intrinsic" => {
                     is_intrinsic = true;
                     self.advance();
                 }
-                TokenKind::Sigil(name) if name == "description" || name == "synonyms" => {
+                "description" | "synonyms" => {
                     self.advance();
                     let value = match self.peek().clone() {
                         TokenKind::String(s) => {

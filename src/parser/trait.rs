@@ -34,7 +34,8 @@ impl Parser {
         let mut entity_rebindable = false;
         let linked_entity = if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
             self.advance();
-            if matches!(self.peek(), TokenKind::Sigil(ref s) if s == "rebindable") {
+            let is_rebindable = matches!(self.peek(), TokenKind::Sigil(s) if self.canon_annotation_sigil(s) == "rebindable");
+            if is_rebindable {
                 self.advance();
                 entity_rebindable = true;
             }
@@ -62,6 +63,17 @@ impl Parser {
                     break;
                 }
                 let ident = self.expect_ident()?;
+                // The first non-scope word is a `categories`-section word,
+                // later ones are `capabilities`-section words — the same
+                // token position serves both, so try each section in turn
+                // (safe: no English word appears in both, B1 rule 4).
+                let ident = self
+                    .lang
+                    .canon_tag(&ident)
+                    .or_else(|| self.lang.canon_category(&ident))
+                    .or_else(|| self.lang.canon_capability(&ident))
+                    .map(str::to_string)
+                    .unwrap_or(ident);
                 match ident.as_str() {
                     "instance" => {
                         if scope.is_some() {
@@ -137,7 +149,8 @@ impl Parser {
             }
             // Body-level `@description "..."` / `@synonyms "..."` annotate the
             // `@rebindable` entity binding (catalog/embeddings discovery).
-            if let TokenKind::Sigil(s) = self.peek().clone() {
+            if let TokenKind::Sigil(raw_s) = self.peek().clone() {
+                let s = self.canon_annotation_sigil(&raw_s);
                 let annotation = match s.as_str() {
                     "description" | "synonyms" => s,
                     _ => {
@@ -680,6 +693,7 @@ impl Parser {
     pub(crate) fn parse_transition(&mut self) -> Result<Transition, ParseError> {
         let span = self.peek_span();
         let event = self.expect_ident()?;
+        let event = self.canon_event_name(event);
         // Arrow to target.
         if !matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
             return Err(ParseError::UnexpectedToken {
@@ -821,13 +835,14 @@ impl Parser {
     /// identity-resolution class needs its own design pass.
     fn parse_term_match_scrutinee(&mut self) -> Result<MatchScrutinee, ParseError> {
         let span = self.peek_span();
-        let TokenKind::Sigil(s) = self.peek().clone() else {
+        let TokenKind::Sigil(raw_s) = self.peek().clone() else {
             return Err(ParseError::UnexpectedToken {
                 expected: "`@entity.<field>` or `@payload.<field>` after `match`".to_string(),
                 got: format!("{:?}", self.peek()),
                 span,
             });
         };
+        let s = self.canon_sigil_root(&raw_s);
         if let Some(path) = s.strip_prefix("entity.") {
             let (field, member) = Self::split_term_match_path(path, "@entity", span)?;
             self.advance();
@@ -911,7 +926,7 @@ impl Parser {
                 self.advance();
                 break;
             }
-            if self.at_eof() || !is_event_name_at_peek(self.peek()) {
+            if self.at_eof() || !is_event_name_at_peek(self.peek(), self.lang) {
                 // In brace form the only legal tokens here are `}` or the
                 // next event name — breaking silently would leave the `}`
                 // unconsumed and surface a misleading trait-body keyword
@@ -944,7 +959,7 @@ impl Parser {
         loop {
             self.skip_newlines();
             let sigil_name = match self.peek().clone() {
-                TokenKind::Sigil(s) => s,
+                TokenKind::Sigil(s) => self.canon_annotation_sigil(&s),
                 _ => break,
             };
             let annotation = match sigil_name.as_str() {
@@ -989,6 +1004,7 @@ impl Parser {
         let scope = if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
             self.advance();
             let s = self.expect_ident()?;
+            let s = self.lang.canon_keyword(&s).map(str::to_string).unwrap_or(s);
             if s != "internal" && s != "external" {
                 return Err(ParseError::UnexpectedToken {
                     expected: "internal or external after `->`".to_string(),
@@ -1330,10 +1346,11 @@ impl Parser {
             TokenKind::Integer(n) => {
                 self.advance();
                 // May be followed by a duration suffix (`s`, `m`, `h`, `d`).
-                if let TokenKind::Identifier(suf) = self.peek().clone() {
-                    if matches!(suf.as_str(), "s" | "m" | "h" | "d" | "ms") {
+                if let TokenKind::Identifier(raw_suf) = self.peek().clone() {
+                    let suf = self.lang.canon_unit(&raw_suf).unwrap_or(raw_suf.as_str());
+                    if matches!(suf, "s" | "m" | "h" | "d" | "ms") {
                         self.advance();
-                        let ms = duration_to_ms(n as u64, &suf);
+                        let ms = duration_to_ms(n as u64, suf);
                         return Ok(TickInterval::Millis(ms));
                     }
                 }
@@ -1462,7 +1479,7 @@ impl Parser {
         loop {
             self.skip_newlines();
             let sigil_name = match self.peek().clone() {
-                TokenKind::Sigil(s) => s,
+                TokenKind::Sigil(s) => self.canon_annotation_sigil(&s),
                 _ => break,
             };
             let annotation = match sigil_name.as_str() {

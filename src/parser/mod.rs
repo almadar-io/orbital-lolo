@@ -18,7 +18,8 @@
 
 use crate::ast::*;
 use crate::error::ParseError;
-use crate::lexer::{tokenize_with_comments, Token, TokenKind};
+use crate::lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
+use orbital_core::i18n::lang::{self, Lang};
 use orbital_core::schema::SExpression;
 use std::collections::HashMap;
 
@@ -32,7 +33,8 @@ mod r#type;
 /// Parse a `.lolo` source string into a Program AST.
 pub fn parse_str(source: &str) -> Result<Program, ParseError> {
     let (tokens, comments) = tokenize_with_comments(source)?;
-    let mut parser = Parser::new(tokens);
+    let language = detect_lang(&tokens);
+    let mut parser = Parser::new(tokens, language);
     let mut program = parser.parse_program()?;
     program.comments = comments;
     Ok(program)
@@ -41,6 +43,28 @@ pub fn parse_str(source: &str) -> Result<Program, ParseError> {
 /// Alias matching the public lib name `parse`.
 pub fn parse(source: &str) -> Result<Program, ParseError> {
     parse_str(source)
+}
+
+/// The `.lolo` source's language, detected the same way `parse_str` does:
+/// the first identifier token is the `app` keyword in exactly one
+/// non-English language, else English. Never a substring match. Returns
+/// `"en"` on a lex error (the parse itself will report it).
+pub fn detect_language(source: &str) -> &'static str {
+    match tokenize(source) {
+        Ok(tokens) => detect_lang(&tokens).code,
+        Err(_) => lang::english().code,
+    }
+}
+
+fn detect_lang(tokens: &[Token]) -> &'static Lang {
+    tokens
+        .iter()
+        .find_map(|t| match &t.kind {
+            TokenKind::Identifier(name) => Some(name.as_str()),
+            _ => None,
+        })
+        .and_then(lang::for_lolo_first_token)
+        .unwrap_or_else(lang::english)
 }
 
 struct Parser {
@@ -74,10 +98,16 @@ struct Parser {
     /// reference. Consumed (reset) on entry to `parse_sexpr_or_value`, so it
     /// never leaks into nested expressions.
     pub(crate) pattern_type_value: bool,
+    /// The `.lolo` source's detected language (English by default). Every
+    /// keyword/shape/tag/category/capability/annotation/sigil/type/unit/
+    /// literal/reserved-event lookup canonicalizes through this before
+    /// falling back to the raw English comparison, so the parser accepts
+    /// the same construct spelled in any known language.
+    lang: &'static Lang,
 }
 
 impl Parser {
-    fn new(tokens: Vec<Token>) -> Self {
+    fn new(tokens: Vec<Token>, lang: &'static Lang) -> Self {
         Self {
             tokens,
             pos: 0,
@@ -87,6 +117,7 @@ impl Parser {
             expr_span_capture: None,
             expr_trail: String::new(),
             pattern_type_value: false,
+            lang,
         }
     }
 
@@ -205,6 +236,34 @@ impl Parser {
         }
     }
 
+    /// Canonicalize a bare `@annotation` sigil token (`@key`, `@label`,
+    /// `@rebindable`, `@read`, …) via the `annotations` vocabulary section.
+    /// These never carry a dotted path.
+    pub(crate) fn canon_annotation_sigil(&self, name: &str) -> String {
+        self.lang
+            .canon_annotation(name)
+            .map(str::to_string)
+            .unwrap_or_else(|| name.to_string())
+    }
+
+    /// Canonicalize a `@root` / `@root.rest` sigil token's ROOT (the part
+    /// before the first `.`) via the `sigils` vocabulary section, leaving
+    /// everything after the `.` (a user field/knob name) untouched.
+    pub(crate) fn canon_sigil_root(&self, raw: &str) -> String {
+        canon_sigil_root_for(raw, self.lang)
+    }
+
+    /// Canonicalize an event name at the point it is captured: only the
+    /// reserved lifecycle event (`INIT`) has a native translation
+    /// (`reservedEvents` section) — every other event name is a user
+    /// identifier and passes through untouched.
+    pub(crate) fn canon_event_name(&self, name: String) -> String {
+        self.lang
+            .canon_reserved_event(&name)
+            .map(str::to_string)
+            .unwrap_or(name)
+    }
+
     /// An emit/listen event name: either a plain `EVENT` identifier or the
     /// `@config.<knob>` reference sigil (Option B — the declared event name
     /// resolves to a string-typed config knob's value at inline time).
@@ -214,11 +273,11 @@ impl Parser {
         match self.peek().clone() {
             TokenKind::Identifier(name) if is_event_name(&name) => {
                 self.advance();
-                Ok(name)
+                Ok(self.canon_event_name(name))
             }
-            TokenKind::Sigil(name) if config_ref_knob(&name).is_some() => {
+            TokenKind::Sigil(name) if config_ref_knob(&self.canon_sigil_root(&name)).is_some() => {
                 self.advance();
-                Ok(format!("@{name}"))
+                Ok(format!("@{}", self.canon_sigil_root(&name)))
             }
             _ => Err(ParseError::ExpectedIdentifier {
                 got: format!("{:?}", self.peek()),
@@ -228,8 +287,12 @@ impl Parser {
     }
 
     pub(crate) fn expect_keyword(&mut self, kw: &str) -> Result<(), ParseError> {
+        debug_assert!(
+            crate::keywords::is_known_keyword(kw),
+            "expect_keyword(\"{kw}\") is not in orbital-lolo's Vocabulary — add it to keywords.rs"
+        );
         match self.peek().clone() {
-            TokenKind::Identifier(name) if name == kw => {
+            TokenKind::Identifier(name) if name == kw || self.lang.canon_any(&name) == Some(kw) => {
                 self.advance();
                 Ok(())
             }
@@ -242,7 +305,14 @@ impl Parser {
     }
 
     pub(crate) fn check_ident(&self, name: &str) -> bool {
-        matches!(self.peek(), TokenKind::Identifier(n) if n == name)
+        debug_assert!(
+            crate::keywords::is_known_keyword(name),
+            "check_ident(\"{name}\") is not in orbital-lolo's Vocabulary — add it to keywords.rs"
+        );
+        match self.peek() {
+            TokenKind::Identifier(n) => n == name || self.lang.canon_any(n) == Some(name),
+            _ => false,
+        }
     }
 
     pub(crate) fn expect_kind(&mut self, kind: &TokenKind, label: &str) -> Result<(), ParseError> {
@@ -918,58 +988,16 @@ pub(crate) fn reject_match_effect_head(eff: &SExpression, span: Span) -> Result<
     Ok(())
 }
 
+/// `name` is expected already-canonicalized (English) — every caller reaches
+/// this after `Lang::canon_type`. The primitive/special-type word list has
+/// one owner, `crate::keywords::vocabulary().types` (the parser's B1
+/// `types` section, with per-word rationale); the only call site
+/// (`parser::type::parse_type_atom`) intercepts the 8 config-only special
+/// names (`Map trait entity event slot pattern secret SExpr`) before
+/// falling through here, so their presence in `vocabulary().types`
+/// alongside the true primitives is harmless.
 pub(crate) fn is_primitive_type(name: &str) -> bool {
-    matches!(
-        name,
-        "string"
-            | "number"
-            | "int"
-            | "float"
-            | "bool"
-            | "boolean"
-            | "timestamp"
-            | "date"
-            | "datetime"
-            | "duration"
-            | "money"
-            // A single primitive value of bounded kind:
-            // `string | number | boolean | null`. Listed here so `v : scalar`
-            // parses as a PRIMITIVE rather than an unknown named type that
-            // erases to string — the erasure that made `json` invisible.
-            | "scalar"
-            // Deliberately OPEN data — an audit snapshot of an arbitrary row, a
-            // third-party response body, an upstream event's payload at a
-            // generic wiring atom. Same wire shape as `json`, opposite intent:
-            // `json` means "not typed yet", `opaque` means "not closeable, and
-            // a struct here would be a lie". Listed so `v : opaque` parses as a
-            // primitive rather than an unknown named type.
-            | "opaque"
-            // Uploaded file/attachment — a struct value at rest
-            // ({name, url, mimeType, sizeBytes}); promoted 2026-08-20.
-            | "file"
-            // Semantic string domains — first-class types, not refinements.
-            // Listing them here is what makes `email : email` parse as a
-            // primitive instead of an unknown named type that erases to string.
-            | "email"
-            | "url"
-            | "phone"
-            | "uuid"
-            | "image"
-            // Refinement primitives: a string + a validity rule. `icon` = a valid
-            // Lucide name; `component` = a valid element tag (or a @trait ref);
-            // `asset` = a resolvable asset URL. All lower to `string`; the value
-            // rule is enforced where the value is used (render-ui icon / prop
-            // validation). The distinct config-type tag (`icon`/`asset`) survives
-            // to the `.orb` `type` field so the property inspector can dispatch an
-            // IconPicker / AssetPicker on it.
-            | "icon"
-            | "asset"
-            | "component"
-            | "object"
-            | "void"
-            | "null"
-            | "any"
-    )
+    crate::keywords::vocabulary().types.contains(&name)
 }
 
 /// Return `Some(type_name)` when the type expression contains a config-only
@@ -1094,22 +1122,24 @@ pub(crate) fn is_block_keyword(name: &str) -> bool {
 
 pub(crate) fn is_event_name(name: &str) -> bool {
     // Event names may be UPPER_SNAKE (e.g. INIT, ADD_ITEM) or MixedCase/PascalCase
-    // (e.g. BrowseItemLoaded, ConfirmActionLoadFailed). First char must be uppercase
-    // ASCII letter; remaining chars are letters, digits, or underscores.
+    // (e.g. BrowseItemLoaded, ConfirmActionLoadFailed). First char must be an
+    // ASCII uppercase letter, OR a non-ASCII alphabetic char (caseless
+    // scripts, e.g. Arabic, have no case to distinguish); remaining chars
+    // are letters, digits, or underscores.
     let mut chars = name.chars();
     let Some(first) = chars.next() else {
         return false;
     };
-    if !first.is_ascii_uppercase() {
+    if !(first.is_ascii_uppercase() || (!first.is_ascii() && first.is_alphabetic())) {
         return false;
     }
-    chars.all(|c| c.is_ascii_alphanumeric() || c == '_')
+    chars.all(|c| c.is_alphanumeric() || c == '_')
 }
 
-pub(crate) fn is_event_name_at_peek(kind: &TokenKind) -> bool {
+pub(crate) fn is_event_name_at_peek(kind: &TokenKind, lang: &Lang) -> bool {
     match kind {
         TokenKind::Identifier(name) => is_event_name(name),
-        TokenKind::Sigil(name) => config_ref_knob(name).is_some(),
+        TokenKind::Sigil(name) => config_ref_knob(&canon_sigil_root_for(name, lang)).is_some(),
         _ => false,
     }
 }
@@ -1117,13 +1147,32 @@ pub(crate) fn is_event_name_at_peek(kind: &TokenKind) -> bool {
 /// `@config.<knob>` is the only legal reference form for an emit/listen event
 /// name (Option B: the declared event name resolves to a config knob's
 /// value). Returns the knob identifier when `name` (the lexer's dotted-sigil
-/// body, e.g. `config.action`) matches `config.<ident>`.
+/// body, e.g. `config.action`, already canonicalized via
+/// `canon_sigil_root_for`) matches `config.<ident>`.
 pub(crate) fn config_ref_knob(name: &str) -> Option<&str> {
     let knob = name.strip_prefix("config.")?;
     if knob.is_empty() || knob.contains('.') {
         return None;
     }
     Some(knob)
+}
+
+/// Canonicalize a `@root` / `@root.rest` sigil token's ROOT via the
+/// `sigils` vocabulary section, leaving everything after the first `.`
+/// (a user field/knob name) untouched. Free function (not a `Parser`
+/// method) so call sites without a `Parser` in scope (`is_event_name_at_peek`)
+/// can use it too; `Parser::canon_sigil_root` delegates here.
+pub(crate) fn canon_sigil_root_for(raw: &str, lang: &Lang) -> String {
+    match raw.split_once('.') {
+        Some((root, rest)) => match lang.canon_sigil(root) {
+            Some(en) => format!("{en}.{rest}"),
+            None => raw.to_string(),
+        },
+        None => lang
+            .canon_sigil(raw)
+            .map(str::to_string)
+            .unwrap_or_else(|| raw.to_string()),
+    }
 }
 
 #[cfg(test)]
