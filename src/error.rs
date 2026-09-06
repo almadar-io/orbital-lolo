@@ -712,6 +712,22 @@ pub enum LowerError {
         behavior: String,
     },
 
+    /// `orbital Local = Alias.orbitals.X { … }` (orbital-import Stage B) names
+    /// an orbital the imported behavior doesn't declare (typo / stale name).
+    /// Fourth member of the `Alias.<traits|pages|orbitals>` family
+    /// `check_behavior_contracts` resolves against the baked behavior-contract
+    /// slice; the compiler's post-inline `InlineError::OrbitalNotFound` is the
+    /// backstop for a slice that lags the live registries.
+    #[error(
+        "orbital reference {reference:?} names orbital {member:?}, but behavior {behavior:?} \
+         does not declare it — check the name against `signatures.lolo`"
+    )]
+    UnknownOrbitalRef {
+        reference: String,
+        member: String,
+        behavior: String,
+    },
+
     /// A rebind target entity is missing field(s) the imported trait READS
     /// (`entityContract.requires`). Pre-inline mirror of the compiler's
     /// post-inline `ORB_T_REBIND_MISSING_FIELDS`; only fires for inline-entity

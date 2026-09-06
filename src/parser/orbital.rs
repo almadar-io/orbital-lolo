@@ -1,24 +1,30 @@
-//! Orbital-reference parsing (orbital-import Stage A) — the `.lolo` surface
-//! of `docs/Almadar_Orbital_Import.md` §4.1: `orbital Name = Alias.orbitals.Y
-//! { ... }`. Mirrors `parser::trait_::parse_trait_reference` /
+//! Orbital-reference parsing (orbital-import Stage A + B) — the `.lolo`
+//! surface of `docs/Almadar_Orbital_Import.md` §4.1: `orbital Name =
+//! Alias.orbitals.Y { ... }`. Mirrors `parser::trait_::parse_trait_reference` /
 //! `parse_trait_ref_body` field-for-field, one level up (orbital scope
-//! instead of trait scope).
+//! instead of trait scope). Stage B adds `entities {}` (out-of-orbital
+//! entity remap), `roles {}` (role-vocabulary remap), a `pages {}` mount
+//! tail (`-> TraitA, TraitB`), and sibling `trait` declarations.
 
 use super::*;
 
-/// Parsed body of an orbital-reference call site (`{ entity fields pages
-/// omit only config events }`). Produced by `Parser::parse_orbital_ref_body`
-/// and folded into the `Orbital` AST node by its one caller,
-/// `parse_orbital_reference`.
+/// Parsed body of an orbital-reference call site (`{ entity entities fields
+/// roles pages omit only config events trait }`, Stage B). Produced by
+/// `Parser::parse_orbital_ref_body` and folded into the `Orbital` AST node
+/// by its one caller, `parse_orbital_reference`.
 #[derive(Debug, Clone, Default)]
 struct OrbitalRefBody {
     entity_rebind: Option<String>,
+    entities_remap: Vec<(String, String)>,
     fields_remap: Vec<(String, String)>,
+    roles_remap: Vec<(String, Vec<String>)>,
     pages_remap: Vec<(String, String)>,
+    mounts: Vec<(String, Vec<String>)>,
     omit: Vec<String>,
     only: Vec<String>,
     config_overrides: Vec<ConfigField>,
     events_remap: Vec<(String, String)>,
+    sibling_traits: Vec<Trait>,
 }
 
 impl Parser {
@@ -39,6 +45,15 @@ impl Parser {
 
         let body = self.parse_orbital_ref_body()?;
 
+        // Flush inline `@(…)` references collected while parsing sibling
+        // trait bodies (render-ui children / config values) — the same
+        // hoist `parse_orbital` runs for an inline orbital's own traits, so
+        // a sibling's inline refs become real appended sibling traits too.
+        // No page auto-registration here: a reference-form orbital owns no
+        // local `Page` list — mounts are the explicit sibling-mount surface.
+        let mut sibling_traits = body.sibling_traits;
+        sibling_traits.extend(std::mem::take(&mut self.pending_inline_traits));
+
         Ok(Orbital {
             name,
             type_annotation,
@@ -47,7 +62,7 @@ impl Parser {
             type_aliases: Vec::new(),
             entity: None,
             extra_entities: Vec::new(),
-            traits: Vec::new(),
+            traits: sibling_traits,
             pages: Vec::new(),
             theme: None,
             body: Vec::new(),
@@ -59,6 +74,9 @@ impl Parser {
             only: body.only,
             config_overrides: body.config_overrides,
             events_remap: body.events_remap,
+            roles_remap: body.roles_remap,
+            entities_remap: body.entities_remap,
+            mounts: body.mounts,
             // A reference-form orbital declares no knobs of its own — its
             // declared surface lives upstream; `config_overrides` above is
             // the override of THAT surface, not a second declaration.
@@ -96,36 +114,34 @@ impl Parser {
                 self.advance();
                 out.entity_rebind = Some(self.expect_ident()?);
                 self.expect_newline_or_eof()?;
-            } else if self.check_ident("roles") {
-                // Stage B: role-vocabulary remap. The grammar must not
-                // silently accept the design doc's own `roles {}` example
-                // before the rewrite machinery (`check_comparison`'s walker)
-                // exists — see docs' plan, W2-R task, and
-                // Almadar_Orbital_Import.md §5.2.
-                let roles_span = self.peek_span();
-                return Err(ParseError::UnexpectedToken {
-                    expected:
-                        "entity, fields, pages, omit, only, config, events, or } — `roles {}` is not supported until Stage B of orbital import"
-                            .to_string(),
-                    got: "roles".to_string(),
-                    span: roles_span,
-                });
+            } else if self.check_ident("entities") {
+                out.entities_remap = self.parse_orbital_ref_name_map()?;
             } else if self.check_ident("fields") {
                 out.fields_remap = self.parse_orbital_ref_name_map()?;
+            } else if self.check_ident("roles") {
+                out.roles_remap = self.parse_orbital_ref_roles_map()?;
             } else if self.check_ident("events") {
                 out.events_remap = self.parse_orbital_ref_name_map()?;
             } else if self.check_ident("pages") {
-                out.pages_remap = self.parse_orbital_ref_string_map()?;
+                let (pages_remap, mounts) = self.parse_orbital_ref_pages_map()?;
+                out.pages_remap = pages_remap;
+                out.mounts = mounts;
             } else if self.check_ident("omit") {
                 out.omit = self.parse_orbital_ref_name_list()?;
             } else if self.check_ident("only") {
                 out.only = self.parse_orbital_ref_name_list()?;
             } else if self.check_ident("config") {
                 out.config_overrides = self.parse_config_override_block()?;
+            } else if self.check_ident("trait") {
+                // Stage B sibling trait: legal inside the reference body,
+                // never prefixed, `omit`/`only` never apply to it. Lowers
+                // through the same path an inline orbital's own traits take.
+                out.sibling_traits.push(self.parse_trait()?);
             } else {
                 return Err(ParseError::UnexpectedToken {
-                    expected: "entity, fields, pages, omit, only, config, events, or }"
-                        .to_string(),
+                    expected:
+                        "entity, entities, fields, roles, pages, omit, only, config, events, trait, or }"
+                            .to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
                 });
@@ -176,11 +192,12 @@ impl Parser {
         Ok(out)
     }
 
-    /// `pages { "/up": "/local" ... }` — a string-literal path remap map,
-    /// comma- or newline-separated. On entry the `pages` keyword has NOT
-    /// been consumed.
-    fn parse_orbital_ref_string_map(&mut self) -> Result<Vec<(String, String)>, ParseError> {
-        self.advance(); // the `pages` keyword
+    /// `roles { approver: [owner, project_manager]  employee: team_member }`
+    /// (Stage B) — upstream role name → one bare NAME or a `[NAME, ...]`
+    /// list, newline- or comma-separated entries. On entry the `roles`
+    /// keyword has NOT been consumed.
+    fn parse_orbital_ref_roles_map(&mut self) -> Result<Vec<(String, Vec<String>)>, ParseError> {
+        self.advance(); // the `roles` keyword
         if matches!(self.peek(), TokenKind::Colon) {
             self.advance();
         }
@@ -201,10 +218,28 @@ impl Parser {
                     found: "end of file".to_string(),
                 });
             }
-            let from = self.expect_string_literal("a page path string")?;
+            let from = self.expect_ident()?;
             self.expect_kind(&TokenKind::Colon, ":")?;
-            let to = self.expect_string_literal("a page path string")?;
-            out.push((from, to));
+            let targets = if matches!(self.peek(), TokenKind::LBracket) {
+                self.advance();
+                let mut names = Vec::new();
+                loop {
+                    self.skip_newlines();
+                    if matches!(self.peek(), TokenKind::RBracket) {
+                        self.advance();
+                        break;
+                    }
+                    names.push(self.expect_ident()?);
+                    if matches!(self.peek(), TokenKind::Comma) {
+                        self.advance();
+                        self.skip_newlines();
+                    }
+                }
+                names
+            } else {
+                vec![self.expect_ident()?]
+            };
+            out.push((from, targets));
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }
@@ -214,6 +249,64 @@ impl Parser {
             self.advance();
         }
         Ok(out)
+    }
+
+    /// `pages { "/up": "/local" [-> TraitA, TraitB] ... }` — a string-literal
+    /// path remap map with an optional mount tail (Stage B) naming sibling
+    /// trait names to mount on that (upstream-keyed) page, comma- or
+    /// newline-separated. On entry the `pages` keyword has NOT been consumed.
+    /// Returns `(pages_remap, mounts)`.
+    fn parse_orbital_ref_pages_map(
+        &mut self,
+    ) -> Result<(Vec<(String, String)>, Vec<(String, Vec<String>)>), ParseError> {
+        self.advance(); // the `pages` keyword
+        if matches!(self.peek(), TokenKind::Colon) {
+            self.advance();
+        }
+        let open = self.peek_span();
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut out = Vec::new();
+        let mut mounts = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '{',
+                    closer: '}',
+                    open_span: open,
+                    found: "end of file".to_string(),
+                });
+            }
+            let from = self.expect_string_literal("a page path string")?;
+            self.expect_kind(&TokenKind::Colon, ":")?;
+            let to = self.expect_string_literal("a page path string")?;
+            if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
+                self.advance();
+                let mut mount_traits = Vec::new();
+                loop {
+                    mount_traits.push(self.expect_ident()?);
+                    if matches!(self.peek(), TokenKind::Comma) {
+                        self.advance();
+                    } else {
+                        break;
+                    }
+                }
+                mounts.push((from.clone(), mount_traits));
+            }
+            out.push((from, to));
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+            self.skip_newlines();
+        }
+        if matches!(self.peek(), TokenKind::Newline) {
+            self.advance();
+        }
+        Ok((out, mounts))
     }
 
     /// `omit { A B ... }` / `omit { A, B }` — a bare-NAME list, accepting

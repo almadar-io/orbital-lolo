@@ -2028,6 +2028,68 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                 _ => {}
             }
         }
+
+        // The `Alias.<traits|pages|orbitals>` ladder above only visits
+        // `orbital.traits` (trait references) — an unresolved
+        // `orbital Local = Alias.orbitals.Upstream { … }` declaration is a
+        // reference on the ORBITAL ITSELF (`CoreOrbital.reference`), so it
+        // needs its own visit into the same "orbitals" member check. Fourth
+        // member of the ladder family; unknown-member and config-type-mismatch
+        // degrade in dev exactly like the trait/page arms above.
+        if let Some(ref_object) = &orbital.reference {
+            let ref_str = &ref_object.reference;
+            let parts: Vec<&str> = ref_str.split('.').collect();
+            if parts.len() == 3 {
+                let (alias, kind, member) = (parts[0], parts[1], parts[2]);
+                if kind == "orbitals" {
+                    if let Some(key) = alias_key.get(alias) {
+                        if let Some(beh) = crate::registry::get_behavior(key) {
+                            let Some(oc) = beh.orbital_contract(member) else {
+                                // Baked slice can lag the live registries in
+                                // dev (a freshly authored orbital) — skip; the
+                                // compiler's post-inline `OrbitalNotFound` is
+                                // authoritative there.
+                                if !crate::registry::dev_registries_live() {
+                                    return Err(LowerError::UnknownOrbitalRef {
+                                        reference: ref_str.clone(),
+                                        member: member.to_string(),
+                                        behavior: key.clone(),
+                                    });
+                                }
+                                continue;
+                            };
+                            // Typed config overrides — same lenient
+                            // scalar-only check the trait arm runs, skipped in
+                            // dev for the identical stale-baked-type reason.
+                            let skip_stale_contract_types = crate::registry::dev_registries_live();
+                            if let Some(cfg) = &ref_object.config {
+                                for (k, cf) in cfg {
+                                    if skip_stale_contract_types {
+                                        continue;
+                                    }
+                                    if let Some(v) = cf.default.as_ref() {
+                                        let got = orbital_core::literal_value_type(v)
+                                            .or_else(|| config_ref_knob_type(v, &knob_types));
+                                        if let (Some(expected), Some(got)) =
+                                            (oc.config.get(k), got)
+                                        {
+                                            if !config_type_compatible(got, expected) {
+                                                return Err(LowerError::ConfigTypeMismatch {
+                                                    reference: ref_str.clone(),
+                                                    key: k.clone(),
+                                                    expected: expected.clone(),
+                                                    got: got.to_string(),
+                                                });
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
     Ok(())
 }
@@ -2152,5 +2214,98 @@ mod recursive_type_safety_tests {
                 "right".to_string(),
             ])
         );
+    }
+}
+
+/// Orbital-import Stage B — the "orbitals" arm `check_behavior_contracts`
+/// adds to the `Alias.<traits|pages|orbitals>` ladder, exercised against the
+/// REAL embedded `baked/lolo-behavior-contracts.json` slice via
+/// `std-notes`/`NoteOrbital` (an io behavior that ships today; no upstream
+/// declares orbital-level `config {}` yet, so the config-type-mismatch case
+/// is covered separately at the pure `config_type_compatible` level below).
+/// No other unit test in this lib binary reads `ALMADAR_DEV`, so all
+/// mutation of it stays inside ONE `#[test]` (mirrors
+/// `tests/contract_dev_gate.rs`'s convention) to keep it single-threaded
+/// within this binary without needing a second process.
+#[cfg(test)]
+mod orbital_reference_contract_tests {
+    const UNKNOWN_ORBITAL: &str = r#"
+uses Notes from "almadar-behaviors/std-notes"
+
+orbital PfNotes = Notes.orbitals.Nope {
+}
+"#;
+
+    const KNOWN_ORBITAL: &str = r#"
+uses Notes from "almadar-behaviors/std-notes"
+
+orbital PfNotes = Notes.orbitals.NoteOrbital {
+}
+"#;
+
+    #[test]
+    fn unknown_orbital_member_errors_known_member_passes_dev_mode_skips() {
+        let prev = std::env::var("ALMADAR_DEV").ok();
+        std::env::remove_var("ALMADAR_DEV");
+
+        let unknown = crate::parse_and_lower_str(UNKNOWN_ORBITAL);
+        let known = crate::parse_and_lower_str(KNOWN_ORBITAL);
+
+        std::env::set_var("ALMADAR_DEV", "1");
+        let unknown_under_dev = crate::parse_and_lower_str(UNKNOWN_ORBITAL);
+
+        match prev {
+            Some(v) => std::env::set_var("ALMADAR_DEV", v),
+            None => std::env::remove_var("ALMADAR_DEV"),
+        }
+
+        let err = unknown.expect_err(
+            "Notes.orbitals.Nope names an orbital std-notes does not declare — must error",
+        );
+        let msg = err.to_string();
+        assert!(msg.contains("Nope"), "error names the offending member: {msg}");
+        assert!(msg.contains("std-notes"), "error names the behavior: {msg}");
+
+        known.expect("Notes.orbitals.NoteOrbital is a real orbital on std-notes — must pass");
+
+        unknown_under_dev.expect(
+            "ALMADAR_DEV degrades an unknown-member contract error to a skip, same as the \
+             trait/page arms",
+        );
+    }
+}
+
+/// `config_type_compatible` is the same lenient scalar-only comparator both
+/// the trait arm and the new orbital arm call — proven directly because the
+/// corpus has zero orbitals declaring `config {}` today (verified: every
+/// `OrbitalContract.config` in `baked/lolo-behavior-contracts.json` is
+/// empty), so an end-to-end `orbital X = Alias.orbitals.Y { config { ... } }`
+/// mismatch fixture has no real upstream knob to target yet.
+#[cfg(test)]
+mod config_type_compatible_tests {
+    use super::config_type_compatible;
+
+    #[test]
+    fn number_knob_rejects_a_string_value() {
+        assert!(!config_type_compatible("string", "number"));
+    }
+
+    #[test]
+    fn string_knob_accepts_a_string_value() {
+        assert!(config_type_compatible("string", "string"));
+    }
+
+    #[test]
+    fn boolean_knob_rejects_a_number_value() {
+        assert!(!config_type_compatible("number", "boolean"));
+    }
+
+    #[test]
+    fn array_and_object_typed_knobs_are_permissive_of_unknown_declared_types() {
+        // "unknown"/"pattern"/"slot" declared types fall through the `_ => true`
+        // arm deliberately — the check never false-positives on a knob shape
+        // it can't reason about.
+        assert!(config_type_compatible("array", "unknown"));
+        assert!(config_type_compatible("object", "pattern"));
     }
 }

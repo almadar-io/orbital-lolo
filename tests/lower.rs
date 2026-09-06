@@ -512,3 +512,10 @@ fn orbital_import_reference_full_lowers() {
 fn orbital_import_inline_config_lowers() {
     assert_lowering_matches("orbital-import-inline-config");
 }
+
+// Orbital-import Stage B golden — kept in sync with the round-trip test in
+// tests/formatter.rs.
+#[test]
+fn orbital_ref_stage_b_lowers() {
+    assert_lowering_matches("orbital_ref_stage_b");
+}

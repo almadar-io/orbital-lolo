@@ -263,8 +263,10 @@ pub struct Orbital {
     /// (`"Alias.orbitals.Y"`) when this orbital is a REFERENCE to an
     /// imported orbital, not an inline definition (orbital-import Stage A,
     /// mirrors `Page.reference`/`Trait.reference`). `entity`/`extra_entities`/
-    /// `traits`/`pages` MUST be empty when this is `Some` — the upstream
-    /// organism owns them; the fields below are the override surface.
+    /// `pages` MUST be empty when this is `Some` — the upstream organism owns
+    /// them; the fields below are the override surface. `traits` (Stage B)
+    /// holds SIBLING trait declarations authored in the reference body — the
+    /// upstream's own traits arrive at inline, never here.
     pub reference: Option<String>,
     /// `entity NAME` override body — rebinds the imported orbital's primary
     /// entity, exactly as `-> Entity` does on a trait reference.
@@ -293,6 +295,17 @@ pub struct Orbital {
     /// trait in the imported set (emits AND listen keys), same rule as the
     /// trait reference form's `events {}`.
     pub events_remap: Vec<(String, String)>,
+    /// `roles { approver: [owner, project_manager]  employee: team_member }`
+    /// (Stage B) — upstream role vocabulary word → one or more consumer
+    /// roster role names. Order preserved for the formatter.
+    pub roles_remap: Vec<(String, Vec<String>)>,
+    /// `entities { Employee: Person }` (Stage B) — out-of-orbital upstream
+    /// entity name → consumer entity name. Identity (`X: X`) is legal.
+    pub entities_remap: Vec<(String, String)>,
+    /// `pages { "/up": "/local" -> TraitA, TraitB }` mount tails (Stage B),
+    /// keyed by the UPSTREAM path — sibling trait names (declared in
+    /// `traits` below) to mount on that page in addition to its own.
+    pub mounts: Vec<(String, Vec<String>)>,
     /// `config { ... }` — an INLINE orbital's own declared knobs
     /// (orbital-import Stage A, `Orbital.config`). Empty for a reference-form
     /// orbital, whose declared knobs live upstream; always empty together

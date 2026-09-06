@@ -573,7 +573,17 @@ fn lower_orbital(
     base: &str,
 ) -> Result<CoreOrbital, LowerError> {
     if orb.reference.is_some() {
-        return orbital_ref::lower_orbital_reference(orb, file_uses, aliases, entity_names);
+        return orbital_ref::lower_orbital_reference(
+            orb,
+            file_uses,
+            aliases,
+            entity_names,
+            entities,
+            event_aliases,
+            shared_entity_names,
+            source_map,
+            base,
+        );
     }
     let entity = orb.entity.as_ref().ok_or(LowerError::MissingEntity)?;
     let entity_def = lower_entity(entity, aliases, entity_names)?;

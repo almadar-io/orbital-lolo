@@ -3,7 +3,9 @@
 //! `uses`, and the two `config {}` declaration sites (app-level, orbital-
 //! level). See `docs/Almadar_Orbital_Import.md` §4 and the W2-R work item.
 
-use orbital_core::schema::{ConfigField as SchemaConfigField, EntityRef, SExpression};
+use orbital_core::schema::{
+    ConfigField as SchemaConfigField, EntityRef, SExpression, TraitReference,
+};
 use orbital_lolo::ast::TypeExpr;
 use orbital_lolo::{parse_and_lower_str, parse_str};
 
@@ -16,11 +18,18 @@ uses TimeTracking from "almadar-behaviors/std-time-tracking" {
 
 orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
   entity Timesheet
+  entities {
+    Employee: Person
+  }
   fields {
     periodStart: from
   }
+  roles {
+    approver: [owner, project_manager]
+    employee: team_member
+  }
   pages {
-    "/timesheets": "/pf/timesheets"
+    "/timesheets": "/pf/timesheets" -> TimesheetApproval
   }
   omit {
     TimesheetDelete
@@ -30,6 +39,14 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
   }
   events {
     TIMESHEET_APPROVED: PF_APPROVED
+  }
+  trait TimesheetApproval -> Timesheet [interaction, instance] {
+    state draft {
+      SUBMIT -> submitted
+        (set @id "x")
+    }
+    state submitted {
+    }
   }
 }
 "#;
@@ -64,18 +81,45 @@ fn orbital_reference_parses_every_override_block() {
     );
     // An inline-only orbital field must stay empty on a reference form.
     assert!(orb.entity.is_none());
-    assert!(orb.traits.is_empty());
     assert!(orb.pages.is_empty());
-    assert!(orb.config.is_empty(), "reference form declares no own knobs");
+    assert!(
+        orb.config.is_empty(),
+        "reference form declares no own knobs"
+    );
+    // `traits` carries the ONE sibling trait declared in the body (Stage B) —
+    // never the upstream's own traits, which arrive at inline.
+    assert_eq!(orb.traits.len(), 1);
+    assert_eq!(orb.traits[0].name, "TimesheetApproval");
 
     assert_eq!(orb.entity_rebind.as_deref(), Some("Timesheet"));
+    assert_eq!(
+        orb.entities_remap,
+        vec![("Employee".to_string(), "Person".to_string())]
+    );
     assert_eq!(
         orb.fields_remap,
         vec![("periodStart".to_string(), "from".to_string())]
     );
     assert_eq!(
+        orb.roles_remap,
+        vec![
+            (
+                "approver".to_string(),
+                vec!["owner".to_string(), "project_manager".to_string()]
+            ),
+            ("employee".to_string(), vec!["team_member".to_string()]),
+        ]
+    );
+    assert_eq!(
         orb.pages_remap,
         vec![("/timesheets".to_string(), "/pf/timesheets".to_string())]
+    );
+    assert_eq!(
+        orb.mounts,
+        vec![(
+            "/timesheets".to_string(),
+            vec!["TimesheetApproval".to_string()]
+        )]
     );
     assert_eq!(orb.omit, vec!["TimesheetDelete".to_string()]);
     assert!(orb.only.is_empty());
@@ -98,7 +142,15 @@ fn orbital_reference_lowers_to_the_placeholder_and_ref_object() {
     let orb = &schema.orbitals[0];
 
     assert_eq!(orb.name, "PfTimesheets");
-    assert!(orb.traits.is_empty(), "reference form ships no traits pre-inline");
+    assert_eq!(
+        orb.traits.len(),
+        1,
+        "the one sibling trait lowered into traits, not the empty placeholder"
+    );
+    match &orb.traits[0] {
+        TraitReference::Inline(t) => assert_eq!(t.name, "TimesheetApproval"),
+        other => panic!("expected an inline-lowered sibling trait, got {other:?}"),
+    }
     assert!(orb.pages.is_none());
     assert!(
         orb.config.is_none(),
@@ -115,11 +167,19 @@ fn orbital_reference_lowers_to_the_placeholder_and_ref_object() {
         .reference
         .as_ref()
         .expect("reference-form orbital must lower a Some(OrbitalRefObject)");
-    assert_eq!(ref_object.reference, "TimeTracking.orbitals.TimesheetPanelOrbital");
+    assert_eq!(
+        ref_object.reference,
+        "TimeTracking.orbitals.TimesheetPanelOrbital"
+    );
     assert!(ref_object.ref_id.is_none());
     assert_eq!(ref_object.entity.as_deref(), Some("Timesheet"));
     assert_eq!(
-        ref_object.fields.as_ref().unwrap().get("periodStart").map(String::as_str),
+        ref_object
+            .fields
+            .as_ref()
+            .unwrap()
+            .get("periodStart")
+            .map(String::as_str),
         Some("from")
     );
     assert_eq!(
@@ -131,7 +191,10 @@ fn orbital_reference_lowers_to_the_placeholder_and_ref_object() {
             .map(String::as_str),
         Some("/pf/timesheets")
     );
-    assert_eq!(ref_object.omit.as_ref().unwrap(), &vec!["TimesheetDelete".to_string()]);
+    assert_eq!(
+        ref_object.omit.as_ref().unwrap(),
+        &vec!["TimesheetDelete".to_string()]
+    );
     assert!(ref_object.only.is_none());
     let cfg = ref_object.config.as_ref().expect("config override map");
     assert_eq!(cfg.len(), 1);
@@ -149,6 +212,29 @@ fn orbital_reference_lowers_to_the_placeholder_and_ref_object() {
             .map(String::as_str),
         Some("PF_APPROVED")
     );
+    let roles = ref_object.roles.as_ref().expect("roles map");
+    assert_eq!(roles.len(), 2);
+    assert_eq!(
+        roles.get("approver"),
+        Some(&vec!["owner".to_string(), "project_manager".to_string()])
+    );
+    assert_eq!(
+        roles.get("employee"),
+        Some(&vec!["team_member".to_string()])
+    );
+    assert_eq!(
+        ref_object
+            .entities
+            .as_ref()
+            .unwrap()
+            .get("Employee")
+            .map(String::as_str),
+        Some("Person")
+    );
+    assert_eq!(
+        ref_object.mounts.as_ref().unwrap().get("/timesheets"),
+        Some(&vec!["TimesheetApproval".to_string()])
+    );
 
     // The file-scoped `uses` merged onto the orbital, carrying its config
     // override.
@@ -164,21 +250,104 @@ fn orbital_reference_lowers_to_the_placeholder_and_ref_object() {
 }
 
 #[test]
-fn orbital_ref_rejects_roles() {
+fn orbital_ref_roles_single_and_list_forms() {
     let source = r#"
 uses TimeTracking from "almadar-behaviors/std-time-tracking"
 
 orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
   roles {
-    approver: project_manager
+    approver: [owner, project_manager]
+    employee: team_member
   }
 }
 "#;
-    let err = parse_str(source).expect_err("roles {} must be a parse error");
+    let program = parse_str(source).expect("parse");
+    let orb = &program.orbitals[0];
+    assert_eq!(
+        orb.roles_remap,
+        vec![
+            (
+                "approver".to_string(),
+                vec!["owner".to_string(), "project_manager".to_string()]
+            ),
+            ("employee".to_string(), vec!["team_member".to_string()]),
+        ]
+    );
+
+    let schema = parse_and_lower_str(source).expect("lower");
+    let ref_object = schema.orbitals[0].reference.as_ref().expect("ref object");
+    let roles = ref_object.roles.as_ref().expect("roles map");
+    assert_eq!(
+        roles.get("approver"),
+        Some(&vec!["owner".to_string(), "project_manager".to_string()])
+    );
+    assert_eq!(
+        roles.get("employee"),
+        Some(&vec!["team_member".to_string()])
+    );
+}
+
+#[test]
+fn orbital_ref_pages_mount_tail_lowers_to_mounts() {
+    let source = r#"
+uses TimeTracking from "almadar-behaviors/std-time-tracking"
+
+orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
+  pages {
+    "/timesheets": "/pf/timesheets" -> TimesheetApproval, TimesheetHistory
+    "/reports": "/pf/reports"
+  }
+}
+"#;
+    let program = parse_str(source).expect("parse");
+    let orb = &program.orbitals[0];
+    assert_eq!(
+        orb.pages_remap,
+        vec![
+            ("/timesheets".to_string(), "/pf/timesheets".to_string()),
+            ("/reports".to_string(), "/pf/reports".to_string()),
+        ]
+    );
+    assert_eq!(
+        orb.mounts,
+        vec![(
+            "/timesheets".to_string(),
+            vec![
+                "TimesheetApproval".to_string(),
+                "TimesheetHistory".to_string()
+            ]
+        )]
+    );
+
+    let schema = parse_and_lower_str(source).expect("lower");
+    let ref_object = schema.orbitals[0].reference.as_ref().expect("ref object");
+    assert_eq!(
+        ref_object.mounts.as_ref().unwrap().get("/timesheets"),
+        Some(&vec![
+            "TimesheetApproval".to_string(),
+            "TimesheetHistory".to_string()
+        ])
+    );
+    // The unmounted page fires no entry in `mounts` at all.
+    assert!(!ref_object.mounts.as_ref().unwrap().contains_key("/reports"));
+}
+
+#[test]
+fn orbital_ref_roles_missing_value_is_a_parse_error() {
+    let source = r#"
+uses TimeTracking from "almadar-behaviors/std-time-tracking"
+
+orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
+  roles {
+    approver:
+  }
+}
+"#;
+    let err = parse_str(source).expect_err("a value-less roles entry must be a parse error");
     let message = format!("{err}");
     assert!(
-        message.contains("Stage B"),
-        "error should name Stage B, got: {message}"
+        message.to_lowercase().contains("identifier") || message.contains("expected"),
+        "error should point at the missing role target, got: {message}"
     );
 }
 
@@ -233,7 +402,10 @@ orbital Shell {
 
     let schema = parse_and_lower_str(source).expect("lower");
     let orb_schema = &schema.orbitals[0];
-    let config = orb_schema.config.as_ref().expect("orbital-level config map");
+    let config = orb_schema
+        .config
+        .as_ref()
+        .expect("orbital-level config map");
     assert_eq!(config.len(), 1);
     match &config["pageSize"].default {
         Some(SExpression::Number(n)) => assert_eq!(*n, 10.0),

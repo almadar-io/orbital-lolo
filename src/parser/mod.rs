@@ -603,6 +603,9 @@ impl Parser {
             only: Vec::new(),
             config_overrides: Vec::new(),
             events_remap: Vec::new(),
+            roles_remap: Vec::new(),
+            entities_remap: Vec::new(),
+            mounts: Vec::new(),
             config,
             span,
         })

@@ -1,0 +1,123 @@
+{
+  "name": "PfTimesheets",
+  "orbitals": [
+    {
+      "entity": "TimeTracking.orbitals.TimesheetPanelOrbital.entity",
+      "name": "PfTimesheets",
+      "reference": {
+        "config": {
+          "pageSize": {
+            "default": 50.0,
+            "type": "unknown"
+          }
+        },
+        "entities": {
+          "ApprovalRequest": "ApprovalRequest",
+          "Employee": "Person"
+        },
+        "entity": "Timesheet",
+        "events": {
+          "TIMESHEET_APPROVED": "PF_APPROVED"
+        },
+        "fields": {
+          "periodStart": "from"
+        },
+        "mounts": {
+          "/timesheets": [
+            "TimesheetApproval",
+            "TimesheetHistory"
+          ]
+        },
+        "omit": [
+          "TimesheetDelete"
+        ],
+        "pages": {
+          "/reports": "/pf/reports",
+          "/timesheets": "/pf/timesheets"
+        },
+        "ref": "TimeTracking.orbitals.TimesheetPanelOrbital",
+        "roles": {
+          "approver": [
+            "owner",
+            "project_manager"
+          ],
+          "employee": [
+            "team_member"
+          ]
+        }
+      },
+      "traits": [
+        {
+          "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "set",
+              "resource": "@id"
+            }
+          ],
+          "linkedEntity": "Timesheet",
+          "name": "TimesheetApproval",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "SUBMIT",
+                "name": "Submit"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "draft"
+              },
+              {
+                "name": "submitted"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@id",
+                    "x"
+                  ]
+                ],
+                "event": "SUBMIT",
+                "from": "draft",
+                "to": "submitted"
+              }
+            ]
+          }
+        },
+        {
+          "category": "interaction",
+          "linkedEntity": "Timesheet",
+          "name": "TimesheetHistory",
+          "scope": "instance",
+          "stateMachine": {
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": []
+          }
+        }
+      ],
+      "uses": [
+        {
+          "as": "TimeTracking",
+          "config": {
+            "appName": {
+              "default": "PF",
+              "type": "unknown"
+            }
+          },
+          "from": "almadar-behaviors/std-time-tracking"
+        }
+      ]
+    }
+  ]
+}

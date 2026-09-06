@@ -23,13 +23,24 @@ struct Contracts {
     behaviors: HashMap<String, Behavior>,
 }
 
-/// One behavior (`std-modal`, `std-browse`, …) and its trait/page contracts.
+/// One behavior (`std-modal`, `std-browse`, …) and its trait/page/orbital
+/// contracts.
 #[derive(Deserialize)]
 pub struct Behavior {
     #[serde(default)]
     pub traits: HashMap<String, TraitContract>,
     #[serde(default)]
     pub pages: Vec<String>,
+    /// Orbital contracts, keyed by orbital name — the `Alias.orbitals.X`
+    /// surface (orbital-import Stage B). `#[serde(default)]` so a behavior
+    /// baked before this field existed degrades to "no orbitals known"
+    /// instead of failing to deserialize.
+    #[serde(default)]
+    pub orbitals: HashMap<String, OrbitalContract>,
+    /// This behavior's app-level (organism-wide) declared config knobs →
+    /// their lolo type, for typed `uses … { config { … } }` override checks.
+    #[serde(default, rename = "appConfig")]
+    pub app_config: HashMap<String, String>,
 }
 
 /// A single trait's parse-time-checkable contract.
@@ -45,6 +56,18 @@ pub struct TraitContract {
     pub config: HashMap<String, String>,
 }
 
+/// A single orbital's parse-time-checkable contract (orbital-import Stage B):
+/// what `Alias.orbitals.X` publishes for a `config { … }` override to check
+/// against.
+#[derive(Deserialize)]
+pub struct OrbitalContract {
+    /// Overridable config keys → their lolo type, for typed config-override
+    /// checks on an `orbital Local = Alias.orbitals.X { config { … } }`
+    /// reference.
+    #[serde(default)]
+    pub config: HashMap<String, String>,
+}
+
 impl Behavior {
     pub fn has_trait(&self, name: &str) -> bool {
         self.traits.contains_key(name)
@@ -52,8 +75,14 @@ impl Behavior {
     pub fn has_page(&self, name: &str) -> bool {
         self.pages.iter().any(|p| p == name)
     }
+    pub fn has_orbital(&self, name: &str) -> bool {
+        self.orbitals.contains_key(name)
+    }
     pub fn trait_contract(&self, name: &str) -> Option<&TraitContract> {
         self.traits.get(name)
+    }
+    pub fn orbital_contract(&self, name: &str) -> Option<&OrbitalContract> {
+        self.orbitals.get(name)
     }
 }
 

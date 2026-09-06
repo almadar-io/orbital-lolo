@@ -794,10 +794,11 @@ impl Formatter {
         self.output.push('}');
     }
 
-    /// Body of an orbital-reference declaration (orbital-import Stage A) —
-    /// `entity` / `fields` / `pages` / `omit` / `only` / `config` / `events`,
-    /// in EBNF order, each printed only when populated. Mirrors
-    /// `fmt_trait_ref_overrides` one scope up.
+    /// Body of an orbital-reference declaration (orbital-import Stage A + B)
+    /// — `entity` / `entities` / `fields` / `roles` / `pages` (with mount
+    /// tails) / `omit` / `only` / `config` / `events` / sibling `trait`
+    /// declarations, in EBNF order, each printed only when populated.
+    /// Mirrors `fmt_trait_ref_overrides` one scope up.
     fn fmt_orbital_ref_body(&mut self, orbital: &Orbital) {
         let mut wrote_any = false;
         if let Some(entity) = &orbital.entity_rebind {
@@ -806,6 +807,27 @@ impl Formatter {
             self.output.push_str(entity);
             self.write_newline();
             wrote_any = true;
+        }
+        if !orbital.entities_remap.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("entities {");
+            self.write_newline();
+            self.indent();
+            for (k, v) in &orbital.entities_remap {
+                self.write_indent();
+                self.output.push_str(k);
+                self.output.push_str(": ");
+                self.output.push_str(v);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
         }
         if !orbital.fields_remap.is_empty() {
             if wrote_any {
@@ -828,6 +850,38 @@ impl Formatter {
             self.output.push('}');
             self.write_newline();
         }
+        if !orbital.roles_remap.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("roles {");
+            self.write_newline();
+            self.indent();
+            for (k, targets) in &orbital.roles_remap {
+                self.write_indent();
+                self.output.push_str(k);
+                self.output.push_str(": ");
+                if targets.len() == 1 {
+                    self.output.push_str(&targets[0]);
+                } else {
+                    self.output.push('[');
+                    for (i, t) in targets.iter().enumerate() {
+                        if i > 0 {
+                            self.output.push_str(", ");
+                        }
+                        self.output.push_str(t);
+                    }
+                    self.output.push(']');
+                }
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
         if !orbital.pages_remap.is_empty() {
             if wrote_any {
                 self.write_newline();
@@ -842,6 +896,15 @@ impl Formatter {
                 self.write_quoted_string(k);
                 self.output.push_str(": ");
                 self.write_quoted_string(v);
+                if let Some((_, mount_traits)) = orbital.mounts.iter().find(|(up, _)| up == k) {
+                    self.output.push_str(" -> ");
+                    for (i, t) in mount_traits.iter().enumerate() {
+                        if i > 0 {
+                            self.output.push_str(", ");
+                        }
+                        self.output.push_str(t);
+                    }
+                }
                 self.write_newline();
             }
             self.dedent();
@@ -910,6 +973,7 @@ impl Formatter {
             if wrote_any {
                 self.write_newline();
             }
+            wrote_any = true;
             self.write_indent();
             self.output.push_str("events {");
             self.write_newline();
@@ -924,6 +988,23 @@ impl Formatter {
             self.dedent();
             self.write_indent();
             self.output.push('}');
+            self.write_newline();
+        }
+        // Sibling trait declarations (Stage B) — never prefixed, printed
+        // exactly as an inline orbital's own traits are (`fmt_orbital`'s
+        // trait loop), skipping any that are inline-synthetic (those
+        // reprint as `@(...)` sugar inside their embedder instead).
+        for t in &orbital.traits {
+            if t.is_inline_synthetic {
+                continue;
+            }
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.emit_comments_before(t.span.line);
+            self.write_indent();
+            self.fmt_trait(t);
             self.write_newline();
         }
     }

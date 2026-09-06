@@ -686,3 +686,14 @@ fn orbital_import_reference_full_round_trips() {
 fn orbital_import_inline_config_round_trips() {
     assert_round_trip("orbital-import-inline-config");
 }
+
+// Orbital-import Stage B (docs/Almadar_Orbital_Import.md §4, plan
+// tender-booping-moler.md B1-R) round-trips: every override block —
+// `entity` / `entities` / `fields` / `roles` (single + list forms) /
+// `pages` with a mount tail / `omit` / `config` / `events` — plus two
+// sibling `trait` declarations, one of them mounted. Kept in sync with
+// tests/lower.rs.
+#[test]
+fn orbital_ref_stage_b_round_trips() {
+    assert_round_trip("orbital_ref_stage_b");
+}

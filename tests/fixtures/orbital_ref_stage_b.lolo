@@ -1,0 +1,45 @@
+uses TimeTracking from "almadar-behaviors/std-time-tracking" {
+  config {
+    appName: "PF"
+  }
+}
+
+orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
+  entity Timesheet
+  entities {
+    Employee: Person
+    ApprovalRequest: ApprovalRequest
+  }
+  fields {
+    periodStart: from
+  }
+  roles {
+    approver: [owner, project_manager]
+    employee: team_member
+  }
+  pages {
+    "/timesheets": "/pf/timesheets" -> TimesheetApproval, TimesheetHistory
+    "/reports": "/pf/reports"
+  }
+  omit {
+    TimesheetDelete
+  }
+  config {
+    pageSize: 50
+  }
+  events {
+    TIMESHEET_APPROVED: PF_APPROVED
+  }
+  trait TimesheetApproval -> Timesheet [interaction, instance] {
+    state draft {
+      SUBMIT -> submitted
+        (set @id "x")
+    }
+    state submitted {
+    }
+  }
+  trait TimesheetHistory -> Timesheet [interaction, instance] {
+    state idle {
+    }
+  }
+}
