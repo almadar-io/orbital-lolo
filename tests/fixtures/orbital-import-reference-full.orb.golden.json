@@ -1,0 +1,44 @@
+{
+  "name": "PfTimesheets",
+  "orbitals": [
+    {
+      "entity": "TimeTracking.orbitals.TimesheetPanelOrbital.entity",
+      "name": "PfTimesheets",
+      "reference": {
+        "config": {
+          "pageSize": {
+            "default": 50.0,
+            "type": "unknown"
+          }
+        },
+        "entity": "Timesheet",
+        "events": {
+          "TIMESHEET_APPROVED": "PF_APPROVED"
+        },
+        "fields": {
+          "periodStart": "from"
+        },
+        "omit": [
+          "TimesheetDelete"
+        ],
+        "pages": {
+          "/timesheets": "/pf/timesheets"
+        },
+        "ref": "TimeTracking.orbitals.TimesheetPanelOrbital"
+      },
+      "traits": [],
+      "uses": [
+        {
+          "as": "TimeTracking",
+          "config": {
+            "appName": {
+              "default": "PF",
+              "type": "unknown"
+            }
+          },
+          "from": "almadar-behaviors/std-time-tracking"
+        }
+      ]
+    }
+  ]
+}

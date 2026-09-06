@@ -41,6 +41,14 @@ pub struct Program {
     pub app: AppHeader,
     /// Top-level type aliases (scoped to the whole file).
     pub type_aliases: Vec<TypeAlias>,
+    /// File-scoped `uses Alias from "path"` declarations — legal ABOVE any
+    /// `orbital` block (orbital-import Stage A). Lowering merges these into
+    /// every orbital's own `uses` (local alias wins on collision), which is
+    /// what lets a top-level `orbital X = Alias.orbitals.Y` reference resolve
+    /// `Alias` through the same per-orbital `ctx` loop the compiler already
+    /// runs — no change needed there. Distinct from `Orbital.uses`, which
+    /// stays legal too (per-orbital, unchanged).
+    pub uses: Vec<UseDecl>,
     /// Orbital declarations.
     pub orbitals: Vec<Orbital>,
     /// Source comments (trivia), in source order. Re-emitted by the formatter,
@@ -59,6 +67,10 @@ pub struct AppHeader {
     /// declares its own `theme`. A full `<base>-<light|dark>` registry key,
     /// or an inline `theme { … }` token definition.
     pub theme: Option<ThemeDecl>,
+    /// App-level `config { ... }` block, declared right after the header
+    /// (orbital-import Stage A, `OrbitalSchema.config`) — ORGANISM-wide
+    /// knobs every orbital's traits may forward with `@config.<knob>`.
+    pub config: Vec<ConfigField>,
     pub span: Span,
 }
 
@@ -247,6 +259,46 @@ pub struct Orbital {
     /// `(behavior/compose { ... })`). Lowered to top-level effects on the
     /// orbital that the Compose pass will resolve.
     pub body: Vec<SExpression>,
+    /// `orbital Name = Alias.orbitals.Y { ... }` — the dotted reference path
+    /// (`"Alias.orbitals.Y"`) when this orbital is a REFERENCE to an
+    /// imported orbital, not an inline definition (orbital-import Stage A,
+    /// mirrors `Page.reference`/`Trait.reference`). `entity`/`extra_entities`/
+    /// `traits`/`pages` MUST be empty when this is `Some` — the upstream
+    /// organism owns them; the fields below are the override surface.
+    pub reference: Option<String>,
+    /// `entity NAME` override body — rebinds the imported orbital's primary
+    /// entity, exactly as `-> Entity` does on a trait reference.
+    pub entity_rebind: Option<String>,
+    /// `fields { up: local }` — primary-entity field renames the imported
+    /// traits read/write, lifted from the trait form's `fields {}` to
+    /// orbital scope.
+    pub fields_remap: Vec<(String, String)>,
+    /// `pages { "/up": "/local" }` — route-path remap. An unmapped upstream
+    /// path keeps its own value; required whenever two imports of the same
+    /// orbital would otherwise collide on route.
+    pub pages_remap: Vec<(String, String)>,
+    /// `omit { A B }` — trait/aux-entity names to drop from the imported set.
+    /// Omitting a trait some other imported trait embeds is an error, not a
+    /// silent drop (checked post-inline).
+    pub omit: Vec<String>,
+    /// `only { A B }` — trait/aux-entity names to KEEP; everything else is
+    /// dropped. Mutually exclusive with `omit` in authoring practice, not
+    /// enforced by the grammar.
+    pub only: Vec<String>,
+    /// `config { ... }` override body — overrides the referenced orbital's
+    /// OWN declared knobs (`Orbital.config`) 1:1; a dotted `Trait.knob` is
+    /// the upstream (pre-prefix) escape hatch.
+    pub config_overrides: Vec<ConfigField>,
+    /// `events { UP: LOCAL }` — orbital-scope event rename, applied to every
+    /// trait in the imported set (emits AND listen keys), same rule as the
+    /// trait reference form's `events {}`.
+    pub events_remap: Vec<(String, String)>,
+    /// `config { ... }` — an INLINE orbital's own declared knobs
+    /// (orbital-import Stage A, `Orbital.config`). Empty for a reference-form
+    /// orbital, whose declared knobs live upstream; always empty together
+    /// with `config_overrides`, which is the reference form's override
+    /// surface for THIS field on the orbital it references.
+    pub config: Vec<ConfigField>,
     pub span: Span,
 }
 
@@ -255,6 +307,10 @@ pub struct Orbital {
 pub struct UseDecl {
     pub alias: String,
     pub path: String,
+    /// Optional `{ config { ... } }` body (orbital-import Stage A) —
+    /// overrides the imported behavior's ORGANISM-wide `config {}` knobs for
+    /// every orbital taken from this alias. Empty for the bare form.
+    pub config: Vec<ConfigField>,
     pub span: Span,
 }
 

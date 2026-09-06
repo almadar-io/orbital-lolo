@@ -121,7 +121,8 @@ impl Formatter {
 
     fn fmt_program(&mut self, program: &Program) {
         self.fmt_app_header(&program.app);
-        if !program.type_aliases.is_empty() || !program.orbitals.is_empty() {
+        if !program.type_aliases.is_empty() || !program.uses.is_empty() || !program.orbitals.is_empty()
+        {
             self.write_newline();
         }
         for (i, alias) in program.type_aliases.iter().enumerate() {
@@ -131,7 +132,23 @@ impl Formatter {
             self.emit_comments_before(alias.span.line);
             self.fmt_type_alias(alias);
         }
-        if !program.type_aliases.is_empty() && !program.orbitals.is_empty() {
+        if !program.type_aliases.is_empty() && (!program.uses.is_empty() || !program.orbitals.is_empty())
+        {
+            self.write_newline();
+        }
+        // File-scoped `uses` (orbital-import Stage A) — legal above any
+        // `orbital` block; EBNF places them after type aliases, before
+        // orbitals.
+        for (i, u) in program.uses.iter().enumerate() {
+            if i > 0 {
+                self.write_newline();
+            }
+            self.emit_comments_before(u.span.line);
+            self.write_indent();
+            self.fmt_use_decl(u);
+            self.write_newline();
+        }
+        if !program.uses.is_empty() && !program.orbitals.is_empty() {
             self.write_newline();
         }
         for (i, orbital) in program.orbitals.iter().enumerate() {
@@ -166,6 +183,21 @@ impl Formatter {
             self.write_newline();
             self.write_indent();
             self.fmt_theme_decl(theme);
+        }
+        if !app.config.is_empty() {
+            self.write_newline();
+            self.write_indent();
+            self.output.push_str("config {");
+            self.write_newline();
+            self.indent();
+            for cf in &app.config {
+                self.write_indent();
+                self.fmt_config_field(cf);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
         }
     }
 
@@ -633,6 +665,24 @@ impl Formatter {
             self.output.push(' ');
             self.fmt_type_annotation(ann);
         }
+
+        // Reference form (orbital-import Stage A): `orbital Name =
+        // Alias.orbitals.Upstream { ... }` — mirrors `fmt_page`'s reference
+        // branch. Body braces are always present, even when every override
+        // block is empty.
+        if let Some(reference) = &orbital.reference {
+            self.output.push_str(" = ");
+            self.output.push_str(reference);
+            self.output.push_str(" {");
+            self.write_newline();
+            self.indent();
+            self.fmt_orbital_ref_body(orbital);
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            return;
+        }
+
         self.output.push_str(" {");
         self.write_newline();
         self.indent();
@@ -710,6 +760,25 @@ impl Formatter {
             self.fmt_theme_decl(theme);
             self.write_newline();
         }
+        if !orbital.config.is_empty() {
+            if !first {
+                self.write_newline();
+            }
+            first = false;
+            self.write_indent();
+            self.output.push_str("config {");
+            self.write_newline();
+            self.indent();
+            for cf in &orbital.config {
+                self.write_indent();
+                self.fmt_config_field(cf);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
         for expr in &orbital.body {
             if !first {
                 self.write_newline();
@@ -725,11 +794,169 @@ impl Formatter {
         self.output.push('}');
     }
 
+    /// Body of an orbital-reference declaration (orbital-import Stage A) —
+    /// `entity` / `fields` / `pages` / `omit` / `only` / `config` / `events`,
+    /// in EBNF order, each printed only when populated. Mirrors
+    /// `fmt_trait_ref_overrides` one scope up.
+    fn fmt_orbital_ref_body(&mut self, orbital: &Orbital) {
+        let mut wrote_any = false;
+        if let Some(entity) = &orbital.entity_rebind {
+            self.write_indent();
+            self.output.push_str("entity ");
+            self.output.push_str(entity);
+            self.write_newline();
+            wrote_any = true;
+        }
+        if !orbital.fields_remap.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("fields {");
+            self.write_newline();
+            self.indent();
+            for (k, v) in &orbital.fields_remap {
+                self.write_indent();
+                self.output.push_str(k);
+                self.output.push_str(": ");
+                self.output.push_str(v);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        if !orbital.pages_remap.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("pages {");
+            self.write_newline();
+            self.indent();
+            for (k, v) in &orbital.pages_remap {
+                self.write_indent();
+                self.write_quoted_string(k);
+                self.output.push_str(": ");
+                self.write_quoted_string(v);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        if !orbital.omit.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("omit {");
+            self.write_newline();
+            self.indent();
+            for name in &orbital.omit {
+                self.write_indent();
+                self.output.push_str(name);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        if !orbital.only.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("only {");
+            self.write_newline();
+            self.indent();
+            for name in &orbital.only {
+                self.write_indent();
+                self.output.push_str(name);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        if !orbital.config_overrides.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("config {");
+            self.write_newline();
+            self.indent();
+            for cf in &orbital.config_overrides {
+                self.write_indent();
+                self.fmt_config_override_entry(cf);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        if !orbital.events_remap.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            self.write_indent();
+            self.output.push_str("events {");
+            self.write_newline();
+            self.indent();
+            for (k, v) in &orbital.events_remap {
+                self.write_indent();
+                self.output.push_str(k);
+                self.output.push_str(": ");
+                self.output.push_str(v);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+    }
+
     fn fmt_use_decl(&mut self, u: &UseDecl) {
         self.output.push_str("uses ");
         self.output.push_str(&u.alias);
         self.output.push_str(" from ");
         self.write_quoted_string(&u.path);
+        // Optional `{ config { ... } }` override body (orbital-import Stage
+        // A) — call-site override of the imported organism's app-level
+        // declared `config {}` knobs.
+        if !u.config.is_empty() {
+            self.output.push_str(" {");
+            self.write_newline();
+            self.indent();
+            self.write_indent();
+            self.output.push_str("config {");
+            self.write_newline();
+            self.indent();
+            for cf in &u.config {
+                self.write_indent();
+                self.fmt_config_override_entry(cf);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+        }
     }
 
     fn fmt_expects_decl(&mut self, e: &ExpectsDecl) {
@@ -1126,22 +1353,7 @@ impl Formatter {
             self.indent();
             for cf in &ref_data.config {
                 self.write_indent();
-                let is_plain_wiring = matches!(&cf.type_expr, TypeExpr::Primitive(s) if s == "unknown")
-                    && cf.label.is_none()
-                    && cf.description.is_none()
-                    && cf.synonyms.is_none()
-                    && cf.tier.is_none();
-                if is_plain_wiring {
-                    // Compact wiring form: `key: value`
-                    self.output.push_str(&cf.name);
-                    self.output.push_str(": ");
-                    if let Some(v) = &cf.default {
-                        self.fmt_object_value(&cf.name, v);
-                    }
-                } else {
-                    // Full declaration form with type and/or annotations.
-                    self.fmt_config_field(cf);
-                }
+                self.fmt_config_override_entry(cf);
                 self.write_newline();
             }
             self.dedent();
@@ -1344,6 +1556,32 @@ impl Formatter {
             }
             self.dedent();
             self.write_indent();
+        }
+    }
+
+    /// One entry of a call-site `config {}` OVERRIDE block — plain wiring
+    /// (`key: value`) or a full re-declaration (`key : type = default
+    /// @annotations`), same distinction the parser draws
+    /// (`has_equals_before_entry_end`). Caller owns indentation/newline.
+    /// Shared by every override site: a trait reference's `config {}`, an
+    /// orbital reference's `config {}`, and (orbital-import Stage A) a
+    /// `uses { config {} }` override.
+    fn fmt_config_override_entry(&mut self, cf: &ConfigField) {
+        let is_plain_wiring = matches!(&cf.type_expr, TypeExpr::Primitive(s) if s == "unknown")
+            && cf.label.is_none()
+            && cf.description.is_none()
+            && cf.synonyms.is_none()
+            && cf.tier.is_none();
+        if is_plain_wiring {
+            // Compact wiring form: `key: value`
+            self.output.push_str(&cf.name);
+            self.output.push_str(": ");
+            if let Some(v) = &cf.default {
+                self.fmt_object_value(&cf.name, v);
+            }
+        } else {
+            // Full declaration form with type and/or annotations.
+            self.fmt_config_field(cf);
         }
     }
 

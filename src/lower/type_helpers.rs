@@ -201,6 +201,81 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
     }
 }
 
+/// Lower a `Vec<ConfigField>` (the AST's `config { ... }` grammar) into the
+/// schema's `Option<HashMap<String, ConfigField>>` shape. Shared by every
+/// site that carries this grammar: a trait's own declared `config {}`, the
+/// app-level `config {}` (`OrbitalSchema.config`), an orbital's own
+/// `config {}` (`Orbital.config`), and the two override sites (`uses { config
+/// {} }`, an orbital reference's `config {}`) — extracted from the trait
+/// path so none of the five duplicate the type-resolution + sentinel logic.
+///
+/// `type_params` is the owning trait's own declared type-parameter names
+/// (empty for every non-trait site — `type_param_sentinel` is a no-op on an
+/// empty slice). `check_self_reference` gates the same-key self-reference
+/// guard (`config { k: T = @config.k }`, nonsensical on a DECLARATION): true
+/// for the three declaration sites, false for the two override sites, where
+/// `@config.<key>` legitimately forwards the ENCLOSING scope's own knob of
+/// the same name into the referenced upstream (the same reasoning
+/// `lower_trait_reference`'s call-site config already applies).
+pub(crate) fn lower_config_fields_to_map(
+    fields: &[ConfigField],
+    owner_name: &str,
+    check_self_reference: bool,
+    type_params: &[&str],
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+) -> Result<Option<HashMap<String, SchemaConfigField>>, LowerError> {
+    if fields.is_empty() {
+        return Ok(None);
+    }
+    let mut map: HashMap<String, SchemaConfigField> = HashMap::new();
+    for cf in fields {
+        if check_self_reference {
+            if let Some(SExpression::String(s)) = &cf.default {
+                if s.strip_prefix("@config.") == Some(cf.name.as_str()) {
+                    return Err(LowerError::ConfigDefaultSelfReferential {
+                        trait_name: owner_name.to_string(),
+                        key: cf.name.clone(),
+                    });
+                }
+            }
+        }
+        // A config field typed as one of the owner's own declared type
+        // parameters (`config { result : V }`, trait-only) lowers its
+        // `field_type` to the `$V` sentinel directly — checked first since a
+        // param name never resolves as a struct alias/entity.
+        let sentinel = emit_listen::type_param_sentinel(&cf.type_expr, type_params);
+        let (field_type, items, properties, values) = if let Some(s) = sentinel {
+            (s, None, None, None)
+        } else {
+            let (_, _, items, properties, _) = lower_type_expr(&cf.type_expr, aliases, entity_names);
+            (
+                type_expr_to_config_string(&cf.type_expr),
+                items,
+                properties,
+                type_expr_to_config_values(&cf.type_expr),
+            )
+        };
+        map.insert(
+            cf.name.clone(),
+            SchemaConfigField {
+                field_type,
+                default: cf.default.as_ref().map(desugar_expr_match),
+                label: cf.label.clone(),
+                description: cf.description.clone(),
+                synonyms: cf.synonyms.clone(),
+                tier: cf.tier.clone(),
+                values,
+                items,
+                properties,
+                required: if cf.required { Some(true) } else { None },
+                ref_id: None,
+            },
+        );
+    }
+    Ok(Some(map))
+}
+
 /// Convert an event key to a human-readable display name for the
 /// state-machine `events[].name` field. Rules (best-effort; authors override
 /// via an events block when the trait-level metadata matters).

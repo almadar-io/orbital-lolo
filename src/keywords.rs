@@ -25,10 +25,13 @@ pub struct Vocabulary {
 /// `app orbital uses expects entity type derived trait initial state for
 /// page as theme emits listens ticks config when with from to every
 /// capabilities match external internal on name fields events event
-/// emitsScope identity` — every `expect_keyword`/`check_ident` literal in
-/// `parser/*.rs` (`parser/mod.rs`, `parser/entity.rs`, `parser/trait.rs`,
-/// `parser/type.rs`, `parser/page.rs`) that is not itself a shape/tag/
-/// category/capability/annotation word.
+/// emitsScope identity pages omit only roles` — every
+/// `expect_keyword`/`check_ident` literal in `parser/*.rs` (`parser/mod.rs`,
+/// `parser/entity.rs`, `parser/trait.rs`, `parser/type.rs`, `parser/page.rs`,
+/// `parser/orbital.rs`) that is not itself a shape/tag/category/capability/
+/// annotation word. `pages`/`omit`/`only`/`roles` are the orbital-reference
+/// body arms (orbital-import Stage A); `roles` parses ONLY to reject with a
+/// Stage-B error, never lowered.
 const KEYWORDS: &[&str] = &[
     "app",
     "orbital",
@@ -64,6 +67,10 @@ const KEYWORDS: &[&str] = &[
     "event",
     "emitsScope",
     "identity",
+    "pages",
+    "omit",
+    "only",
+    "roles",
 ];
 
 /// `Entity Trait Page Orbital Event` — `check_ident` in `parser/type.rs`

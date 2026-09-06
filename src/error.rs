@@ -320,7 +320,7 @@ impl ParseError {
             // closed the orbital — the snippet shows the stranded declaration
             // but not the causal brace, so the hint must name it).
             ParseError::UnexpectedToken { expected, got, .. }
-                if expected.contains("type or orbital")
+                if expected.contains("type, uses, or orbital")
                     && ["page", "trait", "entity", "uses", "expects"]
                         .iter()
                         .any(|kw| got.contains(&format!("Identifier(\"{kw}\")"))) =>

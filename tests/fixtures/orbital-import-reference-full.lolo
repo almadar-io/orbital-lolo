@@ -1,0 +1,24 @@
+uses TimeTracking from "almadar-behaviors/std-time-tracking" {
+  config {
+    appName: "PF"
+  }
+}
+
+orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
+  entity Timesheet
+  fields {
+    periodStart: from
+  }
+  pages {
+    "/timesheets": "/pf/timesheets"
+  }
+  omit {
+    TimesheetDelete
+  }
+  config {
+    pageSize: 50
+  }
+  events {
+    TIMESHEET_APPROVED: PF_APPROVED
+  }
+}

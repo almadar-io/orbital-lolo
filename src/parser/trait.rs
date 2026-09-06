@@ -477,96 +477,7 @@ impl Parser {
                     self.advance();
                 }
             } else if self.check_ident("config") {
-                // `config: { param: value, ... }` or `config { ... }` at the
-                // trait-ref call site. Each entry is EITHER:
-                //   - Plain wiring:   `key : value` — a `ConfigField` with
-                //     only `default` set and `field_type` = `"unknown"`.
-                //   - Full declaration: `key : type = default @label "..." ...`
-                //     — a fully-annotated `ConfigField`. Distinguished from
-                //     plain wiring by the presence of `=` before the entry
-                //     separator (`,` / `}` / newline).
-                self.advance();
-                if matches!(self.peek(), TokenKind::Colon) {
-                    self.advance();
-                }
-                let config_open = self.peek_span();
-                self.expect_kind(&TokenKind::LBrace, "{")?;
-                loop {
-                    self.skip_newlines();
-                    if matches!(self.peek(), TokenKind::RBrace) {
-                        self.advance();
-                        break;
-                    }
-                    if self.at_eof() {
-                        return Err(ParseError::UnclosedDelimiter {
-                            delimiter: '{',
-                            closer: '}',
-                            open_span: config_open,
-                            found: "end of file".to_string(),
-                        });
-                    }
-                    let span = self.peek_span();
-                    let key = self.expect_ident()?;
-                    self.expect_kind(&TokenKind::Colon, ":")?;
-                    // A JSX element value (`<Tag …>`) starts with `<` and its
-                    // attributes contain `=`, which would falsely trigger the
-                    // declaration-form heuristic below. A JSX element is never
-                    // a type expression, so when the value starts with `<` we
-                    // always take the plain-wiring branch and let
-                    // `parse_sexpr_or_value` desugar it.
-                    let is_jsx_value = matches!(self.peek(), TokenKind::Identifier(s) if s == "<");
-                    let field = if !is_jsx_value && self.has_equals_before_entry_end() {
-                        // Declaration form: `key : type = default [@annotations]`
-                        let type_expr = self.parse_type_expr()?;
-                        let default = if matches!(self.peek(), TokenKind::Equals) {
-                            self.advance();
-                            Some(self.parse_sexpr_or_value()?)
-                        } else {
-                            None
-                        };
-                        if matches!(self.peek(), TokenKind::Newline) {
-                            self.advance();
-                        }
-                        let (label, description, synonyms, tier) =
-                            self.parse_config_annotations()?;
-                        ConfigField {
-                            name: key,
-                            type_expr,
-                            default,
-                            label,
-                            description,
-                            synonyms,
-                            tier,
-                            required: false,
-                            span,
-                        }
-                    } else {
-                        // Plain wiring form: `key : value`
-                        let value = self.parse_sexpr_or_value()?;
-                        if matches!(self.peek(), TokenKind::Newline) {
-                            self.advance();
-                        }
-                        ConfigField {
-                            name: key,
-                            type_expr: TypeExpr::Primitive("unknown".to_string()),
-                            default: Some(value),
-                            label: None,
-                            description: None,
-                            synonyms: None,
-                            tier: None,
-                            required: false,
-                            span,
-                        }
-                    };
-                    config_values.push(field);
-                    if matches!(self.peek(), TokenKind::Comma) {
-                        self.advance();
-                    }
-                    self.skip_newlines();
-                }
-                if matches!(self.peek(), TokenKind::Newline) {
-                    self.advance();
-                }
+                config_values.extend(self.parse_config_override_block()?);
             } else if self.check_ident("on") {
                 // Phase 9.5.H: `on EVENT { (sexpr) ... }` effects-override has
                 // been removed. Atoms own their transition effects. To react
@@ -630,6 +541,109 @@ impl Parser {
             emits_scope,
             name_override,
         })
+    }
+
+    /// Parse a call-site `config { ... }` OVERRIDE block — the shared body
+    /// of a trait/orbital reference's `config {}` and a `uses { config {} }`
+    /// override. On entry the next token is the `config` keyword itself
+    /// (NOT yet consumed); on exit the closing `}` has been consumed.
+    ///
+    /// Each entry is EITHER:
+    ///   - Plain wiring:   `key : value` — a `ConfigField` with only
+    ///     `default` set and `field_type` = `"unknown"`.
+    ///   - Full declaration: `key : type = default @label "..." ...` — a
+    ///     fully-annotated `ConfigField`. Distinguished from plain wiring by
+    ///     the presence of `=` before the entry separator (`,` / `}` /
+    ///     newline).
+    ///
+    /// Extracted verbatim from `parse_trait_ref_body`'s inline `config` arm
+    /// (behavior-preserving refactor) so the orbital-reference and
+    /// `uses`-override call sites (orbital-import Stage A) share it instead
+    /// of a second copy.
+    pub(crate) fn parse_config_override_block(&mut self) -> Result<Vec<ConfigField>, ParseError> {
+        self.expect_keyword("config")?;
+        if matches!(self.peek(), TokenKind::Colon) {
+            self.advance();
+        }
+        let config_open = self.peek_span();
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut out = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '{',
+                    closer: '}',
+                    open_span: config_open,
+                    found: "end of file".to_string(),
+                });
+            }
+            let span = self.peek_span();
+            let key = self.expect_ident()?;
+            self.expect_kind(&TokenKind::Colon, ":")?;
+            // A JSX element value (`<Tag …>`) starts with `<` and its
+            // attributes contain `=`, which would falsely trigger the
+            // declaration-form heuristic below. A JSX element is never a
+            // type expression, so when the value starts with `<` we always
+            // take the plain-wiring branch and let `parse_sexpr_or_value`
+            // desugar it.
+            let is_jsx_value = matches!(self.peek(), TokenKind::Identifier(s) if s == "<");
+            let field = if !is_jsx_value && self.has_equals_before_entry_end() {
+                // Declaration form: `key : type = default [@annotations]`
+                let type_expr = self.parse_type_expr()?;
+                let default = if matches!(self.peek(), TokenKind::Equals) {
+                    self.advance();
+                    Some(self.parse_sexpr_or_value()?)
+                } else {
+                    None
+                };
+                if matches!(self.peek(), TokenKind::Newline) {
+                    self.advance();
+                }
+                let (label, description, synonyms, tier) = self.parse_config_annotations()?;
+                ConfigField {
+                    name: key,
+                    type_expr,
+                    default,
+                    label,
+                    description,
+                    synonyms,
+                    tier,
+                    required: false,
+                    span,
+                }
+            } else {
+                // Plain wiring form: `key : value`
+                let value = self.parse_sexpr_or_value()?;
+                if matches!(self.peek(), TokenKind::Newline) {
+                    self.advance();
+                }
+                ConfigField {
+                    name: key,
+                    type_expr: TypeExpr::Primitive("unknown".to_string()),
+                    default: Some(value),
+                    label: None,
+                    description: None,
+                    synonyms: None,
+                    tier: None,
+                    required: false,
+                    span,
+                }
+            };
+            out.push(field);
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+            self.skip_newlines();
+        }
+        if matches!(self.peek(), TokenKind::Newline) {
+            self.advance();
+        }
+        Ok(out)
     }
 
     pub(crate) fn parse_state(&mut self) -> Result<State, ParseError> {

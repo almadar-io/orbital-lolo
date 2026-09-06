@@ -1,0 +1,78 @@
+{
+  "name": "Shell",
+  "orbitals": [
+    {
+      "config": {
+        "pageSize": {
+          "default": 10.0,
+          "label": "Items per page",
+          "type": "int"
+        },
+        "reminderOffsetHours": {
+          "default": 24.0,
+          "label": "Reminder lead time",
+          "tier": "primary",
+          "type": "number"
+        }
+      },
+      "entity": {
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "title",
+            "type": "string"
+          }
+        ],
+        "name": "Widget",
+        "persistence": "runtime"
+      },
+      "name": "Shell",
+      "traits": [
+        {
+          "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "set",
+              "resource": "@entity.title"
+            }
+          ],
+          "linkedEntity": "Widget",
+          "name": "WidgetPanel",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@entity.title",
+                    "Ready"
+                  ]
+                ],
+                "event": "INIT",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

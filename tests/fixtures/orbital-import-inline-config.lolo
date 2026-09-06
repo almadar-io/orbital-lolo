@@ -1,0 +1,21 @@
+orbital Shell {
+  config {
+    pageSize : int = 10
+      @label "Items per page"
+    reminderOffsetHours : number = 24
+      @label "Reminder lead time"
+      @tier "primary"
+  }
+
+  entity Widget [runtime] {
+    id : string!
+    title : string
+  }
+
+  trait WidgetPanel -> Widget [interaction] {
+    state idle {
+      INIT -> idle
+        (set @entity.title "Ready")
+    }
+  }
+}

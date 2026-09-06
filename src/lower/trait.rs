@@ -764,63 +764,14 @@ pub(crate) fn lower_trait(
     // fields, mode }` but the generated interface only had the implicit
     // `linkedEntity?` and `entityId?` — which then failed typecheck on
     // any view that read `config?.icon`, `config?.title`, etc.
-    let config = if t.config.is_empty() {
-        None
-    } else {
-        let mut map: HashMap<String, SchemaConfigField> = HashMap::new();
-        for cf in &t.config {
-            // Same-key self-reference guard (L1-only; see LowerError docs).
-            if let Some(SExpression::String(s)) = &cf.default {
-                if s.strip_prefix("@config.") == Some(cf.name.as_str()) {
-                    return Err(LowerError::ConfigDefaultSelfReferential {
-                        trait_name: t.name.clone(),
-                        key: cf.name.clone(),
-                    });
-                }
-            }
-            // Increment 3-II: a config field typed as this trait's own
-            // declared type parameter (`config { result : V }`) lowers its
-            // `field_type` to the `$V` sentinel directly — checked first
-            // since a param name never resolves as a struct alias/entity.
-            let sentinel = emit_listen::type_param_sentinel(&cf.type_expr, &trait_type_params);
-            // Run the structural lowerer alongside the string-tag lowerer.
-            // `lower_type_expr` resolves named aliases (e.g. `[MetricSpec]`)
-            // into `FieldType::Array` + `items: Box<FieldDefinition>` with the
-            // struct's fields fully populated in `properties` — same path
-            // entity fields take. The string `field_type` stays as the
-            // human/readable tag so the existing resolve/codegen consumers
-            // keep working; `items` / `properties` are additive.
-            let (field_type, items, properties, values) = if let Some(s) = sentinel {
-                (s, None, None, None)
-            } else {
-                let (_, _, items, properties, _) =
-                    lower_type_expr(&cf.type_expr, aliases, entity_names);
-                (
-                    type_expr_to_config_string(&cf.type_expr),
-                    items,
-                    properties,
-                    type_expr_to_config_values(&cf.type_expr),
-                )
-            };
-            map.insert(
-                cf.name.clone(),
-                SchemaConfigField {
-                    field_type,
-                    default: cf.default.as_ref().map(desugar_expr_match),
-                    label: cf.label.clone(),
-                    description: cf.description.clone(),
-                    synonyms: cf.synonyms.clone(),
-                    tier: cf.tier.clone(),
-                    values,
-                    items,
-                    properties,
-                    required: if cf.required { Some(true) } else { None },
-                    ref_id: None,
-                },
-            );
-        }
-        Some(map)
-    };
+    let config = lower_config_fields_to_map(
+        &t.config,
+        &t.name,
+        true, // declaration site — the self-reference guard applies.
+        &trait_type_params,
+        aliases,
+        entity_names,
+    )?;
 
     // Type-level `match` (§25) exhaustiveness/correctness — unconditional,
     // unlike the entity-binding checks below: a match knob needs no

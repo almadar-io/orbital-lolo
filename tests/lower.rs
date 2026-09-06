@@ -495,3 +495,20 @@ orbital OrbE {
     assert_eq!(relation.entity, "Customer");
     assert_eq!(relation.cardinality, Some(Cardinality::Many));
 }
+
+// Orbital-import Stage A (docs/Almadar_Orbital_Import.md §4) lowering
+// goldens — kept in sync with the round-trip tests in tests/formatter.rs.
+#[test]
+fn orbital_import_app_config_lowers() {
+    assert_lowering_matches("orbital-import-app-config");
+}
+
+#[test]
+fn orbital_import_reference_full_lowers() {
+    assert_lowering_matches("orbital-import-reference-full");
+}
+
+#[test]
+fn orbital_import_inline_config_lowers() {
+    assert_lowering_matches("orbital-import-inline-config");
+}

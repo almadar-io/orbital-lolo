@@ -1,0 +1,28 @@
+app AcmeOrg "1.0.0"
+config {
+  appName : string = "Acme"
+    @label "Shell title"
+    @description "The organism-wide shell title every orbital's traits may forward"
+  pageSize : int = 10
+    @tier "presentation"
+}
+
+uses Notes from "almadar-behaviors/std-notes" {
+  config {
+    appName: "Acme Notes"
+  }
+}
+
+orbital Shell {
+  entity Widget [runtime] {
+    id : string!
+    title : string
+  }
+
+  trait WidgetPanel -> Widget [interaction] {
+    state idle {
+      INIT -> idle
+        (set @entity.title "Ready")
+    }
+  }
+}

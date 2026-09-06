@@ -666,3 +666,23 @@ orbital ProductOrbital {
         "formatter is not idempotent over expects"
     );
 }
+
+// Orbital-import Stage A (docs/Almadar_Orbital_Import.md §4) round-trips:
+// app-level `config {}` + file-level `uses { config {} }`, an orbital
+// reference with every override block populated, and an inline orbital's
+// own `config {}`. Kept in sync with tests/lower.rs (module doc requires a
+// golden-lowering test for each).
+#[test]
+fn orbital_import_app_config_round_trips() {
+    assert_round_trip("orbital-import-app-config");
+}
+
+#[test]
+fn orbital_import_reference_full_round_trips() {
+    assert_round_trip("orbital-import-reference-full");
+}
+
+#[test]
+fn orbital_import_inline_config_round_trips() {
+    assert_round_trip("orbital-import-inline-config");
+}

@@ -13,7 +13,7 @@ use orbital_core::schema::{
     Cardinality, ConfigField as SchemaConfigField, EmitDefinition, EntityDefinition,
     EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration,
     FieldDefinition, FieldType, ListenDefinition, ListenSource, Orbital as CoreOrbital,
-    OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
+    OrbitalRefObject, OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
     Persistence as CorePersistence, RelationDefinition, SExpression, StateDefinition, StateMachine,
     StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef, ThemeTokens, ThemeVariant,
     TickDefinition, TraitCategory, TraitDefinition, TraitReference, TransitionDefinition,
@@ -24,6 +24,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 mod checks;
 mod emit_listen;
 pub(crate) mod entity;
+mod orbital_ref;
 mod page;
 mod payload_contract;
 mod r#trait;
@@ -43,8 +44,9 @@ pub(crate) use r#trait::{
     desugar_expr_match, expand_term_match, is_expr_match_array, lower_trait_decl,
 };
 pub(crate) use type_helpers::{
-    emit_primitive_compatible, humanize_event_key, type_expr_to_compat_str,
-    type_expr_to_config_string, type_expr_to_config_values, type_expr_to_string,
+    emit_primitive_compatible, humanize_event_key, lower_config_fields_to_map,
+    type_expr_to_compat_str, type_expr_to_config_string, type_expr_to_config_values,
+    type_expr_to_string,
 };
 
 /// Lower an entire `.lolo` program into an `OrbitalSchema` (no identity
@@ -217,6 +219,7 @@ fn lower_to_orb_names_only(
         let orbital_base = format!("orbitals[{orbital_index}]");
         orbitals.push(lower_orbital(
             orb,
+            &ast.uses,
             &local_aliases,
             &local_entities,
             &local_entity_names,
@@ -231,6 +234,19 @@ fn lower_to_orb_names_only(
     check_button_transitions(&orbitals)?;
     check_emit_payload_literals(&orbitals)?;
     check_behavior_contracts(&orbitals)?;
+
+    // App-level `config { ... }` (orbital-import Stage A, `OrbitalSchema.config`)
+    // — ORGANISM-wide knobs, resolved against the file-level type/entity scope
+    // (no trait type params at this level). Declaration site: the
+    // self-reference guard applies.
+    let app_config = lower_config_fields_to_map(
+        &ast.app.config,
+        &ast.app.name,
+        true,
+        &[],
+        &type_aliases,
+        &file_entity_names,
+    )?;
 
     let mut schema = OrbitalSchema {
         name: if ast.app.name.is_empty() {
@@ -248,6 +264,7 @@ fn lower_to_orb_names_only(
         metadata: None,
         ledger: None,
         schema_version: None,
+        config: app_config,
     };
 
     // Canonicalize flat `fn` lambdas to the grouped form so the emitted/baked
@@ -503,8 +520,50 @@ fn lower_expects_decl(
     })
 }
 
+/// Merge file-scoped `uses` (declared above any `orbital` block,
+/// orbital-import Stage A) with one orbital's own `uses` into a single
+/// lowered `UseDeclaration` list: file-level entries first, orbital-local
+/// ones appended, with the LOCAL alias winning any collision — the
+/// file-level entry of the same alias is dropped, never both. This is what
+/// lets a top-level `orbital X = Alias.orbitals.Y` reference resolve `Alias`
+/// through the existing per-orbital `ctx` loop with zero change to it: every
+/// orbital, reference or inline, sees ONE flat `uses` list regardless of
+/// where each entry was declared.
+pub(crate) fn merge_uses(
+    file_uses: &[UseDecl],
+    orbital_uses: &[UseDecl],
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+) -> Result<Vec<UseDeclaration>, LowerError> {
+    let local_aliases: HashSet<&str> = orbital_uses.iter().map(|u| u.alias.as_str()).collect();
+    file_uses
+        .iter()
+        .filter(|u| !local_aliases.contains(u.alias.as_str()))
+        .chain(orbital_uses.iter())
+        .map(|u| {
+            Ok(UseDeclaration {
+                from: u.path.clone(),
+                alias: u.alias.clone(),
+                // Override site, not a declaration — `@config.<key>`
+                // legitimately forwards the ENCLOSING orbital's own knob of
+                // the same name into the imported organism, so the
+                // self-reference guard does not apply here.
+                config: lower_config_fields_to_map(
+                    &u.config,
+                    &u.alias,
+                    false,
+                    &[],
+                    aliases,
+                    entity_names,
+                )?,
+            })
+        })
+        .collect()
+}
+
 fn lower_orbital(
     orb: &Orbital,
+    file_uses: &[UseDecl],
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entities: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
     entity_names: &HashSet<String>,
@@ -513,6 +572,9 @@ fn lower_orbital(
     source_map: &mut crate::source_map::LoloSourceMap,
     base: &str,
 ) -> Result<CoreOrbital, LowerError> {
+    if orb.reference.is_some() {
+        return orbital_ref::lower_orbital_reference(orb, file_uses, aliases, entity_names);
+    }
     let entity = orb.entity.as_ref().ok_or(LowerError::MissingEntity)?;
     let entity_def = lower_entity(entity, aliases, entity_names)?;
     // Entity declarations beyond the first lower into `auxiliary_entities` —
@@ -555,18 +617,11 @@ fn lower_orbital(
         }
     }
 
-    let uses = if orb.uses.is_empty() {
+    let merged_uses = merge_uses(file_uses, &orb.uses, aliases, entity_names)?;
+    let uses = if merged_uses.is_empty() {
         None
     } else {
-        Some(
-            orb.uses
-                .iter()
-                .map(|u| UseDeclaration {
-                    from: u.path.clone(),
-                    alias: u.alias.clone(),
-                })
-                .collect::<Vec<_>>(),
-        )
+        Some(merged_uses)
     };
 
     let expects = if orb.expects.is_empty() {
@@ -738,6 +793,15 @@ fn lower_orbital(
         design: None,
         id: None,
         types,
+        reference: None,
+        config: lower_config_fields_to_map(
+            &orb.config,
+            &orb.name,
+            true, // declaration site — the self-reference guard applies.
+            &[],
+            aliases,
+            entity_names,
+        )?,
     })
 }
 

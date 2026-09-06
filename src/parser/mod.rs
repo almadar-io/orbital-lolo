@@ -26,6 +26,7 @@ use std::collections::HashMap;
 mod entity;
 mod expression;
 mod jsx;
+mod orbital;
 mod page;
 mod r#trait;
 mod r#type;
@@ -344,11 +345,13 @@ impl Parser {
                 version: None,
                 description: None,
                 theme: None,
+                config: Vec::new(),
                 span: self.peek_span(),
             }
         };
 
         let mut type_aliases = Vec::new();
+        let mut uses = Vec::new();
         let mut orbitals = Vec::new();
 
         loop {
@@ -358,11 +361,16 @@ impl Parser {
             }
             if self.check_ident("type") {
                 type_aliases.push(self.parse_type_alias()?);
+            } else if self.check_ident("uses") {
+                // File-scoped `uses` (orbital-import Stage A) — legal above
+                // any `orbital` block, merged into every orbital's own `uses`
+                // at lower time (local alias wins on collision).
+                uses.push(self.parse_use_decl()?);
             } else if self.check_ident("orbital") {
                 orbitals.push(self.parse_orbital()?);
             } else {
                 return Err(ParseError::UnexpectedToken {
-                    expected: "type or orbital".to_string(),
+                    expected: "type, uses, or orbital".to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
                 });
@@ -372,6 +380,7 @@ impl Parser {
         Ok(Program {
             app,
             type_aliases,
+            uses,
             orbitals,
             comments: Vec::new(),
         })
@@ -420,11 +429,23 @@ impl Parser {
         } else {
             None
         };
+        // Optional app-level `config { ... }` block (orbital-import Stage A,
+        // `OrbitalSchema.config`) — ORGANISM-wide knobs declared once, beside
+        // `theme`, that every orbital's traits may forward via
+        // `@config.<knob>`. Uses the DECLARATION grammar (`key : type =
+        // default @annotations`), same as a trait's own `config {}`.
+        self.skip_newlines();
+        let config = if self.check_ident("config") {
+            self.parse_config_block()?
+        } else {
+            Vec::new()
+        };
         Ok(AppHeader {
             name,
             version,
             description,
             theme,
+            config,
             span,
         })
     }
@@ -438,6 +459,14 @@ impl Parser {
 
         // Optional `:: TypeName [args]` annotation applied to the orbital body.
         let type_annotation = self.try_parse_type_annotation()?;
+
+        // Reference form: `orbital Name [:: ...] = Alias.orbitals.Upstream { ... }`
+        // (orbital-import Stage A). The `=` immediately after the
+        // name/annotation disambiguates from the inline form, exactly as
+        // `parse_trait` dispatches on `=` before falling into `->`.
+        if matches!(self.peek(), TokenKind::Equals) {
+            return self.parse_orbital_reference(name, span, type_annotation);
+        }
 
         // Optional `{ ... }` brace form. The spec uses indentation, but we
         // accept braces too because round-trip pretty-printing emits them.
@@ -456,6 +485,7 @@ impl Parser {
         let mut pages = Vec::new();
         let mut body = Vec::new();
         let mut theme: Option<ThemeDecl> = None;
+        let mut config = Vec::new();
 
         loop {
             self.skip_newlines();
@@ -501,6 +531,13 @@ impl Parser {
                 pages.push(self.parse_page()?);
             } else if self.check_ident("theme") {
                 theme = Some(self.parse_orbital_theme()?);
+            } else if self.check_ident("config") {
+                // Orbital's own declared `config { ... }` block
+                // (orbital-import Stage A, `Orbital.config`) — knobs THIS
+                // orbital publishes, forwarded by its traits via
+                // `@config.<knob>`. Declaration grammar, same as app-level
+                // `config {}` and a trait's own `config {}`.
+                config.extend(self.parse_config_block()?);
             } else if matches!(self.peek(), TokenKind::LParen) {
                 // Top-level s-expression — typically `(behavior/compose ...)`.
                 let expr = self.parse_sexpr()?;
@@ -508,8 +545,9 @@ impl Parser {
                 self.expect_newline_or_eof()?;
             } else {
                 return Err(ParseError::UnexpectedToken {
-                    expected: "uses, expects, type, entity, trait, page, theme, or s-expression"
-                        .to_string(),
+                    expected:
+                        "uses, expects, type, entity, trait, page, theme, config, or s-expression"
+                            .to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
                 });
@@ -557,6 +595,15 @@ impl Parser {
             pages,
             theme,
             body,
+            reference: None,
+            entity_rebind: None,
+            fields_remap: Vec::new(),
+            pages_remap: Vec::new(),
+            omit: Vec::new(),
+            only: Vec::new(),
+            config_overrides: Vec::new(),
+            events_remap: Vec::new(),
+            config,
             span,
         })
     }
@@ -790,8 +837,32 @@ impl Parser {
                 })
             }
         };
+        // Optional `{ config { ... } }` override body (orbital-import Stage
+        // A) — sets the imported behavior's ORGANISM-wide `config {}` knobs
+        // for every orbital taken from this alias. `config` may also be
+        // written directly after `from "path"` without an enclosing brace
+        // pair of its own — `parse_config_override_block` owns the `{ }`.
+        let config = if matches!(self.peek(), TokenKind::LBrace) {
+            self.advance();
+            self.skip_newlines();
+            let entries = if self.check_ident("config") {
+                self.parse_config_override_block()?
+            } else {
+                Vec::new()
+            };
+            self.skip_newlines();
+            self.expect_kind(&TokenKind::RBrace, "}")?;
+            entries
+        } else {
+            Vec::new()
+        };
         self.expect_newline_or_eof()?;
-        Ok(UseDecl { alias, path, span })
+        Ok(UseDecl {
+            alias,
+            path,
+            config,
+            span,
+        })
     }
 
     /// `expects` ("identity" Ident? shape? | "entity" Ident shape? | "event" Ident "." IDENT)
