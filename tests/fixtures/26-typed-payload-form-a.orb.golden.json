@@ -42,6 +42,7 @@
           "emits": [
             {
               "event": "USER_LOADED",
+              "payloadEntity": "UserData",
               "payloadSchema": [
                 {
                   "name": "id",
@@ -72,6 +73,7 @@
               {
                 "key": "USER_LOADED",
                 "name": "User Loaded",
+                "payloadEntity": "UserData",
                 "payloadSchema": [
                   {
                     "name": "id",

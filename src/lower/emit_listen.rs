@@ -11,6 +11,32 @@ fn definer_knob_of(event: &str) -> Option<String> {
     orbital_core::schema::config_ref_event_knob(event).map(str::to_string)
 }
 
+/// `EmitDefinition.payload_entity` / `EventDefinition.payload_entity` (G4,
+/// `Almadar_Compiler_Gaps.md` §82): a payload alias's body (`type X = Event
+/// <TypeExpr>`) names the WHOLE payload as a concrete, known entity — the
+/// bare form `resolve_payload_type` flattens FLAT at the payload root (never
+/// the generic `@entity`/`$E` sentinel, which has no name to resolve here;
+/// see `flatten_bare_entity_payload`'s doc in `orbital-compiler`). Stamping
+/// the entity's name is what lets the inline phase re-derive the flattened
+/// field list from that entity's CURRENT (post `fields{}`/`extend{}`) shape
+/// once a downstream orbital-import or trait-reference override renames or
+/// extends it — without this the flattened list is frozen at THIS atom's
+/// own compile time forever. `None` for a type-param sentinel, a struct
+/// alias, or any other payload shape.
+pub(crate) fn bare_entity_alias_name(
+    payload: &TypeExpr,
+    entities_by_name: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+    type_params: &[&str],
+) -> Option<String> {
+    if type_param_sentinel(payload, type_params).is_some() {
+        return None;
+    }
+    match payload {
+        TypeExpr::Named(name) if entities_by_name.contains_key(name) => Some(name.clone()),
+        _ => None,
+    }
+}
+
 /// Lower a field's `type_expr` to its wire `(field_type, type_when)` pair.
 /// For a plain type this is just `(type_expr_to_string(te), None)` — the
 /// two already agree by construction, since `type_expr_to_string` itself
@@ -91,6 +117,8 @@ pub(crate) fn lower_emit(
                 entities_by_name,
                 &alias_param,
             )?);
+            let payload_entity =
+                bare_entity_alias_name(&resolved.payload, entities_by_name, &alias_param);
             // Call-site `-> external|internal` overrides the alias's scope;
             // missing call-site scope falls back to the alias's scope, then
             // to internal.
@@ -116,6 +144,7 @@ pub(crate) fn lower_emit(
                 event_id: None,
                 definer_knob: definer_knob_of(&e.event),
                 scope_overridden: None,
+                payload_entity,
             });
         }
         // No alias and no inline payload → payloadless emit.
@@ -133,6 +162,7 @@ pub(crate) fn lower_emit(
             event_id: None,
             definer_knob: definer_knob_of(&e.event),
             scope_overridden: None,
+            payload_entity: None,
         });
     }
     // Inline payload path: each field whose type_expr is `TypeExpr::Named`
@@ -339,6 +369,10 @@ pub(crate) fn lower_emit(
         definer_knob: definer_knob_of(&e.event),
         event_id: None,
         scope_overridden: None,
+        // Inline restatement (author wrote `emits { EVENT { f: T } }`
+        // explicitly) — never the bare-entity form, even when an
+        // alias-consistency check above found it matches one.
+        payload_entity: None,
     })
 }
 

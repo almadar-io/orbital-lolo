@@ -45,6 +45,7 @@
           "emits": [
             {
               "event": "BrowseItemLoaded",
+              "payloadEntity": "BrowseItem",
               "payloadSchema": [
                 {
                   "name": "id",
@@ -75,6 +76,7 @@
               {
                 "key": "BrowseItemLoaded",
                 "name": "BrowseItem loaded",
+                "payloadEntity": "BrowseItem",
                 "payloadSchema": [
                   {
                     "name": "id",

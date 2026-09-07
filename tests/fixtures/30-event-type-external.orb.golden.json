@@ -42,6 +42,7 @@
           "emits": [
             {
               "event": "OrderShipped",
+              "payloadEntity": "Order",
               "payloadSchema": [
                 {
                   "name": "id",
@@ -68,6 +69,7 @@
               {
                 "key": "OrderShipped",
                 "name": "Order shipped",
+                "payloadEntity": "Order",
                 "payloadSchema": [
                   {
                     "name": "id",

@@ -36,7 +36,8 @@ pub(crate) use checks::{
     check_match_types, check_set_value_types, check_term_match_types,
 };
 pub(crate) use emit_listen::{
-    lower_emit, lower_listen, lower_tick, struct_payload_properties, type_expr_to_payload_fields,
+    bare_entity_alias_name, lower_emit, lower_listen, lower_tick, struct_payload_properties,
+    type_expr_to_payload_fields,
 };
 pub(crate) use entity::{lower_entity, lower_field, lower_type_expr, primitive_field_type};
 pub(crate) use page::lower_page_decl;
@@ -726,6 +727,7 @@ fn lower_orbital(
                     synonyms: None,
                     tier: None,
                     payload_schema: None,
+                    payload_entity: None,
                 }]),
                 transitions: vec![TransitionDefinition {
                     from: StringOrArray::Single("init".to_string()),

@@ -602,12 +602,22 @@ pub(crate) fn lower_trait(
         .map(|e| lower_emit(e, aliases, entities, event_aliases, &trait_type_params))
         .collect::<Result<Vec<_>, _>>()?;
     let mut emit_payloads: HashMap<String, Vec<PayloadField>> = HashMap::new();
+    // G4 (`Almadar_Compiler_Gaps.md` §82): the emit-payload fallback below
+    // (precedence 3) copies `emit_payloads[k]`'s field list onto this
+    // event's OWN `payloadSchema` — the `payload_entity` marker (when the
+    // source emit carries one) must travel with it, or the copy stops
+    // tracking the entity once an orbital-import/trait-reference override
+    // renames or extends it.
+    let mut emit_payload_entities: HashMap<String, Option<String>> = HashMap::new();
     for def in &lowered_emits {
         if let Some(p) = &def.payload_schema {
             if !p.is_empty() {
                 emit_payloads
                     .entry(def.event.clone())
                     .or_insert_with(|| p.clone());
+                emit_payload_entities
+                    .entry(def.event.clone())
+                    .or_insert_with(|| def.payload_entity.clone());
             }
         }
     }
@@ -637,6 +647,7 @@ pub(crate) fn lower_trait(
                     //      typed via listen/alias are untouched; the validator
                     //      enforces emit↔event payload parity, so this only fills
                     //      holes, never contradicts.
+                    let mut payload_entity: Option<String> = None;
                     let payload = if let Some(fields) = listen_payloads.remove(&k) {
                         // Alias-consistency (syntax revision 2026-08-18): a
                         // listen restating a payload the orbital-scope alias
@@ -684,6 +695,8 @@ pub(crate) fn lower_trait(
                             .into_iter()
                             .chain(trait_type_params.iter().copied())
                             .collect();
+                        payload_entity =
+                            bare_entity_alias_name(&resolved.payload, entities, &alias_param);
                         Some(type_expr_to_payload_fields(
                             &k,
                             &resolved.payload,
@@ -692,6 +705,7 @@ pub(crate) fn lower_trait(
                             &alias_param,
                         )?)
                     } else if let Some(fields) = emit_payloads.remove(&k) {
+                        payload_entity = emit_payload_entities.remove(&k).flatten();
                         Some(fields)
                     } else {
                         None
@@ -704,6 +718,7 @@ pub(crate) fn lower_trait(
                         synonyms,
                         tier,
                         payload_schema: payload,
+                        payload_entity,
                     })
                 })
                 .collect::<Result<Vec<_>, _>>()?,
