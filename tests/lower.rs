@@ -15,40 +15,35 @@ fn fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
 }
 
-/// Recursively sort all object keys in a serde_json::Value so two values
-/// produced from `HashMap`-backed structs compare deterministically. Also
-/// drops the V4 identity fields (opaque entropy-minted ids + ledger +
+fn is_identity_key(k: &str) -> bool {
+    k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id") || k.ends_with("Ids")
+}
+
+/// Drops the V4 identity fields (opaque entropy-minted ids + ledger +
 /// schemaVersion): these snapshot goldens capture semantic structure, and an
 /// id minted fresh each lowering cannot be a stable golden value.
-fn canonicalize(value: Value) -> Value {
-    fn is_identity_key(k: &str) -> bool {
-        k == "id"
-            || k == "ledger"
-            || k == "schemaVersion"
-            || k.ends_with("Id")
-            || k.ends_with("Ids")
-    }
+fn strip_identity_keys(value: Value) -> Value {
     match value {
         Value::Object(map) => {
-            let mut sorted: std::collections::BTreeMap<String, Value> =
-                std::collections::BTreeMap::new();
+            let mut out = serde_json::Map::new();
             for (k, v) in map {
                 if is_identity_key(&k) {
                     continue;
                 }
-                sorted.insert(k, canonicalize(v));
+                out.insert(k, strip_identity_keys(v));
             }
-            // Convert back to a Value::Object (which round-trips through
-            // serde_json's serializer in the BTreeMap's iteration order).
-            let mut new_map = serde_json::Map::new();
-            for (k, v) in sorted {
-                new_map.insert(k, v);
-            }
-            Value::Object(new_map)
+            Value::Object(out)
         }
-        Value::Array(items) => Value::Array(items.into_iter().map(canonicalize).collect()),
+        Value::Array(items) => Value::Array(items.into_iter().map(strip_identity_keys).collect()),
         v => v,
     }
+}
+
+/// Strips identity fields, then sorts every object's keys via
+/// `orbital_core::util::canonical_json` (the one production owner) so two
+/// values produced from `HashMap`-backed structs compare deterministically.
+fn canonicalize(value: Value) -> Value {
+    orbital_core::util::canonical_json(&strip_identity_keys(value))
 }
 
 /// Strip serde_json `null` values from objects so that the goldens don't
@@ -301,6 +296,21 @@ fn fixture_32_inline_trait_ref() {
 }
 
 #[test]
+fn fixture_33_emit_entity_nested_struct_field() {
+    // C1-R3 item 3: `emits { X :: Entity }` where the entity's OWN field is
+    // an array-of-named-struct-alias (`nodes : [GraphNodeOut]`) whose
+    // element carries a nested named-struct-alias field (`badge : Badge`).
+    // `resolve_payload_type` used to flatten the entity's fields via
+    // `type_expr_to_string` alone, one level shallower than the entity-field
+    // path — `nodes` got its `[object]` wrapper + `properties` (handled by
+    // the emit_listen caller), but `badge` INSIDE those properties flattened
+    // to a bare `"Badge"` string with `properties: None`. Fixed to delegate
+    // to `struct_payload_properties`, so `badge` keeps its own
+    // `properties: [{ name: "text", ... }]`.
+    assert_lowering_matches("33-emit-entity-nested-struct-field");
+}
+
+#[test]
 fn fixture_25_emit_config() {
     // Positive fixture for `emit:` config on all six operator shapes:
     //   fetch, persist, set, call-service, ref, os/watch-http.
@@ -518,4 +528,18 @@ fn orbital_import_inline_config_lowers() {
 #[test]
 fn orbital_ref_stage_b_lowers() {
     assert_lowering_matches("orbital_ref_stage_b");
+}
+
+// Orbital-import Stage C `extend {}` golden — kept in sync with the
+// round-trip test in tests/formatter.rs.
+#[test]
+fn orbital_ref_extend_lowers() {
+    assert_lowering_matches("orbital_ref_extend");
+}
+
+// `children: []` lowering golden — kept in sync with the round-trip test in
+// tests/formatter.rs.
+#[test]
+fn jsx_empty_children_lowers() {
+    assert_lowering_matches("jsx_empty_children");
 }

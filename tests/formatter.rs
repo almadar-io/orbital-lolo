@@ -13,36 +13,35 @@ fn fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
 }
 
-fn canonicalize(value: Value) -> Value {
-    // Drop V4 identity fields: opaque per-lowering ids + ledger + schemaVersion.
-    // These tests assert *semantic* preservation across a reformat; ids are
-    // minted fresh each (independent) lowering and are not semantic content.
-    fn is_identity_key(k: &str) -> bool {
-        k == "id"
-            || k == "ledger"
-            || k == "schemaVersion"
-            || k.ends_with("Id")
-            || k.ends_with("Ids")
-    }
+// Drop V4 identity fields: opaque per-lowering ids + ledger + schemaVersion.
+// These tests assert *semantic* preservation across a reformat; ids are
+// minted fresh each (independent) lowering and are not semantic content.
+fn is_identity_key(k: &str) -> bool {
+    k == "id" || k == "ledger" || k == "schemaVersion" || k.ends_with("Id") || k.ends_with("Ids")
+}
+
+fn strip_identity_keys(value: Value) -> Value {
     match value {
         Value::Object(map) => {
-            let mut sorted: std::collections::BTreeMap<String, Value> =
-                std::collections::BTreeMap::new();
+            let mut out = serde_json::Map::new();
             for (k, v) in map {
                 if is_identity_key(&k) {
                     continue;
                 }
-                sorted.insert(k, canonicalize(v));
+                out.insert(k, strip_identity_keys(v));
             }
-            let mut new_map = serde_json::Map::new();
-            for (k, v) in sorted {
-                new_map.insert(k, v);
-            }
-            Value::Object(new_map)
+            Value::Object(out)
         }
-        Value::Array(items) => Value::Array(items.into_iter().map(canonicalize).collect()),
+        Value::Array(items) => Value::Array(items.into_iter().map(strip_identity_keys).collect()),
         v => v,
     }
+}
+
+/// Strips identity fields, then sorts every object's keys via
+/// `orbital_core::util::canonical_json` (the one production owner) so two
+/// independently-lowered values compare deterministically.
+fn canonicalize(value: Value) -> Value {
+    orbital_core::util::canonical_json(&strip_identity_keys(value))
 }
 
 fn strip_nulls(value: Value) -> Value {
@@ -696,4 +695,22 @@ fn orbital_import_inline_config_round_trips() {
 #[test]
 fn orbital_ref_stage_b_round_trips() {
     assert_round_trip("orbital_ref_stage_b");
+}
+
+/// `extend { … }` (Stage C) — printed right after `fields {}`, full
+/// entity-field syntax including a relation-typed field with a `@label`.
+#[test]
+fn orbital_ref_extend_round_trips() {
+    assert_round_trip("orbital_ref_extend");
+}
+
+// `children: []` (an explicit `<Tag></Tag>` body) vs an absent `children`
+// key (`<Tag />`) — the formatter must print the FORMER as `<Tag></Tag>`,
+// never collapse it to self-closing, or the re-parse silently drops the
+// explicit empty children array. Covers both a plain pattern element and an
+// inline-ref trait, one of each closing form. Kept in sync with
+// tests/lower.rs.
+#[test]
+fn jsx_empty_children_round_trips() {
+    assert_round_trip("jsx_empty_children");
 }

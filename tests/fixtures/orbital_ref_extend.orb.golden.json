@@ -1,0 +1,87 @@
+{
+  "name": "PfTimesheets",
+  "orbitals": [
+    {
+      "entity": "TimeTracking.orbitals.TimesheetPanelOrbital.entity",
+      "name": "PfTimesheets",
+      "reference": {
+        "entity": "Timesheet",
+        "extend": [
+          {
+            "description": "Workspace",
+            "name": "workspaceId",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "default": 0.0,
+            "description": "Overtime hours",
+            "name": "overtimeHours",
+            "type": "number"
+          }
+        ],
+        "fields": {
+          "periodStart": "from"
+        },
+        "ref": "TimeTracking.orbitals.TimesheetPanelOrbital",
+        "roles": {
+          "approver": [
+            "owner",
+            "project_manager"
+          ]
+        }
+      },
+      "traits": [
+        {
+          "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "set",
+              "resource": "@id"
+            }
+          ],
+          "linkedEntity": "Timesheet",
+          "name": "TimesheetApproval",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "SUBMIT",
+                "name": "Submit"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "draft"
+              },
+              {
+                "name": "submitted"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@id",
+                    "x"
+                  ]
+                ],
+                "event": "SUBMIT",
+                "from": "draft",
+                "to": "submitted"
+              }
+            ]
+          }
+        }
+      ],
+      "uses": [
+        {
+          "as": "TimeTracking",
+          "from": "almadar-behaviors/std-time-tracking"
+        }
+      ]
+    }
+  ]
+}

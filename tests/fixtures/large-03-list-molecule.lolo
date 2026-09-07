@@ -96,7 +96,7 @@ orbital ListItemOrbital {
         @description "Indicates a new item has been created."
         @synonyms "add, new, insert"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been successfully saved."
         @synonyms "persist, store, commit"
         @tier "essential"
@@ -127,7 +127,7 @@ orbital ListItemOrbital {
         @description "Indicates a request to modify an existing item."
         @synonyms "modify, update, change"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted successfully."
         @synonyms "persist, store, commit, update"
         @tier "essential"

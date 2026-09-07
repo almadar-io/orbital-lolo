@@ -9,21 +9,22 @@
 use super::*;
 
 /// Parsed body of an orbital-reference call site (`{ entity entities fields
-/// roles pages omit only config events trait }`, Stage B). Produced by
-/// `Parser::parse_orbital_ref_body` and folded into the `Orbital` AST node
-/// by its one caller, `parse_orbital_reference`.
+/// roles pages omit only config events extend trait }`, Stage B + C).
+/// Produced by `Parser::parse_orbital_ref_body` and folded into the
+/// `Orbital` AST node by its one caller, `parse_orbital_reference`.
 #[derive(Debug, Clone, Default)]
 struct OrbitalRefBody {
     entity_rebind: Option<String>,
-    entities_remap: Vec<(String, String)>,
-    fields_remap: Vec<(String, String)>,
-    roles_remap: Vec<(String, Vec<String>)>,
-    pages_remap: Vec<(String, String)>,
-    mounts: Vec<(String, Vec<String>)>,
-    omit: Vec<String>,
+    entities_remap: Vec<(String, String, Span)>,
+    fields_remap: Vec<(String, String, Span)>,
+    roles_remap: Vec<(String, Vec<String>, Span)>,
+    pages_remap: Vec<(String, String, Span)>,
+    mounts: Vec<(String, Vec<String>, Span)>,
+    omit: Vec<(String, Span)>,
     only: Vec<String>,
     config_overrides: Vec<ConfigField>,
     events_remap: Vec<(String, String)>,
+    extend_fields: Vec<EntityField>,
     sibling_traits: Vec<Trait>,
 }
 
@@ -77,6 +78,7 @@ impl Parser {
             roles_remap: body.roles_remap,
             entities_remap: body.entities_remap,
             mounts: body.mounts,
+            extend_fields: body.extend_fields,
             // A reference-form orbital declares no knobs of its own — its
             // declared surface lives upstream; `config_overrides` above is
             // the override of THAT surface, not a second declaration.
@@ -121,7 +123,11 @@ impl Parser {
             } else if self.check_ident("roles") {
                 out.roles_remap = self.parse_orbital_ref_roles_map()?;
             } else if self.check_ident("events") {
-                out.events_remap = self.parse_orbital_ref_name_map()?;
+                out.events_remap = self
+                    .parse_orbital_ref_name_map()?
+                    .into_iter()
+                    .map(|(from, to, _)| (from, to))
+                    .collect();
             } else if self.check_ident("pages") {
                 let (pages_remap, mounts) = self.parse_orbital_ref_pages_map()?;
                 out.pages_remap = pages_remap;
@@ -129,9 +135,15 @@ impl Parser {
             } else if self.check_ident("omit") {
                 out.omit = self.parse_orbital_ref_name_list()?;
             } else if self.check_ident("only") {
-                out.only = self.parse_orbital_ref_name_list()?;
+                out.only = self
+                    .parse_orbital_ref_name_list()?
+                    .into_iter()
+                    .map(|(name, _)| name)
+                    .collect();
             } else if self.check_ident("config") {
                 out.config_overrides = self.parse_config_override_block()?;
+            } else if self.check_ident("extend") {
+                out.extend_fields = self.parse_orbital_ref_extend_block()?;
             } else if self.check_ident("trait") {
                 // Stage B sibling trait: legal inside the reference body,
                 // never prefixed, `omit`/`only` never apply to it. Lowers
@@ -140,7 +152,7 @@ impl Parser {
             } else {
                 return Err(ParseError::UnexpectedToken {
                     expected:
-                        "entity, entities, fields, roles, pages, omit, only, config, events, trait, or }"
+                        "entity, entities, fields, roles, pages, omit, only, config, events, extend, trait, or }"
                             .to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
@@ -152,11 +164,13 @@ impl Parser {
     }
 
     /// `KEYWORD { OLD: NEW ... }` — a bare-identifier rename map, comma- or
-    /// newline-separated. Shared shape of `fields {}` and `events {}` at
-    /// orbital-reference scope; on entry the keyword itself has NOT been
-    /// consumed.
-    fn parse_orbital_ref_name_map(&mut self) -> Result<Vec<(String, String)>, ParseError> {
-        self.advance(); // the `fields`/`events` keyword
+    /// newline-separated. Shared shape of `fields {}`, `entities {}` and
+    /// `events {}` at orbital-reference scope; on entry the keyword itself
+    /// has NOT been consumed. The third tuple element is the KEY token's
+    /// span (`.lolo` spans, Stage C) — callers that don't need it (`events
+    /// {}`) drop it.
+    fn parse_orbital_ref_name_map(&mut self) -> Result<Vec<(String, String, Span)>, ParseError> {
+        self.advance(); // the `fields`/`entities`/`events` keyword
         if matches!(self.peek(), TokenKind::Colon) {
             self.advance();
         }
@@ -177,10 +191,11 @@ impl Parser {
                     found: "end of file".to_string(),
                 });
             }
+            let key_span = self.peek_span();
             let from = self.expect_ident()?;
             self.expect_kind(&TokenKind::Colon, ":")?;
             let to = self.expect_ident()?;
-            out.push((from, to));
+            out.push((from, to, key_span));
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }
@@ -196,7 +211,9 @@ impl Parser {
     /// (Stage B) — upstream role name → one bare NAME or a `[NAME, ...]`
     /// list, newline- or comma-separated entries. On entry the `roles`
     /// keyword has NOT been consumed.
-    fn parse_orbital_ref_roles_map(&mut self) -> Result<Vec<(String, Vec<String>)>, ParseError> {
+    fn parse_orbital_ref_roles_map(
+        &mut self,
+    ) -> Result<Vec<(String, Vec<String>, Span)>, ParseError> {
         self.advance(); // the `roles` keyword
         if matches!(self.peek(), TokenKind::Colon) {
             self.advance();
@@ -218,6 +235,7 @@ impl Parser {
                     found: "end of file".to_string(),
                 });
             }
+            let key_span = self.peek_span();
             let from = self.expect_ident()?;
             self.expect_kind(&TokenKind::Colon, ":")?;
             let targets = if matches!(self.peek(), TokenKind::LBracket) {
@@ -239,7 +257,7 @@ impl Parser {
             } else {
                 vec![self.expect_ident()?]
             };
-            out.push((from, targets));
+            out.push((from, targets, key_span));
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }
@@ -258,7 +276,13 @@ impl Parser {
     /// Returns `(pages_remap, mounts)`.
     fn parse_orbital_ref_pages_map(
         &mut self,
-    ) -> Result<(Vec<(String, String)>, Vec<(String, Vec<String>)>), ParseError> {
+    ) -> Result<
+        (
+            Vec<(String, String, Span)>,
+            Vec<(String, Vec<String>, Span)>,
+        ),
+        ParseError,
+    > {
         self.advance(); // the `pages` keyword
         if matches!(self.peek(), TokenKind::Colon) {
             self.advance();
@@ -281,6 +305,7 @@ impl Parser {
                     found: "end of file".to_string(),
                 });
             }
+            let key_span = self.peek_span();
             let from = self.expect_string_literal("a page path string")?;
             self.expect_kind(&TokenKind::Colon, ":")?;
             let to = self.expect_string_literal("a page path string")?;
@@ -295,9 +320,9 @@ impl Parser {
                         break;
                     }
                 }
-                mounts.push((from.clone(), mount_traits));
+                mounts.push((from.clone(), mount_traits, key_span));
             }
-            out.push((from, to));
+            out.push((from, to, key_span));
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }
@@ -313,8 +338,10 @@ impl Parser {
     /// both newline- and comma-separated entries (uniform-comma consistency,
     /// same convention `page`'s trait list and the trait modifier bracket
     /// list already follow). Shared shape of `omit {}` and `only {}`; on
-    /// entry the keyword has NOT been consumed.
-    fn parse_orbital_ref_name_list(&mut self) -> Result<Vec<String>, ParseError> {
+    /// entry the keyword has NOT been consumed. Second tuple element: the
+    /// name token's span (`only {}` drops it — no span-keyed diagnostic
+    /// reads it today).
+    fn parse_orbital_ref_name_list(&mut self) -> Result<Vec<(String, Span)>, ParseError> {
         self.advance(); // the `omit`/`only` keyword
         let open = self.peek_span();
         self.expect_kind(&TokenKind::LBrace, "{")?;
@@ -333,11 +360,45 @@ impl Parser {
                     found: "end of file".to_string(),
                 });
             }
-            out.push(self.expect_ident()?);
+            let span = self.peek_span();
+            out.push((self.expect_ident()?, span));
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }
             self.skip_newlines();
+        }
+        if matches!(self.peek(), TokenKind::Newline) {
+            self.advance();
+        }
+        Ok(out)
+    }
+
+    /// `extend { <field-decl>+ }` (Stage C) — full entity-field syntax,
+    /// reusing `parse_field_decl` (the same shape an `entity { … }` body's
+    /// fields use). Appended to the primary entity at materialization,
+    /// AFTER `fields {}` renames apply. On entry the `extend` keyword has
+    /// NOT been consumed.
+    fn parse_orbital_ref_extend_block(&mut self) -> Result<Vec<EntityField>, ParseError> {
+        self.advance(); // the `extend` keyword
+        let open = self.peek_span();
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        self.skip_newlines();
+        let mut out = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '{',
+                    closer: '}',
+                    open_span: open,
+                    found: "end of file".to_string(),
+                });
+            }
+            out.push(self.parse_field_decl()?);
         }
         if matches!(self.peek(), TokenKind::Newline) {
             self.advance();

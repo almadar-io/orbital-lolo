@@ -1,0 +1,23 @@
+uses TimeTracking from "almadar-behaviors/std-time-tracking"
+
+orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
+  entity Timesheet
+  fields {
+    periodStart: from
+  }
+  extend {
+    workspaceId : Workspace! @description "Workspace"
+    overtimeHours : number @description "Overtime hours" = 0
+  }
+  roles {
+    approver: [owner, project_manager]
+  }
+  trait TimesheetApproval -> Timesheet [interaction, instance] {
+    state draft {
+      SUBMIT -> submitted
+        (set @id "x")
+    }
+    state submitted {
+    }
+  }
+}

@@ -13,14 +13,21 @@
 
 use super::*;
 
-/// `Vec<(String, String)>` → `Option<HashMap<String, String>>`, `None` when
-/// empty — the same "absent beats empty" convention every other optional
-/// map on the schema follows.
-fn pairs_to_map(pairs: &[(String, String)]) -> Option<HashMap<String, String>> {
+/// `Vec<(String, String, Span)>` → `Option<HashMap<String, String>>`, `None`
+/// when empty — the same "absent beats empty" convention every other
+/// optional map on the schema follows. The span is dropped here; callers
+/// that need it record it into the source map separately (spans are a
+/// side-channel, never part of the emitted `.orb`).
+fn pairs_to_map(pairs: &[(String, String, Span)]) -> Option<HashMap<String, String>> {
     if pairs.is_empty() {
         None
     } else {
-        Some(pairs.iter().cloned().collect())
+        Some(
+            pairs
+                .iter()
+                .map(|(k, v, _)| (k.clone(), v.clone()))
+                .collect(),
+        )
     }
 }
 
@@ -33,14 +40,31 @@ fn names_to_option(names: &[String]) -> Option<Vec<String>> {
     }
 }
 
-/// `Vec<(String, Vec<String>)>` → `Option<HashMap<String, Vec<String>>>`,
-/// `None` when empty — the list-valued sibling of `pairs_to_map` (roles,
-/// mounts).
-fn list_pairs_to_map(pairs: &[(String, Vec<String>)]) -> Option<HashMap<String, Vec<String>>> {
+/// `Vec<(String, Span)>` → `Option<Vec<String>>`, `None` when empty — the
+/// span-carrying sibling of `names_to_option` (`omit {}`).
+fn spanned_names_to_option(names: &[(String, Span)]) -> Option<Vec<String>> {
+    if names.is_empty() {
+        None
+    } else {
+        Some(names.iter().map(|(n, _)| n.clone()).collect())
+    }
+}
+
+/// `Vec<(String, Vec<String>, Span)>` → `Option<HashMap<String,
+/// Vec<String>>>`, `None` when empty — the list-valued sibling of
+/// `pairs_to_map` (roles, mounts).
+fn list_pairs_to_map(
+    pairs: &[(String, Vec<String>, Span)],
+) -> Option<HashMap<String, Vec<String>>> {
     if pairs.is_empty() {
         None
     } else {
-        Some(pairs.iter().cloned().collect())
+        Some(
+            pairs
+                .iter()
+                .map(|(k, v, _)| (k.clone(), v.clone()))
+                .collect(),
+        )
     }
 }
 
@@ -60,6 +84,13 @@ pub(crate) fn lower_orbital_reference(
         .reference
         .clone()
         .expect("lower_orbital_reference called without a reference");
+
+    // `.lolo` spans (Stage C): the orbital's own overall span, the fallback
+    // every per-key insert below strips down to (`LoloSourceMap`'s
+    // longest-prefix rule) when a diagnostic's path has no exact key match
+    // (e.g. `ORB_O_ENTITY_UNMAPPED`'s `site` suffix, which names a
+    // trait/aux-entity, not a call-site key).
+    source_map.insert(base.to_string(), orb.span);
 
     let merged_uses = merge_uses(file_uses, &orb.uses, aliases, entity_names)?;
     let uses = if merged_uses.is_empty() {
@@ -81,19 +112,88 @@ pub(crate) fn lower_orbital_reference(
         entity_names,
     )?;
 
+    // `.lolo` spans (Stage C): record each override key's span so the L2
+    // `ORB_O_*`/`ORB_U_*` validators (`orbital_ref_config.rs`,
+    // `orbital_ref_extend.rs`) resolve back to the offending `.lolo`
+    // KEY, not just the orbital's own span. The suffix shape MUST match
+    // the paren-style path `orbital_ref_config.rs` already builds from
+    // `diag.path` (`{path}.config(key)`, `{path}.roles(key)`, …) — see
+    // `Almadar_LOLO.md` §19 / the program report for why (parens, not
+    // dots: `LoloSourceMap::normalize` only touches `[...]` brackets, so
+    // the stored key must be byte-identical to the looked-up path).
+    for (k, _, span) in &orb.fields_remap {
+        source_map.insert(format!("{base}.fields({k})"), *span);
+    }
+    for (k, _, span) in &orb.entities_remap {
+        source_map.insert(format!("{base}.entities({k})"), *span);
+    }
+    for (k, _, span) in &orb.roles_remap {
+        source_map.insert(format!("{base}.roles({k})"), *span);
+    }
+    for (k, _, span) in &orb.pages_remap {
+        source_map.insert(format!("{base}.pages({k})"), *span);
+    }
+    for (k, _, span) in &orb.mounts {
+        source_map.insert(format!("{base}.pages({k})"), *span);
+    }
+    for (k, span) in &orb.omit {
+        source_map.insert(format!("{base}.omit({k})"), *span);
+    }
+    for cf in &orb.config_overrides {
+        source_map.insert(format!("{base}.config({})", cf.name), cf.span);
+    }
+    for f in &orb.extend_fields {
+        source_map.insert(format!("{base}.extend({})", f.name), f.span);
+    }
+    // `uses A from "…" { config { … } }` — a per-orbital `uses` body's own
+    // override keys (`ORB_U_CONFIG_UNKNOWN_KEY`'s `{path}.uses(alias).config(key)`
+    // suffix). File-scope `uses` (declared outside any orbital, shared by
+    // every orbital in the file) has no single owning orbital span and is
+    // left untracked — a lookup for it falls back to this orbital's own
+    // span via `LoloSourceMap`'s longest-prefix rule.
+    for u in &orb.uses {
+        for cf in &u.config {
+            source_map.insert(
+                format!("{base}.uses({}).config({})", u.alias, cf.name),
+                cf.span,
+            );
+        }
+    }
+
+    // Stage C: `extend { … }` — full entity-field declarations appended to
+    // the materialized primary entity (`resolve_orbital_reference`), AFTER
+    // `fields {}` renames apply. Lowered through the SAME `lower_field` an
+    // `entity { … }` body's own fields use, so a relation-typed added field
+    // (e.g. `workspaceId: Workspace!`) resolves its target against `entity_names`
+    // — the CONSUMER's own scope (this file's entities), never the upstream's.
+    let extend: Option<Vec<FieldDefinition>> = if orb.extend_fields.is_empty() {
+        None
+    } else {
+        let mut fields = Vec::with_capacity(orb.extend_fields.len());
+        for f in &orb.extend_fields {
+            fields.push(lower_field(f, aliases, entity_names)?);
+        }
+        Some(fields)
+    };
+
     let ref_object = OrbitalRefObject {
         reference: reference.clone(),
         ref_id: None,
         entity: orb.entity_rebind.clone(),
         fields: pairs_to_map(&orb.fields_remap),
         pages: pairs_to_map(&orb.pages_remap),
-        omit: names_to_option(&orb.omit),
+        omit: spanned_names_to_option(&orb.omit),
         only: names_to_option(&orb.only),
         config: config_overrides,
-        events: pairs_to_map(&orb.events_remap),
+        events: if orb.events_remap.is_empty() {
+            None
+        } else {
+            Some(orb.events_remap.iter().cloned().collect())
+        },
         roles: list_pairs_to_map(&orb.roles_remap),
         entities: pairs_to_map(&orb.entities_remap),
         mounts: list_pairs_to_map(&orb.mounts),
+        extend,
     };
 
     // Sibling traits (Stage B): authored locally in the reference body,

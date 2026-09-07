@@ -281,6 +281,7 @@ pub(crate) fn lower_trait_reference(
                     properties: None,
                     required: None,
                     ref_id: None,
+                    forwarded_from: None,
                 }
             } else {
                 // Declaration-form entries (an alias trait declaring its OWN
@@ -302,6 +303,7 @@ pub(crate) fn lower_trait_reference(
                     properties,
                     required: None,
                     ref_id: None,
+                    forwarded_from: None,
                 }
             };
             map.insert(cf.name.clone(), schema_field);
@@ -511,17 +513,17 @@ pub(crate) fn lower_trait(
                         }
                         _ => None,
                     };
-                    let (field_type, properties, type_when) = if let Some(s) = sentinel {
-                        (s, None, None)
+                    let (field_type, properties, type_when, entity) = if let Some(s) = sentinel {
+                        (s, None, None, None)
                     } else if let Some(elem) = array_elem {
-                        ("[object]".to_string(), Some(elem), None)
+                        ("[object]".to_string(), Some(elem), None, None)
                     } else if let Some(nested) = emit_listen::struct_payload_properties(
                         &f.type_expr,
                         aliases,
                         &trait_type_params,
                     ) {
-                        ("object".to_string(), Some(nested), None)
-                    } else if let Some(entity_fields) =
+                        ("object".to_string(), Some(nested), None, None)
+                    } else if let Some((entity_name, entity_fields, is_array)) =
                         emit_listen::named_entity_fields(&f.type_expr, entities)
                     {
                         // Expand an entity reference exactly as the `emits`
@@ -530,12 +532,18 @@ pub(crate) fn lower_trait(
                         // line and must lower to the same payload; before this
                         // they disagreed (`object` + properties vs a raw entity
                         // name), so one event carried two shapes depending on
-                        // which block declared it.
-                        ("object".to_string(), Some(entity_fields), None)
+                        // which block declared it. Scalar or array (the
+                        // element entity), the name is stamped either way.
+                        (
+                            if is_array { "[object]" } else { "object" }.to_string(),
+                            Some(entity_fields),
+                            None,
+                            Some(entity_name),
+                        )
                     } else {
                         let (field_type, type_when) =
                             emit_listen::lower_match_field_type(&f.type_expr);
-                        (field_type, None, type_when)
+                        (field_type, None, type_when, None)
                     };
                     PayloadField {
                         name: f.name.clone(),
@@ -544,6 +552,7 @@ pub(crate) fn lower_trait(
                         description: None,
                         properties,
                         type_when,
+                        entity,
                     }
                 })
                 .collect()
@@ -633,8 +642,20 @@ pub(crate) fn lower_trait(
                         // listen restating a payload the orbital-scope alias
                         // also types must MATCH it — same rule as emits.
                         if let Some(resolved) = event_aliases.get(&k) {
-                            let alias_param: Vec<&str> =
-                                resolved.type_param.as_deref().into_iter().collect();
+                            // Union with this trait's OWN type params — same
+                            // fix as `lower_emit`'s alias-consistency check
+                            // (§81(b)): a `tpayload`-shaped struct member
+                            // nested inside the alias's payload body must
+                            // resolve to the SAME sentinel here as it does on
+                            // the local listen restatement (which sees
+                            // `trait_type_params` directly), or an honest
+                            // restatement false-mismatches.
+                            let alias_param: Vec<&str> = resolved
+                                .type_param
+                                .as_deref()
+                                .into_iter()
+                                .chain(trait_type_params.iter().copied())
+                                .collect();
                             let alias_fields = type_expr_to_payload_fields(
                                 &k,
                                 &resolved.payload,
@@ -656,8 +677,13 @@ pub(crate) fn lower_trait(
                         }
                         Some(fields)
                     } else if let Some(resolved) = event_aliases.get(&k) {
-                        let alias_param: Vec<&str> =
-                            resolved.type_param.as_deref().into_iter().collect();
+                        // Same union as above — the bare alias-only path.
+                        let alias_param: Vec<&str> = resolved
+                            .type_param
+                            .as_deref()
+                            .into_iter()
+                            .chain(trait_type_params.iter().copied())
+                            .collect();
                         Some(type_expr_to_payload_fields(
                             &k,
                             &resolved.payload,

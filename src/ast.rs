@@ -273,16 +273,18 @@ pub struct Orbital {
     pub entity_rebind: Option<String>,
     /// `fields { up: local }` — primary-entity field renames the imported
     /// traits read/write, lifted from the trait form's `fields {}` to
-    /// orbital scope.
-    pub fields_remap: Vec<(String, String)>,
+    /// orbital scope. Third tuple element is the KEY token's span (Stage C
+    /// `.lolo` spans), for `ORB_O_*` diagnostics that name this key.
+    pub fields_remap: Vec<(String, String, Span)>,
     /// `pages { "/up": "/local" }` — route-path remap. An unmapped upstream
     /// path keeps its own value; required whenever two imports of the same
-    /// orbital would otherwise collide on route.
-    pub pages_remap: Vec<(String, String)>,
+    /// orbital would otherwise collide on route. Third element: KEY span.
+    pub pages_remap: Vec<(String, String, Span)>,
     /// `omit { A B }` — trait/aux-entity names to drop from the imported set.
     /// Omitting a trait some other imported trait embeds is an error, not a
-    /// silent drop (checked post-inline).
-    pub omit: Vec<String>,
+    /// silent drop (checked post-inline). Second element: the name token's
+    /// span.
+    pub omit: Vec<(String, Span)>,
     /// `only { A B }` — trait/aux-entity names to KEEP; everything else is
     /// dropped. Mutually exclusive with `omit` in authoring practice, not
     /// enforced by the grammar.
@@ -297,21 +299,29 @@ pub struct Orbital {
     pub events_remap: Vec<(String, String)>,
     /// `roles { approver: [owner, project_manager]  employee: team_member }`
     /// (Stage B) — upstream role vocabulary word → one or more consumer
-    /// roster role names. Order preserved for the formatter.
-    pub roles_remap: Vec<(String, Vec<String>)>,
+    /// roster role names. Order preserved for the formatter. Third element:
+    /// the KEY (upstream word) token's span.
+    pub roles_remap: Vec<(String, Vec<String>, Span)>,
     /// `entities { Employee: Person }` (Stage B) — out-of-orbital upstream
     /// entity name → consumer entity name. Identity (`X: X`) is legal.
-    pub entities_remap: Vec<(String, String)>,
+    /// Third element: the KEY token's span.
+    pub entities_remap: Vec<(String, String, Span)>,
     /// `pages { "/up": "/local" -> TraitA, TraitB }` mount tails (Stage B),
     /// keyed by the UPSTREAM path — sibling trait names (declared in
-    /// `traits` below) to mount on that page in addition to its own.
-    pub mounts: Vec<(String, Vec<String>)>,
+    /// `traits` below) to mount on that page in addition to its own. Third
+    /// element: the upstream path key's span (same span `pages_remap`
+    /// records for the same path).
+    pub mounts: Vec<(String, Vec<String>, Span)>,
     /// `config { ... }` — an INLINE orbital's own declared knobs
     /// (orbital-import Stage A, `Orbital.config`). Empty for a reference-form
     /// orbital, whose declared knobs live upstream; always empty together
     /// with `config_overrides`, which is the reference form's override
     /// surface for THIS field on the orbital it references.
     pub config: Vec<ConfigField>,
+    /// `extend { <field-decl>+ }` (Stage C) — full entity-field declarations
+    /// appended to the primary entity, AFTER `fields {}` renames apply.
+    /// Unlike `fields {}` (rename-only), each entry is a whole new field.
+    pub extend_fields: Vec<EntityField>,
     pub span: Span,
 }
 
@@ -433,6 +443,24 @@ pub struct EntityField {
     pub span: Span,
 }
 
+/// What a `@payload <arg>` dependent type resolves against — the two
+/// spellings `TypeExpr::EventPayloadOf` carries. Kept as one enum (not a
+/// string convention) so every consumer switches on a closed shape instead
+/// of re-parsing a leading sigil out of a string.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum PayloadOfTarget {
+    /// `@payload @config.<knob>` — the payload of the event that config knob
+    /// names. Resolved post-inline (L2), against the call site's folded
+    /// config default — see `orbital-compiler::phases::inline::sigil_types`.
+    ConfigKnob(String),
+    /// `@payload <member>` — the payload of the event that a SIBLING member
+    /// of the SAME struct body names. `member` must be declared alongside
+    /// this field (same `type X = { ... }` / inline object body) and typed
+    /// `event`. Resolved at L1, against literal struct instances authored in
+    /// the same file — see `types::check_payload_sibling_refs`.
+    SiblingMember(String),
+}
+
 /// Type expression in field declarations.
 #[derive(Debug, Clone)]
 pub enum TypeExpr {
@@ -483,7 +511,7 @@ pub enum TypeExpr {
     /// CURRENT event's payload. Same word, different grammar position,
     /// different referent — the parser change is scoped to `parse_type_atom`
     /// so the two can never overlap.
-    EventPayloadOf(String),
+    EventPayloadOf(PayloadOfTarget),
     /// `@entity <knob>` — the row type of the entity that the named config
     /// knob resolves to. The unary sibling of `BoundEntityRow`: same sigil,
     /// arity distinguishes "the bound entity" from "the entity that knob names".

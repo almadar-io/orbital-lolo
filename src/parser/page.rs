@@ -77,6 +77,7 @@ impl Parser {
                     break;
                 }
                 let key = self.expect_ident()?;
+                let key = self.lang.canon_any(&key).map(str::to_string).unwrap_or(key);
                 if matches!(self.peek(), TokenKind::Colon) {
                     self.advance();
                     let value = self.expect_ident()?;

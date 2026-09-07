@@ -1,0 +1,21 @@
+orbital JsxEmptyChildrenOrbital {
+  uses UiSpinner from "std/behaviors/ui-spinner"
+
+  entity Widget [persistent: widgets] {
+    id : string!
+  }
+
+  trait WidgetView -> Widget [interaction] {
+    state idle {
+      INIT -> idle
+        (render-ui main <Stack direction={vertical}>
+          <Panel></Panel>
+          <Badge />
+          <UiSpinner.traits.SpinnerRender linkedEntity={Widget}></UiSpinner.traits.SpinnerRender>
+          <UiSpinner.traits.SpinnerRender linkedEntity={Widget} />
+        </Stack>)
+    }
+  }
+
+  page "/widgets" as WidgetPage -> WidgetView
+}

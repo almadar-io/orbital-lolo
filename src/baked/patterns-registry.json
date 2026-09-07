@@ -1,10 +1,11 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-05T01:37:56.135Z",
+  "exportedAt": "2026-09-07T02:55:20.374Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
       "category": "display",
+      "sourceFile": "components/core/organisms/DataTable.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Data table with columns and sorting",
@@ -251,7 +252,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -318,7 +320,8 @@
             "event": {
               "types": [
                 "string"
-              ]
+              ],
+              "kind": "event"
             }
           },
           "propertyRequired": [
@@ -390,7 +393,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               }
             },
             "required": [
@@ -438,7 +442,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               }
             },
             "required": [
@@ -478,6 +483,7 @@
     "entity-list": {
       "type": "entity-list",
       "category": "display",
+      "sourceFile": "components/core/organisms/List.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Vertical list of items",
@@ -638,7 +644,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -787,7 +794,6 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true,
                       "controlValue": true
                     }
                   }
@@ -861,6 +867,7 @@
     "entity-cards": {
       "type": "entity-cards",
       "category": "display",
+      "sourceFile": "components/core/organisms/CardGrid.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Grid of cards for visual content",
@@ -1142,7 +1149,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -1200,6 +1208,7 @@
     "detail-panel": {
       "type": "detail-panel",
       "category": "display",
+      "sourceFile": "components/core/organisms/DetailPanel.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Detail view panel for drawers/sidebars",
@@ -1481,7 +1490,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -1537,7 +1547,8 @@
             "event": {
               "types": [
                 "string"
-              ]
+              ],
+              "kind": "event"
             },
             "navigatesTo": {
               "types": [
@@ -1749,6 +1760,7 @@
     "page-header": {
       "type": "page-header",
       "category": "header",
+      "sourceFile": "components/core/molecules/PageHeader.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Page title with optional breadcrumb and action buttons",
@@ -1874,7 +1886,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "variant": {
                 "types": [
@@ -2014,6 +2027,7 @@
     "form": {
       "type": "form",
       "category": "form",
+      "sourceFile": "components/core/organisms/Form.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Complete form with fields and actions",
@@ -2138,7 +2152,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               },
               "options": {
@@ -2582,7 +2595,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -2594,7 +2606,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -2606,7 +2617,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -2618,7 +2628,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             }
@@ -2701,7 +2710,6 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true,
                       "controlValue": true
                     },
                     "options": {
@@ -2906,7 +2914,6 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true,
                       "controlValue": true
                     }
                   }
@@ -2937,6 +2944,7 @@
     "form-section": {
       "type": "form-section",
       "category": "form",
+      "sourceFile": "components/core/organisms/Form.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Alias for form — Complete form with fields and actions",
@@ -3061,7 +3069,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               },
               "options": {
@@ -3505,7 +3512,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -3517,7 +3523,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -3529,7 +3534,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -3541,7 +3545,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             }
@@ -3624,7 +3627,6 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true,
                       "controlValue": true
                     },
                     "options": {
@@ -3829,7 +3831,6 @@
                       "types": [
                         "object"
                       ],
-                      "freeform": true,
                       "controlValue": true
                     }
                   }
@@ -4188,6 +4189,7 @@
     "tabs": {
       "type": "tabs",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/Tabs.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Tab navigation within page",
@@ -4343,7 +4345,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "active": {
                 "types": [
@@ -4502,7 +4505,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "active": {
                 "types": [
@@ -4588,6 +4592,7 @@
     "breadcrumb": {
       "type": "breadcrumb",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/Breadcrumb.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Breadcrumb navigation",
@@ -4643,7 +4648,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               }
             },
             "required": [
@@ -4979,6 +4985,7 @@
     "wizard-container": {
       "type": "wizard-container",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/WizardContainer.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Multi-step wizard container",
@@ -5204,7 +5211,6 @@
                               "types": [
                                 "object"
                               ],
-                              "freeform": true,
                               "controlValue": true
                             }
                           },
@@ -5226,7 +5232,6 @@
                               "types": [
                                 "object"
                               ],
-                              "freeform": true,
                               "controlValue": true
                             }
                           },
@@ -5269,7 +5274,6 @@
                               "types": [
                                 "object"
                               ],
-                              "freeform": true,
                               "controlValue": true
                             }
                           },
@@ -5281,7 +5285,6 @@
                               "types": [
                                 "object"
                               ],
-                              "freeform": true,
                               "controlValue": true
                             }
                           },
@@ -5293,7 +5296,6 @@
                               "types": [
                                 "object"
                               ],
-                              "freeform": true,
                               "controlValue": true
                             }
                           },
@@ -5315,7 +5317,6 @@
                               "types": [
                                 "object"
                               ],
-                              "freeform": true,
                               "controlValue": true
                             }
                           },
@@ -5443,7 +5444,8 @@
                         "types": [
                           "object"
                         ],
-                        "cyclic": true
+                        "cyclic": true,
+                        "cyclicTypeName": "WizardSection"
                       }
                     },
                     "condition": {
@@ -5505,7 +5507,6 @@
                         "types": [
                           "object"
                         ],
-                        "freeform": true,
                         "controlValue": true
                       }
                     },
@@ -7008,8 +7009,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "hoverEvent": {
           "types": [
@@ -7681,8 +7681,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "label": {
           "types": [
@@ -7988,8 +7987,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         }
       }
     },
@@ -9224,6 +9222,7 @@
     "menu": {
       "type": "menu",
       "category": "component",
+      "sourceFile": "components/core/molecules/Menu.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Dropdown menu",
@@ -9294,7 +9293,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "url": {
                 "types": [
@@ -9318,7 +9318,8 @@
                   "types": [
                     "object"
                   ],
-                  "cyclic": true
+                  "cyclic": true,
+                  "cyclicTypeName": "MenuItem"
                 }
               }
             },
@@ -9886,6 +9887,7 @@
     "conditional-wrapper": {
       "type": "conditional-wrapper",
       "category": "component",
+      "sourceFile": "components/core/atoms/ConditionalWrapper.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "ConditionalWrapper Atom Component  A wrapper component that conditionally renders its children based on S-expression evaluation. Used for dynamic field visibility in inspection forms.",
@@ -9917,7 +9919,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -9929,7 +9930,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -9941,7 +9941,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             },
@@ -9953,7 +9952,6 @@
                 "types": [
                   "object"
                 ],
-                "freeform": true,
                 "controlValue": true
               }
             }
@@ -10289,8 +10287,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "responsive": {
           "types": [
@@ -10637,6 +10634,7 @@
     "form-actions": {
       "type": "form-actions",
       "category": "component",
+      "sourceFile": "components/core/molecules/ButtonGroup.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ButtonGroup Molecule Component  A component for grouping buttons together with connected styling. Supports both children-based and form-actions pattern (primary/secondary) usage. Uses Button atoms.",
@@ -10672,7 +10670,8 @@
             "event": {
               "types": [
                 "string"
-              ]
+              ],
+              "kind": "event"
             },
             "navigatesTo": {
               "types": [
@@ -10714,7 +10713,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -11000,6 +11000,7 @@
     "floating-action-button": {
       "type": "floating-action-button",
       "category": "component",
+      "sourceFile": "components/core/molecules/FloatingActionButton.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FloatingActionButton Molecule Component  A floating action button that can expand into multiple actions vertically. Uses Button atom.",
@@ -11024,7 +11025,6 @@
           ],
           "description": "Payload to include with the dispatched action event.",
           "payloadFor": "action",
-          "freeform": true,
           "eventPayloadBrand": true
         },
         "actions": {
@@ -11063,7 +11063,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "variant": {
                 "types": [
@@ -12278,6 +12279,7 @@
     "navigation": {
       "type": "navigation",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/Navigation.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Navigation Organism Component  A navigation component with items, active indicators, icons, and badges. Uses Menu, ButtonGroup molecules and Button, Icon, Badge, Typography, Divider atoms.",
@@ -12347,7 +12349,8 @@
                   "types": [
                     "object"
                   ],
-                  "cyclic": true
+                  "cyclic": true,
+                  "cyclicTypeName": "NavigationItem"
                 }
               }
             },
@@ -12416,6 +12419,7 @@
     "orbital-visualization": {
       "type": "orbital-visualization",
       "category": "display",
+      "sourceFile": "components/core/molecules/OrbitalVisualization.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "OrbitalVisualization Component  Visualizes KFlow schemas as atomic orbitals based on complexity. Uses CSS 3D transforms for lightweight rendering without Three.js.  Orbital Types (based on complexity score): - 1s (1-3): Simple sphere - Red - 2s (4-8): Larger sphere - Orange - 2p (9-15): Dumbbell shape - Yellow - 3s (16-25): Sphere with node - Green - 3p (26-40): Complex dumbbell - Blue - 3d (41-60): Cloverleaf - Indigo - 4f (61+): Multi-lobe - Violet",
@@ -12430,18 +12434,12 @@
           "types": [
             "object"
           ],
-          "description": "Full KFlow schema object",
+          "description": "Complexity-scoring summary of a KFlow schema (counts only — see {@link OrbitalVisualizationSchemaSummary}).",
           "properties": {
             "dataEntities": {
               "types": [
-                "array"
-              ],
-              "items": {
-                "types": [
-                  "object"
-                ],
-                "freeform": true
-              }
+                "number"
+              ]
             },
             "ui": {
               "types": [
@@ -12459,14 +12457,8 @@
                     "properties": {
                       "sections": {
                         "types": [
-                          "array"
-                        ],
-                        "items": {
-                          "types": [
-                            "object"
-                          ],
-                          "freeform": true
-                        }
+                          "number"
+                        ]
                       }
                     }
                   }
@@ -12475,14 +12467,8 @@
             },
             "traits": {
               "types": [
-                "array"
-              ],
-              "items": {
-                "types": [
-                  "object"
-                ],
-                "freeform": true
-              }
+                "number"
+              ]
             }
           }
         },
@@ -12709,6 +12695,7 @@
     "sidebar": {
       "type": "sidebar",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/Sidebar.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Sidebar Organism Component  A sidebar component with logo, navigation items, user section, and collapse/expand. Styled to match the main Layout component with theme-aware CSS variables.",
@@ -12840,7 +12827,8 @@
                   "types": [
                     "object"
                   ],
-                  "cyclic": true
+                  "cyclic": true,
+                  "cyclicTypeName": "SidebarItem"
                 }
               }
             },
@@ -12924,6 +12912,7 @@
     "split": {
       "type": "split",
       "category": "layout",
+      "sourceFile": "components/core/molecules/Split.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Split Component  A two-column layout with configurable ratios. Perfect for sidebar/content layouts or side-by-side comparisons.",
@@ -13031,8 +13020,7 @@
           "items": {
             "types": [
               "node"
-            ],
-            "freeform": true
+            ]
           }
         },
         "isLoading": {
@@ -13377,6 +13365,7 @@
     "dashboard-layout": {
       "type": "dashboard-layout",
       "category": "template",
+      "sourceFile": "components/core/templates/DashboardLayout.tsx",
       "tier": "templates",
       "family": "core",
       "description": "DashboardLayout component",
@@ -13440,7 +13429,8 @@
                   "types": [
                     "object"
                   ],
-                  "cyclic": true
+                  "cyclic": true,
+                  "cyclicTypeName": "NavItem"
                 }
               }
             },
@@ -13543,7 +13533,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -14016,6 +14007,7 @@
     "chart": {
       "type": "chart",
       "category": "visualization",
+      "sourceFile": "components/core/molecules/Chart.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Data visualization chart supporting bar, line, pie, area, and donut types",
@@ -14287,7 +14279,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -14359,6 +14352,7 @@
     "meter": {
       "type": "meter",
       "category": "visualization",
+      "sourceFile": "components/core/molecules/Meter.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Gauge/meter component for displaying a value within a range with thresholds",
@@ -14493,7 +14487,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -14565,6 +14560,7 @@
     "timeline": {
       "type": "timeline",
       "category": "display",
+      "sourceFile": "components/core/organisms/Timeline.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Vertical timeline for displaying chronological events with status indicators",
@@ -14731,7 +14727,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -14772,6 +14769,7 @@
     "media-gallery": {
       "type": "media-gallery",
       "category": "media",
+      "sourceFile": "components/core/organisms/MediaGallery.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Grid gallery for images and media with lightbox, selection, and upload",
@@ -15042,7 +15040,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -15223,6 +15222,7 @@
     "document-viewer": {
       "type": "document-viewer",
       "category": "display",
+      "sourceFile": "components/core/molecules/DocumentViewer.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Document viewer for PDFs, text, HTML, and markdown with zoom and pagination",
@@ -15326,7 +15326,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -15440,6 +15441,7 @@
     "graph-canvas": {
       "type": "graph-canvas",
       "category": "game",
+      "sourceFile": "components/core/molecules/GraphCanvas.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Force-directed graph visualization for node-link data with interactive zoom, pan, and layout",
@@ -15702,7 +15704,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -16325,6 +16328,7 @@
     "code-block": {
       "type": "code-block",
       "category": "component",
+      "sourceFile": "components/core/molecules/markdown/CodeBlock.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "CodeBlock Molecule Component  A syntax-highlighted code block with copy-to-clipboard functionality. Preserves scroll position during re-renders.  Event Contract: - Emits: UI:COPY_CODE { language, success }",
@@ -16609,6 +16613,17 @@
             ]
           }
         },
+        "naturalLanguages": {
+          "types": [
+            "array"
+          ],
+          "description": "Show the program in these natural languages as tabs, translating on the fly. Only meaningful for `language` 'lolo' / 'orb'; ignored otherwise. Fewer than two entries renders exactly as without the prop. `editable` wins: editing a translation is not a thing, so the English source is shown and this is ignored.",
+          "items": {
+            "types": [
+              "object"
+            ]
+          }
+        },
         "actions": {
           "types": [
             "array"
@@ -16629,7 +16644,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -17889,8 +17905,7 @@
             "object"
           ],
           "description": "Additional payload for long-press events",
-          "payloadFor": "longPressEvent",
-          "freeform": true
+          "payloadFor": "longPressEvent"
         },
         "swipeLeftEvent": {
           "types": [
@@ -18590,6 +18605,7 @@
     "data-grid": {
       "type": "data-grid",
       "category": "display",
+      "sourceFile": "components/core/molecules/DataGrid.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DataGrid — structured records grid rendering rows over configurable columns, with sort, select, and drag-reorder.",
@@ -18815,7 +18831,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -19056,6 +19073,7 @@
     "data-list": {
       "type": "data-list",
       "category": "display",
+      "sourceFile": "components/core/molecules/DataList.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DataList component",
@@ -19261,7 +19279,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "icon": {
                 "types": [
@@ -20020,8 +20039,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "onChange": {
           "types": [
@@ -20370,8 +20388,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "className": {
           "types": [
@@ -20463,8 +20480,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "onChange": {
           "types": [
@@ -20609,8 +20625,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "onFiles": {
           "types": [
@@ -20767,8 +20782,7 @@
             "object"
           ],
           "description": "Optional payload to include with the load-more event",
-          "payloadFor": "loadMoreEvent",
-          "freeform": true
+          "payloadFor": "loadMoreEvent"
         },
         "isLoading": {
           "types": [
@@ -20852,6 +20866,7 @@
     "carousel": {
       "type": "carousel",
       "category": "component",
+      "sourceFile": "components/core/molecules/Carousel.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Carousel component",
@@ -20870,8 +20885,23 @@
             "types": [
               "object"
             ],
-            "freeform": true,
-            "genericParam": true
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "image": {
+                "types": [
+                  "asset"
+                ]
+              }
+            }
           }
         },
         "renderItem": {
@@ -20883,7 +20913,29 @@
           "callbackArgs": [
             {
               "name": "item",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "image": {
+                    "types": [
+                      "asset"
+                    ]
+                  }
+                }
+              }
             },
             {
               "name": "index",
@@ -20901,7 +20953,29 @@
           "callbackArgs": [
             {
               "name": "item",
-              "type": "object"
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "id": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "image": {
+                    "types": [
+                      "asset"
+                    ]
+                  }
+                }
+              }
             },
             {
               "name": "index",
@@ -20965,7 +21039,12 @@
           ],
           "description": "Payload to include with the slide change event",
           "payloadFor": "slideChangeEvent",
-          "freeform": true
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "jsonValueBrand": true
+          }
         },
         "className": {
           "types": [
@@ -21001,8 +21080,7 @@
             "object"
           ],
           "description": "Payload to include with the refresh event",
-          "payloadFor": "refreshEvent",
-          "freeform": true
+          "payloadFor": "refreshEvent"
         },
         "threshold": {
           "types": [
@@ -21100,8 +21178,7 @@
             "object"
           ],
           "description": "reorderPayload prop",
-          "payloadFor": "reorderEvent",
-          "freeform": true
+          "payloadFor": "reorderEvent"
         },
         "dragHandlePosition": {
           "types": [
@@ -21125,6 +21202,7 @@
     "swipeable-row": {
       "type": "swipeable-row",
       "category": "component",
+      "sourceFile": "components/core/molecules/SwipeableRow.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "SwipeableRow component",
@@ -21172,14 +21250,15 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "eventPayload": {
                 "types": [
                   "object"
                 ],
-                "freeform": true,
-                "eventPayloadBrand": true
+                "eventPayloadBrand": true,
+                "payloadFor": "event"
               }
             },
             "required": [
@@ -21226,14 +21305,15 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "eventPayload": {
                 "types": [
                   "object"
                 ],
-                "freeform": true,
-                "eventPayloadBrand": true
+                "eventPayloadBrand": true,
+                "payloadFor": "event"
               }
             },
             "required": [
@@ -21262,8 +21342,8 @@
             "object"
           ],
           "description": "itemData prop",
-          "freeform": true,
-          "eventPayloadBrand": true
+          "kind": "entity",
+          "cardinality": "record"
         },
         "className": {
           "types": [
@@ -26252,6 +26332,7 @@
     "file-tree": {
       "type": "file-tree",
       "category": "component",
+      "sourceFile": "components/core/molecules/FileTree.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FileTree component",
@@ -26299,7 +26380,8 @@
                   "types": [
                     "object"
                   ],
-                  "cyclic": true
+                  "cyclic": true,
+                  "cyclicTypeName": "FileTreeNode"
                 }
               },
               "size": {
@@ -27369,6 +27451,7 @@
     "reply-tree": {
       "type": "reply-tree",
       "category": "display",
+      "sourceFile": "components/core/molecules/ReplyTree.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ReplyTree component",
@@ -27438,7 +27521,8 @@
                 "object",
                 "array"
               ],
-              "cyclic": true
+              "cyclic": true,
+              "cyclicTypeName": "ReplyNodeRow"
             }
           }
         },
@@ -30592,6 +30676,7 @@
     "doc-sidebar": {
       "type": "doc-sidebar",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/DocSidebar.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DocSidebar component",
@@ -30631,7 +30716,8 @@
                   "types": [
                     "object"
                   ],
-                  "cyclic": true
+                  "cyclic": true,
+                  "cyclicTypeName": "DocSidebarItem"
                 }
               },
               "active": {
@@ -31536,6 +31622,210 @@
               "object"
             ],
             "properties": {
+              "assetUrl": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
+                    ]
+                  },
+                  "variant": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
+                    ]
+                  },
+                  "atlas": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "sprite": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url",
+                  "role",
+                  "category"
+                ]
+              },
+              "iconUrl": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
+                    ]
+                  },
+                  "variant": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
+                    ]
+                  },
+                  "atlas": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "sprite": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url",
+                  "role",
+                  "category"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "number",
+                  "string"
+                ]
+              },
+              "max": {
+                "types": [
+                  "number"
+                ]
+              },
               "source": {
                 "types": [
                   "string"
@@ -31545,8 +31835,32 @@
                 "types": [
                   "string"
                 ]
+              },
+              "format": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ]
+              },
+              "className": {
+                "types": [
+                  "string"
+                ]
               }
-            }
+            },
+            "required": [
+              "label"
+            ]
           }
         },
         "items": {
@@ -31559,6 +31873,210 @@
               "object"
             ],
             "properties": {
+              "assetUrl": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
+                    ]
+                  },
+                  "variant": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
+                    ]
+                  },
+                  "atlas": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "sprite": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url",
+                  "role",
+                  "category"
+                ]
+              },
+              "iconUrl": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "url": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "role": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "category": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "animations": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "style": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "pixel",
+                      "vector",
+                      "hd",
+                      "1-bit",
+                      "isometric"
+                    ]
+                  },
+                  "variant": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "dimension": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "2d",
+                      "3d"
+                    ]
+                  },
+                  "aspect": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "1:1",
+                      "16:9",
+                      "5:7",
+                      "8:1"
+                    ]
+                  },
+                  "atlas": {
+                    "types": [
+                      "asset"
+                    ]
+                  },
+                  "sprite": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "thumbnailUrl": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "url",
+                  "role",
+                  "category"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "value": {
+                "types": [
+                  "number",
+                  "string"
+                ]
+              },
+              "max": {
+                "types": [
+                  "number"
+                ]
+              },
               "source": {
                 "types": [
                   "string"
@@ -31568,8 +32086,32 @@
                 "types": [
                   "string"
                 ]
+              },
+              "format": {
+                "types": [
+                  "string"
+                ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ]
+              },
+              "className": {
+                "types": [
+                  "string"
+                ]
               }
-            }
+            },
+            "required": [
+              "label"
+            ]
           }
         },
         "elements": {
@@ -31762,6 +32304,7 @@
     "game-menu": {
       "type": "game-menu",
       "category": "game",
+      "sourceFile": "components/game/molecules/GameMenu.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "GameMenu component",
@@ -31811,7 +32354,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -31864,7 +32408,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "navigatesTo": {
                 "types": [
@@ -31920,7 +32465,8 @@
                   "event": {
                     "types": [
                       "string"
-                    ]
+                    ],
+                    "kind": "event"
                   },
                   "navigatesTo": {
                     "types": [
@@ -36233,6 +36779,7 @@
     "table-view": {
       "type": "table-view",
       "category": "display",
+      "sourceFile": "components/core/molecules/TableView.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "TableView — sortable, selectable data table rendering rows over configurable columns, with inline row actions and grouping.",
@@ -36502,7 +37049,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "icon": {
                 "types": [
@@ -37671,6 +38219,7 @@
     "subagent-trace-panel": {
       "type": "subagent-trace-panel",
       "category": "display",
+      "sourceFile": "components/core/organisms/SubagentTracePanel.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "SubagentTracePanel component",
@@ -37798,7 +38347,102 @@
             "types": [
               "object"
             ],
-            "freeform": true
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "role": {
+                "types": [
+                  "string"
+                ]
+              },
+              "orbitalName": {
+                "types": [
+                  "string"
+                ]
+              },
+              "parentId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "status": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "running",
+                  "complete",
+                  "error"
+                ]
+              },
+              "task": {
+                "types": [
+                  "string"
+                ]
+              },
+              "messages": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "message": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "tool": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "timestamp": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "message",
+                    "timestamp"
+                  ]
+                }
+              },
+              "durationMs": {
+                "types": [
+                  "number"
+                ]
+              },
+              "timeline": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "role",
+              "status",
+              "task",
+              "messages"
+            ]
           }
         },
         "focusedOrbital": {
@@ -37843,8 +38487,7 @@
           "items": {
             "types": [
               "object"
-            ],
-            "freeform": true
+            ]
           }
         },
         "coordinatorMessages": {
@@ -37856,7 +38499,81 @@
             "types": [
               "object"
             ],
-            "freeform": true
+            "properties": {
+              "role": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "system",
+                  "user",
+                  "assistant",
+                  "tool"
+                ]
+              },
+              "content": {
+                "types": [
+                  "string"
+                ]
+              },
+              "toolCalls": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "id": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "args": {
+                      "types": [
+                        "object"
+                      ],
+                      "mapValue": {
+                        "types": [
+                          "object"
+                        ],
+                        "jsonValueBrand": true
+                      }
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "name",
+                    "args"
+                  ]
+                }
+              },
+              "toolCallId": {
+                "types": [
+                  "string"
+                ]
+              },
+              "toolName": {
+                "types": [
+                  "string"
+                ]
+              },
+              "reasoningContent": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "role",
+              "content"
+            ]
           }
         },
         "mode": {
@@ -39043,8 +39760,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "responsive": {
           "types": [
@@ -39214,8 +39930,7 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action",
-          "freeform": true
+          "payloadFor": "action"
         },
         "responsive": {
           "types": [
@@ -46228,6 +46943,21 @@
           ],
           "description": "asset prop",
           "properties": {
+            "url": {
+              "types": [
+                "string"
+              ]
+            },
+            "atlas": {
+              "types": [
+                "string"
+              ]
+            },
+            "sprite": {
+              "types": [
+                "string"
+              ]
+            },
             "name": {
               "types": [
                 "string"
@@ -46327,6 +47057,21 @@
           ],
           "description": "asset prop",
           "properties": {
+            "url": {
+              "types": [
+                "string"
+              ]
+            },
+            "atlas": {
+              "types": [
+                "string"
+              ]
+            },
+            "sprite": {
+              "types": [
+                "string"
+              ]
+            },
             "name": {
               "types": [
                 "string"
@@ -47544,6 +48289,11 @@
                   "draw-shape"
                 ]
               },
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
               "shape": {
                 "types": [
                   "string"
@@ -48235,6 +48985,11 @@
                   "draw-sprite"
                 ]
               },
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
               "position": {
                 "types": [
                   "object"
@@ -48518,6 +49273,11 @@
                 ],
                 "enumValues": [
                   "draw-text"
+                ]
+              },
+              "id": {
+                "types": [
+                  "string"
                 ]
               },
               "text": {
@@ -49464,6 +50224,7 @@
     "import-preview-tree": {
       "type": "import-preview-tree",
       "category": "component",
+      "sourceFile": "components/core/molecules/import/ImportPreviewTree.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ImportPreviewTree component",
@@ -49504,7 +50265,6 @@
                   "types": [
                     "object"
                   ],
-                  "freeform": true,
                   "controlValue": true
                 }
               },
@@ -51799,6 +52559,7 @@
     "document-panel": {
       "type": "document-panel",
       "category": "component",
+      "sourceFile": "components/core/molecules/DocumentPanel.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DocumentPanel — a record rendered as one continuous document: editable title over the rich-text body, editing controls tucked into the header corner.",
@@ -51867,7 +52628,8 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "icon": {
                 "types": [
@@ -52001,6 +52763,7 @@
     "document-details": {
       "type": "document-details",
       "category": "display",
+      "sourceFile": "components/core/molecules/DocumentDetails.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DocumentDetails — the document's metadata as a compact settings card for the rail beside a DocumentPanel, each property committing in place.",
@@ -52123,7 +52886,6 @@
                   "types": [
                     "object"
                   ],
-                  "freeform": true,
                   "controlValue": true
                 }
               }
@@ -52171,6 +52933,7 @@
     "floating-toolbar": {
       "type": "floating-toolbar",
       "category": "component",
+      "sourceFile": "components/core/molecules/FloatingToolbar.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FloatingToolbar component",
@@ -52211,19 +52974,21 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "action": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "actionPayload": {
                 "types": [
                   "object"
                 ],
-                "freeform": true,
-                "eventPayloadBrand": true
+                "eventPayloadBrand": true,
+                "payloadFor": "action"
               },
               "active": {
                 "types": [
@@ -52502,6 +53267,7 @@
     "command-palette": {
       "type": "command-palette",
       "category": "component",
+      "sourceFile": "components/core/molecules/CommandPalette.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "CommandPalette component",
@@ -52588,19 +53354,21 @@
               "event": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "action": {
                 "types": [
                   "string"
-                ]
+                ],
+                "kind": "event"
               },
               "actionPayload": {
                 "types": [
                   "object"
                 ],
-                "freeform": true,
-                "eventPayloadBrand": true
+                "eventPayloadBrand": true,
+                "payloadFor": "action"
               }
             },
             "required": [
@@ -52668,19 +53436,21 @@
                   "event": {
                     "types": [
                       "string"
-                    ]
+                    ],
+                    "kind": "event"
                   },
                   "action": {
                     "types": [
                       "string"
-                    ]
+                    ],
+                    "kind": "event"
                   },
                   "actionPayload": {
                     "types": [
                       "object"
                     ],
-                    "freeform": true,
-                    "eventPayloadBrand": true
+                    "eventPayloadBrand": true,
+                    "payloadFor": "action"
                   }
                 },
                 "required": [

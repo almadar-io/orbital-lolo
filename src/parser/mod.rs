@@ -607,6 +607,7 @@ impl Parser {
             entities_remap: Vec::new(),
             mounts: Vec::new(),
             config,
+            extend_fields: Vec::new(),
             span,
         })
     }

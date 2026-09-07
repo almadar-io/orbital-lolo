@@ -9,10 +9,10 @@ orbital GuardTruthinessOrbital {
     a : number = 42
     b : number = 0
     arr : [string] = ["x"]
-    obj : opaque = {}
+    obj : Map string scalar = {}
     missing : string
     emptyArr : [string] = []
-    emptyObj : opaque = {}
+    emptyObj : Map string scalar = {}
     probeTag : string = ""
   }
 

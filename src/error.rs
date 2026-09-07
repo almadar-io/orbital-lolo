@@ -1003,13 +1003,22 @@ pub enum TypeError {
         "ELOLO_T_GENERIC_TYPE: {position} declares the generic type `{name}` — `json`, bare \
          `object`, and `any` are not allowed in a declaration position. Replace it: renderable \
          content → `node`; structured data → an inline `{{ k: T }}` shape, a named `type` alias, \
-         or `Map K V`; a single primitive of unknown kind → `scalar`; data whose shape is \
-         genuinely not yours to close (an audit snapshot, a third-party response body, an \
-         upstream event's payload at a generic wiring atom) → `opaque`"
+         or `Map K V`; a single primitive of unknown kind → `scalar`"
     )]
     GenericTypeForbidden {
         name: String,
         position: String,
+        span: Span,
+    },
+
+    #[error(
+        "ELOLO_T_PAYLOAD_SIBLING: `{member}`'s `@payload {sibling}` {reason} — `@payload \
+         <member>` needs a sibling in the same struct body declared `event`"
+    )]
+    PayloadSiblingUnresolved {
+        member: String,
+        sibling: String,
+        reason: String,
         span: Span,
     },
 }
@@ -1055,7 +1064,8 @@ impl TypeError {
             | TypeError::UnknownTypeParam { span, .. }
             | TypeError::WrongTypeArgCount { span, .. }
             | TypeError::EventTypeWrongKind { span, .. }
-            | TypeError::GenericTypeForbidden { span, .. } => *span,
+            | TypeError::GenericTypeForbidden { span, .. }
+            | TypeError::PayloadSiblingUnresolved { span, .. } => *span,
         }
     }
 }

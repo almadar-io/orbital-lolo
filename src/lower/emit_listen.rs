@@ -50,9 +50,21 @@ pub(crate) fn lower_emit(
     event_aliases: &BTreeMap<String, EventTypeResolved>,
     // Increment 3-II: this trait's OWN declared type-parameter names (from
     // its `(V : Type, ...)` header), usable directly in an inline `emits {
-    // EVENT { field : V } }` payload field position. Distinct scope from an
-    // event ALIAS's own `type_param` (Increment 3-I, resolved just below) —
-    // the two mechanisms are orthogonal and never merged into one slice.
+    // EVENT { field : V } }` payload field position. Distinct MECHANISM from
+    // an event ALIAS's own `type_param` (Increment 3-I, resolved just
+    // below) — the two are never conflated as ONE identifier space (a name
+    // means something different depending which header declared it). They
+    // DO need to be unioned into one `&[&str]` slice, though, at every call
+    // site that walks an alias's payload BODY on this trait's behalf
+    // (`type_expr_to_payload_fields` below, both the bare-name path and the
+    // alias-consistency check): that walk has no way to tell which
+    // mechanism produced a given bare `Named(name)` it encounters nested
+    // inside a struct-alias member — `type QueueJob = { payload : tpayload!
+    // }` reached through `job : QueueJob` on an event payload — so it needs
+    // the full set of names THIS trait treats as type parameters, not just
+    // the alias's own (§81: the split silently produced a bare "tpayload"
+    // string on this path while the inline restatement correctly produced
+    // the "$tpayload" sentinel via `trait_type_params` directly).
     trait_type_params: &[&str],
 ) -> Result<EmitDefinition, LowerError> {
     // Bare-name path: when the entry has no inline payload, look up
@@ -62,7 +74,16 @@ pub(crate) fn lower_emit(
     // (next branch) always wins over alias lookup.
     if e.payload.is_empty() {
         if let Some(resolved) = event_aliases.get(&e.event) {
-            let alias_param: Vec<&str> = resolved.type_param.as_deref().into_iter().collect();
+            // Union the alias's OWN type param (3-I) with this trait's
+            // declared type params (3-II) — see the doc comment on
+            // `trait_type_params` above for why a bare-name alias-body walk
+            // needs both names in scope, not just the alias's own.
+            let alias_param: Vec<&str> = resolved
+                .type_param
+                .as_deref()
+                .into_iter()
+                .chain(trait_type_params.iter().copied())
+                .collect();
             let payload = Some(type_expr_to_payload_fields(
                 &e.event,
                 &resolved.payload,
@@ -138,6 +159,7 @@ pub(crate) fn lower_emit(
                 description: None,
                 properties: None,
                 type_when: None,
+                entity: None,
             });
             continue;
         }
@@ -163,6 +185,7 @@ pub(crate) fn lower_emit(
                 description: None,
                 properties: Some(props),
                 type_when: None,
+                entity: None,
             });
         } else if let Some(variants) =
             union_payload_variants(&f.type_expr, aliases, trait_type_params)
@@ -183,8 +206,14 @@ pub(crate) fn lower_emit(
                 description: None,
                 properties: Some(variants),
                 type_when: None,
+                entity: None,
             });
         } else if let TypeExpr::Named(type_name) = &f.type_expr {
+            // Scalar entity reference (`row : Note`) — resolve through
+            // `entities_by_name` only (not `aliases`; struct aliases are
+            // handled above), so `type_name` is a declared entity. Stamp it
+            // on THIS wrapping field: the only place the entity identity
+            // survives flattening into `object` + `properties`.
             let nested = resolve_payload_type(type_name, aliases, entities_by_name)?;
             if !seen.insert(f.name.clone()) {
                 return Err(LowerError::PayloadFieldCollision {
@@ -199,6 +228,48 @@ pub(crate) fn lower_emit(
                 description: None,
                 properties: Some(nested),
                 type_when: None,
+                entity: Some(type_name.clone()),
+            });
+        } else if let TypeExpr::Array(inner) = &f.type_expr {
+            if let TypeExpr::Named(type_name) = inner.as_ref() {
+                if entities_by_name.contains_key(type_name) {
+                    // Array-of-entity (`rows : [Note]`) — same flatten as the
+                    // scalar arm, tagged `[object]`; the marker names the
+                    // ELEMENT entity, not an array type of its own.
+                    let nested = resolve_payload_type(type_name, aliases, entities_by_name)?;
+                    if !seen.insert(f.name.clone()) {
+                        return Err(LowerError::PayloadFieldCollision {
+                            event: e.event.clone(),
+                            field: f.name.clone(),
+                        });
+                    }
+                    fields.push(PayloadField {
+                        name: f.name.clone(),
+                        field_type: "[object]".to_string(),
+                        required: if f.required { Some(true) } else { None },
+                        description: None,
+                        properties: Some(nested),
+                        type_when: None,
+                        entity: Some(type_name.clone()),
+                    });
+                    continue;
+                }
+            }
+            if !seen.insert(f.name.clone()) {
+                return Err(LowerError::PayloadFieldCollision {
+                    event: e.event.clone(),
+                    field: f.name.clone(),
+                });
+            }
+            let (field_type, type_when) = lower_match_field_type(&f.type_expr);
+            fields.push(PayloadField {
+                name: f.name.clone(),
+                field_type,
+                required: if f.required { Some(true) } else { None },
+                description: None,
+                properties: None,
+                type_when,
+                entity: None,
             });
         } else {
             if !seen.insert(f.name.clone()) {
@@ -215,6 +286,7 @@ pub(crate) fn lower_emit(
                 description: None,
                 properties: None,
                 type_when,
+                entity: None,
             });
         }
     }
@@ -224,7 +296,19 @@ pub(crate) fn lower_emit(
     // readability, silent divergence is the bug the old "inline wins"
     // precedence allowed.
     if let Some(resolved) = event_aliases.get(&e.event) {
-        let alias_param: Vec<&str> = resolved.type_param.as_deref().into_iter().collect();
+        // Same union as the bare-name path above: the alias-consistency
+        // check's alias-side derivation must see this trait's OWN type
+        // params too, or a `tpayload`-shaped struct member nested inside the
+        // alias's payload resolves to a bare name here while the inline
+        // restatement (built via `trait_type_params` directly, a few lines
+        // up) correctly resolves it to the `$tpayload` sentinel — a false
+        // `PayloadAliasMismatch` (§81(b)).
+        let alias_param: Vec<&str> = resolved
+            .type_param
+            .as_deref()
+            .into_iter()
+            .chain(trait_type_params.iter().copied())
+            .collect();
         let alias_fields = type_expr_to_payload_fields(
             &e.event,
             &resolved.payload,
@@ -293,22 +377,55 @@ pub(crate) fn payload_fields_mismatch_norm(
         if crate::lower::entity::RESOLVING.with(|r| r.borrow().contains(name)) {
             return None;
         }
-        if let Some(fields) = entities_by_name.get(name) {
-            return Some(
-                fields
-                    .iter()
-                    .map(|(n, t, req)| PayloadField {
-                        name: n.clone(),
-                        field_type: type_expr_to_string(t),
-                        required: if *req { Some(true) } else { None },
-                        description: None,
-                        properties: None,
-                        type_when: None,
-                    })
-                    .collect(),
-            );
+        // ONE-OWNER FIX (§81): try the ALIAS registry first, via the SAME
+        // `struct_payload_properties` cascade every other named-type walk in
+        // this file already goes through (`type_expr_to_payload_fields`'s
+        // Object branch tries it before `named_entity_fields` too). A name
+        // is a VALUE TYPE (`type X = { … }`) here whenever `aliases` resolves
+        // it to an `Object` body — recursing through it gets the SAME
+        // cyclic-back-reference handling the inline-payload construction
+        // path already applies (`resolve_payload_type` → this same
+        // function), so a self-referential struct member (`additionalProper
+        // ties : X` inside `type X = { …, additionalProperties : X }`)
+        // degrades to the identical by-name marker on both comparison sides
+        // instead of one side re-deriving it fresh and disagreeing.
+        //
+        // `entities_by_name` is a DUAL-PURPOSE map (`collect_entity_type_
+        // bodies` populates it from BOTH `entity X { … }` declarations AND
+        // plain `type X = { … }` struct aliases) — so a struct-alias name is
+        // frequently ALSO present there. Before this fix, this closure
+        // checked `entities_by_name` FIRST and never reached the alias
+        // cascade at all for such a name: `struct_payload_properties`
+        // recurses (cyclic-aware); the entities_by_name branch below is a
+        // flat, NON-recursive `type_expr_to_string` map with no cycle
+        // detection of its own — the exact shape a genuine RELATION wants
+        // (an entity self-reference is an ID reference, never expanded) but
+        // the WRONG shape for a value-typed struct alias reached the same
+        // way. Trying the alias cascade first fixes the struct case without
+        // changing the relation case: `struct_payload_properties` returns
+        // `None` for a genuine entity name (entities are lowered to an
+        // opaque `object` alias body, never `TypeExpr::Object`, so the
+        // `Named` match arm's `_ => return None` fires) and this closure
+        // falls through to the entities_by_name branch exactly as before.
+        if let Some(props) =
+            struct_payload_properties(&TypeExpr::Named(name.to_string()), aliases, &[])
+        {
+            return Some(props);
         }
-        struct_payload_properties(&TypeExpr::Named(name.to_string()), aliases, &[])
+        entities_by_name.get(name).map(|fields| {
+            fields
+                .iter()
+                .map(|(n, t, req)| PayloadField {
+                    name: n.clone(),
+                    field_type: type_expr_to_string(t),
+                    required: if *req { Some(true) } else { None },
+                    description: None,
+                    properties: None,
+                    type_when: None,
+                    entity: None,
+                })
+                .collect()
+        })
     };
     // Paired with the name it flattened (`None` when nothing was), so the
     // nested comparison can add that name to `expanding`.
@@ -331,6 +448,10 @@ pub(crate) fn payload_fields_mismatch_norm(
                         description: None,
                         properties: Some(props),
                         type_when: None,
+                        // Comparison-only reconstruction (never emitted) —
+                        // `base` may be an entity OR a struct alias name
+                        // here; the marker isn't read by this comparator.
+                        entity: None,
                     },
                     Some(base.to_string()),
                 );
@@ -431,6 +552,7 @@ pub(crate) fn type_expr_to_payload_fields(
             description: None,
             properties: None,
             type_when: None,
+            entity: None,
         }]);
     }
     match payload {
@@ -463,32 +585,40 @@ pub(crate) fn type_expr_to_payload_fields(
                     }
                     _ => None,
                 };
-                let (field_type, properties) = if let Some(s) = sentinel {
-                    (s, None)
+                let (field_type, properties, entity) = if let Some(s) = sentinel {
+                    (s, None, None)
                 } else if let Some(elem) = array_elem {
-                    ("[object]".to_string(), Some(elem))
+                    ("[object]".to_string(), Some(elem), None)
                 } else if let Some(nested) = struct_payload_properties(ftype, aliases, type_params)
                 {
-                    ("object".to_string(), Some(nested))
+                    ("object".to_string(), Some(nested), None)
                 } else if let Some(variants) = union_payload_variants(ftype, aliases, type_params) {
-                    ("union".to_string(), Some(variants))
-                } else if let Some(entity_fields) = named_entity_fields(ftype, entities_by_name) {
-                    // An ENTITY named in a field position expands to
-                    // `object` + its own fields — the same shape `lower_emit`'s
-                    // inline path already produced for the identical authored
-                    // line. Without this the alias-only path left a raw entity
-                    // NAME in `field_type` with no `properties`, so one authored
-                    // `{ row : E }` lowered to two different `.orb` shapes
-                    // depending on whether an inline restatement happened to
-                    // exist, and the raw name reached codegen as a bare
-                    // `Reference` (which rendered as `string` in events.ts).
+                    ("union".to_string(), Some(variants), None)
+                } else if let Some((entity_name, entity_fields, is_array)) =
+                    named_entity_fields(ftype, entities_by_name)
+                {
+                    // An ENTITY named in a field position (scalar OR array of
+                    // the element entity) expands to `object`/`[object]` +
+                    // its own fields — the same shape `lower_emit`'s inline
+                    // path already produced for the identical authored line,
+                    // now also carrying the entity's name. Without this the
+                    // alias-only path left a raw entity NAME in `field_type`
+                    // with no `properties`, so one authored `{ row : E }`
+                    // lowered to two different `.orb` shapes depending on
+                    // whether an inline restatement happened to exist, and
+                    // the raw name reached codegen as a bare `Reference`
+                    // (which rendered as `string` in events.ts).
                     // `payload_fields_mismatch_norm` normalized the two for
                     // COMPARISON only; nothing normalized what was emitted.
-                    ("object".to_string(), Some(entity_fields))
+                    (
+                        if is_array { "[object]" } else { "object" }.to_string(),
+                        Some(entity_fields),
+                        Some(entity_name),
+                    )
                 } else if is_cyclic_ref(ftype) {
-                    (type_expr_to_string(ftype), Some(Vec::new()))
+                    (type_expr_to_string(ftype), Some(Vec::new()), None)
                 } else {
-                    (type_expr_to_string(ftype), None)
+                    (type_expr_to_string(ftype), None, None)
                 };
                 flat.push(PayloadField {
                     name: fname.clone(),
@@ -497,6 +627,7 @@ pub(crate) fn type_expr_to_payload_fields(
                     description: None,
                     properties,
                     type_when: None,
+                    entity,
                 });
             }
             Ok(flat)
@@ -513,13 +644,18 @@ pub(crate) fn type_expr_to_payload_fields(
                 description: None,
                 properties: None,
                 type_when: None,
+                entity: None,
             }])
         }
     }
 }
 
-/// If `te` names a known ENTITY, return that entity's fields flattened one
-/// level — the payload shape an entity reference in a field position carries.
+/// If `te` names a known ENTITY — scalar `Named(name)` (`row : Note`) or
+/// `Array(Named(name))` (`rows : [Note]`, the ELEMENT entity) — return
+/// `(name, fields, is_array)`: the entity's name (stamped onto the caller's
+/// wrapping `PayloadField.entity`), its fields flattened one level (the
+/// payload shape an entity reference in a field position carries), and
+/// whether `te` was the array form.
 ///
 /// Deliberately non-propagating, unlike `lower_emit`'s inline path which
 /// `?`-propagates `UnknownPayloadType`: a name that is not an entity (a struct
@@ -529,12 +665,18 @@ pub(crate) fn type_expr_to_payload_fields(
 pub(crate) fn named_entity_fields(
     te: &TypeExpr,
     entities_by_name: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
-) -> Option<Vec<PayloadField>> {
-    let TypeExpr::Named(name) = te else {
-        return None;
+) -> Option<(String, Vec<PayloadField>, bool)> {
+    let (name, is_array) = match te {
+        TypeExpr::Named(n) => (n.as_str(), false),
+        TypeExpr::Array(inner) => match inner.as_ref() {
+            TypeExpr::Named(n) => (n.as_str(), true),
+            _ => return None,
+        },
+        _ => return None,
     };
     let fields = entities_by_name.get(name)?;
-    Some(
+    Some((
+        name.to_string(),
         fields
             .iter()
             .map(|(n, t, req)| PayloadField {
@@ -544,9 +686,11 @@ pub(crate) fn named_entity_fields(
                 description: None,
                 properties: None,
                 type_when: None,
+                entity: None,
             })
             .collect(),
-    )
+        is_array,
+    ))
 }
 
 /// If `te` is a reference to one of `type_params` — `Named(param)` or
@@ -643,6 +787,7 @@ pub(crate) fn union_payload_variants(
             description: None,
             properties,
             type_when: None,
+            entity: None,
         });
     }
     Some(out)
@@ -737,6 +882,7 @@ pub(crate) fn struct_payload_properties(
             description: None,
             properties,
             type_when: None,
+            entity: None,
         });
     }
     if let Some(n) = guard_name {
@@ -753,23 +899,30 @@ pub(crate) fn struct_payload_properties(
 /// entity declarations (so `emits { X :: MyEntity }` works when `MyEntity`
 /// is the orbital's own entity). Unknown names surface as `LowerError::Type`;
 /// the type resolver (`check_program`) catches most of these before lowering.
+///
+/// Delegates the entity's own field list to `struct_payload_properties` (the
+/// SAME struct/array-of-struct/union/cyclic-marker cascade a `type X = {
+/// ... }` alias body runs through) rather than a bespoke flat mapping — an
+/// entity field that is itself a named-struct-alias or array-of-named-
+/// struct-alias (e.g. `AstarScene.nodes : [GraphNodeOut]`, whose element
+/// type `badge : Badge` needs its OWN `properties`) used to flatten to a
+/// bare type string (`"[GraphNodeOut]"`, `properties: None`) one level
+/// short of the entity-field path (`lower/entity.rs`), which already keeps
+/// nested `properties` correctly. Wrapping the entity's fields in a
+/// synthetic `TypeExpr::Object` reuses that ONE cascade instead of
+/// duplicating it — `struct_payload_properties` always returns `Some` for
+/// an `Object` variant (no cycle guard needed for the synthetic, unnamed
+/// wrapper), so `unwrap_or_default` never actually falls through.
 fn resolve_payload_type(
     name: &str,
-    _aliases: &BTreeMap<String, TypeAliasResolved>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
     entities_by_name: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
 ) -> Result<Vec<PayloadField>, LowerError> {
     if let Some(fields) = entities_by_name.get(name) {
-        return Ok(fields
-            .iter()
-            .map(|(n, t, req)| PayloadField {
-                name: n.clone(),
-                field_type: type_expr_to_string(t),
-                required: if *req { Some(true) } else { None },
-                description: None,
-                properties: None,
-                type_when: None,
-            })
-            .collect());
+        return Ok(
+            struct_payload_properties(&TypeExpr::Object(fields.clone()), aliases, &[])
+                .unwrap_or_default(),
+        );
     }
     Err(LowerError::UnknownPayloadType {
         name: name.to_string(),
@@ -955,7 +1108,7 @@ mod recursive_struct_payload_tests {
 
     /// `C-EVENT-ALIAS-NESTED-STRUCT-DEPTH2`: an event payload with a
     /// depth-2 nested struct alias (`containers : [ContainerItem]` where
-     /// A self-referential relation — `entity Tag { parentId : Tag }`, the
+    /// A self-referential relation — `entity Tag { parentId : Tag }`, the
     /// ordinary way the corpus models a hierarchy — must not send the payload
     /// comparator into unbounded recursion.
     ///
@@ -984,7 +1137,11 @@ mod recursive_struct_payload_tests {
                     true,
                 ),
                 // The recursion: a Tag field whose type is Tag.
-                ("parentId".to_string(), TypeExpr::Named("Tag".to_string()), false),
+                (
+                    "parentId".to_string(),
+                    TypeExpr::Named("Tag".to_string()),
+                    false,
+                ),
             ],
         );
         let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
@@ -996,6 +1153,7 @@ mod recursive_struct_payload_tests {
             description: None,
             properties: None,
             type_when: None,
+            entity: None,
         }];
 
         // Terminating at all is the assertion; agreeing is the consequence.
@@ -1006,7 +1164,7 @@ mod recursive_struct_payload_tests {
         );
     }
 
-   /// `ContainerItem` itself has `ports : [PortItem]`, both plain struct
+    /// `ContainerItem` itself has `ports : [PortItem]`, both plain struct
     /// aliases — no entity involved) must round-trip when the trait's
     /// `emits { }` block RESTATES the alias's payload inline (the shape
     /// `lolo-service`-generated service atoms author, and any hand-authored
@@ -1075,9 +1233,7 @@ mod recursive_struct_payload_tests {
             scope: Some("internal".to_string()),
             payload: vec![EventField {
                 name: "containers".to_string(),
-                type_expr: TypeExpr::Array(Box::new(TypeExpr::Named(
-                    "ContainerItem".to_string(),
-                ))),
+                type_expr: TypeExpr::Array(Box::new(TypeExpr::Named("ContainerItem".to_string()))),
                 required: true,
                 span: Span::dummy(),
             }],
@@ -1091,8 +1247,9 @@ mod recursive_struct_payload_tests {
         // depth-2 `ports` field false-mismatched even though both sides
         // name the same real type. After the fix: the honest restatement
         // lowers cleanly.
-        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[])
-            .expect("an honest inline restatement of the alias must lower, not PayloadAliasMismatch");
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[]).expect(
+            "an honest inline restatement of the alias must lower, not PayloadAliasMismatch",
+        );
         let payload = def.payload_schema.expect("payload present");
         assert!(payload.iter().any(|f| f.name == "containers"));
 
@@ -1124,6 +1281,7 @@ mod recursive_struct_payload_tests {
                     description: None,
                     properties: None,
                     type_when: None,
+                    entity: None,
                 },
                 PayloadField {
                     name: "ports".to_string(),
@@ -1132,9 +1290,11 @@ mod recursive_struct_payload_tests {
                     description: None,
                     properties: None,
                     type_when: None,
+                    entity: None,
                 },
             ]),
             type_when: None,
+            entity: None,
         }];
         assert_eq!(
             payload_fields_mismatch_norm(
@@ -1146,5 +1306,380 @@ mod recursive_struct_payload_tests {
             None,
             "a depth-2 bare struct-alias name must still resolve as equivalent to the alias's fully-expanded shape"
         );
+    }
+    /// §81(a): a DIRECT (non-collection) self-referential struct alias
+    /// reached through an entity field, itself reached through an event
+    /// payload — `std-service-llm`'s minimal repro (`entity ServiceLlm {
+    /// schema : ServiceLlmSchema }`, `ServiceLlmSchema { additionalProperties
+    /// : ServiceLlmSchema, items : ServiceLlmSchema }`, `Loaded { data :
+    /// [ServiceLlm] }`).
+    ///
+    /// `entities_by_name` here ALSO carries "S" (mirroring
+    /// `collect_entity_type_bodies`'s real dual population: a plain `type X
+    /// = { … }` struct alias contributes to `entities_by_name` too, not just
+    /// `entity X { … }`) — without that second registration the bug does
+    /// not reproduce, which is exactly why the fix has to live in
+    /// `flatten_name`'s DISPATCH ORDER rather than in the entity branch's
+    /// shallow mapping itself.
+    fn direct_self_ref_aliases_and_entities() -> (
+        BTreeMap<String, TypeAliasResolved>,
+        BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+    ) {
+        let s_fields = vec![
+            (
+                "id".to_string(),
+                TypeExpr::Primitive("string".to_string()),
+                true,
+            ),
+            (
+                "additionalProperties".to_string(),
+                TypeExpr::Named("S".to_string()),
+                false,
+            ),
+            ("items".to_string(), TypeExpr::Named("S".to_string()), false),
+        ];
+        let mut aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        aliases.insert(
+            "S".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(s_fields.clone())),
+        );
+
+        let mut entities_by_name: BTreeMap<String, Vec<(String, TypeExpr, bool)>> = BTreeMap::new();
+        // "S" dual-registered exactly like `collect_entity_type_bodies` does
+        // for every `type X = { … }` struct alias.
+        entities_by_name.insert("S".to_string(), s_fields);
+        entities_by_name.insert(
+            "E".to_string(),
+            vec![
+                (
+                    "id".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
+                ("schema".to_string(), TypeExpr::Named("S".to_string()), true),
+            ],
+        );
+        (aliases, entities_by_name)
+    }
+
+    fn loaded_event_aliases() -> BTreeMap<String, EventTypeResolved> {
+        let mut event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
+        event_aliases.insert(
+            "Loaded".to_string(),
+            EventTypeResolved {
+                payload: TypeExpr::Object(vec![(
+                    "data".to_string(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("E".to_string()))),
+                    true,
+                )]),
+                scope: None,
+                description: None,
+                type_param: None,
+            },
+        );
+        event_aliases
+    }
+
+    #[test]
+    fn direct_self_referential_struct_via_entity_and_event_matches_alias() {
+        let (aliases, entities_by_name) = direct_self_ref_aliases_and_entities();
+        let event_aliases = loaded_event_aliases();
+        let emit = Emit {
+            event: "Loaded".to_string(),
+            scope: Some("internal".to_string()),
+            payload: vec![EventField {
+                name: "data".to_string(),
+                type_expr: TypeExpr::Array(Box::new(TypeExpr::Named("E".to_string()))),
+                required: true,
+                span: Span::dummy(),
+            }],
+            description: None,
+            synonyms: None,
+            tier: None,
+            span: Span::dummy(),
+        };
+
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[])
+            .expect("an honest restatement of a direct self-referential struct member must lower, not PayloadAliasMismatch");
+        let data = def
+            .payload_schema
+            .expect("payload present")
+            .into_iter()
+            .find(|f| f.name == "data")
+            .expect("data field");
+        let schema = data
+            .properties
+            .expect("data carries E's fields")
+            .into_iter()
+            .find(|f| f.name == "schema")
+            .expect("schema field");
+        let additional_properties = schema
+            .properties
+            .expect("schema carries S's fields")
+            .into_iter()
+            .find(|f| f.name == "additionalProperties")
+            .expect("additionalProperties field");
+        assert_eq!(additional_properties.field_type, "S");
+        assert!(
+            matches!(&additional_properties.properties, Some(p) if p.is_empty()),
+            "the recursion point keeps the EMPTY-properties back-reference marker"
+        );
+    }
+
+    /// The fix must not blind the comparator to a REAL mismatch: a
+    /// restatement that changes a nested field's type is still caught.
+    #[test]
+    fn direct_self_referential_struct_real_mismatch_still_caught() {
+        let (aliases, entities_by_name) = direct_self_ref_aliases_and_entities();
+        let event_aliases = loaded_event_aliases();
+        // Restate "schema" as a bare `string` — a genuine divergence from
+        // the entity's declared `S`-typed field, not a false positive.
+        let mut wrong_e_fields = entities_by_name.get("E").unwrap().clone();
+        wrong_e_fields[1].1 = TypeExpr::Primitive("string".to_string());
+        let emit = Emit {
+            event: "Loaded".to_string(),
+            scope: Some("internal".to_string()),
+            payload: vec![EventField {
+                name: "data".to_string(),
+                type_expr: TypeExpr::Array(Box::new(TypeExpr::Object(wrong_e_fields))),
+                required: true,
+                span: Span::dummy(),
+            }],
+            description: None,
+            synonyms: None,
+            tier: None,
+            span: Span::dummy(),
+        };
+
+        let result = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[]);
+        assert!(
+            matches!(result, Err(LowerError::PayloadAliasMismatch { .. })),
+            "a genuinely different nested field type must still be rejected, got {result:?}"
+        );
+    }
+
+    /// §81(b): a trait type parameter used as a struct MEMBER, where the
+    /// struct is reached through an event payload — `std-service-queue`'s
+    /// minimal repro (`type QueueJob = { payload : tpayload! }`, `type
+    /// ServiceQueueDequeueDone = Event { job : QueueJob }`, on a trait
+    /// declaring `(tpayload : Entity)`). Both derivation paths must resolve
+    /// "payload" to the SAME `$tpayload` sentinel.
+    #[test]
+    fn trait_type_param_nested_in_struct_alias_member_matches_alias() {
+        let queue_job_fields = vec![
+            (
+                "id".to_string(),
+                TypeExpr::Primitive("string".to_string()),
+                true,
+            ),
+            (
+                "payload".to_string(),
+                TypeExpr::Named("tpayload".to_string()),
+                true,
+            ),
+        ];
+        let mut aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        aliases.insert(
+            "QueueJob".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(queue_job_fields)),
+        );
+        let entities_by_name: BTreeMap<String, Vec<(String, TypeExpr, bool)>> = BTreeMap::new();
+
+        let mut event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
+        event_aliases.insert(
+            "ServiceQueueDequeueDone".to_string(),
+            EventTypeResolved {
+                payload: TypeExpr::Object(vec![(
+                    "job".to_string(),
+                    TypeExpr::Named("QueueJob".to_string()),
+                    true,
+                )]),
+                scope: None,
+                description: None,
+                type_param: None,
+            },
+        );
+
+        let emit = Emit {
+            event: "ServiceQueueDequeueDone".to_string(),
+            scope: Some("internal".to_string()),
+            payload: vec![EventField {
+                name: "job".to_string(),
+                type_expr: TypeExpr::Named("QueueJob".to_string()),
+                required: true,
+                span: Span::dummy(),
+            }],
+            description: None,
+            synonyms: None,
+            tier: None,
+            span: Span::dummy(),
+        };
+
+        // The consuming trait declares `(tpayload : Entity, …)` — this is
+        // the `trait_type_params` slice `lower_emit` receives from the
+        // trait's own header.
+        let trait_type_params = ["tpayload"];
+        let def = lower_emit(
+            &emit,
+            &aliases,
+            &entities_by_name,
+            &event_aliases,
+            &trait_type_params,
+        )
+        .expect("an honest restatement of a trait-type-param-shaped struct member must lower, not PayloadAliasMismatch");
+        let job = def
+            .payload_schema
+            .expect("payload present")
+            .into_iter()
+            .find(|f| f.name == "job")
+            .expect("job field");
+        let payload = job
+            .properties
+            .expect("job carries QueueJob's fields")
+            .into_iter()
+            .find(|f| f.name == "payload")
+            .expect("payload field");
+        assert_eq!(
+            payload.field_type, "$tpayload",
+            "the trait type param sentinel must survive nested inside a struct-alias member"
+        );
+    }
+}
+
+/// B1-V item C: `PayloadField.entity` — the marker that survives an
+/// entity-typed payload field's flatten into `object`/`[object]` +
+/// `properties`, so a downstream consumer (`plan-user-crud-flow.ts`'s
+/// `wholeRow`) can tell "this field IS a Note row" from "this field is an
+/// anonymous struct that happens to share Note's shape" without inferring
+/// it from name or shape.
+#[cfg(test)]
+mod entity_payload_marker_tests {
+    use super::*;
+
+    fn note_entities() -> BTreeMap<String, Vec<(String, TypeExpr, bool)>> {
+        let mut entities = BTreeMap::new();
+        entities.insert(
+            "Note".to_string(),
+            vec![
+                (
+                    "id".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
+                (
+                    "title".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
+            ],
+        );
+        entities
+    }
+
+    /// The plan's literal example: `emits { DELETE { id: string!, row: Note } }`.
+    #[test]
+    fn scalar_entity_field_is_stamped_on_lower_emit() {
+        let entities_by_name = note_entities();
+        let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        let event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
+        let emit = Emit {
+            event: "DELETE".to_string(),
+            scope: None,
+            payload: vec![
+                EventField {
+                    name: "id".to_string(),
+                    type_expr: TypeExpr::Primitive("string".to_string()),
+                    required: true,
+                    span: Span::dummy(),
+                },
+                EventField {
+                    name: "row".to_string(),
+                    type_expr: TypeExpr::Named("Note".to_string()),
+                    required: false,
+                    span: Span::dummy(),
+                },
+            ],
+            description: None,
+            synonyms: None,
+            tier: None,
+            span: Span::dummy(),
+        };
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[])
+            .expect("DELETE lowers");
+        let payload = def.payload_schema.expect("payload present");
+        let id = payload.iter().find(|f| f.name == "id").expect("id field");
+        assert_eq!(
+            id.entity, None,
+            "a primitive field never carries an entity marker"
+        );
+        let row = payload.iter().find(|f| f.name == "row").expect("row field");
+        assert_eq!(row.field_type, "object");
+        assert_eq!(
+            row.entity.as_deref(),
+            Some("Note"),
+            "row IS a Note instance"
+        );
+        assert!(
+            row.properties.is_some(),
+            "row still carries Note's flattened fields"
+        );
+    }
+
+    /// The array form: `emits { BULK_DELETE { rows: [Note] } }` — the
+    /// element entity is stamped, `field_type` is `[object]` not `object`.
+    #[test]
+    fn array_of_entity_field_is_stamped_on_lower_emit() {
+        let entities_by_name = note_entities();
+        let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        let event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
+        let emit = Emit {
+            event: "BULK_DELETE".to_string(),
+            scope: None,
+            payload: vec![EventField {
+                name: "rows".to_string(),
+                type_expr: TypeExpr::Array(Box::new(TypeExpr::Named("Note".to_string()))),
+                required: true,
+                span: Span::dummy(),
+            }],
+            description: None,
+            synonyms: None,
+            tier: None,
+            span: Span::dummy(),
+        };
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[])
+            .expect("BULK_DELETE lowers");
+        let payload = def.payload_schema.expect("payload present");
+        let rows = payload
+            .iter()
+            .find(|f| f.name == "rows")
+            .expect("rows field");
+        assert_eq!(rows.field_type, "[object]");
+        assert_eq!(
+            rows.entity.as_deref(),
+            Some("Note"),
+            "the marker names the ELEMENT entity, not an array type of its own"
+        );
+        assert!(rows.properties.is_some());
+    }
+
+    /// The alias-restatement path (`type EVENT = Event { row : Note }`,
+    /// `type_expr_to_payload_fields`'s `Object` branch / `named_entity_fields`)
+    /// must stamp the same marker as the inline `emits` path — one authored
+    /// shape, one lowered shape, entity identity included.
+    #[test]
+    fn scalar_entity_field_is_stamped_via_alias_object_branch() {
+        let entities_by_name = note_entities();
+        let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        let payload = TypeExpr::Object(vec![(
+            "row".to_string(),
+            TypeExpr::Named("Note".to_string()),
+            true,
+        )]);
+        let fields =
+            type_expr_to_payload_fields("NoteDelete", &payload, &aliases, &entities_by_name, &[])
+                .expect("payload resolves");
+        let row = fields.iter().find(|f| f.name == "row").expect("row field");
+        assert_eq!(row.field_type, "object");
+        assert_eq!(row.entity.as_deref(), Some("Note"));
     }
 }

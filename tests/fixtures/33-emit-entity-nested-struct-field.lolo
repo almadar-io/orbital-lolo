@@ -1,0 +1,35 @@
+;; C1-R3 item 3: an ENTITY field (`nodes : [GraphNodeOut]`) that is itself an
+;; array-of-named-struct-alias, whose element (`GraphNodeOut`) carries a
+;; nested named-struct-alias field (`badge : Badge`). Reproduces
+;; std-algo-astargraph's `AstarScene.nodes : [GraphNodeOut]` shape: emitting
+;; the whole entity (`snapshot :: Board`) must recurse into `nodes` exactly
+;; like the entity-field path already does, keeping `badge`'s own
+;; `properties` instead of flattening it to a bare type string.
+
+type Badge = {
+  text : string!
+}
+
+type GraphNodeOut = {
+  id : string!
+  badge : Badge
+}
+
+orbital BoardOrbital {
+  entity Board [persistent: boards] {
+    id : string!
+    nodes : [GraphNodeOut]
+  }
+
+  trait BoardView -> Board [interaction, instance] {
+    state idle {
+      INIT -> idle
+        (fetch Board)
+    }
+    emits {
+      BOARD_UPDATED -> external { snapshot :: Board }
+    }
+  }
+
+  page "/boards" -> BoardView
+}

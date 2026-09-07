@@ -49,6 +49,7 @@
                   "type": "string"
                 },
                 {
+                  "entity": "Location",
                   "name": "location",
                   "properties": [
                     {
@@ -95,6 +96,7 @@
                     "type": "string"
                   },
                   {
+                    "entity": "Location",
                     "name": "location",
                     "properties": [
                       {

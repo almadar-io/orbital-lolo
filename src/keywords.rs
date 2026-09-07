@@ -25,14 +25,14 @@ pub struct Vocabulary {
 /// `app orbital uses expects entity type derived trait initial state for
 /// page as theme emits listens ticks config when with from to every
 /// capabilities match external internal on name fields events event
-/// emitsScope identity pages omit only roles entities` — every
+/// emitsScope identity pages omit only roles entities extend` — every
 /// `expect_keyword`/`check_ident` literal in `parser/*.rs` (`parser/mod.rs`,
 /// `parser/entity.rs`, `parser/trait.rs`, `parser/type.rs`, `parser/page.rs`,
 /// `parser/orbital.rs`) that is not itself a shape/tag/category/capability/
-/// annotation word. `pages`/`omit`/`only`/`roles`/`entities` are the
-/// orbital-reference body arms (orbital-import Stage A + B); a `pages {}`
-/// mount tail (`-> TraitA, TraitB`) is pure syntax (`Arrow`/`UnicodeArrow`),
-/// not a keyword — no entry needed for it.
+/// annotation word. `pages`/`omit`/`only`/`roles`/`entities`/`extend` are
+/// the orbital-reference body arms (orbital-import Stage A + B + C); a
+/// `pages {}` mount tail (`-> TraitA, TraitB`) is pure syntax
+/// (`Arrow`/`UnicodeArrow`), not a keyword — no entry needed for it.
 const KEYWORDS: &[&str] = &[
     "app",
     "orbital",
@@ -73,6 +73,7 @@ const KEYWORDS: &[&str] = &[
     "only",
     "roles",
     "entities",
+    "extend",
 ];
 
 /// `Entity Trait Page Orbital Event` — `check_ident` in `parser/type.rs`
@@ -180,7 +181,7 @@ const EFFECTS: &[&str] = &[
 ];
 
 /// `string number int float bool boolean timestamp date datetime duration
-/// money scalar opaque file email url phone uuid image icon asset
+/// money scalar file email url phone uuid image icon asset
 /// component object void null any` (`parser/mod.rs is_primitive_type`) plus
 /// `trait entity event slot pattern Map secret SExpr` (`parser/type.rs`
 /// special type names). `entity`/`event`/`trait` are shared with
@@ -198,7 +199,6 @@ const TYPES: &[&str] = &[
     "duration",
     "money",
     "scalar",
-    "opaque",
     "file",
     "email",
     "url",

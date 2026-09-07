@@ -210,7 +210,7 @@ orbital NoteOrbital {
         @description "A new note has been created."
         @synonyms "new, add, insert"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been successfully saved."
         @synonyms "persist, store, update"
         @tier "essential"
@@ -237,7 +237,7 @@ orbital NoteOrbital {
         @description "A note's content has been modified."
         @synonyms "change, update, modify"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been successfully saved."
         @synonyms "persist, store, update"
         @tier "essential"
@@ -264,7 +264,7 @@ orbital NoteOrbital {
         @description "A page or note has become visible or is being displayed."
         @synonyms "display, show, render, present"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "A note has been saved or updated."
         @synonyms "updated, persisted, stored"
         @tier "essential"
@@ -325,11 +325,11 @@ orbital NoteOrbital {
         @tier "customization"
     }
     listens {
-      DO_CREATE { data : opaque! }
+      DO_CREATE { data : @entity! }
         @description "Initiates the creation of a new item."
         @synonyms "new, add, generate, initiate"
         @tier "essential"
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Indicates a note's content or metadata has changed."
         @synonyms "modified, changed, refreshed"
         @tier "essential"

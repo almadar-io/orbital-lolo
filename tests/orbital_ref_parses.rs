@@ -9,6 +9,16 @@ use orbital_core::schema::{
 use orbital_lolo::ast::TypeExpr;
 use orbital_lolo::{parse_and_lower_str, parse_str};
 
+/// Drop the trailing `Span` (Stage C `.lolo` spans) from a 2- or 3-element
+/// tuple so an assertion can compare just the semantic content — the parser
+/// tests don't pin exact spans, only names/values.
+fn strip_span2<A: Clone, B: Clone, S>(v: &[(A, B, S)]) -> Vec<(A, B)> {
+    v.iter().map(|(a, b, _)| (a.clone(), b.clone())).collect()
+}
+fn strip_span1<A: Clone, S>(v: &[(A, S)]) -> Vec<A> {
+    v.iter().map(|(a, _)| a.clone()).collect()
+}
+
 const SOURCE: &str = r#"
 uses TimeTracking from "almadar-behaviors/std-time-tracking" {
   config {
@@ -93,15 +103,15 @@ fn orbital_reference_parses_every_override_block() {
 
     assert_eq!(orb.entity_rebind.as_deref(), Some("Timesheet"));
     assert_eq!(
-        orb.entities_remap,
+        strip_span2(&orb.entities_remap),
         vec![("Employee".to_string(), "Person".to_string())]
     );
     assert_eq!(
-        orb.fields_remap,
+        strip_span2(&orb.fields_remap),
         vec![("periodStart".to_string(), "from".to_string())]
     );
     assert_eq!(
-        orb.roles_remap,
+        strip_span2(&orb.roles_remap),
         vec![
             (
                 "approver".to_string(),
@@ -111,17 +121,17 @@ fn orbital_reference_parses_every_override_block() {
         ]
     );
     assert_eq!(
-        orb.pages_remap,
+        strip_span2(&orb.pages_remap),
         vec![("/timesheets".to_string(), "/pf/timesheets".to_string())]
     );
     assert_eq!(
-        orb.mounts,
+        strip_span2(&orb.mounts),
         vec![(
             "/timesheets".to_string(),
             vec!["TimesheetApproval".to_string()]
         )]
     );
-    assert_eq!(orb.omit, vec!["TimesheetDelete".to_string()]);
+    assert_eq!(strip_span1(&orb.omit), vec!["TimesheetDelete".to_string()]);
     assert!(orb.only.is_empty());
     assert_eq!(orb.config_overrides.len(), 1);
     assert_eq!(orb.config_overrides[0].name, "pageSize");
@@ -264,7 +274,7 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
     let program = parse_str(source).expect("parse");
     let orb = &program.orbitals[0];
     assert_eq!(
-        orb.roles_remap,
+        strip_span2(&orb.roles_remap),
         vec![
             (
                 "approver".to_string(),
@@ -302,14 +312,14 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
     let program = parse_str(source).expect("parse");
     let orb = &program.orbitals[0];
     assert_eq!(
-        orb.pages_remap,
+        strip_span2(&orb.pages_remap),
         vec![
             ("/timesheets".to_string(), "/pf/timesheets".to_string()),
             ("/reports".to_string(), "/pf/reports".to_string()),
         ]
     );
     assert_eq!(
-        orb.mounts,
+        strip_span2(&orb.mounts),
         vec![(
             "/timesheets".to_string(),
             vec![
@@ -412,4 +422,88 @@ orbital Shell {
         other => panic!("expected numeric default, got {other:?}"),
     }
     assert_eq!(config["pageSize"].label.as_deref(), Some("Items per page"));
+}
+
+// ---------------------------------------------------------------------
+// Stage C: `extend { … }` — full entity-field declarations appended to
+// the primary entity, distinct from `fields {}` (rename-only).
+// ---------------------------------------------------------------------
+
+#[test]
+fn orbital_ref_extend_parses_scalar_default_and_relation() {
+    let source = r#"
+uses TimeTracking from "almadar-behaviors/std-time-tracking"
+
+orbital WorkspaceOrbital {
+  entity Workspace [persistent] {
+    id : string!
+  }
+}
+
+orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
+  extend {
+    overtimeHours : number = 0
+    workspaceId : Workspace!
+  }
+}
+"#;
+    let program = parse_str(source).expect("parse");
+    let orb = program
+        .orbitals
+        .iter()
+        .find(|o| o.reference.is_some())
+        .expect("the reference-form orbital");
+    assert_eq!(orb.extend_fields.len(), 2);
+    assert_eq!(orb.extend_fields[0].name, "overtimeHours");
+    assert_eq!(orb.extend_fields[1].name, "workspaceId");
+    assert!(orb.extend_fields[1].required, "Workspace! is required");
+
+    let schema = parse_and_lower_str(source).expect("lower");
+    let orb_schema = schema
+        .orbitals
+        .iter()
+        .find(|o| o.reference.is_some())
+        .expect("the reference-form orbital, lowered");
+    let ref_object = orb_schema.reference.as_ref().expect("ref object");
+    let extend = ref_object.extend.as_ref().expect("extend fields lowered");
+    assert_eq!(extend.len(), 2);
+    assert_eq!(extend[0].name.as_deref(), Some("overtimeHours"));
+    match &extend[0].default {
+        Some(SExpression::Number(n)) => assert_eq!(*n, 0.0),
+        other => panic!("expected numeric default, got {other:?}"),
+    }
+    assert_eq!(extend[1].name.as_deref(), Some("workspaceId"));
+    // A relation-typed `extend {}` field resolves its target in the
+    // CONSUMER scope (this file's own `Workspace` entity), never upstream.
+    let relation = extend[1]
+        .relation
+        .as_ref()
+        .expect("Workspace! lowers to a relation field");
+    assert_eq!(relation.entity, "Workspace");
+}
+
+#[test]
+fn orbital_ref_extend_round_trips_through_format() {
+    // The parser accepts `fields {}` (rename-only) and `extend {}` (new
+    // fields) side by side without confusing the two surfaces.
+    let source = r#"
+uses TimeTracking from "almadar-behaviors/std-time-tracking"
+
+orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
+  fields {
+    periodStart: from
+  }
+  extend {
+    overtimeHours : number = 0
+  }
+}
+"#;
+    let program = parse_str(source).expect("parse");
+    let orb = &program.orbitals[0];
+    assert_eq!(
+        strip_span2(&orb.fields_remap),
+        vec![("periodStart".to_string(), "from".to_string())]
+    );
+    assert_eq!(orb.extend_fields.len(), 1);
+    assert_eq!(orb.extend_fields[0].name, "overtimeHours");
 }

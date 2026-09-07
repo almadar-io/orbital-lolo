@@ -102,7 +102,13 @@ impl Parser {
                     self.consume_jsx_closing_tag(&open_text, span)?;
                     ch
                 };
-                Ok(desugar_pattern(&name, attrs, children))
+                // `explicit_closing` (not `self_closing`) distinguishes
+                // `<Tag></Tag>` — an explicit empty body — from `<Tag />`
+                // for the empty-`children` case; both parse to the same
+                // `Vec::new()` here, but only the former means "render an
+                // empty `children: []`", so it must ride along past this
+                // point rather than collapse into "absent".
+                Ok(desugar_pattern(&name, attrs, children, !self_closing))
             }
             JsxTag::InlineRef(reference) => {
                 let children = if self_closing {
@@ -112,7 +118,7 @@ impl Parser {
                     self.consume_jsx_closing_tag(&open_text, span)?;
                     ch
                 };
-                self.desugar_inline_ref(&reference, attrs, children, span)
+                self.desugar_inline_ref(&reference, attrs, children, !self_closing, span)
             }
         }
     }
@@ -306,6 +312,7 @@ impl Parser {
         reference: &str,
         attrs: Vec<(String, SExpression)>,
         children: Vec<SExpression>,
+        explicit_closing: bool,
         span: Span,
     ) -> Result<SExpression, ParseError> {
         let mut linked_entity: Option<String> = None;
@@ -344,7 +351,11 @@ impl Parser {
             }
         }
 
-        if !children.is_empty() {
+        // `children: []` (explicit `<Tag></Tag>` body) is a deliberate
+        // "render nothing here" the pattern layer distinguishes from "no
+        // children slot set" (`<Tag />`, self-closing) — only insert the key
+        // for the former, matching `desugar_pattern`'s end-of-fn guard.
+        if !children.is_empty() || explicit_closing {
             config.push(ConfigField {
                 name: "children".to_string(),
                 type_expr: TypeExpr::Primitive("unknown".to_string()),
@@ -443,6 +454,7 @@ fn desugar_pattern(
     name: &str,
     attrs: Vec<(String, SExpression)>,
     children: Vec<SExpression>,
+    explicit_closing: bool,
 ) -> SExpression {
     let mut map: HashMap<String, SExpression> = HashMap::new();
     // `type` — explicit `type=` override wins; otherwise kebab-normalize the
@@ -459,7 +471,11 @@ fn desugar_pattern(
         }
         map.insert(key, value);
     }
-    if !children.is_empty() {
+    // `children: []` (explicit `<Tag></Tag>` body) is a deliberate "render
+    // nothing here" the pattern layer distinguishes from "no children slot
+    // set" (`<Tag />`, self-closing) — only insert the key for the former,
+    // or the round trip `{"children":[]}` -> `<Tag />` -> `{}` is lossy.
+    if !children.is_empty() || explicit_closing {
         map.insert("children".to_string(), SExpression::Array(children));
     }
     SExpression::Object(map)

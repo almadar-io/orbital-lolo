@@ -10,9 +10,9 @@ use std::collections::HashMap;
 
 use crate::ast::{
     AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst,
-    ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, Persistence, Program, State,
-    TermMatch, ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait, TraitRefData, TraitScope,
-    Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
+    ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, PayloadOfTarget, Persistence,
+    Program, State, TermMatch, ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait, TraitRefData,
+    TraitScope, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
 };
 
 /// Format a `Program` AST into canonical `.lolo` source text.
@@ -121,7 +121,9 @@ impl Formatter {
 
     fn fmt_program(&mut self, program: &Program) {
         self.fmt_app_header(&program.app);
-        if !program.type_aliases.is_empty() || !program.uses.is_empty() || !program.orbitals.is_empty()
+        if !program.type_aliases.is_empty()
+            || !program.uses.is_empty()
+            || !program.orbitals.is_empty()
         {
             self.write_newline();
         }
@@ -132,7 +134,8 @@ impl Formatter {
             self.emit_comments_before(alias.span.line);
             self.fmt_type_alias(alias);
         }
-        if !program.type_aliases.is_empty() && (!program.uses.is_empty() || !program.orbitals.is_empty())
+        if !program.type_aliases.is_empty()
+            && (!program.uses.is_empty() || !program.orbitals.is_empty())
         {
             self.write_newline();
         }
@@ -467,8 +470,11 @@ impl Formatter {
 
     fn fmt_type_expr(&mut self, ty: &TypeExpr) {
         match ty {
-            TypeExpr::EventPayloadOf(knob) => {
+            TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(knob)) => {
                 self.output.push_str(&format!("@payload @config.{knob}"));
+            }
+            TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(member)) => {
+                self.output.push_str(&format!("@payload {member}"));
             }
             TypeExpr::NamedEntityRow(knob) => {
                 self.output.push_str(&format!("@entity @config.{knob}"));
@@ -817,7 +823,7 @@ impl Formatter {
             self.output.push_str("entities {");
             self.write_newline();
             self.indent();
-            for (k, v) in &orbital.entities_remap {
+            for (k, v, _) in &orbital.entities_remap {
                 self.write_indent();
                 self.output.push_str(k);
                 self.output.push_str(": ");
@@ -838,11 +844,33 @@ impl Formatter {
             self.output.push_str("fields {");
             self.write_newline();
             self.indent();
-            for (k, v) in &orbital.fields_remap {
+            for (k, v, _) in &orbital.fields_remap {
                 self.write_indent();
                 self.output.push_str(k);
                 self.output.push_str(": ");
                 self.output.push_str(v);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        // `extend { … }` (Stage C) — printed right after `fields {}`: full
+        // entity-field declarations, reusing `fmt_entity_field` (the same
+        // shape an `entity { … }` body's own fields print through).
+        if !orbital.extend_fields.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("extend {");
+            self.write_newline();
+            self.indent();
+            for field in &orbital.extend_fields {
+                self.write_indent();
+                self.fmt_entity_field(field);
                 self.write_newline();
             }
             self.dedent();
@@ -859,7 +887,7 @@ impl Formatter {
             self.output.push_str("roles {");
             self.write_newline();
             self.indent();
-            for (k, targets) in &orbital.roles_remap {
+            for (k, targets, _) in &orbital.roles_remap {
                 self.write_indent();
                 self.output.push_str(k);
                 self.output.push_str(": ");
@@ -891,12 +919,13 @@ impl Formatter {
             self.output.push_str("pages {");
             self.write_newline();
             self.indent();
-            for (k, v) in &orbital.pages_remap {
+            for (k, v, _) in &orbital.pages_remap {
                 self.write_indent();
                 self.write_quoted_string(k);
                 self.output.push_str(": ");
                 self.write_quoted_string(v);
-                if let Some((_, mount_traits)) = orbital.mounts.iter().find(|(up, _)| up == k) {
+                if let Some((_, mount_traits, _)) = orbital.mounts.iter().find(|(up, _, _)| up == k)
+                {
                     self.output.push_str(" -> ");
                     for (i, t) in mount_traits.iter().enumerate() {
                         if i > 0 {
@@ -921,7 +950,7 @@ impl Formatter {
             self.output.push_str("omit {");
             self.write_newline();
             self.indent();
-            for name in &orbital.omit {
+            for (name, _) in &orbital.omit {
                 self.write_indent();
                 self.output.push_str(name);
                 self.write_newline();
@@ -2154,15 +2183,17 @@ impl Formatter {
         // Normalize children to an array: a single-object child
         // (`children: { … }`) is treated as a one-element array so JSX — which
         // only has sequence children — can represent it as `<Tag><Child/></Tag>`.
+        // `children_present` tracks whether the KEY exists at all, separate
+        // from whether the (possibly empty) array itself is empty: a present
+        // `children: []` is a deliberate "render nothing here" the pattern
+        // layer distinguishes from no children slot set at all (absent key)
+        // — collapsing both to "no key" made the round trip lossy (`{"children":[]}`
+        // -> `<Tag />` -> `{}`, dropping the explicit empty).
+        let children_present = map.contains_key("children");
         let children_owned: Vec<SExpression> = match map.get("children") {
             Some(SExpression::Array(arr)) => arr.clone(),
             Some(single) => vec![single.clone()],
             None => Vec::new(),
-        };
-        let children = if children_owned.is_empty() {
-            None
-        } else {
-            Some(children_owned)
         };
 
         let mut attr_keys: Vec<&String> = map
@@ -2177,23 +2208,26 @@ impl Formatter {
             self.fmt_jsx_attr(k, &map[*k]);
         }
 
-        match children {
-            Some(arr) if !arr.is_empty() => {
-                self.output.push('>');
-                self.write_newline();
-                self.indent();
-                for child in &arr {
-                    self.write_indent();
-                    self.fmt_render_pattern(child);
-                    self.write_newline();
-                }
-                self.dedent();
+        if !children_owned.is_empty() {
+            self.output.push('>');
+            self.write_newline();
+            self.indent();
+            for child in &children_owned {
                 self.write_indent();
-                self.output.push_str("</");
-                self.output.push_str(&tag);
-                self.output.push('>');
+                self.fmt_render_pattern(child);
+                self.write_newline();
             }
-            _ => self.output.push_str(" />"),
+            self.dedent();
+            self.write_indent();
+            self.output.push_str("</");
+            self.output.push_str(&tag);
+            self.output.push('>');
+        } else if children_present {
+            self.output.push_str("></");
+            self.output.push_str(&tag);
+            self.output.push('>');
+        } else {
+            self.output.push_str(" />");
         }
     }
 
@@ -2209,7 +2243,9 @@ impl Formatter {
 
         let children_config = ref_data.config.iter().find(|c| c.name == "children");
         // Normalize children to an array (single object → one-element array),
-        // matching `fmt_jsx_pattern`.
+        // matching `fmt_jsx_pattern` — including its `children_present` vs
+        // "owned array is empty" distinction (see that function's comment).
+        let children_present = children_config.is_some();
         let children_owned: Vec<SExpression> = match children_config {
             Some(cf) => match &cf.default {
                 Some(SExpression::Array(arr)) => arr.clone(),
@@ -2217,11 +2253,6 @@ impl Formatter {
                 None => Vec::new(),
             },
             None => Vec::new(),
-        };
-        let children = if children_owned.is_empty() {
-            None
-        } else {
-            Some(children_owned)
         };
 
         let mut attr_keys: Vec<&str> = ref_data
@@ -2264,23 +2295,26 @@ impl Formatter {
             self.output.push_str(" }}");
         }
 
-        match children {
-            Some(arr) if !arr.is_empty() => {
-                self.output.push('>');
-                self.write_newline();
-                self.indent();
-                for child in &arr {
-                    self.write_indent();
-                    self.fmt_render_pattern(child);
-                    self.write_newline();
-                }
-                self.dedent();
+        if !children_owned.is_empty() {
+            self.output.push('>');
+            self.write_newline();
+            self.indent();
+            for child in &children_owned {
                 self.write_indent();
-                self.output.push_str("</");
-                self.output.push_str(reference);
-                self.output.push('>');
+                self.fmt_render_pattern(child);
+                self.write_newline();
             }
-            _ => self.output.push_str(" />"),
+            self.dedent();
+            self.write_indent();
+            self.output.push_str("</");
+            self.output.push_str(reference);
+            self.output.push('>');
+        } else if children_present {
+            self.output.push_str("></");
+            self.output.push_str(reference);
+            self.output.push('>');
+        } else {
+            self.output.push_str(" />");
         }
     }
 

@@ -129,7 +129,7 @@ orbital ContactOrbital {
         @description "A new record is being created."
         @synonyms "new, add, initialize, generate"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data persistence or storage has been successfully completed."
         @synonyms "persist, store, commit, update"
         @tier "essential"
@@ -149,7 +149,7 @@ orbital ContactOrbital {
         @description "Indicates a record is being modified."
         @synonyms "update, change, modify"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data persistence triggered by user action."
         @synonyms "persist, store, commit, update"
         @tier "essential"
@@ -169,7 +169,7 @@ orbital ContactOrbital {
         @description "Indicates a record has been displayed or is visible."
         @synonyms "display, show, present"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "A record has been persisted or updated."
         @synonyms "persist, update, store, commit"
         @tier "essential"
@@ -222,11 +222,11 @@ orbital ContactOrbital {
         @tier "essential"
     }
     listens {
-      DO_CREATE { data : opaque! }
+      DO_CREATE { data : @entity! }
         @description "Initiates the creation of a new record."
         @synonyms "new, add, generate, initiate"
         @tier "essential"
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Indicates data has been modified and needs to be refreshed."
         @synonyms "refresh, reload, update, sync"
         @tier "essential"
@@ -378,7 +378,7 @@ orbital ItemOrbital {
         @description "A new record is being created."
         @synonyms "add, new, initialize, generate"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, update, commit"
         @tier "essential"
@@ -398,7 +398,7 @@ orbital ItemOrbital {
         @description "Indicates a record is being modified."
         @synonyms "update, change, modify"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, update, synchronize"
         @tier "essential"
@@ -418,7 +418,7 @@ orbital ItemOrbital {
         @description "Indicates a record has been displayed or is visible."
         @synonyms "display, show, present"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, update, synchronize"
         @tier "essential"
@@ -482,11 +482,11 @@ orbital ItemOrbital {
         @tier "essential"
     }
     listens {
-      DO_CREATE { data : opaque! }
+      DO_CREATE { data : @entity! }
         @description "Initiates the creation of a new record."
         @synonyms "new, add, generate, initialize"
         @tier "essential"
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Signals that data has been modified and should be refreshed."
         @synonyms "refresh, changed, modified, updated"
         @tier "essential"
@@ -494,7 +494,7 @@ orbital ItemOrbital {
         @description "Initiates the removal of a record."
         @synonyms "remove, discard, erase"
         @tier "essential"
-      GRANTED { requestId : string, payload : opaque }
+      GRANTED { requestId : string, payload : @entity }
         @description "An approver granted a held item request; replay the create from the carried payload."
         @synonyms "approved, granted, authorized"
         @tier "essential"
@@ -630,7 +630,7 @@ orbital ActivityOrbital {
         @description "Indicates a record has been displayed or is visible."
         @synonyms "display, show, present, render"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data persistence triggered by user action."
         @synonyms "persist, store, commit"
         @tier "essential"
@@ -650,7 +650,7 @@ orbital ActivityOrbital {
         @description "Indicates a record is being modified."
         @synonyms "modify, change, update"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, update, synchronize"
         @tier "essential"
@@ -701,7 +701,7 @@ orbital ActivityOrbital {
         @tier "essential"
     }
     listens {
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Indicates data has been modified and should be synchronized."
         @synonyms "refresh, sync, change, modify"
         @tier "essential"
@@ -841,7 +841,7 @@ orbital TaskOrbital {
         @description "A new record is being created."
         @synonyms "add, new, initialize, generate"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data persistence triggered by user action."
         @synonyms "persist, store, update, commit"
         @tier "essential"
@@ -861,7 +861,7 @@ orbital TaskOrbital {
         @description "Indicates a record is being modified."
         @synonyms "update, change, modify"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data changes have been persisted."
         @synonyms "persist, store, commit, update"
         @tier "essential"
@@ -881,7 +881,7 @@ orbital TaskOrbital {
         @description "Indicates a record or item is being displayed."
         @synonyms "display, show, present, render"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data persistence triggered by user action."
         @synonyms "persist, store, commit, update"
         @tier "essential"
@@ -934,11 +934,11 @@ orbital TaskOrbital {
         @tier "essential"
     }
     listens {
-      DO_CREATE { data : opaque! }
+      DO_CREATE { data : @entity! }
         @description "Initiates the creation of a new record."
         @synonyms "new, add, generate, initiate"
         @tier "essential"
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Indicates data has been modified and should be refreshed."
         @synonyms "refresh, reload, update, sync"
         @tier "essential"
@@ -1077,7 +1077,7 @@ orbital CalendarOrbital {
         @description "A new record is being created."
         @synonyms "new, add, insert, generate"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data persistence triggered by user action."
         @synonyms "persist, store, commit, update"
         @tier "essential"
@@ -1097,7 +1097,7 @@ orbital CalendarOrbital {
         @description "Indicates a record is being modified."
         @synonyms "update, change, modify"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data persistence or synchronization has completed."
         @synonyms "persist, store, update, synchronize"
         @tier "essential"
@@ -1150,11 +1150,11 @@ orbital CalendarOrbital {
         @tier "essential"
     }
     listens {
-      DO_CREATE { data : opaque! }
+      DO_CREATE { data : @entity! }
         @description "Initiates the creation of a new record."
         @synonyms "new, add, generate, initiate"
         @tier "essential"
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Indicates a record has been modified and changes are pending."
         @synonyms "modified, changed, altered, updated"
         @tier "customization"
@@ -1302,7 +1302,7 @@ orbital WidgetOrbital {
         @description "Indicates a record or item is being displayed."
         @synonyms "display, show, present, render"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, update, synchronize"
         @tier "essential"
@@ -1322,7 +1322,7 @@ orbital WidgetOrbital {
         @description "Indicates a record is being modified."
         @synonyms "modify, change, update"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, update, synchronize"
         @tier "essential"
@@ -1373,7 +1373,7 @@ orbital WidgetOrbital {
         @tier "customization"
     }
     listens {
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Indicates data has been modified and needs to be refreshed."
         @synonyms "refresh, reload, update, sync"
         @tier "essential"
@@ -1507,7 +1507,7 @@ orbital FeedOrbital {
         @description "A new record is being created."
         @synonyms "add, new, initiate, generate"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, synchronize, update"
         @tier "essential"
@@ -1527,7 +1527,7 @@ orbital FeedOrbital {
         @description "Indicates a record is being modified."
         @synonyms "update, change, modify"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, update, synchronize"
         @tier "essential"
@@ -1580,11 +1580,11 @@ orbital FeedOrbital {
         @tier "customization"
     }
     listens {
-      DO_CREATE { data : opaque! }
+      DO_CREATE { data : @entity! }
         @description "Initiates the creation of a new record."
         @synonyms "new, add, generate, initialize"
         @tier "essential"
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Indicates data has been modified and requires synchronization."
         @synonyms "refresh, sync, changed, modified"
         @tier "essential"
@@ -1715,7 +1715,7 @@ orbital NoteOrbital {
         @description "A new record is being created."
         @synonyms "new, add, insert, generate"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Indicates data persistence or storage has been completed."
         @synonyms "persist, store, commit, update"
         @tier "essential"
@@ -1735,7 +1735,7 @@ orbital NoteOrbital {
         @description "Indicates a record is being modified."
         @synonyms "update, change, modify"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data persistence triggered by user action."
         @synonyms "persist, store, commit, update"
         @tier "essential"
@@ -1755,7 +1755,7 @@ orbital NoteOrbital {
         @description "Indicates a record has been displayed or is visible."
         @synonyms "display, show, present, render"
         @tier "essential"
-      SAVE { data : opaque! }
+      SAVE { data : @entity! }
         @description "Data has been persisted or synchronized."
         @synonyms "persist, store, update, synchronize"
         @tier "essential"
@@ -1808,11 +1808,11 @@ orbital NoteOrbital {
         @tier "essential"
     }
     listens {
-      DO_CREATE { data : opaque! }
+      DO_CREATE { data : @entity! }
         @description "Initiates the creation of a new record."
         @synonyms "new, add, generate, initiate"
         @tier "essential"
-      DO_UPDATE { data : opaque! }
+      DO_UPDATE { data : @entity! }
         @description "Indicates a record has been modified and changes are pending."
         @synonyms "modified, changed, altered, updated"
         @tier "customization"

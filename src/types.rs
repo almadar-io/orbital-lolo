@@ -26,10 +26,11 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use crate::ast::{
-    Emit, Entity, EntityField, ExpectsKind, Orbital, Page, Persistence, Program, Span, Trait,
-    TypeAlias, TypeAnnotation, TypeBody, TypeExpr,
+    ConfigField, Emit, Entity, EntityField, ExpectsKind, Orbital, Page, PayloadOfTarget,
+    Persistence, Program, Span, Trait, TypeAlias, TypeAnnotation, TypeBody, TypeExpr,
 };
 use crate::error::{TypeError, TypeKindName};
+use orbital_core::schema::SExpression;
 
 /// Per-scope alias table. Two of these are built during `Program` resolution:
 /// one from `program.type_aliases` (file scope) and one from each orbital's
@@ -358,7 +359,10 @@ fn format_type_expr(te: &TypeExpr) -> String {
     match te {
         TypeExpr::Primitive(s) => format!("prim:{s}"),
         TypeExpr::BoundEntityRow => "@entity".to_string(),
-        TypeExpr::EventPayloadOf(knob) => format!("@payload({knob})"),
+        TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(knob)) => format!("@payload({knob})"),
+        TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(member)) => {
+            format!("@payload(.{member})")
+        }
         TypeExpr::NamedEntityRow(knob) => format!("@entity({knob})"),
         TypeExpr::ExpectedIdentityRow => "@user".to_string(),
         TypeExpr::Named(s) => format!("named:{s}"),
@@ -899,8 +903,8 @@ pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
 /// position the `.orb` carries — but the L1 lowerer ERASES an authored scalar
 /// `json`/`any` entity field to `string` before that gate can see it, so the
 /// authoring site was accepted-and-lying. Rejecting the SPELLING here (rung 1
-/// of the prevention ladder) closes that loophole at its source; `opaque`,
-/// `scalar`, `node`, and shaped types are the sanctioned vocabulary.
+/// of the prevention ladder) closes that loophole at its source; `scalar`,
+/// `node`, and shaped types are the sanctioned vocabulary.
 fn reject_generic_types(te: &TypeExpr, position: &str, span: Span) -> Result<(), TypeError> {
     match te {
         TypeExpr::Primitive(n) | TypeExpr::Named(n)
@@ -960,12 +964,161 @@ fn reject_generic_alias_body(ta: &TypeAlias) -> Result<(), TypeError> {
     }
 }
 
+/// Validate every `@payload <sibling>` member of a `type X = { ... }` struct
+/// body: `sibling` must be a field declared in the SAME struct, typed
+/// `event`. Structurally decidable from the alias body alone — rung 1 of the
+/// prevention ladder, same posture as `reject_generic_types` — so this runs
+/// wherever that does, before the dependent type erases to a shapeless
+/// object at lowering (`lower::entity::lower_type_expr`).
+fn check_payload_sibling_refs(ta: &TypeAlias) -> Result<(), TypeError> {
+    let TypeBody::Struct(fields) = &ta.body else {
+        return Ok(());
+    };
+    for (member, te, _) in fields {
+        let TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(sibling)) = te else {
+            continue;
+        };
+        match fields.iter().find(|(name, _, _)| name == sibling) {
+            None => {
+                return Err(TypeError::PayloadSiblingUnresolved {
+                    member: member.clone(),
+                    sibling: sibling.clone(),
+                    reason: "names a sibling that does not exist on this struct".to_string(),
+                    span: ta.span,
+                });
+            }
+            Some((_, TypeExpr::EventRef, _)) => {}
+            Some(_) => {
+                return Err(TypeError::PayloadSiblingUnresolved {
+                    member: member.clone(),
+                    sibling: sibling.clone(),
+                    reason: "names a sibling that is not typed `event`".to_string(),
+                    span: ta.span,
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
+/// Payload field NAMES declared for each event, gathered from every `emits`
+/// block in the program. First declaration wins — the same anchor rule
+/// `orbital-compiler::phases::inline::sigil_types::build_payload_index` uses
+/// on the resolved schema, applied here at L1 against the AST so a literal
+/// `@payload <sibling>` instance can be checked before the dependent type
+/// erases to a shapeless object at lowering.
+fn collect_event_payload_fields(program: &Program) -> BTreeMap<String, BTreeSet<String>> {
+    let mut idx: BTreeMap<String, BTreeSet<String>> = BTreeMap::new();
+    for orb in &program.orbitals {
+        for trt in &orb.traits {
+            for emit in &trt.emits {
+                idx.entry(emit.event.clone())
+                    .or_insert_with(|| emit.payload.iter().map(|f| f.name.clone()).collect());
+            }
+        }
+    }
+    idx
+}
+
+/// The `(member, sibling)` pair of a struct's `@payload <sibling>` member,
+/// when it has one. `check_payload_sibling_refs` already proved `sibling`
+/// exists and is `event`-typed by the time this is called.
+fn payload_sibling_member(fields: &[(String, TypeExpr, bool)]) -> Option<(&str, &str)> {
+    fields.iter().find_map(|(name, te, _)| match te {
+        TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(sibling)) => {
+            Some((name.as_str(), sibling.as_str()))
+        }
+        _ => None,
+    })
+}
+
+/// Unwrap `[T]` / `?T` and resolve a named struct alias to its field list.
+/// `None` for anything that isn't (transitively) a struct alias — a bare
+/// inline `{ ... }` config type isn't covered (no call site outside the 3
+/// sanctioned `@almadar/ui` molecules authors this dependent type inline
+/// today; extend here if that changes).
+fn struct_alias_fields<'a>(
+    te: &TypeExpr,
+    ctx: &ResolveCtx<'a>,
+) -> Option<&'a [(String, TypeExpr, bool)]> {
+    match te {
+        TypeExpr::Array(inner) | TypeExpr::Optional(inner) => struct_alias_fields(inner, ctx),
+        TypeExpr::Named(name) => match &ctx.lookup(name)?.body {
+            TypeBody::Struct(fields) => Some(fields.as_slice()),
+            _ => None,
+        },
+        _ => None,
+    }
+}
+
+fn sexpr_as_object(e: &SExpression) -> Option<&HashMap<String, SExpression>> {
+    match e {
+        SExpression::Object(o) => Some(o),
+        _ => None,
+    }
+}
+
+/// B2: validate a struct-typed config knob's LITERAL default instances (one
+/// object, or an array of them) against the dependent `@payload <sibling>`
+/// member's ACTUALLY DECLARED event payload — the value this dependent type
+/// exists for (the recursive generic alias it replaces validated nothing).
+/// Resolvable only where the sibling's literal value on that SAME instance is
+/// a plain string — an instance whose sibling value isn't a literal (e.g.
+/// itself forwarded via `@config.*`) defers, same posture as the top-level
+/// knob form only resolving a literal default.
+fn check_payload_sibling_literals(
+    cf: &ConfigField,
+    ctx: &ResolveCtx<'_>,
+    payload_index: &BTreeMap<String, BTreeSet<String>>,
+) -> Result<(), TypeError> {
+    let Some(struct_fields) = struct_alias_fields(&cf.type_expr, ctx) else {
+        return Ok(());
+    };
+    let Some((member, sibling)) = payload_sibling_member(struct_fields) else {
+        return Ok(());
+    };
+    let Some(default) = &cf.default else {
+        return Ok(());
+    };
+    let items: Vec<&HashMap<String, SExpression>> = match default {
+        SExpression::Array(items) => items.iter().filter_map(sexpr_as_object).collect(),
+        SExpression::Object(obj) => vec![obj],
+        _ => Vec::new(),
+    };
+    for item in items {
+        let Some(SExpression::String(event_name)) = item.get(sibling) else {
+            continue;
+        };
+        let Some(declared_fields) = payload_index.get(event_name) else {
+            continue;
+        };
+        let Some(payload_value) = item.get(member).and_then(sexpr_as_object) else {
+            continue;
+        };
+        for key in payload_value.keys() {
+            if !declared_fields.contains(key) {
+                return Err(TypeError::PayloadSiblingUnresolved {
+                    member: member.to_string(),
+                    sibling: sibling.to_string(),
+                    reason: format!(
+                        "carries a literal instance whose field {key:?} is not on {event_name:?}'s declared payload"
+                    ),
+                    span: cf.span,
+                });
+            }
+        }
+    }
+    Ok(())
+}
+
 pub fn check_program(program: &Program) -> Result<(), TypeError> {
     let mut file = TypeRegistry::new();
     for ta in &program.type_aliases {
         reject_generic_alias_body(ta)?;
+        check_payload_sibling_refs(ta)?;
         file.insert(ta.clone());
     }
+    let payload_index = collect_event_payload_fields(program);
     // All declared entity names — legal targets for a field's relation/type
     // reference (`field : OtherEntity`), alongside primitives and type aliases.
     // `expects` names count too: the declaration is a promise the entity
@@ -986,6 +1139,7 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
         let mut orbital = TypeRegistry::new();
         for ta in &orb.type_aliases {
             reject_generic_alias_body(ta)?;
+            check_payload_sibling_refs(ta)?;
             orbital.insert(ta.clone());
         }
         let ctx = ResolveCtx {
@@ -1055,6 +1209,7 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
                     &entity_names,
                     &trait_type_params,
                 )?;
+                check_payload_sibling_literals(cf, &ctx, &payload_index)?;
             }
             for emit in &trt.emits {
                 for f in &emit.payload {
@@ -1266,15 +1421,15 @@ orbital OrbI {
         );
     }
 
-    /// The sanctioned vocabulary must keep passing: `opaque` (declared
-    /// openness), `scalar` (bounded primitive), and shaped types.
+    /// The sanctioned vocabulary must keep passing: `scalar` (bounded
+    /// primitive) and shaped types. `opaque` is REMOVED from the language
+    /// (L-8 closure) — see `err_opaque_is_unknown_type_in_every_position`.
     #[test]
-    fn ok_opaque_scalar_and_shaped_types_pass() {
+    fn ok_scalar_and_shaped_types_pass() {
         let src = r#"
 orbital OrbJ {
   entity Rec [persistent: recs] {
     id : string!
-    snapshot : opaque
     value : scalar
     meta : Map string scalar
     point : { x : number!, y : number! }
@@ -1284,6 +1439,72 @@ orbital OrbJ {
 }
 "#;
         check(src).unwrap();
+    }
+
+    /// `opaque` is REMOVED from the language (L-8 closure, 2026-09-07): it is
+    /// no longer a recognized primitive, so every type position that used to
+    /// accept it now sees an unresolved `TypeExpr::Named("opaque")` and must
+    /// reject it as `UnknownType` — never silently lower to `string`. Covers
+    /// every position the old `opaque` doc claimed: entity field, array
+    /// element, `Map` value, config knob, and event payload field.
+    #[test]
+    fn err_opaque_is_unknown_type_in_every_position() {
+        let cases = [
+            ("entity field", "snapshot : opaque"),
+            ("array element", "snapshot : [opaque]"),
+            ("map value", "snapshot : Map string opaque"),
+        ];
+        for (label, field) in cases {
+            let src = format!(
+                r#"
+orbital OrbK {{
+  entity Rec [persistent: recs] {{
+    id : string!
+    {field}
+  }}
+  trait RecTrait -> Rec [interaction] {{ state idle {{ INIT -> idle (ref Rec) }} }}
+  page "/recs" -> RecTrait
+}}
+"#
+            );
+            let err = check(&src).unwrap_err();
+            assert!(
+                matches!(err, TypeError::UnknownType { ref name, .. } if name == "opaque"),
+                "{label}: got {err:?}"
+            );
+        }
+
+        let src = r#"
+orbital OrbL {
+  entity Rec [persistent: recs] { id : string! }
+  trait RecTrait -> Rec [interaction] {
+    config { extra : opaque }
+    state idle { INIT -> idle (ref Rec) }
+  }
+  page "/recs" -> RecTrait
+}
+"#;
+        let err = check(src).unwrap_err();
+        assert!(
+            matches!(err, TypeError::UnknownType { ref name, .. } if name == "opaque"),
+            "config knob: got {err:?}"
+        );
+
+        let src = r#"
+orbital OrbM {
+  entity Rec [persistent: recs] { id : string! }
+  trait RecTrait -> Rec [interaction] {
+    emits { DONE -> external { value : opaque } }
+    state idle { INIT -> idle (ref Rec) }
+  }
+  page "/recs" -> RecTrait
+}
+"#;
+        let err = check(src).unwrap_err();
+        assert!(
+            matches!(err, TypeError::UnknownType { ref name, .. } if name == "opaque"),
+            "emit payload field: got {err:?}"
+        );
     }
 
     #[test]

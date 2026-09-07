@@ -280,6 +280,16 @@ impl Parser {
             if name == "<" {
                 break;
             }
+            // A literal is never a parameter name. English `true`/`false`/
+            // `null` never reach here — the lexer gives them their own token
+            // kinds — but a native rendering (`صحيح`, `drzi`) lexes as a plain
+            // identifier, and swallowing it as a parameter would emit the body
+            // of `(fn row صحيح)` as the STRING "صحيح" instead of `true`.
+            // Stopping here hands it to the ordinary argument path, the one
+            // place that canonicalizes a literal word.
+            if self.lang.canon_literal(&name).is_some() {
+                break;
+            }
             let span = self.peek_span();
             self.advance();
             flat.push((name, span));

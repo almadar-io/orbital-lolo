@@ -100,11 +100,28 @@ pub(crate) fn lower_type_expr(
         TypeExpr::Primitive(name) => (primitive_to_field_type(name), None, None, None, None),
         // `@entity` is only legal in event payload positions (enforced by the
         // Stage-2 checker); an entity/config field reaching here is already an
-        // error upstream — lower defensively to an opaque object.
+        // error upstream — lower defensively to a shapeless object.
         TypeExpr::BoundEntityRow
-        | TypeExpr::EventPayloadOf(_)
+        | TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(_))
         | TypeExpr::NamedEntityRow(_)
         | TypeExpr::ExpectedIdentityRow => (FieldType::Object, None, None, None, None),
+        // `@payload <sibling>` inside a struct member position (a
+        // `type X = { action: event, actionPayload: @payload <action> }`
+        // body): the concrete event isn't knowable here — `action` is a TYPE
+        // (`event`), not a literal — so there is no single named shape to
+        // carry through the closed `FieldType` wire tag. Lowers to a
+        // shapeless `Object` (no `properties`, no `items`) — the same
+        // "target declares nothing" carrier `resolve_field_shape` already
+        // collapses to `OirType::Json`, which codegen renders as the generic
+        // `EventPayload` TS type (`shell_typescript::backend::shared`).
+        // `types::check_payload_sibling_refs` is the actual gate: it
+        // validates the sibling exists and is `event`-typed, and (where both
+        // are literal) that a literal instance's value matches the sibling's
+        // declared payload — entirely at L1, against the AST, before this
+        // erasure happens.
+        TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(_)) => {
+            (FieldType::Object, None, None, None, None)
+        }
         TypeExpr::Trait => (FieldType::Trait, None, None, None, None),
         TypeExpr::Slot => (FieldType::Slot, None, None, None, None),
         TypeExpr::Pattern => (FieldType::Pattern, None, None, None, None),
@@ -392,10 +409,6 @@ pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
         // the `json` line above (which ERASES to String and is being
         // eliminated), this keeps its own tag all the way to codegen.
         "scalar" => FieldType::Scalar,
-        // Open BY CONSTRUCTION — carries its own tag to codegen (which renders
-        // it exactly like `json`) so the generic gate can tell a declared
-        // openness apart from an untyped one.
-        "opaque" => FieldType::Opaque,
         _ => return None,
     })
 }

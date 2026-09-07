@@ -1,0 +1,115 @@
+{
+  "name": "JsxEmptyChildrenOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "widgets",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "name": "Widget",
+        "persistence": "persistent"
+      },
+      "name": "JsxEmptyChildrenOrbital",
+      "pages": [
+        {
+          "name": "WidgetPage",
+          "path": "/widgets",
+          "traits": [
+            {
+              "ref": "WidgetView"
+            },
+            {
+              "ref": "InlineSpinnerRender1"
+            },
+            {
+              "ref": "InlineSpinnerRender2"
+            }
+          ]
+        }
+      ],
+      "traits": [
+        {
+          "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "render-ui",
+              "resource": "main"
+            }
+          ],
+          "linkedEntity": "Widget",
+          "name": "WidgetView",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "render-ui",
+                    "main",
+                    {
+                      "children": [
+                        {
+                          "children": [],
+                          "type": "panel"
+                        },
+                        {
+                          "type": "badge"
+                        },
+                        "@trait.InlineSpinnerRender1",
+                        "@trait.InlineSpinnerRender2"
+                      ],
+                      "direction": "vertical",
+                      "type": "stack"
+                    }
+                  ]
+                ],
+                "event": "INIT",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        },
+        {
+          "config": {
+            "children": {
+              "default": [],
+              "type": "unknown"
+            }
+          },
+          "linkedEntity": "Widget",
+          "name": "InlineSpinnerRender1",
+          "ref": "UiSpinner.traits.SpinnerRender"
+        },
+        {
+          "linkedEntity": "Widget",
+          "name": "InlineSpinnerRender2",
+          "ref": "UiSpinner.traits.SpinnerRender"
+        }
+      ],
+      "uses": [
+        {
+          "as": "UiSpinner",
+          "from": "std/behaviors/ui-spinner"
+        }
+      ]
+    }
+  ]
+}

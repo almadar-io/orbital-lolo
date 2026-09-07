@@ -306,6 +306,139 @@ fn bare_at_payload_in_type_position_is_rejected() {
 }
 
 // ---------------------------------------------------------------------------
+// `@payload <sibling>` (struct-member form, 2026-09-07): a struct's OWN
+// `event`-typed member, not a config knob, names the dependent event. Real
+// shape: `@almadar/ui`'s `FloatingToolbar`/`CommandPalette`/`SwipeableRow`
+// item structs.
+// ---------------------------------------------------------------------------
+
+const SIBLING_SRC: &str = r#"
+orbital SiblingOrbital {
+  type ToolbarItem = {
+    id : string!
+    action : event
+    actionPayload : @payload action
+  }
+
+  entity SiblingData [runtime] {
+    id : string!
+  }
+
+  trait SiblingRender -> SiblingData [interaction, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (render-ui main { type: box  padding: md })
+      SAVE -> idle
+        (notify "saved")
+    }
+    emits {
+      SAVE {
+        amount : number!
+        label : string
+      }
+    }
+    config {
+      items : [ToolbarItem] = [{ id: "Id", action: "SAVE", actionPayload: { amount: 1 } }]
+    }
+  }
+
+  page "/sibling" -> SiblingRender
+}
+"#;
+
+fn toolbar_item_member(src: &str, member: &str) -> orbital_core::schema::FieldDefinition {
+    let schema = parse_and_lower_str(src).expect("must lower");
+    let TraitReference::Inline(t) = &schema.orbitals[0].traits[0] else {
+        panic!("inline trait expected")
+    };
+    t.config
+        .as_ref()
+        .expect("trait has config")
+        .get("items")
+        .expect("items knob")
+        .items
+        .as_ref()
+        .expect("items element shape")
+        .properties
+        .as_ref()
+        .expect("element properties")
+        .get(member)
+        .unwrap_or_else(|| panic!("member `{member}` missing"))
+        .clone()
+}
+
+#[test]
+fn payload_of_sibling_lowers_to_a_shapeless_object() {
+    // The concrete event isn't knowable here — `action` is a TYPE (`event`),
+    // not a literal — so this erases to the same "declares nothing" carrier
+    // `resolve_field_shape` collapses to `OirType::Json` (-> the generic
+    // `EventPayload` TS type), never a named struct.
+    let member = toolbar_item_member(SIBLING_SRC, "actionPayload");
+    assert_eq!(member.field_type, orbital_core::schema::FieldType::Object);
+    assert!(member.properties.is_none());
+    assert!(member.items.is_none());
+}
+
+#[test]
+fn payload_of_sibling_round_trips_through_the_formatter() {
+    let ast = parse_str(SIBLING_SRC).expect("parse");
+    let formatted = format_program(&ast);
+    assert!(
+        formatted.contains("actionPayload : @payload action"),
+        "formatter must print the sibling form verbatim:\n{formatted}"
+    );
+    let reparsed = parse_str(&formatted).expect("re-parse formatted source");
+    let refmt = format_program(&reparsed);
+    assert_eq!(formatted, refmt, "format_program must be idempotent");
+    parse_and_lower_str(&formatted).expect("formatted source must still lower");
+}
+
+#[test]
+fn payload_of_sibling_missing_sibling_is_rejected() {
+    let src = SIBLING_SRC.replace("actionPayload : @payload action", "actionPayload : @payload missingField");
+    let err = parse_and_lower_str(&src).expect_err("nonexistent sibling must be rejected");
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("ELOLO_T_PAYLOAD_SIBLING") && msg.contains("does not exist"),
+        "got: {msg}"
+    );
+}
+
+#[test]
+fn payload_of_sibling_non_event_sibling_is_rejected() {
+    let src = SIBLING_SRC.replace("action : event", "action : string");
+    let err = parse_and_lower_str(&src).expect_err("non-event sibling must be rejected");
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("ELOLO_T_PAYLOAD_SIBLING") && msg.contains("not typed `event`"),
+        "got: {msg}"
+    );
+}
+
+#[test]
+fn payload_of_sibling_literal_shape_mismatch_is_rejected() {
+    let src = SIBLING_SRC.replace(
+        "actionPayload: { amount: 1 }",
+        "actionPayload: { totallyWrongField: 1 }",
+    );
+    let err = parse_and_lower_str(&src).expect_err("literal payload must match SAVE's declared shape");
+    let msg = format!("{err}");
+    assert!(
+        msg.contains("ELOLO_T_PAYLOAD_SIBLING") && msg.contains("totallyWrongField"),
+        "got: {msg}"
+    );
+}
+
+#[test]
+fn payload_of_sibling_literal_shape_match_passes() {
+    // `amount` IS declared on SAVE's payload — the happy path this whole
+    // dependent type exists to check, which the generic alias it replaces
+    // never did.
+    parse_and_lower_str(SIBLING_SRC).expect("a literal matching the declared payload must pass");
+}
+
+// ---------------------------------------------------------------------------
 // Primitive-variant unions (`scalar | FileItem`)
 // ---------------------------------------------------------------------------
 

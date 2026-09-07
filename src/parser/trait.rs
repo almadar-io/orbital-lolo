@@ -520,6 +520,7 @@ impl Parser {
                     self.advance();
                 }
                 let scope = self.expect_ident()?;
+                let scope = self.lang.canon_keyword(&scope).map(str::to_string).unwrap_or(scope);
                 emits_scope = Some(scope);
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
@@ -1163,7 +1164,7 @@ impl Parser {
                 }
                 let (description, synonyms, tier) = self.parse_event_annotations()?;
                 Ok(Listen {
-                    event: first,
+                    event: self.canon_event_name(first),
                     triggers: None,
                     guard: None,
                     payload_mapping: Vec::new(),
@@ -1181,7 +1182,7 @@ impl Parser {
                 }
                 let (description, synonyms, tier) = self.parse_event_annotations()?;
                 Ok(Listen {
-                    event: first,
+                    event: self.canon_event_name(first),
                     triggers: None,
                     guard: None,
                     payload_mapping: Vec::new(),
@@ -1204,11 +1205,15 @@ impl Parser {
                 // If a second `.` follows, the form is 3-part cross-orbital:
                 // first=Orbital, second=Source, third=EVENT. Otherwise the
                 // form is 2-part: first=Source, second=EVENT.
+                // Only the LAST segment is an event name — the leading
+                // segments are an orbital / trait alias the author chose.
                 let combined = if matches!(self.peek(), TokenKind::Dot) {
                     self.advance();
                     let third = self.expect_ident()?;
+                    let third = self.canon_event_name(third);
                     format!("{first}.{second}.{third}")
                 } else {
+                    let second = self.canon_event_name(second);
                     format!("{first}.{second}")
                 };
                 if !matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
@@ -1220,6 +1225,7 @@ impl Parser {
                 }
                 self.advance();
                 let triggers = self.expect_ident()?;
+                let triggers = self.canon_event_name(triggers);
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
                 }

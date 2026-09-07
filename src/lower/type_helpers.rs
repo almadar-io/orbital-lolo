@@ -22,7 +22,10 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Primitive(name) => name.clone(),
         TypeExpr::BoundEntityRow => "@entity".to_string(),
-        TypeExpr::EventPayloadOf(knob) => format!("@payload({knob})"),
+        TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(knob)) => format!("@payload({knob})"),
+        TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(member)) => {
+            format!("@payload(.{member})")
+        }
         TypeExpr::NamedEntityRow(knob) => format!("@entity({knob})"),
         TypeExpr::ExpectedIdentityRow => "@user".to_string(),
         TypeExpr::Named(name) => name.clone(),
@@ -173,7 +176,10 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
     match ty {
         TypeExpr::Primitive(s) | TypeExpr::Named(s) => s.clone(),
         TypeExpr::BoundEntityRow => "@entity".to_string(),
-        TypeExpr::EventPayloadOf(knob) => format!("@payload({knob})"),
+        TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(knob)) => format!("@payload({knob})"),
+        TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(member)) => {
+            format!("@payload(.{member})")
+        }
         TypeExpr::NamedEntityRow(knob) => format!("@entity({knob})"),
         TypeExpr::ExpectedIdentityRow => "@user".to_string(),
         TypeExpr::StringLiteral(_) => "string".to_string(),
@@ -270,6 +276,7 @@ pub(crate) fn lower_config_fields_to_map(
                 properties,
                 required: if cf.required { Some(true) } else { None },
                 ref_id: None,
+                forwarded_from: None,
             },
         );
     }
