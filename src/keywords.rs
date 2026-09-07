@@ -209,6 +209,16 @@ const TYPES: &[&str] = &[
     "asset",
     "component",
     "object",
+    // Valid `FIELD_TYPES` that had drifted out of both this list and
+    // `orbital_core::i18n` en.json's `types` section, so they could not be
+    // written in Arabic or Slovenian. `keywords_match_tables` pins the two
+    // lists to each other; `@almadar/core`'s `i18n-localize` test now pins
+    // the table to `FIELD_TYPES` itself, closing the loop.
+    "array",
+    "enum",
+    "relation",
+    "node",
+    "union",
     "void",
     "null",
     "any",
