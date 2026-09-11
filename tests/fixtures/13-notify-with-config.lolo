@@ -5,9 +5,9 @@ orbital NotifyOrbital {
   trait Notifier -> Toast [interaction] {
     state idle {
       INFO -> idle
-        (notify "Saved")
+        (notify success "Saved")
       WARN -> idle
-        (notify "Cancelled" "info")
+        (notify warning "Cancelled")
     }
   }
 }

@@ -19,7 +19,8 @@
           "category": "interaction",
           "effectRow": [
             {
-              "kind": "notify"
+              "kind": "render-ui",
+              "resource": "toast"
             }
           ],
           "linkedEntity": "Toast",
@@ -46,8 +47,14 @@
               {
                 "effects": [
                   [
-                    "notify",
-                    "Saved"
+                    "render-ui",
+                    "toast",
+                    {
+                      "dismissible": true,
+                      "message": "Saved",
+                      "type": "alert",
+                      "variant": "success"
+                    }
                   ]
                 ],
                 "event": "INFO",
@@ -57,9 +64,14 @@
               {
                 "effects": [
                   [
-                    "notify",
-                    "Cancelled",
-                    "info"
+                    "render-ui",
+                    "toast",
+                    {
+                      "dismissible": true,
+                      "message": "Cancelled",
+                      "type": "alert",
+                      "variant": "warning"
+                    }
                   ]
                 ],
                 "event": "WARN",

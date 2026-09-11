@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-07T02:55:20.374Z",
+  "exportedAt": "2026-09-10T08:51:20.514Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -8464,7 +8464,9 @@
             "function",
             "string"
           ],
-          "description": "Callback or declarative event key when clear button is clicked"
+          "description": "Callback or declarative event key when clear button is clicked",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         },
         "options": {
           "types": [
@@ -8505,7 +8507,22 @@
             "function",
             "string"
           ],
-          "description": "onChange handler or declarative event key for trait dispatch"
+          "description": "onChange handler or declarative event key for trait dispatch",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true,
+              "typeWhen": [
+                {
+                  "knob": "inputType",
+                  "equals": "number",
+                  "type": "number"
+                }
+              ]
+            }
+          ]
         }
       }
     },
@@ -8558,7 +8575,15 @@
             "function",
             "string"
           ],
-          "description": "onChange handler or declarative event key for trait dispatch"
+          "description": "onChange handler or declarative event key for trait dispatch",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true
+            }
+          ]
         }
       }
     },
@@ -8728,7 +8753,26 @@
             "function",
             "string"
           ],
-          "description": "onChange handler (native ChangeEvent) or declarative event key for trait dispatch"
+          "description": "onChange handler (native ChangeEvent) or declarative event key for trait dispatch",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true,
+              "schema": {
+                "types": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          ]
         },
         "onValueChange": {
           "types": [
@@ -8781,7 +8825,15 @@
             "function",
             "string"
           ],
-          "description": "onChange handler or declarative event key for trait dispatch"
+          "description": "onChange handler or declarative event key for trait dispatch",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "checked",
+              "type": "boolean",
+              "required": true
+            }
+          ]
         }
       }
     },
@@ -11402,7 +11454,9 @@
             "function",
             "string"
           ],
-          "description": "Callback or declarative event key when clear button is clicked"
+          "description": "Callback or declarative event key when clear button is clicked",
+          "kind": "event-ref",
+          "emitPayloadSchema": []
         },
         "options": {
           "types": [
@@ -11442,7 +11496,22 @@
             "function",
             "string"
           ],
-          "description": "onChange handler or declarative event key for trait dispatch"
+          "description": "onChange handler or declarative event key for trait dispatch",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true,
+              "typeWhen": [
+                {
+                  "knob": "inputType",
+                  "equals": "number",
+                  "type": "number"
+                }
+              ]
+            }
+          ]
         },
         "leftAddon": {
           "types": [
@@ -53725,6 +53794,390 @@
           "default": "replace"
         }
       }
+    },
+    "draw-skinned-mesh": {
+      "type": "draw-skinned-mesh",
+      "category": "game",
+      "sourceFile": "components/game/atoms/DrawSkinnedMesh.tsx",
+      "tier": "atoms",
+      "family": "game",
+      "description": "DrawSkinnedMesh component",
+      "suggestedFor": [
+        "draw",
+        "skinned",
+        "mesh",
+        "draw skinned mesh"
+      ],
+      "typicalSize": "small",
+      "propsSchema": {
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Optional source-tagged hit-test handle — the host indexes the drawable's ScenePos→id so a pointer/raycast at that cell resolves to this id (unit/entity click). No id → the host emits only the coordinate (tile click)."
+        },
+        "type": {
+          "types": [
+            "string"
+          ],
+          "description": "type prop",
+          "required": true,
+          "enumValues": [
+            "draw-skinned-mesh"
+          ]
+        },
+        "position": {
+          "types": [
+            "object"
+          ],
+          "description": "Logical scene position; mesh local coords are world units relative to its projected top-left.",
+          "required": true,
+          "properties": {
+            "x": {
+              "types": [
+                "number"
+              ]
+            },
+            "y": {
+              "types": [
+                "number"
+              ]
+            },
+            "z": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "x",
+            "y"
+          ],
+          "scenePos": true
+        },
+        "asset": {
+          "types": [
+            "object"
+          ],
+          "description": "The texture the mesh UVs cut into.",
+          "required": true,
+          "properties": {
+            "url": {
+              "types": [
+                "asset"
+              ]
+            },
+            "role": {
+              "types": [
+                "string"
+              ]
+            },
+            "category": {
+              "types": [
+                "string"
+              ]
+            },
+            "animations": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "style": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
+              ]
+            },
+            "variant": {
+              "types": [
+                "string"
+              ]
+            },
+            "dimension": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
+              ]
+            },
+            "aspect": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1"
+              ]
+            },
+            "atlas": {
+              "types": [
+                "asset"
+              ]
+            },
+            "sprite": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "thumbnailUrl": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "url",
+            "role",
+            "category"
+          ]
+        },
+        "mesh": {
+          "types": [
+            "object"
+          ],
+          "description": "Inline bind mesh; wins over `meshUrl`.",
+          "properties": {
+            "vertices": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "x": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "y": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "u": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "v": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "weights": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "bone": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "w": {
+                          "types": [
+                            "number"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "bone",
+                        "w"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "x",
+                  "y",
+                  "u",
+                  "v",
+                  "weights"
+                ]
+              }
+            },
+            "triangles": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            }
+          },
+          "propertyRequired": [
+            "vertices",
+            "triangles"
+          ]
+        },
+        "meshUrl": {
+          "types": [
+            "string"
+          ],
+          "description": "URL of a JSON `SkinMesh` (fetched + cached); used when `mesh` is absent."
+        },
+        "bones": {
+          "types": [
+            "array"
+          ],
+          "description": "The skeleton (bind pose; FK chain via `parent` names).",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "name": {
+                "types": [
+                  "string"
+                ]
+              },
+              "parent": {
+                "types": [
+                  "string"
+                ]
+              },
+              "pivot": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "tip": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "name",
+              "parent",
+              "pivot",
+              "tip"
+            ]
+          }
+        },
+        "pose": {
+          "types": [
+            "object"
+          ],
+          "description": "Static pose (bone name → degrees relative to bind). Overridden by `clip` + `frame`.",
+          "mapValue": {
+            "types": [
+              "number"
+            ]
+          }
+        },
+        "clip": {
+          "types": [
+            "object"
+          ],
+          "description": "Pose animation clip; with `frame`, pose = `frames[frame % frames.length]`.",
+          "properties": {
+            "frames": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              }
+            }
+          },
+          "propertyRequired": [
+            "frames"
+          ]
+        },
+        "frame": {
+          "types": [
+            "number"
+          ],
+          "description": "Clip frame counter (host-driven paint clock frame)."
+        },
+        "opacity": {
+          "types": [
+            "number"
+          ],
+          "description": "0..1 opacity."
+        },
+        "weightsOverlay": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Paint per-triangle dominant-bone colors instead of the texture (rig inspection)."
+        },
+        "ghost": {
+          "types": [
+            "object"
+          ],
+          "description": "Onion skin: render the mesh at this clip frame underneath, at this opacity.",
+          "properties": {
+            "frame": {
+              "types": [
+                "number"
+              ]
+            },
+            "opacity": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "frame",
+            "opacity"
+          ]
+        }
+      },
+      "drawable": true
     }
   },
   "categories": [

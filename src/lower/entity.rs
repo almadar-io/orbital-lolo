@@ -16,6 +16,7 @@ pub(crate) fn lower_entity(
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,
 ) -> Result<EntityDefinition, LowerError> {
+    check_shared_entity_has_persistence_mode(entity)?;
     let mut fields = Vec::with_capacity(entity.fields.len());
     for f in &entity.fields {
         fields.push(lower_field(f, aliases, entity_names)?);

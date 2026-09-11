@@ -330,7 +330,7 @@ orbital SiblingOrbital {
       INIT -> idle
         (render-ui main { type: box  padding: md })
       SAVE -> idle
-        (notify "saved")
+        (notify info "saved")
     }
     emits {
       SAVE {

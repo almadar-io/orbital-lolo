@@ -1,5 +1,19 @@
 use super::*;
 
+/// Owner ruling: nothing about a `[shared]` entity may be inferred. A bare
+/// `entity Foo [shared]` with no explicit persistence tag used to default
+/// to persistent downstream — now it must say which persistence mode it
+/// wants. Called from `lower_entity` for both the primary entity and any
+/// trait-owned `data_entities`.
+pub(crate) fn check_shared_entity_has_persistence_mode(entity: &Entity) -> Result<(), LowerError> {
+    if entity.shared && entity.persistence.is_none() {
+        return Err(LowerError::SharedEntityWithoutPersistenceMode {
+            entity: entity.name.clone(),
+        });
+    }
+    Ok(())
+}
+
 /// Per the explicit-binding rule, every `@entity.X` referenced in a trait's
 /// transitions/guards/ticks must be backed by some explicit
 /// `(set @entity.X <value>)`. Returns the first violation as a

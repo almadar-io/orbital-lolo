@@ -51,10 +51,12 @@ impl Parser {
         // tags: any identifier beyond the scope marker and the first
         // (category) slot accumulates into `capabilities`. First non-scope
         // identifier still wins as the category.
-        let (category, scope, capabilities) = if matches!(self.peek(), TokenKind::LBracket) {
+        let (category, scope, local, capabilities) = if matches!(self.peek(), TokenKind::LBracket)
+        {
             self.advance();
             let mut category: Option<String> = None;
             let mut scope: Option<TraitScope> = None;
+            let mut local = false;
             let mut capabilities: Vec<String> = Vec::new();
             loop {
                 self.skip_newlines();
@@ -99,6 +101,9 @@ impl Parser {
                         }
                         scope = Some(TraitScope::Collection);
                     }
+                    "local" => {
+                        local = true;
+                    }
                     _ => {
                         if category.is_none() {
                             category = Some(ident);
@@ -112,9 +117,9 @@ impl Parser {
                 }
                 self.skip_newlines();
             }
-            (category, scope, capabilities)
+            (category, scope, local, capabilities)
         } else {
-            (None, None, Vec::new())
+            (None, None, false, Vec::new())
         };
 
         let brace_form = matches!(self.peek(), TokenKind::LBrace);
@@ -225,6 +230,7 @@ impl Parser {
             entity_binding_synonyms,
             category,
             scope,
+            local,
             capabilities,
             initial_state,
             states,
@@ -347,6 +353,7 @@ impl Parser {
             entity_binding_synonyms: None,
             category: None,
             scope: None,
+            local: false,
             capabilities: Vec::new(),
             initial_state: None,
             states: Vec::new(),

@@ -445,6 +445,21 @@ pub enum LowerError {
     #[error("internal lowering bug: {0}")]
     Internal(String),
 
+    /// `notify` sugar (owner ruling 2026-09-11) takes exactly 2 arguments:
+    /// `(notify level message)`.
+    #[error(
+        "ELOLO_NOTIFY_ARITY: `notify` takes exactly 2 arguments — (notify level message), got {got}"
+    )]
+    NotifyInvalidArity { got: usize },
+
+    /// `notify`'s first (literal) argument must be one of the four toast
+    /// levels. A dynamic binding (`@config.severity`) is left unchecked —
+    /// L1 cannot resolve it.
+    #[error(
+        "ELOLO_NOTIFY_INVALID_LEVEL: `notify` level {level:?} is not one of success, error, warning, info"
+    )]
+    NotifyInvalidLevel { level: String },
+
     /// Emit payload references a named type that cannot be resolved to an
     /// Entity- or Struct-shaped type alias or to the orbital's own entity.
     /// The type-system resolver catches most of these before lowering; this
@@ -501,6 +516,16 @@ pub enum LowerError {
         field: String,
         first_event: String,
     },
+
+    /// `entity Foo [shared]` with no explicit persistence tag. Owner ruling:
+    /// nothing about a `[shared]` entity may be inferred — a bare `[shared]`
+    /// used to silently default to persistent; now it must say which.
+    #[error(
+        "entity {entity:?} is declared [shared] but has no explicit persistence tag \
+         (ORB_S_SHARED_WITHOUT_PERSISTENCE_MODE) — write [persistent…, shared] or \
+         [runtime, shared]"
+    )]
+    SharedEntityWithoutPersistenceMode { entity: String },
 
     /// Cross-trait or cross-orbital `listens` block references a source
     /// trait that doesn't exist in the schema, or an event the source

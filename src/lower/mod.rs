@@ -33,7 +33,8 @@ mod type_helpers;
 pub(crate) use checks::{
     check_behavior_contracts, check_button_transitions, check_emit_payload_literals,
     check_entity_fields_have_setters, check_expr_match_types, check_listens_integrity,
-    check_match_types, check_set_value_types, check_term_match_types,
+    check_match_types, check_set_value_types, check_shared_entity_has_persistence_mode,
+    check_term_match_types,
 };
 pub(crate) use emit_listen::{
     bare_entity_alias_name, lower_emit, lower_listen, lower_tick, struct_payload_properties,
@@ -42,7 +43,7 @@ pub(crate) use emit_listen::{
 pub(crate) use entity::{lower_entity, lower_field, lower_type_expr, primitive_field_type};
 pub(crate) use page::lower_page_decl;
 pub(crate) use r#trait::{
-    desugar_expr_match, expand_term_match, is_expr_match_array, lower_trait_decl,
+    desugar_expr_match, desugar_notify, expand_term_match, is_expr_match_array, lower_trait_decl,
 };
 pub(crate) use type_helpers::{
     emit_primitive_compatible, humanize_event_key, lower_config_fields_to_map,
@@ -742,6 +743,7 @@ fn lower_orbital(
             config: None,
             data_entities: None,
             scope: None,
+            local: false,
             source_behavior: None,
             source_entity_definition: None,
             id: None,
@@ -925,10 +927,21 @@ mod tests {
     }
 
     #[test]
-    fn lower_shared_alone_defaults_persistence_none() {
-        let ent = lowered_entity("orbital Foo { entity Bar [shared] { id : string! } }");
-        assert!(ent.shared);
-        assert_eq!(ent.persistence, None);
+    fn lower_shared_alone_without_persistence_errors() {
+        // Owner ruling: nothing about `[shared]` may be inferred — a bare
+        // `[shared]` used to silently default to persistence None (persistent
+        // downstream); it must now name a persistence mode explicitly.
+        let ast = parse_str("orbital Foo { entity Bar [shared] { id : string! } }").expect("parse");
+        let result = lower_to_orb(&ast);
+        match result {
+            Err(LowerError::SharedEntityWithoutPersistenceMode { entity }) => {
+                assert_eq!(entity, "Bar");
+            }
+            other => panic!(
+                "expected SharedEntityWithoutPersistenceMode for bare [shared], got: {:?}",
+                other
+            ),
+        }
     }
 
     #[test]
@@ -1147,7 +1160,7 @@ mod tests {
         // group post-inline.
         let src = "
             orbital O {
-                entity E [shared] {
+                entity E [persistent, shared] {
                     id : string!
                     count : number = 0
                 }

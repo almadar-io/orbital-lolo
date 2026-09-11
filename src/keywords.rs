@@ -80,12 +80,12 @@ const KEYWORDS: &[&str] = &[
 /// (`parse_type_body_atom`) plus `VALID_TYPE_PARAM_KINDS`.
 const SHAPES: &[&str] = &["Entity", "Trait", "Page", "Orbital", "Event"];
 
-/// `persistent runtime shared identity instance collection` — the entity
-/// `[...]` persistence-tag list (`parser/entity.rs parse_persistence_tag`)
-/// plus the trait `[category, scope, ...]` modifier list's `instance`/
-/// `collection` scope markers (`parser/trait.rs parse_trait`). `identity`
-/// is shared with `KEYWORDS` (same English word, same translation, B1
-/// rule 3).
+/// `persistent runtime shared identity instance collection local` — the
+/// entity `[...]` persistence-tag list (`parser/entity.rs
+/// parse_persistence_tag`) plus the trait `[category, scope, ...]` modifier
+/// list's `instance`/`collection` scope markers and `local` client-only-
+/// dispatch flag (`parser/trait.rs parse_trait`). `identity` is shared with
+/// `KEYWORDS` (same English word, same translation, B1 rule 3).
 const TAGS: &[&str] = &[
     "persistent",
     "runtime",
@@ -93,6 +93,7 @@ const TAGS: &[&str] = &[
     "identity",
     "instance",
     "collection",
+    "local",
 ];
 
 /// `interaction integration lifecycle game-core game-entity game-ui` — the

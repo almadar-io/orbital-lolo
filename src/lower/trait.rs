@@ -103,6 +103,54 @@ pub(crate) fn desugar_expr_match(expr: &SExpression) -> SExpression {
     }
 }
 
+/// `notify` is sugar over `render-ui toast` (owner ruling 2026-09-11): the
+/// `.orb` IR no longer carries a `notify` effect kind at all, so this runs at
+/// lowering, not codegen. `(notify <level> <message>)` — level one of
+/// `success|error|warning|info` (or a config/runtime binding, e.g.
+/// `@config.severity`, left unchecked since L1 cannot resolve it) — becomes
+/// `(render-ui toast { type: alert, variant: <level>, message: <message>,
+/// dismissible: true })`. Recurses the same way `desugar_expr_match` does
+/// (arrays/objects), so a `notify` nested inside `do`/`if`/`match` bodies is
+/// caught too; run this AFTER `desugar_expr_match` so a `match` that yields a
+/// `notify` value has already been expanded to the `if` it lands the call in.
+pub(crate) fn desugar_notify(expr: &SExpression) -> Result<SExpression, LowerError> {
+    const NOTIFY_LEVELS: [&str; 4] = ["success", "error", "warning", "info"];
+    match expr {
+        SExpression::Array(arr) if matches!(arr.first(), Some(SExpression::String(s)) if s == "notify") =>
+        {
+            if arr.len() != 3 {
+                return Err(LowerError::NotifyInvalidArity { got: arr.len() - 1 });
+            }
+            let level = desugar_notify(&arr[1])?;
+            let message = desugar_notify(&arr[2])?;
+            if let SExpression::String(s) = &level {
+                if !s.starts_with('@') && !NOTIFY_LEVELS.contains(&s.as_str()) {
+                    return Err(LowerError::NotifyInvalidLevel { level: s.clone() });
+                }
+            }
+            let mut props = HashMap::new();
+            props.insert("type".to_string(), SExpression::String("alert".to_string()));
+            props.insert("variant".to_string(), level);
+            props.insert("message".to_string(), message);
+            props.insert("dismissible".to_string(), SExpression::Bool(true));
+            Ok(SExpression::Array(vec![
+                SExpression::String("render-ui".to_string()),
+                SExpression::String("toast".to_string()),
+                SExpression::Object(props),
+            ]))
+        }
+        SExpression::Array(arr) => Ok(SExpression::Array(
+            arr.iter().map(desugar_notify).collect::<Result<_, _>>()?,
+        )),
+        SExpression::Object(obj) => Ok(SExpression::Object(
+            obj.iter()
+                .map(|(k, v)| desugar_notify(v).map(|v| (k.clone(), v)))
+                .collect::<Result<_, _>>()?,
+        )),
+        other => Ok(other.clone()),
+    }
+}
+
 /// Build the nested `if`/`==` chain for one expr-match's (already-desugared)
 /// arms. The last arm — `_` or, when the vocabulary is exhaustively covered
 /// without a wildcard (Phase 2/3b share this allowance), the final
@@ -422,7 +470,12 @@ pub(crate) fn lower_trait(
                     effects: if tr.effects.is_empty() {
                         None
                     } else {
-                        Some(tr.effects.iter().map(desugar_expr_match).collect())
+                        Some(
+                            tr.effects
+                                .iter()
+                                .map(|e| desugar_notify(&desugar_expr_match(e)))
+                                .collect::<Result<Vec<_>, LowerError>>()?,
+                        )
                     },
                 });
             }
@@ -784,7 +837,7 @@ pub(crate) fn lower_trait(
                     }
                     lower_tick(tk)
                 })
-                .collect(),
+                .collect::<Result<Vec<_>, LowerError>>()?,
         )
     };
 
@@ -868,7 +921,7 @@ pub(crate) fn lower_trait(
         name: t.name.clone(),
         entity_rebindable,
         entity_contract,
-        effect_row: infer_effect_row(t),
+        effect_row: infer_effect_row(t)?,
         category,
         capabilities,
         description: None,
@@ -884,6 +937,7 @@ pub(crate) fn lower_trait(
         config,
         data_entities: None,
         scope,
+        local: t.local,
         source_behavior: None,
         source_entity_definition: None,
         id: None,
@@ -929,13 +983,21 @@ pub(crate) fn lower_trait(
 /// cannot see a call site's config. The compiler re-resolves those post-inline.
 /// Returns `None` for a trait that produces no effects, so traits without one
 /// stay byte-identical in the `.orb`.
-pub(crate) fn infer_effect_row(t: &Trait) -> Option<EffectRow> {
+pub(crate) fn infer_effect_row(t: &Trait) -> Result<Option<EffectRow>, LowerError> {
     let mut builder = EffectRowBuilder::new();
 
     for state in &t.states {
         for tr in &state.transitions {
             for tr in expand_term_match(tr) {
-                builder.add_effects(EffectSite::Transition, &tr.effects);
+                // Desugar `notify` before it reaches the row so the row's
+                // `kind` never lies — it reports `render-ui`/`toast`, same
+                // as the transition's own lowered effects.
+                let desugared: Vec<SExpression> = tr
+                    .effects
+                    .iter()
+                    .map(|e| desugar_notify(&desugar_expr_match(e)))
+                    .collect::<Result<_, _>>()?;
+                builder.add_effects(EffectSite::Transition, &desugared);
             }
         }
     }
@@ -944,10 +1006,15 @@ pub(crate) fn infer_effect_row(t: &Trait) -> Option<EffectRow> {
         builder.declare_ticks();
     }
     for tick in &t.ticks {
-        builder.add_effects(EffectSite::Tick, &tick.effects);
+        let desugared: Vec<SExpression> = tick
+            .effects
+            .iter()
+            .map(|e| desugar_notify(&desugar_expr_match(e)))
+            .collect::<Result<_, _>>()?;
+        builder.add_effects(EffectSite::Tick, &desugared);
     }
 
-    builder.finish()
+    Ok(builder.finish())
 }
 
 pub(crate) fn infer_entity_contract(

@@ -550,6 +550,7 @@ impl Parser {
             entity_binding_synonyms: None,
             category: None,
             scope: None,
+            local: false,
             capabilities: Vec::new(),
             initial_state: None,
             states: Vec::new(),

@@ -1040,19 +1040,23 @@ pub(crate) fn split_listen_source(
     }
 }
 
-pub(crate) fn lower_tick(t: &Tick) -> TickDefinition {
+pub(crate) fn lower_tick(t: &Tick) -> Result<TickDefinition, LowerError> {
     let interval = match &t.interval {
         TickInterval::Millis(n) => StringOrNumber::Number(*n as f64),
         TickInterval::Cron(s) => StringOrNumber::String(s.clone()),
     };
-    TickDefinition {
+    Ok(TickDefinition {
         name: t.name.clone(),
         interval,
         guard: t.guard.as_ref().map(desugar_expr_match),
-        effects: t.effects.iter().map(desugar_expr_match).collect(),
+        effects: t
+            .effects
+            .iter()
+            .map(|e| desugar_notify(&desugar_expr_match(e)))
+            .collect::<Result<Vec<_>, LowerError>>()?,
         applies_to: None,
         description: None,
-    }
+    })
 }
 
 #[cfg(test)]

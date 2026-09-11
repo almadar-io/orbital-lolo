@@ -684,6 +684,10 @@ pub struct Trait {
     /// `None` today means the trait opted out / predates the modifier. Phase 4
     /// of the V2 migration turns `None` into a warning.
     pub scope: Option<TraitScope>,
+    /// `local` marker parsed from the same trait-header bracket list.
+    /// Declares client-only dispatch (see `docs/Almadar_LOLO.md` §7).
+    /// Undeclared (`false`) is server-gated dispatch — never inferred.
+    pub local: bool,
     /// Author-supplied capability tags parsed from the trait header's bracket
     /// list. Anything beyond the scope marker (`instance`/`collection`) and
     /// the first category identifier collects here. Free-form strings — the

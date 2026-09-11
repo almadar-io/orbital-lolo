@@ -1436,6 +1436,23 @@ mod tests {
     }
 
     #[test]
+    fn parse_trait_local_flag() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction, instance, local] {\n    state s {\n      EVT -> s\n        (set @x 1)\n    }\n  }\n}";
+        let prog = p(src);
+        let t = &prog.orbitals[0].traits[0];
+        assert!(t.local, "`local` in the bracket list must set Trait.local");
+        assert_eq!(t.category, Some("interaction".to_string()));
+        assert_eq!(t.scope, Some(TraitScope::Instance));
+    }
+
+    #[test]
+    fn parse_trait_without_local_defaults_false() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @x 1)\n    }\n  }\n}";
+        let prog = p(src);
+        assert!(!prog.orbitals[0].traits[0].local);
+    }
+
+    #[test]
     fn parse_sexpr_simple() {
         let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E {\n    state s {\n      E -> s\n        (set @entity.x 1)\n    }\n  }\n}";
         let prog = p(src);

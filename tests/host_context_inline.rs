@@ -100,12 +100,17 @@ fn flashcards_shared_entity_inline_wrappers_are_one_authority() {
 fn flashcards_second_hand_written_reader_still_rejected() {
     // Same shape plus a genuinely independent second reader trait —
     // referenced from NO render tree — must still trip the authority rule.
+    // Same slot ("main") as DeckView's authority render: the validator's
+    // per-slot refinement (entity_mutation.rs) only contends readers that
+    // share a (entity, slot) pair, so a differently-slotted second reader
+    // is legitimately not a violation — this fixture must match slots to
+    // actually exercise the single-authority-per-slot rule it asserts.
     let src = FLASHCARDS_LOLO.replace(
         "  page \"/deck\" as DeckPage -> DeckView",
         r#"  trait RogueReader -> FlashcardDeck {
     state idle {
       INIT -> idle
-        (render-ui side { type: badge, label: @entity.title })
+        (render-ui main { type: badge, label: @entity.title })
     }
   }
 

@@ -1286,6 +1286,9 @@ impl Formatter {
                 TraitScope::Collection => "collection".to_string(),
             });
         }
+        if tr.local {
+            parts.push("local".to_string());
+        }
         for cap in &tr.capabilities {
             parts.push(cap.clone());
         }
