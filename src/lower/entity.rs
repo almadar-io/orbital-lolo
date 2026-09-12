@@ -68,6 +68,7 @@ pub(crate) fn lower_field(
     let (field_type, values, items, properties, relation) =
         lower_type_expr(&f.type_expr, aliases, entity_names);
     Ok(FieldDefinition {
+        merged_from: None,
         name: Some(f.name.clone()),
         field_type,
         required: if f.required { Some(true) } else { None },
@@ -238,6 +239,7 @@ pub(crate) fn lower_type_expr(
                 lower_type_expr(inner, aliases, entity_names)
             };
             let item = FieldDefinition {
+                merged_from: None,
                 name: None,
                 field_type: inner_ft,
                 required: None,
@@ -264,6 +266,7 @@ pub(crate) fn lower_type_expr(
             let (v_ft, v_values, v_items, v_props, _v_rel) =
                 lower_type_expr(value, aliases, entity_names);
             let value_field = FieldDefinition {
+                merged_from: None,
                 name: None,
                 field_type: v_ft,
                 required: None,
@@ -294,6 +297,7 @@ pub(crate) fn lower_type_expr(
                 props.insert(
                     k.clone(),
                     FieldDefinition {
+                        merged_from: None,
                         name: Some(k.clone()),
                         field_type: ft,
                         // Mirror the lolo `!` marker — `name : T!` lowers to
@@ -732,6 +736,7 @@ fn struct_union_variants(
         out.push((
             name.clone(),
             FieldDefinition {
+                merged_from: None,
                 name: Some(name.clone()),
                 field_type: ft,
                 required: None,

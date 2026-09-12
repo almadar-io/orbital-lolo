@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-10T08:51:20.514Z",
+  "exportedAt": "2026-09-12T07:27:39.835Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -4301,7 +4301,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -4461,7 +4464,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -7495,6 +7501,7 @@
     "button": {
       "type": "button",
       "category": "component",
+      "sourceFile": "components/core/atoms/Button.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Clickable button that emits events",
@@ -7639,7 +7646,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -7681,7 +7691,8 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         },
         "label": {
           "types": [
@@ -7706,6 +7717,7 @@
     "badge": {
       "type": "badge",
       "category": "component",
+      "sourceFile": "components/core/atoms/Badge.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Small label for status or count",
@@ -7837,7 +7849,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -8337,6 +8352,7 @@
     "input": {
       "type": "input",
       "category": "component",
+      "sourceFile": "components/core/atoms/Input.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Text input field",
@@ -8464,9 +8480,7 @@
             "function",
             "string"
           ],
-          "description": "Callback or declarative event key when clear button is clicked",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
+          "description": "Callback or declarative event key when clear button is clicked"
         },
         "options": {
           "types": [
@@ -8511,16 +8525,9 @@
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
-              "name": "value",
-              "type": "string",
-              "required": true,
-              "typeWhen": [
-                {
-                  "knob": "inputType",
-                  "equals": "number",
-                  "type": "number"
-                }
-              ]
+              "name": "_payload",
+              "type": "object",
+              "required": false
             }
           ]
         }
@@ -8590,6 +8597,7 @@
     "select": {
       "type": "select",
       "category": "component",
+      "sourceFile": "components/core/atoms/Select.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Dropdown select input",
@@ -8779,7 +8787,26 @@
             "function",
             "string"
           ],
-          "description": "Value-based change: a React callback (internal use) OR a declarative event key that emits `{ value }` on the bus (render-ui / lolo authoring). Mirrors the `onChange` handler|event convention so it's an event-emitting prop, not a bare callback."
+          "description": "Value-based change: a React callback (internal use) OR a declarative event key that emits `{ value }` on the bus (render-ui / lolo authoring). Mirrors the `onChange` handler|event convention so it's an event-emitting prop, not a bare callback.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true,
+              "schema": {
+                "types": [
+                  "string",
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          ]
         }
       }
     },
@@ -11334,6 +11361,7 @@
     "input-group": {
       "type": "input-group",
       "category": "form",
+      "sourceFile": "components/core/molecules/InputGroup.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "InputGroup Molecule Component  A component for grouping input with addons (icons, buttons, text). Uses Input, Button, Icon, and Typography atoms.",
@@ -11454,9 +11482,7 @@
             "function",
             "string"
           ],
-          "description": "Callback or declarative event key when clear button is clicked",
-          "kind": "event-ref",
-          "emitPayloadSchema": []
+          "description": "Callback or declarative event key when clear button is clicked"
         },
         "options": {
           "types": [
@@ -11500,16 +11526,9 @@
           "kind": "event-ref",
           "emitPayloadSchema": [
             {
-              "name": "value",
-              "type": "string",
-              "required": true,
-              "typeWhen": [
-                {
-                  "knob": "inputType",
-                  "equals": "number",
-                  "type": "number"
-                }
-              ]
+              "name": "_payload",
+              "type": "object",
+              "required": false
             }
           ]
         },
@@ -13809,6 +13828,7 @@
     "game-shell": {
       "type": "game-shell",
       "category": "game",
+      "sourceFile": "components/game/templates/GameShell.tsx",
       "tier": "templates",
       "family": "game",
       "description": "GameShell  A full-screen layout wrapper for game applications. Replaces DashboardLayout for game clients — no sidebar nav, just full-viewport rendering with an optional HUD overlay bar.  Used as a React Router layout route element: <Route element={<GameShell appName=\"TraitWars\" />}> <Route index element={<WorldMapPage />} /> ... </Route>",
@@ -13934,7 +13954,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -14029,7 +14052,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -28297,6 +28323,7 @@
     "choice-button": {
       "type": "choice-button",
       "category": "game",
+      "sourceFile": "components/game/atoms/ChoiceButton.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "ChoiceButton component",
@@ -28386,7 +28413,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -28476,6 +28506,7 @@
     "control-button": {
       "type": "control-button",
       "category": "game",
+      "sourceFile": "components/game/atoms/ControlButton.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "ControlButton component",
@@ -28551,7 +28582,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -28668,6 +28702,7 @@
     "dialogue-bubble": {
       "type": "dialogue-bubble",
       "category": "game",
+      "sourceFile": "components/game/atoms/DialogueBubble.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "DialogueBubble component",
@@ -28758,7 +28793,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -28829,6 +28867,7 @@
     "health-bar": {
       "type": "health-bar",
       "category": "game",
+      "sourceFile": "components/game/atoms/HealthBar.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "HealthBar component",
@@ -28977,7 +29016,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -29072,7 +29114,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -29107,6 +29152,7 @@
     "score-display": {
       "type": "score-display",
       "category": "game",
+      "sourceFile": "components/game/atoms/ScoreDisplay.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "ScoreDisplay component",
@@ -29182,7 +29228,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -29269,6 +29318,7 @@
     "timer-display": {
       "type": "timer-display",
       "category": "game",
+      "sourceFile": "components/game/atoms/TimerDisplay.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "TimerDisplay component",
@@ -29395,7 +29445,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -31665,6 +31718,7 @@
     "game-hud": {
       "type": "game-hud",
       "category": "game",
+      "sourceFile": "components/game/molecules/GameHud.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "GameHud component",
@@ -31755,7 +31809,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -31849,7 +31906,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -32006,7 +32066,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -32100,7 +32163,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -32289,7 +32355,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -32636,7 +32705,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -32677,6 +32749,7 @@
     "stat-badge": {
       "type": "stat-badge",
       "category": "game",
+      "sourceFile": "components/game/molecules/StatBadge.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "StatBadge component",
@@ -32752,7 +32825,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -32847,7 +32923,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -33373,6 +33452,7 @@
     "game-audio-toggle": {
       "type": "game-audio-toggle",
       "category": "game",
+      "sourceFile": "components/game/atoms/GameAudioToggle.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "GameAudioToggle component",
@@ -33504,7 +33584,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -33599,7 +33682,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -33648,6 +33734,7 @@
     "trait-slot": {
       "type": "trait-slot",
       "category": "game",
+      "sourceFile": "components/game/molecules/TraitSlot.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "Event Contract: Emits: UI:CLICK Emits: UI:REMOVE",
@@ -33760,7 +33847,10 @@
                     "1:1",
                     "16:9",
                     "5:7",
-                    "8:1"
+                    "8:1",
+                    "4:1",
+                    "5:3",
+                    "1:2"
                   ]
                 },
                 "atlas": {
@@ -34003,7 +34093,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -34180,7 +34273,10 @@
                           "1:1",
                           "16:9",
                           "5:7",
-                          "8:1"
+                          "8:1",
+                          "4:1",
+                          "5:3",
+                          "1:2"
                         ]
                       },
                       "atlas": {
@@ -34406,7 +34502,10 @@
                           "1:1",
                           "16:9",
                           "5:7",
-                          "8:1"
+                          "8:1",
+                          "4:1",
+                          "5:3",
+                          "1:2"
                         ]
                       },
                       "atlas": {
@@ -34601,6 +34700,7 @@
     "action-palette": {
       "type": "action-palette",
       "category": "game",
+      "sourceFile": "components/game/molecules/ActionPalette.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "ActionPalette Component  Grid of draggable ActionTile components for the Sequencer tier. Kids pick from these to build their sequence.",
@@ -34711,7 +34811,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -34899,6 +35002,7 @@
     "action-tile": {
       "type": "action-tile",
       "category": "game",
+      "sourceFile": "components/game/molecules/ActionTile.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "ActionTile Component  A draggable action tile for the Sequencer tier (ages 5-8). Kids drag these from the ActionPalette into SequenceBar slots. Sets SlotItemData on dataTransfer for TraitSlot compatibility.",
@@ -35111,7 +35215,10 @@
                     "1:1",
                     "16:9",
                     "5:7",
-                    "8:1"
+                    "8:1",
+                    "4:1",
+                    "5:3",
+                    "1:2"
                   ]
                 },
                 "atlas": {
@@ -35274,6 +35381,7 @@
     "sequence-bar": {
       "type": "sequence-bar",
       "category": "game",
+      "sourceFile": "components/game/molecules/SequenceBar.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "SequenceBar Component  A row of TraitSlot components forming the action sequence for the Sequencer tier (ages 5-8). Kids drag ActionTiles from the palette into these slots to build their sequence.",
@@ -35384,7 +35492,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -35612,7 +35723,10 @@
                           "1:1",
                           "16:9",
                           "5:7",
-                          "8:1"
+                          "8:1",
+                          "4:1",
+                          "5:3",
+                          "1:2"
                         ]
                       },
                       "atlas": {
@@ -38661,6 +38775,7 @@
     "canvas-2d": {
       "type": "canvas-2d",
       "category": "game",
+      "sourceFile": "components/game/molecules/Canvas2D.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "Canvas2D component",
@@ -38807,7 +38922,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -39119,6 +39237,7 @@
     "control-grid": {
       "type": "control-grid",
       "category": "game",
+      "sourceFile": "components/game/molecules/ControlGrid.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "ControlGrid component",
@@ -39230,7 +39349,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -39459,7 +39581,10 @@
                   "1:1",
                   "16:9",
                   "5:7",
-                  "8:1"
+                  "8:1",
+                  "4:1",
+                  "5:3",
+                  "1:2"
                 ]
               },
               "atlas": {
@@ -39530,6 +39655,7 @@
     "game-icon": {
       "type": "game-icon",
       "category": "game",
+      "sourceFile": "components/core/atoms/GameIcon.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "GameIcon component",
@@ -39605,7 +39731,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -47903,6 +48032,7 @@
     "draw-sprite": {
       "type": "draw-sprite",
       "category": "game",
+      "sourceFile": "components/game/atoms/DrawSprite.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "DrawSprite component",
@@ -48024,7 +48154,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -49008,6 +49141,7 @@
     "draw-sprite-layer": {
       "type": "draw-sprite-layer",
       "category": "game",
+      "sourceFile": "components/game/molecules/DrawSpriteLayer.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "DrawSpriteLayer component",
@@ -49150,7 +49284,10 @@
                       "1:1",
                       "16:9",
                       "5:7",
-                      "8:1"
+                      "8:1",
+                      "4:1",
+                      "5:3",
+                      "1:2"
                     ]
                   },
                   "atlas": {
@@ -49456,6 +49593,7 @@
     "canvas": {
       "type": "canvas",
       "category": "game",
+      "sourceFile": "components/game/molecules/Canvas.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "Canvas component",
@@ -49695,7 +49833,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -52128,6 +52269,7 @@
     "draw-fx-layer": {
       "type": "draw-fx-layer",
       "category": "game",
+      "sourceFile": "components/game/molecules/DrawFxLayer.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "DrawFxLayer component",
@@ -52503,7 +52645,10 @@
                   "1:1",
                   "16:9",
                   "5:7",
-                  "8:1"
+                  "8:1",
+                  "4:1",
+                  "5:3",
+                  "1:2"
                 ]
               },
               "atlas": {
@@ -53921,7 +54066,10 @@
                 "1:1",
                 "16:9",
                 "5:7",
-                "8:1"
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
               ]
             },
             "atlas": {
@@ -54053,7 +54201,7 @@
           "types": [
             "array"
           ],
-          "description": "The skeleton (bind pose; FK chain via `parent` names).",
+          "description": "The skeleton (bind pose; FK chain via `parent` names). Falls back to the rigbundle's `bones` when empty.",
           "required": true,
           "items": {
             "types": [
@@ -54135,6 +54283,12 @@
           "propertyRequired": [
             "frames"
           ]
+        },
+        "clipName": {
+          "types": [
+            "string"
+          ],
+          "description": "Named clip inside the rigbundle at `meshUrl` (`clips[clipName].frames`); used when `clip` is absent. Empty/unknown = no clip."
         },
         "frame": {
           "types": [

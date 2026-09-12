@@ -277,6 +277,7 @@ pub(crate) fn lower_config_fields_to_map(
                 required: if cf.required { Some(true) } else { None },
                 ref_id: None,
                 forwarded_from: None,
+                payload_for: None,
             },
         );
     }

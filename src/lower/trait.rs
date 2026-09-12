@@ -330,6 +330,7 @@ pub(crate) fn lower_trait_reference(
                     required: None,
                     ref_id: None,
                     forwarded_from: None,
+                    payload_for: None,
                 }
             } else {
                 // Declaration-form entries (an alias trait declaring its OWN
@@ -352,6 +353,7 @@ pub(crate) fn lower_trait_reference(
                     required: None,
                     ref_id: None,
                     forwarded_from: None,
+                    payload_for: None,
                 }
             };
             map.insert(cf.name.clone(), schema_field);
