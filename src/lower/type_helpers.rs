@@ -207,6 +207,27 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
     }
 }
 
+/// A `trait`-typed config field's default/override may be written as the
+/// bare identifier `none` — the language's reserved "unbound" sentinel for
+/// this type (owner ruling 2026-09-13: a `trait`-typed config knob may be
+/// `none`). The generic value grammar (`parse_sexpr_or_value`) has no notion
+/// of the field's declared type, so a bare `none` lowers to the literal
+/// string `"none"` like any other identifier; canonicalize it to `Null`
+/// here, at the one place `TypeExpr::Trait` is known, so every downstream
+/// consumer (guard truthiness — `null` is falsy everywhere for free, no
+/// evaluator change needed — the trait-typed-default validator, and the
+/// render-ui unbound-embed check) sees one uniform "no value" shape instead
+/// of a magic string. A no-op for every other type or value shape.
+pub(crate) fn canonicalize_unbound_trait_default(
+    type_expr: &TypeExpr,
+    default: Option<SExpression>,
+) -> Option<SExpression> {
+    match (type_expr, &default) {
+        (TypeExpr::Trait, Some(SExpression::String(s))) if s == "none" => Some(SExpression::Null),
+        _ => default,
+    }
+}
+
 /// Lower a `Vec<ConfigField>` (the AST's `config { ... }` grammar) into the
 /// schema's `Option<HashMap<String, ConfigField>>` shape. Shared by every
 /// site that carries this grammar: a trait's own declared `config {}`, the
@@ -266,7 +287,10 @@ pub(crate) fn lower_config_fields_to_map(
             cf.name.clone(),
             SchemaConfigField {
                 field_type,
-                default: cf.default.as_ref().map(desugar_expr_match),
+                default: canonicalize_unbound_trait_default(
+                    &cf.type_expr,
+                    cf.default.as_ref().map(desugar_expr_match),
+                ),
                 label: cf.label.clone(),
                 description: cf.description.clone(),
                 synonyms: cf.synonyms.clone(),

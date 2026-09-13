@@ -54,6 +54,10 @@ impl Parser {
         // local `Page` list — mounts are the explicit sibling-mount surface.
         let mut sibling_traits = body.sibling_traits;
         sibling_traits.extend(std::mem::take(&mut self.pending_inline_traits));
+        // No pages here to attribute against — just keep the producer
+        // tracking vector aligned with `pending_inline_traits` for the next
+        // orbital in the file.
+        self.pending_inline_producers.clear();
 
         Ok(Orbital {
             name,

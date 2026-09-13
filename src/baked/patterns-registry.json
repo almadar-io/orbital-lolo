@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-12T07:27:39.835Z",
+  "exportedAt": "2026-09-12T18:14:02.248Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -9,6 +9,7 @@
       "tier": "organisms",
       "family": "core",
       "description": "Data table with columns and sorting",
+      "fieldsContract": "display",
       "suggestedFor": [
         "data-dense views",
         "comparisons",
@@ -477,6 +478,48 @@
             "card-rows"
           ],
           "default": "dense"
+        },
+        "relationsData": {
+          "types": [
+            "object"
+          ],
+          "description": "Relation display data: { fieldName: [{value, label}] } — injected server-side by the runtime (relation-option injection) or bound by compiled codegen; resolves stored foreign ids to display names for a column whose field is relation-typed. Same contract DetailPanel takes.",
+          "mapValue": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "value": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "disabled": {
+                  "types": [
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          }
         }
       }
     },
@@ -707,7 +750,6 @@
             "function"
           ],
           "description": "Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -9753,6 +9795,7 @@
     "repeatable-form-section": {
       "type": "repeatable-form-section",
       "category": "form",
+      "sourceFile": "components/core/molecules/RepeatableFormSection.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "RepeatableFormSection — a form section that repeats a fixed group of fields, letting the user add or remove entries.",
@@ -9816,7 +9859,6 @@
           ],
           "description": "Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.",
           "required": true,
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -17412,6 +17454,7 @@
     "state-machine-view": {
       "type": "state-machine-view",
       "category": "display",
+      "sourceFile": "components/core/organisms/StateMachineView.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "StateMachineView component",
@@ -17479,7 +17522,6 @@
             "function"
           ],
           "description": "Custom state node renderer — when provided, replaces the default circle nodes",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "state",
@@ -17863,6 +17905,7 @@
     "calendar-grid": {
       "type": "calendar-grid",
       "category": "display",
+      "sourceFile": "components/core/molecules/CalendarGrid.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "CalendarGrid component",
@@ -18000,7 +18043,8 @@
             "object"
           ],
           "description": "Additional payload for long-press events",
-          "payloadFor": "longPressEvent"
+          "payloadFor": "longPressEvent",
+          "eventPayloadBrand": true
         },
         "swipeLeftEvent": {
           "types": [
@@ -18062,7 +18106,6 @@
             "function"
           ],
           "description": "Render function for one event chip's content. Receives the row and its index in the materialised events array. The grid keeps ownership of placement, colour and the click target; this replaces only what is drawn INSIDE the chip, so a host can show a time + instructor + badge stack instead of the default single label.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -18080,7 +18123,6 @@
             "function"
           ],
           "description": "Per-event render function (schema-level alias for the children render prop). In `.orb`: `[\"fn\", \"item\", { pattern tree with @item.field bindings }]`. In `.lolo`: `renderItem: (fn item <Component …={@item.field}/>)` — the same contract `data-list` / `data-grid` / `carousel` already use.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -18626,6 +18668,7 @@
     "progress-dots": {
       "type": "progress-dots",
       "category": "component",
+      "sourceFile": "components/core/molecules/ProgressDots.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ProgressDots component",
@@ -18655,7 +18698,6 @@
             "function"
           ],
           "description": "Custom state resolver per dot index",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "index",
@@ -18705,6 +18747,7 @@
       "family": "core",
       "description": "DataGrid — structured records grid rendering rows over configurable columns, with sort, select, and drag-reorder.",
       "capabilities": "admin table, records grid, user list, CRUD list, manage-records view, spreadsheet-style data grid, sortable columns",
+      "fieldsContract": "display",
       "suggestedFor": [
         "data",
         "grid",
@@ -19111,7 +19154,6 @@
             "function"
           ],
           "description": "Render prop for custom per-card content. When provided, `fields` are ignored; `itemActions` render as a footer beneath the custom content.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -19129,7 +19171,6 @@
             "function"
           ],
           "description": "Per-item render function (schema-level alias for children render prop). In .orb schemas: [\"fn\", \"item\", { pattern tree with @item.field bindings }] The compiler converts this to the children render prop. In .lolo, author the per-item renderer as renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -19162,6 +19203,48 @@
             "card-rows"
           ],
           "default": "dense"
+        },
+        "relationsData": {
+          "types": [
+            "object"
+          ],
+          "description": "Relation display data: { fieldName: [{value, label}] } — injected server-side by the runtime (relation-option injection) or bound by compiled codegen; resolves stored foreign ids to display names for a field whose type is relation. Same contract DetailPanel takes.",
+          "mapValue": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "value": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "disabled": {
+                  "types": [
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          }
         }
       }
     },
@@ -19172,6 +19255,7 @@
       "tier": "molecules",
       "family": "core",
       "description": "DataList component",
+      "fieldsContract": "display",
       "suggestedFor": [
         "data",
         "list",
@@ -19655,7 +19739,6 @@
             "function"
           ],
           "description": "Render prop for custom per-item content. When provided, `fields` and `itemActions` are ignored.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -19673,7 +19756,6 @@
             "function"
           ],
           "description": "Per-item render function (schema-level alias for children render prop). In .orb schemas: [\"fn\", \"item\", { pattern tree with @item.field bindings }] The compiler converts this to the children render prop. In .lolo, author the per-item renderer as renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -19722,6 +19804,48 @@
             "card-rows"
           ],
           "default": "dense"
+        },
+        "relationsData": {
+          "types": [
+            "object"
+          ],
+          "description": "Relation display data: { fieldName: [{value, label}] } — injected server-side by the runtime (relation-option injection) or bound by compiled codegen; resolves stored foreign ids to display names for a field whose type is relation. Same contract DetailPanel takes.",
+          "mapValue": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "value": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "disabled": {
+                  "types": [
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          }
         }
       }
     },
@@ -20032,6 +20156,7 @@
     "range-slider": {
       "type": "range-slider",
       "category": "component",
+      "sourceFile": "components/core/atoms/RangeSlider.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "RangeSlider component",
@@ -20134,7 +20259,8 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         },
         "onChange": {
           "types": [
@@ -20154,7 +20280,6 @@
             "function"
           ],
           "description": "Format function for tooltip display",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "value",
@@ -21004,7 +21129,6 @@
             "function"
           ],
           "description": "Render function for each slide. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -21044,7 +21168,6 @@
             "function"
           ],
           "description": "Children-as-function fallback for renderItem (compiler compatibility)",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -21202,6 +21325,7 @@
     "sortable-list": {
       "type": "sortable-list",
       "category": "display",
+      "sourceFile": "components/core/molecules/SortableList.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "SortableList — a drag-and-drop reorderable list of items.",
@@ -21229,7 +21353,6 @@
           ],
           "description": "Render function for each item. In .lolo: renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.",
           "required": true,
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -21273,7 +21396,8 @@
             "object"
           ],
           "description": "reorderPayload prop",
-          "payloadFor": "reorderEvent"
+          "payloadFor": "reorderEvent",
+          "eventPayloadBrand": true
         },
         "dragHandlePosition": {
           "types": [
@@ -30757,6 +30881,7 @@
     "doc-search": {
       "type": "doc-search",
       "category": "filter",
+      "sourceFile": "components/core/molecules/DocSearch.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DocSearch component",
@@ -30778,7 +30903,6 @@
             "function"
           ],
           "description": "Callback invoked with the search query, returns results",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "query",
@@ -36967,6 +37091,7 @@
       "family": "core",
       "description": "TableView — sortable, selectable data table rendering rows over configurable columns, with inline row actions and grouping.",
       "capabilities": "admin console table, records list, CRUD data table, user list, manage-users grid, sortable columns, row selection with bulk actions, grouped list view",
+      "fieldsContract": "display",
       "suggestedFor": [
         "table",
         "view",
@@ -37423,7 +37548,6 @@
             "function"
           ],
           "description": "Custom per-row render. When provided, the whole row content is delegated to this function (columns are ignored for the body; the header still renders). Mirrors DataList's children render prop.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -37441,7 +37565,6 @@
             "function"
           ],
           "description": "Per-row render function (schema alias). In .orb: [\"fn\",\"item\",{...}]. The compiler converts this to the children render prop. In .lolo, author the per-row renderer as renderItem: (fn item <Component …={@item.field}/>), binding per-item fields via @item.field.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "item",
@@ -37467,6 +37590,48 @@
             "bordered"
           ],
           "default": "dense"
+        },
+        "relationsData": {
+          "types": [
+            "object"
+          ],
+          "description": "Relation display data: { fieldName: [{value, label}] } — injected server-side by the runtime (relation-option injection) or bound by compiled codegen; resolves stored foreign ids to display names for a column whose field is relation-typed. Same contract DetailPanel takes.",
+          "mapValue": {
+            "types": [
+              "array"
+            ],
+            "items": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "value": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "description": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "disabled": {
+                  "types": [
+                    "boolean"
+                  ]
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          }
         }
       }
     },
@@ -38048,6 +38213,7 @@
     "code-runner-panel": {
       "type": "code-runner-panel",
       "category": "display",
+      "sourceFile": "components/core/organisms/CodeRunnerPanel.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "CodeRunnerPanel component",
@@ -38085,7 +38251,6 @@
             "function"
           ],
           "description": "Simulate executing the code. Omit to render a read-only block. Real execution is a separate future track — this callback supplies deterministic simulated output for UI feedback.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "code",
@@ -38112,6 +38277,7 @@
     "segment-renderer": {
       "type": "segment-renderer",
       "category": "display",
+      "sourceFile": "components/core/organisms/SegmentRenderer.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "SegmentRenderer component",
@@ -38203,7 +38369,6 @@
             "function"
           ],
           "description": "Simulate executing runnable code blocks. Omit to render runnable blocks as read-only. Real execution is a future track.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "code",
@@ -38221,7 +38386,6 @@
             "function"
           ],
           "description": "Optional render slot for `visualization` segment types. When not provided, visualization segments are silently skipped. Callers can wire this to any custom component or orbital generator.",
-          "kind": "callback",
           "callbackArgs": [
             {
               "name": "type",
@@ -39020,10 +39184,12 @@
             "object"
           ],
           "description": "Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input).",
+          "kind": "event-map",
           "mapValue": {
             "types": [
               "string"
-            ]
+            ],
+            "kind": "event"
           }
         },
         "keyUpMap": {
@@ -39031,10 +39197,12 @@
             "object"
           ],
           "description": "Maps a keyup `e.code` → the board's SEMANTIC event.",
+          "kind": "event-map",
           "mapValue": {
             "types": [
               "string"
-            ]
+            ],
+            "kind": "event"
           }
         },
         "editable": {
@@ -39495,10 +39663,12 @@
             "object"
           ],
           "description": "Per-direction PRESS → the board's SEMANTIC event (kind=\"dpad\"), e.g. `{ left: \"LEFT\", right: \"RIGHT\", up: \"JUMP\" }`. Lets the d-pad emit the SAME intent events as the keyboard so the FSM stays device-agnostic.",
+          "kind": "event-map",
           "mapValue": {
             "types": [
               "string"
-            ]
+            ],
+            "kind": "event"
           }
         },
         "directionReleaseEvents": {
@@ -39506,10 +39676,12 @@
             "object"
           ],
           "description": "Per-direction RELEASE → semantic event, e.g. `{ left: \"STOP\", right: \"STOP\" }`. Omit a direction to ignore its release.",
+          "kind": "event-map",
           "mapValue": {
             "types": [
               "string"
-            ]
+            ],
+            "kind": "event"
           }
         },
         "directionAssets": {
@@ -43458,6 +43630,7 @@
     "math-canvas": {
       "type": "math-canvas",
       "category": "learning",
+      "sourceFile": "components/learning/molecules/MathCanvas.tsx",
       "tier": "molecules",
       "family": "learning",
       "description": "MathCanvas component",
@@ -44489,10 +44662,12 @@
             "object"
           ],
           "description": "Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}` — same contract as the game canvas keyMap.",
+          "kind": "event-map",
           "mapValue": {
             "types": [
               "string"
-            ]
+            ],
+            "kind": "event"
           }
         },
         "keyUpMap": {
@@ -44500,10 +44675,12 @@
             "object"
           ],
           "description": "Maps a keyup `e.code` → the board's SEMANTIC event.",
+          "kind": "event-map",
           "mapValue": {
             "types": [
               "string"
-            ]
+            ],
+            "kind": "event"
           }
         },
         "isLoading": {
@@ -50253,10 +50430,12 @@
             "object"
           ],
           "description": "keyMap prop",
+          "kind": "event-map",
           "mapValue": {
             "types": [
               "string"
-            ]
+            ],
+            "kind": "event"
           }
         },
         "keyUpMap": {
@@ -50264,10 +50443,12 @@
             "object"
           ],
           "description": "keyUpMap prop",
+          "kind": "event-map",
           "mapValue": {
             "types": [
               "string"
-            ]
+            ],
+            "kind": "event"
           }
         },
         "editable": {

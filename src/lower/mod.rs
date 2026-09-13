@@ -46,9 +46,9 @@ pub(crate) use r#trait::{
     desugar_expr_match, desugar_notify, expand_term_match, is_expr_match_array, lower_trait_decl,
 };
 pub(crate) use type_helpers::{
-    emit_primitive_compatible, humanize_event_key, lower_config_fields_to_map,
-    type_expr_to_compat_str, type_expr_to_config_string, type_expr_to_config_values,
-    type_expr_to_string,
+    canonicalize_unbound_trait_default, emit_primitive_compatible, humanize_event_key,
+    lower_config_fields_to_map, type_expr_to_compat_str, type_expr_to_config_string,
+    type_expr_to_config_values, type_expr_to_string,
 };
 
 /// Lower an entire `.lolo` program into an `OrbitalSchema` (no identity

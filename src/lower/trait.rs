@@ -342,7 +342,10 @@ pub(crate) fn lower_trait_reference(
                     lower_type_expr(&cf.type_expr, aliases, entity_names);
                 SchemaConfigField {
                     field_type: type_expr_to_config_string(&cf.type_expr),
-                    default: cf.default.as_ref().map(desugar_expr_match),
+                    default: canonicalize_unbound_trait_default(
+                        &cf.type_expr,
+                        cf.default.as_ref().map(desugar_expr_match),
+                    ),
                     label: cf.label.clone(),
                     description: cf.description.clone(),
                     synonyms: cf.synonyms.clone(),

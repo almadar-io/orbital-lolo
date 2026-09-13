@@ -569,6 +569,8 @@ impl Parser {
             }),
             is_inline_synthetic: true,
         });
+        self.pending_inline_producers
+            .push(self.current_hoist_producer.clone());
 
         Ok(SExpression::String(format!("@trait.{}", name)))
     }

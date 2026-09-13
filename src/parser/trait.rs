@@ -8,7 +8,17 @@ impl Parser {
         let span = self.peek_span();
         self.expect_keyword("trait")?;
         let name = self.expect_ident()?;
+        // Any `@(…)`/JSX inline-ref hoisted while parsing this trait's body
+        // (either form) is tagged with its name, so the fragment mounts only
+        // on pages that themselves declare this trait — never every page in
+        // the orbital.
+        let previous_hoist_producer = self.current_hoist_producer.replace(name.clone());
+        let result = self.parse_trait_body(name, span);
+        self.current_hoist_producer = previous_hoist_producer;
+        result
+    }
 
+    fn parse_trait_body(&mut self, name: String, span: Span) -> Result<Trait, ParseError> {
         // Increment 3-II: optional `(V : Type, R : Type)` trait-level type
         // parameter list, immediately after the name and before `::`/`->`/`=`
         // — unambiguous, since none of those three continuations start with

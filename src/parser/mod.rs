@@ -77,6 +77,16 @@ struct Parser {
     /// Each carries a synthesized, collision-free `name` so the emitted
     /// `@trait.<name>` string resolves in the inline/validation phases.
     pending_inline_traits: Vec<crate::ast::Trait>,
+    /// Parallel to `pending_inline_traits` (same push order/indices): the
+    /// name of the trait whose body was being parsed when each fragment was
+    /// hoisted, or `None` when the hoist happened outside any trait (e.g. an
+    /// orbital-level `config {}`). Drives which inline page(s) each fragment
+    /// is attached to at flush time.
+    pending_inline_producers: Vec<Option<String>>,
+    /// Name of the trait currently being parsed (`parse_trait`), so a hoist
+    /// triggered from inside its body can record its producer. `None` when
+    /// not inside any trait.
+    current_hoist_producer: Option<String>,
     /// Monotonic counter for synthesized inline-ref names, scoped per orbital.
     inline_ref_counter: usize,
     /// Lexical binding scopes opened by `let` bindings and `fn`/`lambda`
@@ -113,6 +123,8 @@ impl Parser {
             tokens,
             pos: 0,
             pending_inline_traits: Vec::new(),
+            pending_inline_producers: Vec::new(),
+            current_hoist_producer: None,
             inline_ref_counter: 0,
             binding_scopes: Vec::new(),
             expr_span_capture: None,
@@ -561,22 +573,44 @@ impl Parser {
         // the runtime mounts it. After this, the orbital is identical to one
         // authored by hand with the two-step form.
         let pending = std::mem::take(&mut self.pending_inline_traits);
+        let pending_producers = std::mem::take(&mut self.pending_inline_producers);
         // NOTE: `inline_ref_counter` is intentionally NOT reset here. It must
         // stay file-global so synthesized names (`InlineX<n>`) are unique
         // across ALL orbitals in the file — the validator forbids the same
         // trait name in two orbitals (`ORB_T_DUPLICATE_NAME`). Resetting per
         // orbital made both orbitals emit `InlineTypographyRender1` etc.
         if !pending.is_empty() {
-            let names: Vec<String> = pending.iter().map(|t| t.name.clone()).collect();
+            let named: Vec<(String, Option<String>)> = pending
+                .iter()
+                .map(|t| t.name.clone())
+                .zip(pending_producers)
+                .collect();
             traits.extend(pending);
+            let inline_page_count = pages.iter().filter(|p| p.reference.is_none()).count();
             for page in pages.iter_mut() {
                 // Only inline pages own their trait roster; a reference page's
                 // `traits` are call-site overrides, not a mount list.
                 if page.reference.is_some() {
                     continue;
                 }
-                for name in &names {
-                    if !page.traits.iter().any(|t| t == name) {
+                // A fragment belongs to a page iff the page directly
+                // declares the trait whose body produced it (a fragment
+                // hoisted while parsing trait X mounts only where X is
+                // mounted) — or the fragment has no producer (hoisted
+                // outside any trait, e.g. orbital-level config: orbital-wide,
+                // so every page gets it). With exactly one inline page there
+                // is no attribution to resolve, so it keeps every fragment,
+                // matching prior behavior byte-for-byte.
+                let declared: std::collections::HashSet<String> =
+                    page.traits.iter().cloned().collect();
+                for (name, producer) in &named {
+                    if declared.contains(name) {
+                        continue;
+                    }
+                    let belongs = inline_page_count <= 1
+                        || producer.is_none()
+                        || producer.as_deref().is_some_and(|p| declared.contains(p));
+                    if belongs {
                         page.traits.push(name.clone());
                     }
                 }
