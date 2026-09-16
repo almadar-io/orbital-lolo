@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-12T18:14:02.248Z",
+  "exportedAt": "2026-09-16T03:44:41.117Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -8578,6 +8578,7 @@
     "textarea": {
       "type": "textarea",
       "category": "component",
+      "sourceFile": "components/core/atoms/Textarea.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Multi-line text input",
@@ -8610,7 +8611,7 @@
           "types": [
             "string"
           ],
-          "description": "Declarative event name for trait dispatch",
+          "description": "Declarative event: fires on ⌘/Ctrl+Enter with `{ value }`.",
           "kind": "event"
         },
         "error": {
@@ -39183,7 +39184,7 @@
           "types": [
             "object"
           ],
-          "description": "Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input).",
+          "description": "Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}`; keystrokes inside inputs/textareas never route.",
           "kind": "event-map",
           "mapValue": {
             "types": [
@@ -39196,7 +39197,7 @@
           "types": [
             "object"
           ],
-          "description": "Maps a keyup `e.code` → the board's SEMANTIC event.",
+          "description": "Maps a keyup `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event, emitted as `UI:{event}`; keystrokes inside inputs/textareas never route.",
           "kind": "event-map",
           "mapValue": {
             "types": [
@@ -44661,7 +44662,7 @@
           "types": [
             "object"
           ],
-          "description": "Maps a keydown `e.code` → the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}` — same contract as the game canvas keyMap.",
+          "description": "Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}` — same contract as the game canvas keyMap; keystrokes inside inputs/textareas never route.",
           "kind": "event-map",
           "mapValue": {
             "types": [
@@ -44674,7 +44675,7 @@
           "types": [
             "object"
           ],
-          "description": "Maps a keyup `e.code` → the board's SEMANTIC event.",
+          "description": "Maps a keyup `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event, emitted as `UI:{event}`; keystrokes inside inputs/textareas never route.",
           "kind": "event-map",
           "mapValue": {
             "types": [
@@ -50429,7 +50430,7 @@
           "types": [
             "object"
           ],
-          "description": "keyMap prop",
+          "description": "Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event (device-agnostic input), emitted as `UI:{event}`; keystrokes inside inputs/textareas never route.",
           "kind": "event-map",
           "mapValue": {
             "types": [
@@ -50442,7 +50443,7 @@
           "types": [
             "object"
           ],
-          "description": "keyUpMap prop",
+          "description": "Maps a keyup `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` in that order — to the board's SEMANTIC event, emitted as `UI:{event}`; keystrokes inside inputs/textareas never route.",
           "kind": "event-map",
           "mapValue": {
             "types": [
@@ -54513,6 +54514,188 @@
         }
       },
       "drawable": true
+    },
+    "gantt": {
+      "type": "gantt",
+      "category": "component",
+      "sourceFile": "components/core/molecules/Gantt.tsx",
+      "tier": "molecules",
+      "family": "core",
+      "description": "Gantt — view-only task schedule rendering rows as bars on a day axis.",
+      "capabilities": "gantt chart, project timeline, schedule view, task bars, dependency arrows, roadmap, milestone plan",
+      "fieldsContract": "display",
+      "suggestedFor": [
+        "gantt"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "tasks": {
+          "types": [
+            "object",
+            "array"
+          ],
+          "description": "Schema entity data — the task rows to place on the axis. pattern-sync tags it `kind:\"entity\", cardinality:\"collection\"` so consumers bind the domain entity without name-matching the prop.",
+          "kind": "entity",
+          "cardinality": "collection",
+          "default": []
+        },
+        "links": {
+          "types": [
+            "array"
+          ],
+          "description": "Dependency arrows between task ids",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "from": {
+                "types": [
+                  "string"
+                ]
+              },
+              "to": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "from",
+              "to"
+            ]
+          },
+          "default": []
+        },
+        "titleField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the bar label. Defaults to `title`.",
+          "default": "title"
+        },
+        "startField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the start timestamp (ISO or epoch). Defaults to `start`.",
+          "default": "start"
+        },
+        "endField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the end timestamp (ISO or epoch). Defaults to `end`. When absent, `durationField` (days) is used instead.",
+          "default": "end"
+        },
+        "durationField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the task length in days, used when the row has no end."
+        },
+        "statusField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field holding the bar status (drives bar colour). Defaults to `status`.",
+          "default": "status"
+        },
+        "groupField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field rows are grouped under header rows by. Empty (default) = flat list.",
+          "default": ""
+        },
+        "rangeStart": {
+          "types": [
+            "string",
+            "date"
+          ],
+          "description": "First visible day (ISO or Date). Defaults to 2 days before the earliest task."
+        },
+        "rangeEnd": {
+          "types": [
+            "string",
+            "date"
+          ],
+          "description": "Last visible day (ISO or Date). Defaults to 2 days after the latest task end."
+        },
+        "showToday": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Paint the today marker line when today falls inside the range (default true).",
+          "default": true
+        },
+        "dayWidth": {
+          "types": [
+            "number"
+          ],
+          "description": "Pixels per day on the axis (default 28)",
+          "default": 28
+        },
+        "barClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when a bar is clicked: UI:{barClickEvent} with { id }",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Loading state",
+          "default": false
+        },
+        "error": {
+          "types": [
+            "object"
+          ],
+          "description": "Error state",
+          "properties": {
+            "message": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "code": {
+              "types": [
+                "string"
+              ]
+            },
+            "stack": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "message"
+          ],
+          "default": null
+        }
+      }
     }
   },
   "categories": [
