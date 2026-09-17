@@ -436,6 +436,11 @@ pub struct EntityField {
     /// Trailing `@synonyms "..."` annotation — user-vocabulary synonyms (free
     /// text) feeding catalog search / curation field-matching.
     pub synonyms: Option<String>,
+    /// Trailing `@mock "..."` annotation — a declared literal value (or
+    /// comma-separated candidate list) the seeder uses AS-IS, never through a
+    /// domain-name lookup table. Authoring metadata only, like `description`/
+    /// `synonyms` — the runtime ignores it.
+    pub mock: Option<String>,
     /// Default value `= sexpr`.
     pub default: Option<SExpression>,
     /// `derived` field flag with the derivation expression.

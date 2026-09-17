@@ -264,6 +264,7 @@ impl Parser {
         let mut is_intrinsic = false;
         let mut description = None;
         let mut synonyms = None;
+        let mut mock = None;
         while let TokenKind::Sigil(raw) = self.peek().clone() {
             let name = self.canon_annotation_sigil(&raw);
             match name.as_str() {
@@ -279,7 +280,7 @@ impl Parser {
                     is_intrinsic = true;
                     self.advance();
                 }
-                "description" | "synonyms" => {
+                "description" | "synonyms" | "mock" => {
                     self.advance();
                     let value = match self.peek().clone() {
                         TokenKind::String(s) => {
@@ -294,10 +295,10 @@ impl Parser {
                             });
                         }
                     };
-                    if name == "description" {
-                        description = Some(value);
-                    } else {
-                        synonyms = Some(value);
+                    match name.as_str() {
+                        "description" => description = Some(value),
+                        "synonyms" => synonyms = Some(value),
+                        _ => mock = Some(value),
                     }
                 }
                 _ => break,
@@ -332,6 +333,7 @@ impl Parser {
             is_intrinsic,
             description,
             synonyms,
+            mock,
             default,
             derived,
             span,

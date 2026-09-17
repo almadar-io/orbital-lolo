@@ -136,6 +136,7 @@ const ANNOTATIONS: &[&str] = &[
     "label",
     "description",
     "synonyms",
+    "mock",
     "tier",
     "rebindable",
     "read",

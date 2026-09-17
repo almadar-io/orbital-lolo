@@ -117,6 +117,58 @@ orbital ApptOrbital {
     assert_eq!(range.synonyms, None);
 }
 
+/// `@mock "..."` on an entity field parses the same way as `@description`/
+/// `@synonyms` and lowers onto `FieldDefinition.mock` — the seeder (not this
+/// parser) is what treats the string literally / splits it on commas.
+#[test]
+fn mock_lowers_onto_field_and_coexists_with_other_annotations() {
+    let src = r#"app test-field-mock "1.0.0"
+"field mock annotation test"
+
+orbital ClientOrbital {
+  entity Client [runtime] {
+    id          : string!
+    clientName  : string @mock "Acme Corp, Globex Inc, Wayne Enterprises"
+    contactName : string @description "primary contact" @mock "person-name"
+  }
+
+  trait ClientShow -> Client [interaction, instance] {
+    initial: idle
+    state idle {
+      RENDER -> idle
+        (render-ui main { type: "typography", content: "Client" })
+    }
+  }
+}"#;
+
+    let schema = parse_and_lower_str(src).expect("lolo with @mock must lower");
+    let entity = match &schema.orbitals[0].entity {
+        orbital_core::schema::EntityRef::Inline(e) => e,
+        _ => panic!("expected inline entity"),
+    };
+    let field = |n: &str| {
+        entity
+            .fields
+            .iter()
+            .find(|f| f.name.as_deref() == Some(n))
+            .unwrap_or_else(|| panic!("{n} field present"))
+    };
+
+    let client_name = field("clientName");
+    assert_eq!(
+        client_name.mock.as_deref(),
+        Some("Acme Corp, Globex Inc, Wayne Enterprises")
+    );
+
+    // Coexists with @description on the same field, order-independent.
+    let contact_name = field("contactName");
+    assert_eq!(contact_name.description.as_deref(), Some("primary contact"));
+    assert_eq!(contact_name.mock.as_deref(), Some("person-name"));
+
+    // A field with no @mock stays None.
+    assert_eq!(field("id").mock, None);
+}
+
 #[test]
 fn description_synonyms_tier_lower_onto_events() {
     let src = r#"app test-event-annots "1.0.0"
