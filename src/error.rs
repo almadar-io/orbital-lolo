@@ -1026,9 +1026,10 @@ pub enum TypeError {
 
     #[error(
         "ELOLO_T_GENERIC_TYPE: {position} declares the generic type `{name}` — `json`, bare \
-         `object`, and `any` are not allowed in a declaration position. Replace it: renderable \
-         content → `node`; structured data → an inline `{{ k: T }}` shape, a named `type` alias, \
-         or `Map K V`; a single primitive of unknown kind → `scalar`"
+         `object`, bare `array`, and `any` are not allowed in a declaration position. Replace \
+         it: renderable content → `node`; structured data → an inline `{{ k: T }}` shape, a \
+         named `type` alias, or `Map K V`; a list → its element type, `[T]` (e.g. `[string]`); \
+         a single primitive of unknown kind → `scalar`"
     )]
     GenericTypeForbidden {
         name: String,

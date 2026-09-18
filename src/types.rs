@@ -908,7 +908,7 @@ pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
 fn reject_generic_types(te: &TypeExpr, position: &str, span: Span) -> Result<(), TypeError> {
     match te {
         TypeExpr::Primitive(n) | TypeExpr::Named(n)
-            if n == "json" || n == "any" || n == "object" =>
+            if n == "json" || n == "any" || n == "object" || n == "array" =>
         {
             Err(TypeError::GenericTypeForbidden {
                 name: n.clone(),
@@ -1419,6 +1419,72 @@ orbital OrbI {
             matches!(err, TypeError::GenericTypeForbidden { .. }),
             "emit payload: got {err:?}"
         );
+    }
+
+    /// Gap: bare `array` (no element type) erased silently to a `type:
+    /// "array"` payload field with no element info — `.lolo` has no bare
+    /// `array` type (only `[T]`, `Almadar_LOLO.md` §"Type expressions"), so
+    /// this is the same erasure loophole `json`/`any`/`object` closed above,
+    /// covering the FOUR authoring positions the corpus actually has bare
+    /// `array` in: entity field, config knob, emit payload, listen payload.
+    #[test]
+    fn err_bare_array_rejected_in_every_authoring_position() {
+        let positions = [
+            (
+                "entity field",
+                "entity Rec [persistent: recs] { id : string!\n    files : array! }",
+                "trait RecTrait -> Rec [interaction] { state idle { INIT -> idle (ref Rec) } }",
+            ),
+            (
+                "config knob",
+                "entity Rec [persistent: recs] { id : string! }",
+                "trait RecTrait -> Rec [interaction] {\n    config { files : array }\n    state idle { INIT -> idle (ref Rec) }\n  }",
+            ),
+            (
+                "emit payload",
+                "entity Rec [persistent: recs] { id : string! }",
+                "trait RecTrait -> Rec [interaction] {\n    emits { UPLOAD -> external { files : array! } }\n    state idle { INIT -> idle (ref Rec) }\n  }",
+            ),
+            (
+                "listen payload",
+                "entity Rec [persistent: recs] { id : string! }",
+                "trait RecTrait -> Rec [interaction] {\n    listens { UPLOAD { files : array! } }\n    state idle { INIT -> idle (ref Rec) }\n  }",
+            ),
+        ];
+        for (label, entity, trait_body) in positions {
+            let src = format!(
+                r#"
+orbital OrbArr {{
+  {entity}
+  {trait_body}
+  page "/recs" -> RecTrait
+}}
+"#
+            );
+            let err = check(&src).unwrap_err();
+            assert!(
+                matches!(err, TypeError::GenericTypeForbidden { ref name, .. } if name == "array"),
+                "{label}: got {err:?}"
+            );
+        }
+    }
+
+    /// The properly-spelled `[T]` array survives unchanged — only the bare
+    /// (elementless) spelling is rejected.
+    #[test]
+    fn ok_typed_array_field_still_passes() {
+        let src = r#"
+orbital OrbArrOk {
+  entity Rec [persistent: recs] { id : string!
+    files : [string]! }
+  trait RecTrait -> Rec [interaction] {
+    listens { UPLOAD { files : [string]! } }
+    state idle { INIT -> idle (ref Rec) }
+  }
+  page "/recs" -> RecTrait
+}
+"#;
+        assert!(check(src).is_ok());
     }
 
     /// The sanctioned vocabulary must keep passing: `scalar` (bounded
