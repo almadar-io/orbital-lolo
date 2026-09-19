@@ -320,6 +320,10 @@ fn lower_theme_tokens(maps: &ThemeTokenMaps) -> ThemeTokens {
         iconography: None,
         elevation: None,
         geometry: None,
+        // Typed color/illustration axis (§157/C1): not yet authored from `.lolo`
+        // theme blocks, same as every other still-unauthored knob above.
+        color: None,
+        illustration: None,
     }
 }
 
@@ -336,6 +340,8 @@ fn lower_theme_variant(maps: &ThemeTokenMaps) -> ThemeVariant {
         iconography: None,
         elevation: None,
         geometry: None,
+        color: None,
+        illustration: None,
     }
 }
 
