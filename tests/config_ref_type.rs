@@ -8,10 +8,14 @@
 //! surfaced downstream when something resolved the reference — which is how
 //! `minTileWidth : number = 320` reached a `string` prop and stayed there.
 //!
-//! Its own test binary (separate process) so the `ALMADAR_DEV` manipulation
-//! cannot race `contract_dev_gate.rs`, which toggles the same process-global var.
+//! The check used to be skipped under a dev-mode flag; that carve-out is
+//! gone, the check now always runs. Resolves the real installed
+//! `@almadar/std` package (Phase 2: no embedded fallback) so `title`'s
+//! declared type on `ModalRecordModal` is checked against the real contract
+//! shape.
 
-use orbital_lolo::parse_and_lower_str;
+use orbital_lolo::{parse_and_lower_str_with, LowerOptions};
+use std::path::Path;
 
 /// `title` on ModalRecordModal is declared `string`; the knob it is wired to is
 /// `number`. Decidably wrong at the call site, in one file.
@@ -65,18 +69,16 @@ orbital ConfigRefOrbital {
 
 #[test]
 fn config_reference_is_typechecked_against_the_knob_it_names() {
-    // Check 3.4 is skipped under ALMADAR_DEV (the baked contracts slice lags the
-    // live registries), so this must assert with the gate off.
-    let prev = std::env::var("ALMADAR_DEV").ok();
-    std::env::remove_var("ALMADAR_DEV");
+    let pkg = orbital_test_support::installed_package(
+        "almadar-std",
+        Path::new(env!("CARGO_MANIFEST_DIR")),
+    );
+    let options = LowerOptions {
+        packages: vec![pkg],
+    };
 
-    let mismatched = parse_and_lower_str(MISMATCHED_REF);
-    let matched = parse_and_lower_str(MATCHED_REF);
-
-    match prev {
-        Some(v) => std::env::set_var("ALMADAR_DEV", v),
-        None => std::env::remove_var("ALMADAR_DEV"),
-    }
+    let mismatched = parse_and_lower_str_with(MISMATCHED_REF, &options);
+    let matched = parse_and_lower_str_with(MATCHED_REF, &options);
 
     let err =
         mismatched.expect_err("a number-typed knob wired to a string-typed prop must be rejected");

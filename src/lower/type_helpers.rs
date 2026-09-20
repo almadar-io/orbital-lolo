@@ -275,7 +275,8 @@ pub(crate) fn lower_config_fields_to_map(
         let (field_type, items, properties, values) = if let Some(s) = sentinel {
             (s, None, None, None)
         } else {
-            let (_, _, items, properties, _) = lower_type_expr(&cf.type_expr, aliases, entity_names);
+            let (_, _, items, properties, _) =
+                lower_type_expr(&cf.type_expr, aliases, entity_names);
             (
                 type_expr_to_config_string(&cf.type_expr),
                 items,

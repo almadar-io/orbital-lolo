@@ -4,14 +4,16 @@
 //! reference forms (`trait Name = Alias.traits.X { ... }`,
 //! `page "/p" = Alias.pages.X -> Trait`) lowers to an `OrbitalSchema` whose
 //! shape is accepted by `orbital-compiler`'s inline phase. The inliner must
-//! resolve `Modal.traits.ModalRecordModal` against the embedded std-modal
-//! registry, apply the `linkedEntity` / `events` / `effects` overrides, and
-//! produce a fully self-contained `TraitReference::Inline` for the
-//! downstream phases.
+//! resolve `Modal.traits.ModalRecordModal` against the installed std-modal
+//! package (Phase 2: no embedded fallback), apply the `linkedEntity` /
+//! `events` / `effects` overrides, and produce a fully self-contained
+//! `TraitReference::Inline` for the downstream phases.
 
+use orbital_compiler::loader::LoaderConfig;
 use orbital_compiler::phases::inline::{inline_schema, InlineConfig};
 use orbital_core::{PageRef, TraitReference};
 use orbital_lolo::parse_and_lower_str;
+use std::path::Path;
 
 const USE_IMPORTS_LOLO: &str = r#"
 orbital CartItemOrbital {
@@ -101,10 +103,19 @@ fn lolo_use_imports_lower_to_inlinable_schema() {
         other => panic!("expected PageRef::Object, got {other:?}"),
     }
 
-    // Run the inline phase. With no on-disk path, the embedded loader handles
-    // `std/behaviors/std-modal` from the embedded registry without filesystem
-    // fallback.
-    let config = InlineConfig::default();
+    // Run the inline phase against the installed std package (Phase 2: no
+    // embedded loader fallback).
+    let std_pkg = orbital_test_support::installed_package(
+        "almadar-std",
+        Path::new(env!("CARGO_MANIFEST_DIR")),
+    );
+    let config = InlineConfig {
+        loader_config: LoaderConfig {
+            packages: vec![std_pkg],
+            ..Default::default()
+        },
+        ..Default::default()
+    };
     inline_schema(&mut schema, &config, None).expect("inline_schema must succeed");
 
     let inlined_orbital = &schema.orbitals[0];

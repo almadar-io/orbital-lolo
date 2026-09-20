@@ -304,7 +304,11 @@ impl Parser {
                 break;
             }
             let slot = self.expect_ident()?;
-            let slot = self.lang.canon_any(&slot).map(str::to_string).unwrap_or(slot);
+            let slot = self
+                .lang
+                .canon_any(&slot)
+                .map(str::to_string)
+                .unwrap_or(slot);
             self.expect_kind(&TokenKind::Colon, ":")?;
             match slot.as_str() {
                 "entity" => {
@@ -352,7 +356,11 @@ impl Parser {
         let scope = if matches!(self.peek(), TokenKind::LBracket) {
             self.advance();
             let ident = self.expect_ident()?;
-            let ident = self.lang.canon_keyword(&ident).map(str::to_string).unwrap_or(ident);
+            let ident = self
+                .lang
+                .canon_keyword(&ident)
+                .map(str::to_string)
+                .unwrap_or(ident);
             let resolved = match ident.as_str() {
                 "internal" => EventScopeAst::Internal,
                 "external" => EventScopeAst::External,
@@ -535,27 +543,28 @@ impl Parser {
                 "payload" => {
                     self.advance();
                     if let Some(knob) = self.parse_config_ref_knob_arg()? {
-                        return Ok(TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(
-                            knob,
-                        )));
+                        return Ok(TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(knob)));
                     }
                     // A bare identifier — the sibling-member form. Not a
                     // sigil argument, so `parse_config_ref_knob_arg` (which
                     // only consumes `@config.X`) left it unconsumed above.
                     if let TokenKind::Identifier(name) = self.peek().clone() {
                         self.advance();
-                        let name = self.lang.canon_any(&name).map(str::to_string).unwrap_or(name);
+                        let name = self
+                            .lang
+                            .canon_any(&name)
+                            .map(str::to_string)
+                            .unwrap_or(name);
                         return Ok(TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(
                             name,
                         )));
                     }
                     return Err(ParseError::UnexpectedToken {
-                        expected:
-                            "`@payload @config.<knob>` or `@payload <sibling>` — `@payload` \
+                        expected: "`@payload @config.<knob>` or `@payload <sibling>` — `@payload` \
                                    needs either the knob or the sibling struct member whose \
                                    value names the event; bare `@payload` has no meaning in a \
                                    type position"
-                                .to_string(),
+                            .to_string(),
                         got: format!("@{s}"),
                         span: self.peek_span(),
                     });

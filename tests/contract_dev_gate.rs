@@ -1,14 +1,15 @@
-//! C-LOLO-CONTRACT-SLICE-STALE-DEV: the parse-time `uses`-import contract
-//! check reads the baked `lolo-behavior-contracts.json` slice, which can lag
-//! the live registries mid-dev-loop (a freshly authored trait is absent from
-//! it). Under `ALMADAR_DEV` an unknown member on a KNOWN behavior degrades
-//! from a hard `LowerError` to a skip — the compiler's post-inline validation
-//! reads the live registries in dev and stays authoritative.
-//!
-//! Both directions live in ONE test because the gate is a process-global env
-//! var — splitting them would race under the parallel test runner.
+//! C-LOLO-CONTRACT-SLICE-STALE-DEV (closed): the parse-time `uses`-import
+//! contract check reads the loaded behavior-contract ladder
+//! (`registry::LoloContracts`). It used to degrade an unknown-member error to
+//! a skip under a dev-mode flag because the baked slice could lag the live
+//! registries; that carve-out is gone — the check is now a hard error
+//! unconditionally, in every mode. Resolves the real installed `@almadar/std`
+//! package (Phase 2: no embedded fallback) so the trait/config names below
+//! (`ModalRecordModal`, its `title` config key) are checked against the real
+//! contract shape.
 
-use orbital_lolo::parse_and_lower_str;
+use orbital_lolo::{parse_and_lower_str_with, LowerOptions};
+use std::path::Path;
 
 const UNKNOWN_MEMBER_LOLO: &str = r#"
 orbital DevGateOrbital {
@@ -24,57 +25,40 @@ orbital DevGateOrbital {
 }
 "#;
 
-#[test]
-fn unknown_trait_ref_errors_without_dev_and_skips_with_dev() {
-    let prev = std::env::var("ALMADAR_DEV").ok();
+fn std_options() -> LowerOptions {
+    let pkg = orbital_test_support::installed_package(
+        "almadar-std",
+        Path::new(env!("CARGO_MANIFEST_DIR")),
+    );
+    LowerOptions {
+        packages: vec![pkg],
+    }
+}
 
-    std::env::remove_var("ALMADAR_DEV");
-    let err = parse_and_lower_str(UNKNOWN_MEMBER_LOLO)
-        .expect_err("unknown trait member on a known behavior must error without ALMADAR_DEV");
+#[test]
+fn unknown_trait_ref_always_errors() {
+    let options = std_options();
+
+    let err = parse_and_lower_str_with(UNKNOWN_MEMBER_LOLO, &options)
+        .expect_err("unknown trait member on a known behavior must error");
     let msg = err.to_string();
     assert!(
         msg.contains("TotallyNotARealTrait"),
         "error names the unknown member: {msg}"
     );
 
-    // Check 3.4 (typed config overrides) reads the SAME baked slice, so it has
-    // the same staleness window: changing a knob's type in the live workspace
-    // made every consumer fail `orb emit orb` until the next publish + rebake.
-    // It was the only one of the three checks not gated.
-    let cfg_err = parse_and_lower_str(CONFIG_TYPE_MISMATCH_LOLO)
-        .expect_err("a number on a string-typed knob must error without ALMADAR_DEV");
+    // Check 3.4 (typed config overrides) reads the same contracts ladder, so
+    // it must error just as unconditionally.
+    let cfg_err = parse_and_lower_str_with(CONFIG_TYPE_MISMATCH_LOLO, &options)
+        .expect_err("a number on a string-typed knob must error");
     assert!(
         cfg_err.to_string().contains("title"),
         "error names the mismatched config key: {cfg_err}"
     );
-
-    std::env::set_var("ALMADAR_DEV", "1");
-    let lowered = parse_and_lower_str(UNKNOWN_MEMBER_LOLO);
-    let lowered_cfg = parse_and_lower_str(CONFIG_TYPE_MISMATCH_LOLO);
-
-    match prev {
-        Some(v) => std::env::set_var("ALMADAR_DEV", v),
-        None => std::env::remove_var("ALMADAR_DEV"),
-    }
-
-    lowered.expect("under ALMADAR_DEV the stale-slice member check is skipped");
-    // Safe to skip because the compiler re-checks this post-inline against the
-    // LIVE registries: the inliner folds the override onto the base trait's
-    // declared ConfigField keeping `field_type` (phases/inline/trait.rs), and
-    // validation/config_type.rs then raises ORB_T_CONFIG_SHAPE_MISMATCH.
-    lowered_cfg.expect("under ALMADAR_DEV the stale-slice config-type check is skipped");
 }
 
-/// Check 3.4 (typed config overrides) reads the SAME baked slice as the
-/// unknown-member checks above, so it has the same staleness window: changing a
-/// knob's type in the live workspace made every consumer fail `orb emit orb`
-/// until the next publish + rebake. It was the only one of the three not gated,
-/// which is the inconsistency this pins.
-///
-/// Safe to skip in dev because the compiler re-checks it post-inline against the
-/// LIVE registries — the inliner folds the override onto the base trait's
-/// declared `ConfigField` (`phases/inline/trait.rs`) keeping `field_type`, and
-/// `validation/config_type.rs` then raises `ORB_T_CONFIG_SHAPE_MISMATCH`.
+/// Check 3.4 (typed config overrides) reads the same contracts ladder as the
+/// unknown-member checks above.
 const CONFIG_TYPE_MISMATCH_LOLO: &str = r#"
 orbital DevGateConfigOrbital {
   uses Modal from "std/behaviors/std-modal"
@@ -91,8 +75,3 @@ orbital DevGateConfigOrbital {
   }
 }
 "#;
-
-// NOTE: intentionally NOT a second `#[test]`. `ALMADAR_DEV` is process-global and
-// cargo runs tests in a file on parallel threads, so a second function toggling
-// it would race the one above — exactly what this file's header warns about.
-// The assertions are folded into that single test instead.

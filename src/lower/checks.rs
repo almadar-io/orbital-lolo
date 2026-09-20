@@ -1864,12 +1864,16 @@ fn check_one_emit_literal(
 // mis-typing them as `"array"` (CG-EMIT-PAYLOAD-SEXPR).
 
 /// Parse-time checks for `uses`-imported trait/page references against the
-/// baked behavior-contract slice (`crate::registry`): unknown trait/page refs
-/// (3.2), rebind row-constraints (3.3), and typed config overrides (3.4).
-/// Operates on the lowered (pre-inline) orbitals; a `None` registry lookup
-/// (local `.orb` import or behavior absent from the slice) skips silently, and
-/// the compiler re-verifies post-inline as a backstop.
-pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
+/// loaded behavior-contract ladder (`crate::registry::LoloContracts`): unknown
+/// trait/page refs (3.2), rebind row-constraints (3.3), and typed config
+/// overrides (3.4). Operates on the lowered (pre-inline) orbitals; a `None`
+/// lookup (local `.orb` import or behavior absent from every loaded package)
+/// skips silently, and the compiler re-verifies post-inline as a backstop. A
+/// name found in two non-std packages is a hard `AmbiguousBehavior` error.
+pub(crate) fn check_behavior_contracts(
+    orbitals: &[CoreOrbital],
+    contracts: &crate::registry::LoloContracts,
+) -> Result<(), LowerError> {
     for orbital in orbitals {
         // alias (`Modal`) → behavior key (`std-modal`), from the `uses` table.
         let mut alias_key: HashMap<String, String> = HashMap::new();
@@ -1938,19 +1942,21 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
             let Some(key) = alias_key.get(alias) else {
                 continue;
             };
-            let Some(beh) = crate::registry::get_behavior(key) else {
-                continue; // local/unknown import — not in the slice; skip.
+            let beh = match contracts.get_behavior(key) {
+                Ok(Some(beh)) => beh,
+                Ok(None) => continue, // local/unknown import — not loaded; skip.
+                Err(amb) => {
+                    return Err(LowerError::AmbiguousBehavior {
+                        name: amb.name,
+                        package_a: amb.package_a,
+                        package_b: amb.package_b,
+                    })
+                }
             };
 
             match kind {
                 "traits" => {
                     let Some(tc) = beh.trait_contract(member) else {
-                        // Baked slice can lag the live registries in dev (a
-                        // freshly authored trait) — skip; the compiler's
-                        // post-inline validation is authoritative there.
-                        if crate::registry::dev_registries_live() {
-                            continue;
-                        }
                         return Err(LowerError::UnknownTraitRef {
                             reference: ref_str.clone(),
                             member: member.to_string(),
@@ -1983,22 +1989,8 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                     // blocks format/emit and breaks formatter fixtures that pass
                     // nested config to exercise the formatter; it belongs in the
                     // validate phase, not lower. Deferred (P1).
-                    // Skipped in dev for the same reason as the unknown-member
-                    // checks above: the baked contracts slice is a publish-time
-                    // artifact and lags the live registries. Absence was already
-                    // tolerated here; a STALE TYPE has the identical cause and
-                    // was not, so changing a knob's type in the workspace made
-                    // `orb emit orb` fail on every consumer until the next
-                    // publish + rebake. The compiler re-checks this post-inline
-                    // against the live registries (`validation/config_type.rs`
-                    // via the inliner's fold at `phases/inline/trait.rs:299`),
-                    // so nothing is lost — see the doc on `dev_registries_live`.
-                    let skip_stale_contract_types = crate::registry::dev_registries_live();
                     if let Some(cfg) = config {
                         for (k, cf) in cfg {
-                            if skip_stale_contract_types {
-                                continue;
-                            }
                             // For plain wiring entries the value lives in
                             // `cf.default`; skip entries with no default
                             // (annotation-only re-declarations are valid).
@@ -2029,9 +2021,6 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                 }
                 "pages" => {
                     if !beh.has_page(member) {
-                        if crate::registry::dev_registries_live() {
-                            continue;
-                        }
                         return Err(LowerError::UnknownPageRef {
                             reference: ref_str.clone(),
                             member: member.to_string(),
@@ -2048,8 +2037,7 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
         // `orbital Local = Alias.orbitals.Upstream { … }` declaration is a
         // reference on the ORBITAL ITSELF (`CoreOrbital.reference`), so it
         // needs its own visit into the same "orbitals" member check. Fourth
-        // member of the ladder family; unknown-member and config-type-mismatch
-        // degrade in dev exactly like the trait/page arms above.
+        // member of the ladder family.
         if let Some(ref_object) = &orbital.reference {
             let ref_str = &ref_object.reference;
             let parts: Vec<&str> = ref_str.split('.').collect();
@@ -2057,35 +2045,33 @@ pub(crate) fn check_behavior_contracts(orbitals: &[CoreOrbital]) -> Result<(), L
                 let (alias, kind, member) = (parts[0], parts[1], parts[2]);
                 if kind == "orbitals" {
                     if let Some(key) = alias_key.get(alias) {
-                        if let Some(beh) = crate::registry::get_behavior(key) {
+                        let beh = match contracts.get_behavior(key) {
+                            Ok(Some(beh)) => Some(beh),
+                            Ok(None) => None,
+                            Err(amb) => {
+                                return Err(LowerError::AmbiguousBehavior {
+                                    name: amb.name,
+                                    package_a: amb.package_a,
+                                    package_b: amb.package_b,
+                                })
+                            }
+                        };
+                        if let Some(beh) = beh {
                             let Some(oc) = beh.orbital_contract(member) else {
-                                // Baked slice can lag the live registries in
-                                // dev (a freshly authored orbital) — skip; the
-                                // compiler's post-inline `OrbitalNotFound` is
-                                // authoritative there.
-                                if !crate::registry::dev_registries_live() {
-                                    return Err(LowerError::UnknownOrbitalRef {
-                                        reference: ref_str.clone(),
-                                        member: member.to_string(),
-                                        behavior: key.clone(),
-                                    });
-                                }
-                                continue;
+                                return Err(LowerError::UnknownOrbitalRef {
+                                    reference: ref_str.clone(),
+                                    member: member.to_string(),
+                                    behavior: key.clone(),
+                                });
                             };
                             // Typed config overrides — same lenient
-                            // scalar-only check the trait arm runs, skipped in
-                            // dev for the identical stale-baked-type reason.
-                            let skip_stale_contract_types = crate::registry::dev_registries_live();
+                            // scalar-only check the trait arm runs.
                             if let Some(cfg) = &ref_object.config {
                                 for (k, cf) in cfg {
-                                    if skip_stale_contract_types {
-                                        continue;
-                                    }
                                     if let Some(v) = cf.default.as_ref() {
                                         let got = orbital_core::literal_value_type(v)
                                             .or_else(|| config_ref_knob_type(v, &knob_types));
-                                        if let (Some(expected), Some(got)) =
-                                            (oc.config.get(k), got)
+                                        if let (Some(expected), Some(got)) = (oc.config.get(k), got)
                                         {
                                             if !config_type_compatible(got, expected) {
                                                 return Err(LowerError::ConfigTypeMismatch {
@@ -2233,58 +2219,63 @@ mod recursive_type_safety_tests {
 
 /// Orbital-import Stage B — the "orbitals" arm `check_behavior_contracts`
 /// adds to the `Alias.<traits|pages|orbitals>` ladder, exercised against the
-/// REAL embedded `baked/lolo-behavior-contracts.json` slice via
-/// `std-notes`/`NoteOrbital` (an io behavior that ships today; no upstream
+/// installed `@almadar/std` package's contract slice (Phase 2: no embedded
+/// fallback) via `std-agent-memory`/`AgentMemoryOrbital` (no upstream
 /// declares orbital-level `config {}` yet, so the config-type-mismatch case
 /// is covered separately at the pure `config_type_compatible` level below).
-/// No other unit test in this lib binary reads `ALMADAR_DEV`, so all
-/// mutation of it stays inside ONE `#[test]` (mirrors
-/// `tests/contract_dev_gate.rs`'s convention) to keep it single-threaded
-/// within this binary without needing a second process.
 #[cfg(test)]
 mod orbital_reference_contract_tests {
-    const UNKNOWN_ORBITAL: &str = r#"
-uses Notes from "almadar-behaviors/std-notes"
+    use crate::lower::{lower_to_orb_with, LowerOptions};
+    use crate::parser::parse_str;
 
-orbital PfNotes = Notes.orbitals.Nope {
+    fn std_options() -> LowerOptions {
+        let pkg = orbital_test_support::installed_package(
+            "almadar-std",
+            std::path::Path::new(env!("CARGO_MANIFEST_DIR")),
+        );
+        LowerOptions {
+            packages: vec![pkg],
+        }
+    }
+
+    const UNKNOWN_ORBITAL: &str = r#"
+uses Memory from "std/behaviors/std-agent-memory"
+
+orbital PfMemory = Memory.orbitals.Nope {
 }
 "#;
 
     const KNOWN_ORBITAL: &str = r#"
-uses Notes from "almadar-behaviors/std-notes"
+uses Memory from "std/behaviors/std-agent-memory"
 
-orbital PfNotes = Notes.orbitals.NoteOrbital {
+orbital PfMemory = Memory.orbitals.AgentMemoryOrbital {
 }
 "#;
 
     #[test]
-    fn unknown_orbital_member_errors_known_member_passes_dev_mode_skips() {
-        let prev = std::env::var("ALMADAR_DEV").ok();
-        std::env::remove_var("ALMADAR_DEV");
+    fn unknown_orbital_member_always_errors_known_member_always_passes() {
+        let options = std_options();
+        let unknown_ast = parse_str(UNKNOWN_ORBITAL).expect("parses");
+        let known_ast = parse_str(KNOWN_ORBITAL).expect("parses");
 
-        let unknown = crate::parse_and_lower_str(UNKNOWN_ORBITAL);
-        let known = crate::parse_and_lower_str(KNOWN_ORBITAL);
-
-        std::env::set_var("ALMADAR_DEV", "1");
-        let unknown_under_dev = crate::parse_and_lower_str(UNKNOWN_ORBITAL);
-
-        match prev {
-            Some(v) => std::env::set_var("ALMADAR_DEV", v),
-            None => std::env::remove_var("ALMADAR_DEV"),
-        }
+        let unknown = lower_to_orb_with(&unknown_ast, &options);
+        let known = lower_to_orb_with(&known_ast, &options);
 
         let err = unknown.expect_err(
-            "Notes.orbitals.Nope names an orbital std-notes does not declare — must error",
+            "Memory.orbitals.Nope names an orbital std-agent-memory does not declare — must error",
         );
         let msg = err.to_string();
-        assert!(msg.contains("Nope"), "error names the offending member: {msg}");
-        assert!(msg.contains("std-notes"), "error names the behavior: {msg}");
+        assert!(
+            msg.contains("Nope"),
+            "error names the offending member: {msg}"
+        );
+        assert!(
+            msg.contains("std-agent-memory"),
+            "error names the behavior: {msg}"
+        );
 
-        known.expect("Notes.orbitals.NoteOrbital is a real orbital on std-notes — must pass");
-
-        unknown_under_dev.expect(
-            "ALMADAR_DEV degrades an unknown-member contract error to a skip, same as the \
-             trait/page arms",
+        known.expect(
+            "Memory.orbitals.AgentMemoryOrbital is a real orbital on std-agent-memory — must pass",
         );
     }
 }

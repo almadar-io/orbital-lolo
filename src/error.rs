@@ -713,8 +713,9 @@ pub enum LowerError {
 
     /// `uses`-imported trait reference `Alias.traits.X` names a trait the
     /// imported behavior doesn't declare (typo / stale name). Caught at parse
-    /// time from the baked behavior-contract slice; the compiler's inline phase
-    /// would otherwise fail later with an opaque ref-resolution error.
+    /// time from the installed package's behavior-contract slice; the
+    /// compiler's inline phase would otherwise fail later with an opaque
+    /// ref-resolution error.
     #[error(
         "trait reference {reference:?} names trait {member:?}, but behavior {behavior:?} \
          does not declare it — check the name against `signatures.lolo`"
@@ -740,9 +741,10 @@ pub enum LowerError {
     /// `orbital Local = Alias.orbitals.X { … }` (orbital-import Stage B) names
     /// an orbital the imported behavior doesn't declare (typo / stale name).
     /// Fourth member of the `Alias.<traits|pages|orbitals>` family
-    /// `check_behavior_contracts` resolves against the baked behavior-contract
-    /// slice; the compiler's post-inline `InlineError::OrbitalNotFound` is the
-    /// backstop for a slice that lags the live registries.
+    /// `check_behavior_contracts` resolves against the installed package's
+    /// behavior-contract slice; the compiler's post-inline
+    /// `InlineError::OrbitalNotFound` is the backstop for a slice that lags
+    /// the live registries.
     #[error(
         "orbital reference {reference:?} names orbital {member:?}, but behavior {behavior:?} \
          does not declare it — check the name against `signatures.lolo`"
@@ -771,7 +773,7 @@ pub enum LowerError {
 
     /// A `config { key = value }` override on a `uses`-imported trait reference
     /// supplies a value whose type doesn't match the atom's declared config-key
-    /// type (from the baked slice). Only clear scalar mismatches are flagged;
+    /// type (from the installed package's contract slice). Only clear scalar mismatches are flagged;
     /// bindings and array/object/SExpr-typed knobs are skipped.
     #[error(
         "config override {key:?} on {reference:?} expects type {expected:?} but the value \
@@ -797,6 +799,34 @@ pub enum LowerError {
         reference: String,
         key: String,
         suggestion: Option<String>,
+    },
+
+    /// Behavior-package discovery or contract loading failed (an installed
+    /// package's `package.json` conflicts on `prefix`, or its declared
+    /// `loloContracts` path is missing/unparsable). Message is the source
+    /// `DiscoverError`/`LoadError`'s `Display`. Genuine discovery errors only
+    /// — a missing `@almadar/std` is the structured
+    /// `BehaviorPackageNotInstalled` variant instead, so `orb validate --json`
+    /// can report `needs_install: true` instead of a free-form string.
+    #[error("{0}")]
+    BehaviorPackages(String),
+
+    /// No `almadar-std`-prefixed behavior package is installed at all
+    /// (`registry::LoadError::StdNotInstalled`) — a structured variant (not
+    /// folded into `BehaviorPackages`) so the CLI can map it to
+    /// `ORB_BEHAVIOR_PACKAGE_NOT_INSTALLED` / `needs_install: true`, the same
+    /// treatment the `.orb` inline-resolution path already gives the
+    /// equivalent loader error.
+    #[error("{}", orbital_core::behavior_packages::not_installed_message(package))]
+    BehaviorPackageNotInstalled { package: String },
+
+    /// The same behavior name was found in two different installed (non-std)
+    /// packages on the walk — never a precedence rule (ruling 3).
+    #[error("behavior {name:?} is declared by both {package_a} and {package_b}")]
+    AmbiguousBehavior {
+        name: String,
+        package_a: String,
+        package_b: String,
     },
 
     /// Increment 3-II: a trait reference's `::` annotation, once reinterpreted

@@ -29,8 +29,9 @@ pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
 pub use format::format_program;
 pub use lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
 pub use lower::{
-    lower_to_orb, lower_to_orb_with_map, lower_to_orb_with_prior, lower_to_orb_with_prior_and_map,
-    stamp_schema_identity,
+    lower_to_orb, lower_to_orb_with, lower_to_orb_with_map, lower_to_orb_with_map_with,
+    lower_to_orb_with_prior, lower_to_orb_with_prior_and_map, lower_to_orb_with_prior_and_map_with,
+    lower_to_orb_with_prior_with, stamp_schema_identity, LowerOptions,
 };
 pub use parser::{detect_language, parse, parse_str};
 pub use source_map::LoloSourceMap;
@@ -55,6 +56,24 @@ pub fn parse_and_lower(path: &Path) -> Result<OrbitalSchema, LoloError> {
 /// `--emit-orb` CLI flag when feeding from stdin.
 pub fn parse_and_lower_str(source: &str) -> Result<OrbitalSchema, LoloError> {
     parse_and_lower_str_at(source, "<input>")
+}
+
+/// [`parse_and_lower_str`] against an explicit [`LowerOptions`] instead of
+/// discovering installed behavior packages from the current directory — for
+/// callers (tests, or a resolver that already has the package set) that don't
+/// want filesystem discovery.
+pub fn parse_and_lower_str_with(
+    source: &str,
+    options: &LowerOptions,
+) -> Result<OrbitalSchema, LoloError> {
+    let ast = parse_str(source).map_err(|e| LoloError::Parse {
+        path: "<input>".to_string(),
+        inner: e,
+    })?;
+    lower_to_orb_with(&ast, options).map_err(|e| LoloError::Lower {
+        path: "<input>".to_string(),
+        inner: e,
+    })
 }
 
 /// [`parse_and_lower_str`] tagging errors with `path` instead of the generic

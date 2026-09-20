@@ -1,31 +1,36 @@
 //! Behavior-contract registry slice for the lolo resolver.
 //!
 //! orbital-lolo runs BEFORE orbital-compiler and can't import the compiler's
-//! embedded `factory-signatures-*.json` (circular dep). The sync tool emits a
-//! slim slice — per behavior (`organism`), each trait's `entityContract.requires`
-//! + overridable config-key types, and the page names — into
-//! `baked/lolo-behavior-contracts.json`, embedded here via `include_str!`
-//! (same pattern as `patterns_meta.rs`).
+//! embedded `factory-signatures-*.json` (circular dep). Each behavior package
+//! ships a slim slice — per behavior (`organism`), each trait's
+//! `entityContract.requires` + overridable config-key types, and the page
+//! names — at the path its `package.json` `orb.loloContracts` block declares.
+//! `@almadar/std` is an installed behavior package like any other (no
+//! embedded fallback, Phase 2) — `LoloContracts::load` errors when none is
+//! found on the walk.
 //!
 //! Used by the resolver for parse-time `uses`-import checks: unknown
 //! trait/page references, rebind row-constraints (target entity ⊇ requires),
 //! and typed config overrides. The compiler re-verifies post-inline as a
 //! backstop; this surfaces the error at the call site instead.
 
+use orbital_core::behavior_packages::BehaviorPackage;
 use serde::Deserialize;
 use std::collections::HashMap;
-use std::sync::OnceLock;
+use thiserror::Error;
 
-const CONTRACTS_JSON: &str = include_str!("baked/lolo-behavior-contracts.json");
+/// The prefix `@almadar/std`'s `orb` block declares — the std source on the
+/// walk, ruling 3.
+const STD_PREFIX: &str = "almadar-std";
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 struct Contracts {
     behaviors: HashMap<String, Behavior>,
 }
 
 /// One behavior (`std-modal`, `std-browse`, …) and its trait/page/orbital
 /// contracts.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct Behavior {
     #[serde(default)]
     pub traits: HashMap<String, TraitContract>,
@@ -44,7 +49,7 @@ pub struct Behavior {
 }
 
 /// A single trait's parse-time-checkable contract.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct TraitContract {
     /// Entity fields the trait READS (`@entity.<field>`); a rebind target must
     /// supply all of these.
@@ -59,7 +64,7 @@ pub struct TraitContract {
 /// A single orbital's parse-time-checkable contract (orbital-import Stage B):
 /// what `Alias.orbitals.X` publishes for a `config { … }` override to check
 /// against.
-#[derive(Deserialize)]
+#[derive(Deserialize, Clone)]
 pub struct OrbitalContract {
     /// Overridable config keys → their lolo type, for typed config-override
     /// checks on an `orbital Local = Alias.orbitals.X { config { … } }`
@@ -86,31 +91,98 @@ impl Behavior {
     }
 }
 
-/// True when `ALMADAR_DEV` is set to a truthy value (anything but empty/`"0"`)
-/// — the same gate the compiler uses for live dev-workspace registries. The
-/// baked contracts slice is a publish-time artifact and can lag the live
-/// registries mid-dev-loop (a freshly authored trait is absent from it), so
-/// dev mode degrades unknown-member contract errors to skips; the compiler's
-/// post-inline validation reads the LIVE registries and stays authoritative.
-pub fn dev_registries_live() -> bool {
-    match std::env::var("ALMADAR_DEV") {
-        Ok(v) => !v.is_empty() && v != "0",
-        Err(_) => false,
-    }
+/// A behavior name found in two installed (non-std) packages — never a
+/// precedence rule, ruling 3.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Ambiguity {
+    pub name: String,
+    pub package_a: String,
+    pub package_b: String,
 }
 
-static CONTRACTS: OnceLock<HashMap<String, Behavior>> = OnceLock::new();
+#[derive(Debug, Error)]
+pub enum LoadError {
+    #[error("io error reading behavior contracts at {path}: {message}")]
+    Io { path: String, message: String },
+    #[error("invalid behavior contracts JSON at {path}: {message}")]
+    Parse { path: String, message: String },
+    /// No `almadar-std`-prefixed package was found among `packages` — the
+    /// std contracts have no embedded fallback (Phase 2).
+    #[error(
+        "{}",
+        orbital_core::behavior_packages::not_installed_message(
+            orbital_core::behavior_packages::STD_PACKAGE
+        )
+    )]
+    StdNotInstalled,
+}
 
-fn contracts() -> &'static HashMap<String, Behavior> {
-    // A malformed embedded slice degrades to "no contracts known" — the
-    // resolver then skips the registry-backed checks rather than emitting
-    // false errors (the compiler backstop still runs). A CI sanity test
-    // catches a malformed slice.
-    CONTRACTS.get_or_init(|| {
-        serde_json::from_str::<Contracts>(CONTRACTS_JSON)
-            .map(|c| c.behaviors)
-            .unwrap_or_default()
-    })
+/// The loaded contracts ladder for one lower: std first (authoritative — a
+/// miss there never falls through to the other packages' std-named entries,
+/// since there are none by construction), then every other installed
+/// package in walk order. See [`LoloContracts::get_behavior`].
+pub struct LoloContracts {
+    std: HashMap<String, Behavior>,
+    others: Vec<(String, HashMap<String, Behavior>)>,
+}
+
+impl LoloContracts {
+    /// Read every package's `lolo_contracts` file once. A package whose
+    /// `orb.prefix` is `almadar-std` supplies the std slice; every other
+    /// package is searched in walk order on a std miss. No `almadar-std`
+    /// package among `packages` → [`LoadError::StdNotInstalled`].
+    pub fn load(packages: &[BehaviorPackage]) -> Result<LoloContracts, LoadError> {
+        let mut std_source: Option<HashMap<String, Behavior>> = None;
+        let mut others = Vec::new();
+        for pkg in packages {
+            let path = pkg.lolo_contracts.display().to_string();
+            let raw = std::fs::read_to_string(&pkg.lolo_contracts).map_err(|e| LoadError::Io {
+                path: path.clone(),
+                message: e.to_string(),
+            })?;
+            let parsed: Contracts = serde_json::from_str(&raw).map_err(|e| LoadError::Parse {
+                path,
+                message: e.to_string(),
+            })?;
+            if pkg.prefix == STD_PREFIX {
+                std_source = Some(parsed.behaviors);
+            } else {
+                others.push((format!("{}@{}", pkg.name, pkg.version), parsed.behaviors));
+            }
+        }
+        Ok(LoloContracts {
+            std: std_source.ok_or(LoadError::StdNotInstalled)?,
+            others,
+        })
+    }
+
+    /// Look up a behavior's contract by its key (e.g. `std-modal`), applying
+    /// ruling 3: std first (authoritative — a miss there does NOT fall
+    /// through to the other packages' std-named entries, since there are
+    /// none by construction); on a std miss, search every other package: one
+    /// hit resolves it, two is an [`Ambiguity`], none is `Ok(None)`.
+    pub fn get_behavior(&self, key: &str) -> Result<Option<&Behavior>, Ambiguity> {
+        if let Some(behavior) = self.std.get(key) {
+            return Ok(Some(behavior));
+        }
+
+        let mut found: Option<(&str, &Behavior)> = None;
+        for (name_version, map) in &self.others {
+            if let Some(behavior) = map.get(key) {
+                match found {
+                    None => found = Some((name_version.as_str(), behavior)),
+                    Some((first, _)) => {
+                        return Err(Ambiguity {
+                            name: key.to_string(),
+                            package_a: first.to_string(),
+                            package_b: name_version.clone(),
+                        });
+                    }
+                }
+            }
+        }
+        Ok(found.map(|(_, behavior)| behavior))
+    }
 }
 
 /// Behavior key from a `uses … from "<path>"` path: the last path segment
@@ -122,17 +194,6 @@ pub fn behavior_key_from_path(path: &str) -> &str {
     let trimmed = path.trim_end_matches(".orb");
     let trimmed = trimmed.trim_end_matches(".lolo");
     trimmed.rsplit('/').next().unwrap_or(trimmed)
-}
-
-/// Look up a behavior's contract by its key (e.g. `std-modal`).
-pub fn get_behavior(key: &str) -> Option<&'static Behavior> {
-    contracts().get(key)
-}
-
-/// Whether the embedded slice parsed and is non-empty (used by the CI sanity
-/// test and to gate checks off entirely if the slice is missing).
-pub fn is_loaded() -> bool {
-    !contracts().is_empty()
 }
 
 #[cfg(test)]

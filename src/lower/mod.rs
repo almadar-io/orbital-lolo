@@ -7,7 +7,9 @@
 use crate::ast::*;
 use crate::error::LowerError;
 use crate::patterns_meta::event_prop_names;
+use crate::registry::LoloContracts;
 use crate::types::check_program;
+use orbital_core::behavior_packages::BehaviorPackage;
 use orbital_core::effects::{EffectRow, EffectRowBuilder, EffectSite};
 use orbital_core::schema::{
     Cardinality, ConfigField as SchemaConfigField, EmitDefinition, EntityDefinition,
@@ -51,43 +53,127 @@ pub(crate) use type_helpers::{
     type_expr_to_config_values, type_expr_to_string,
 };
 
+/// Explicit behavior-package set for a lower, bypassing filesystem discovery
+/// (`orbital_core::behavior_packages::discover`). `packages: vec![]` (the
+/// `Default`) resolves the std contracts from the embedded slice with no
+/// other package searched — see [`crate::registry::LoloContracts::load`].
+#[derive(Debug, Default, Clone)]
+pub struct LowerOptions {
+    pub packages: Vec<BehaviorPackage>,
+}
+
 /// Lower an entire `.lolo` program into an `OrbitalSchema` (no identity
 /// stamping — names only). Back-compat entry point; prefer
 /// [`lower_to_orb_with_prior`] when a prior `.orb` is available so ids stay
-/// stable across re-lowers.
+/// stable across re-lowers. Discovers installed behavior packages from the
+/// current directory (see [`LowerOptions`] to pass an explicit set instead).
 pub fn lower_to_orb(ast: &Program) -> Result<OrbitalSchema, LowerError> {
     lower_to_orb_with_prior(ast, None)
+}
+
+/// [`lower_to_orb`] against an explicit [`LowerOptions`] instead of
+/// discovering packages from the current directory.
+pub fn lower_to_orb_with(
+    ast: &Program,
+    options: &LowerOptions,
+) -> Result<OrbitalSchema, LowerError> {
+    lower_to_orb_with_prior_with(ast, None, options)
 }
 
 /// Lower `ast` and stamp V4 identity: mint ids for authored nodes, resolve
 /// in-file references to id edges, and emit the ledger + `schemaVersion`.
 /// `prior` (a previously-emitted schema for the same source) anchors id reuse —
 /// re-lowering the same `.lolo` with its own output as `prior` yields
-/// byte-identical ids (zero churn). See [`self::identity`].
+/// byte-identical ids (zero churn). See [`self::identity`]. Discovers
+/// installed behavior packages from the current directory.
 pub fn lower_to_orb_with_prior(
     ast: &Program,
     prior: Option<&OrbitalSchema>,
 ) -> Result<OrbitalSchema, LowerError> {
-    lower_to_orb_with_prior_and_map(ast, prior).map(|(schema, _map)| schema)
+    let options = discovered_options()?;
+    lower_to_orb_with_prior_with(ast, prior, &options)
+}
+
+/// [`lower_to_orb_with_prior`] against an explicit [`LowerOptions`].
+pub fn lower_to_orb_with_prior_with(
+    ast: &Program,
+    prior: Option<&OrbitalSchema>,
+    options: &LowerOptions,
+) -> Result<OrbitalSchema, LowerError> {
+    lower_to_orb_with_prior_and_map_with(ast, prior, options).map(|(schema, _map)| schema)
 }
 
 /// [`lower_to_orb`] additionally returning the L2 source map (see
-/// [`crate::source_map::LoloSourceMap`]).
+/// [`crate::source_map::LoloSourceMap`]). Discovers installed behavior
+/// packages from the current directory.
 pub fn lower_to_orb_with_map(
     ast: &Program,
 ) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
-    lower_to_orb_with_prior_and_map(ast, None)
+    let options = discovered_options()?;
+    lower_to_orb_with_prior_and_map_with(ast, None, &options)
+}
+
+/// [`lower_to_orb_with_map`] against an explicit [`LowerOptions`].
+pub fn lower_to_orb_with_map_with(
+    ast: &Program,
+    options: &LowerOptions,
+) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
+    lower_to_orb_with_prior_and_map_with(ast, None, options)
 }
 
 /// [`lower_to_orb_with_prior`] additionally returning the L2 source map. The
 /// map never enters the schema itself (the emitted `.orb` stays byte
 /// identical) — it's a side channel built alongside the ordinary lowering.
+/// Discovers installed behavior packages from the current directory.
 pub fn lower_to_orb_with_prior_and_map(
     ast: &Program,
     prior: Option<&OrbitalSchema>,
 ) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
+    let options = discovered_options()?;
+    lower_to_orb_with_prior_and_map_with(ast, prior, &options)
+}
+
+/// [`lower_to_orb_with_prior_and_map`] against an explicit [`LowerOptions`].
+/// The one internal entry point every public lowering function above funnels
+/// into ([`lower_impl`]).
+pub fn lower_to_orb_with_prior_and_map_with(
+    ast: &Program,
+    prior: Option<&OrbitalSchema>,
+    options: &LowerOptions,
+) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
+    let contracts = LoloContracts::load(&options.packages).map_err(|e| match e {
+        crate::registry::LoadError::StdNotInstalled => LowerError::BehaviorPackageNotInstalled {
+            package: orbital_core::behavior_packages::STD_PACKAGE.to_string(),
+        },
+        other => LowerError::BehaviorPackages(other.to_string()),
+    })?;
+    lower_impl(ast, prior, &contracts)
+}
+
+/// Discover installed behavior packages from the current directory and the
+/// user store (`orbital_core::behavior_packages::discover`), for the
+/// zero-option entry points. A `DiscoverError` (e.g. a prefix conflict, or a
+/// declared sidecar path that doesn't exist) is a hard `LowerError` — never
+/// silently degraded to "no packages found".
+fn discovered_options() -> Result<LowerOptions, LowerError> {
+    let cwd = std::env::current_dir().map_err(|e| LowerError::BehaviorPackages(e.to_string()))?;
+    let user_store =
+        orbital_core::behavior_packages::user_store_dir().unwrap_or_else(|| cwd.clone());
+    let packages = orbital_core::behavior_packages::discover(&cwd, &user_store)
+        .map_err(|e| LowerError::BehaviorPackages(e.to_string()))?;
+    Ok(LowerOptions { packages })
+}
+
+/// The one internal entry point every public `lower_to_orb*` function funnels
+/// into: run the names-only lowering (which checks `contracts` mid-pass, see
+/// [`checks::check_behavior_contracts`]) then stamp V4 identity.
+fn lower_impl(
+    ast: &Program,
+    prior: Option<&OrbitalSchema>,
+    contracts: &LoloContracts,
+) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
     let mut source_map = crate::source_map::LoloSourceMap::new();
-    let mut schema = lower_to_orb_names_only(ast, &mut source_map)?;
+    let mut schema = lower_to_orb_names_only(ast, &mut source_map, contracts)?;
     let synthetic_traits: HashSet<String> = ast
         .orbitals
         .iter()
@@ -120,6 +206,7 @@ pub fn stamp_schema_identity(
 fn lower_to_orb_names_only(
     ast: &Program,
     source_map: &mut crate::source_map::LoloSourceMap,
+    contracts: &LoloContracts,
 ) -> Result<OrbitalSchema, LowerError> {
     // Phase 0: run the type-system resolver. Any unknown type / cycle /
     // kind-mismatch / composition-conflict / annotation-mismatch is reported
@@ -235,7 +322,7 @@ fn lower_to_orb_names_only(
     check_listens_integrity(&orbitals)?;
     check_button_transitions(&orbitals)?;
     check_emit_payload_literals(&orbitals)?;
-    check_behavior_contracts(&orbitals)?;
+    check_behavior_contracts(&orbitals, contracts)?;
 
     // App-level `config { ... }` (orbital-import Stage A, `OrbitalSchema.config`)
     // — ORGANISM-wide knobs, resolved against the file-level type/entity scope

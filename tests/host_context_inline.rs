@@ -1,9 +1,9 @@
 //! End-to-end fixtures for host-context prop evaluation of inline trait
 //! references (`<Alias.traits.Name prop={expr}/>` JSX sugar).
 //!
-//! Compiles real `.lolo` sources through parse → lower → inline (embedded std
-//! registries) → comprehensive validation → OIR resolve, pinning both agreed
-//! semantics:
+//! Compiles real `.lolo` sources through parse → lower → inline (the
+//! installed std package, Phase 2: no embedded registry fallback) →
+//! comprehensive validation → OIR resolve, pinning both agreed semantics:
 //!
 //! 1. Shared-entity authority: inline wrappers forwarding `@entity.*` inside
 //!    the single render-authority trait attribute to that authority
@@ -13,15 +13,28 @@
 //!    subtree are spliced at inline time, so the author's expressions resolve
 //!    in the lambda's per-item scope; stateful refs in that position error.
 
+use orbital_compiler::loader::LoaderConfig;
 use orbital_compiler::phases::inline::{inline_schema, InlineConfig, InlineError};
 use orbital_compiler::phases::resolve_to_oir;
 use orbital_compiler::phases::validation::{ErrorCode, ValidationResult};
 use orbital_core::schema::{OrbitalSchema, TraitReference};
 use orbital_lolo::parse_and_lower_str;
+use std::path::Path;
 
 fn compile_and_inline(src: &str) -> Result<OrbitalSchema, InlineError> {
     let mut schema = parse_and_lower_str(src).expect("parse+lower must succeed");
-    inline_schema(&mut schema, &InlineConfig::default(), None)?;
+    let std_pkg = orbital_test_support::installed_package(
+        "almadar-std",
+        Path::new(env!("CARGO_MANIFEST_DIR")),
+    );
+    let config = InlineConfig {
+        loader_config: LoaderConfig {
+            packages: vec![std_pkg],
+            ..Default::default()
+        },
+        ..Default::default()
+    };
+    inline_schema(&mut schema, &config, None)?;
     Ok(schema)
 }
 

@@ -61,8 +61,7 @@ impl Parser {
         // tags: any identifier beyond the scope marker and the first
         // (category) slot accumulates into `capabilities`. First non-scope
         // identifier still wins as the category.
-        let (category, scope, local, capabilities) = if matches!(self.peek(), TokenKind::LBracket)
-        {
+        let (category, scope, local, capabilities) = if matches!(self.peek(), TokenKind::LBracket) {
             self.advance();
             let mut category: Option<String> = None;
             let mut scope: Option<TraitScope> = None;
@@ -537,7 +536,11 @@ impl Parser {
                     self.advance();
                 }
                 let scope = self.expect_ident()?;
-                let scope = self.lang.canon_keyword(&scope).map(str::to_string).unwrap_or(scope);
+                let scope = self
+                    .lang
+                    .canon_keyword(&scope)
+                    .map(str::to_string)
+                    .unwrap_or(scope);
                 emits_scope = Some(scope);
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
