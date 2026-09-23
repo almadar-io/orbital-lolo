@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-16T03:44:41.117Z",
+  "exportedAt": "2026-09-21T16:53:16.837Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -8612,7 +8612,14 @@
             "string"
           ],
           "description": "Declarative event: fires on ⌘/Ctrl+Enter with `{ value }`.",
-          "kind": "event"
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "value",
+              "type": "string",
+              "required": true
+            }
+          ]
         },
         "error": {
           "types": [
@@ -18566,6 +18573,7 @@
     "line-chart": {
       "type": "line-chart",
       "category": "display",
+      "sourceFile": "components/core/molecules/LineChart.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "LineChart component",
@@ -18591,6 +18599,11 @@
                 "types": [
                   "string",
                   "date"
+                ]
+              },
+              "x": {
+                "types": [
+                  "number"
                 ]
               },
               "value": {
