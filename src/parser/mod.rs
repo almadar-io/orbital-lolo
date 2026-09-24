@@ -642,6 +642,7 @@ impl Parser {
             mounts: Vec::new(),
             config,
             extend_fields: Vec::new(),
+            import_listens: Vec::new(),
             span,
         })
     }

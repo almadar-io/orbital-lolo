@@ -322,6 +322,9 @@ pub struct Orbital {
     /// appended to the primary entity, AFTER `fields {}` renames apply.
     /// Unlike `fields {}` (rename-only), each entry is a whole new field.
     pub extend_fields: Vec<EntityField>,
+    /// Orbital-import `listens { Source.EVENT -> Target.TRIGGER }` — routes
+    /// into the imported set; each carries its `target_trait`.
+    pub import_listens: Vec<Listen>,
     pub span: Span,
 }
 
@@ -934,6 +937,9 @@ pub struct Listen {
     pub description: Option<String>,
     pub synonyms: Option<String>,
     pub tier: Option<String>,
+    /// `-> Target.TRIGGER`: the imported trait that gains this route. Only
+    /// an orbital import's `listens {}` carries one.
+    pub target_trait: Option<String>,
     pub span: Span,
 }
 
@@ -945,6 +951,8 @@ pub struct Tick {
     pub interval: TickInterval,
     pub guard: Option<SExpression>,
     pub effects: Vec<SExpression>,
+    /// `[background]`: runs with no client mounted.
+    pub background: bool,
     pub span: Span,
     /// L2 source-map spans captured while parsing `guard`. See
     /// [`Transition::guard_spans`].

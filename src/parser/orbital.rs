@@ -25,6 +25,7 @@ struct OrbitalRefBody {
     config_overrides: Vec<ConfigField>,
     events_remap: Vec<(String, String)>,
     extend_fields: Vec<EntityField>,
+    import_listens: Vec<Listen>,
     sibling_traits: Vec<Trait>,
 }
 
@@ -83,6 +84,7 @@ impl Parser {
             entities_remap: body.entities_remap,
             mounts: body.mounts,
             extend_fields: body.extend_fields,
+            import_listens: body.import_listens,
             // A reference-form orbital declares no knobs of its own — its
             // declared surface lives upstream; `config_overrides` above is
             // the override of THAT surface, not a second declaration.
@@ -148,6 +150,17 @@ impl Parser {
                 out.config_overrides = self.parse_config_override_block()?;
             } else if self.check_ident("extend") {
                 out.extend_fields = self.parse_orbital_ref_extend_block()?;
+            } else if self.check_ident("listens") {
+                for l in self.parse_listens_block()? {
+                    if l.target_trait.is_none() {
+                        return Err(ParseError::UnexpectedToken {
+                            expected: "`Source.EVENT -> ImportedTrait.TRIGGER` (an orbital import's listens route into one of its imported traits)".to_string(),
+                            got: l.event.clone(),
+                            span: l.span,
+                        });
+                    }
+                    out.import_listens.push(l);
+                }
             } else if self.check_ident("trait") {
                 // Stage B sibling trait: legal inside the reference body,
                 // never prefixed, `omit`/`only` never apply to it. Lowers
@@ -156,7 +169,7 @@ impl Parser {
             } else {
                 return Err(ParseError::UnexpectedToken {
                     expected:
-                        "entity, entities, fields, roles, pages, omit, only, config, events, extend, trait, or }"
+                        "entity, entities, fields, roles, pages, omit, only, config, events, extend, listens, trait, or }"
                             .to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),

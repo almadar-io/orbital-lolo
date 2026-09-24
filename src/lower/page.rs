@@ -11,6 +11,7 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
                 p.traits
                     .iter()
                     .map(|name| TraitReference::Reference {
+                        local: false,
                         id: None,
                         reference: Some(name.clone()),
                         name: None,
@@ -56,6 +57,7 @@ pub(crate) fn lower_page(p: &Page) -> PageRef {
             p.traits
                 .iter()
                 .map(|name| TraitReference::Reference {
+                    local: false,
                     id: None,
                     reference: Some(name.clone()),
                     name: None,

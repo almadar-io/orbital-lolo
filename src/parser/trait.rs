@@ -213,7 +213,7 @@ impl Parser {
             } else if self.check_ident("emits") {
                 emits.extend(self.parse_emits_block()?);
             } else if self.check_ident("listens") {
-                listens.extend(self.parse_listens_block()?);
+                listens.extend(self.parse_trait_listens_block()?);
             } else if self.check_ident("ticks") {
                 ticks.extend(self.parse_ticks_block()?);
             } else if self.check_ident("config") {
@@ -350,6 +350,33 @@ impl Parser {
             None
         };
 
+        // Optional `[local]`: the rebind dispatches client-only. The atom owns
+        // category/scope; `local` is the one modifier a call site sets.
+        let mut local = false;
+        if matches!(self.peek(), TokenKind::LBracket) {
+            self.advance();
+            loop {
+                self.skip_newlines();
+                if matches!(self.peek(), TokenKind::RBracket) {
+                    self.advance();
+                    break;
+                }
+                let span = self.peek_span();
+                let ident = self.expect_ident()?;
+                if ident != "local" {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "`local` (the only modifier a trait rebind sets; the atom owns category and scope)".to_string(),
+                        got: ident,
+                        span,
+                    });
+                }
+                local = true;
+                if matches!(self.peek(), TokenKind::Comma) {
+                    self.advance();
+                }
+            }
+        }
+
         let body = self.parse_trait_ref_body()?;
 
         Ok(Trait {
@@ -362,7 +389,7 @@ impl Parser {
             entity_binding_synonyms: None,
             category: None,
             scope: None,
-            local: false,
+            local,
             capabilities: Vec::new(),
             initial_state: None,
             states: Vec::new(),
@@ -529,7 +556,7 @@ impl Parser {
                     self.advance();
                 }
             } else if self.check_ident("listens") {
-                listens.extend(self.parse_listens_block()?);
+                listens.extend(self.parse_trait_listens_block()?);
             } else if self.check_ident("emitsScope") {
                 self.advance();
                 if matches!(self.peek(), TokenKind::Colon) {
@@ -1160,6 +1187,20 @@ impl Parser {
         Ok(out)
     }
 
+    /// A trait's own `listens {}`: routes land on the trait itself, so a
+    /// `-> Target.TRIGGER` (an orbital import's form) is rejected.
+    fn parse_trait_listens_block(&mut self) -> Result<Vec<Listen>, ParseError> {
+        let listens = self.parse_listens_block()?;
+        if let Some(l) = listens.iter().find(|l| l.target_trait.is_some()) {
+            return Err(ParseError::UnexpectedToken {
+                expected: "`-> TRIGGER` (a trait's listens deliver to the trait itself; `-> Target.TRIGGER` is the orbital-import form)".to_string(),
+                got: format!("-> {}.{}", l.target_trait.as_deref().unwrap_or(""), l.triggers.as_deref().unwrap_or("")),
+                span: l.span,
+            });
+        }
+        Ok(listens)
+    }
+
     pub(crate) fn parse_listen_handler(&mut self) -> Result<Listen, ParseError> {
         let span = self.peek_span();
         let first = self.expect_ident()?;
@@ -1192,6 +1233,7 @@ impl Parser {
                     description,
                     synonyms,
                     tier,
+                    target_trait: None,
                     span,
                 })
             }
@@ -1210,6 +1252,7 @@ impl Parser {
                     description,
                     synonyms,
                     tier,
+                    target_trait: None,
                     span,
                 })
             }
@@ -1245,6 +1288,14 @@ impl Parser {
                 }
                 self.advance();
                 let triggers = self.expect_ident()?;
+                // `-> Target.TRIGGER` — an orbital import's route into one of
+                // its imported traits.
+                let (target_trait, triggers) = if matches!(self.peek(), TokenKind::Dot) {
+                    self.advance();
+                    (Some(triggers), self.expect_ident()?)
+                } else {
+                    (None, triggers)
+                };
                 let triggers = self.canon_event_name(triggers);
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
@@ -1285,6 +1336,15 @@ impl Parser {
                         break;
                     }
                 }
+                if let TokenKind::Sigil(raw) = self.peek().clone() {
+                    let annotation = self.canon_annotation_sigil(&raw);
+                    if matches!(annotation.as_str(), "description" | "synonyms" | "tier") {
+                        return Err(ParseError::SourcedListenAnnotation {
+                            annotation,
+                            span: self.peek_span(),
+                        });
+                    }
+                }
                 Ok(Listen {
                     event: combined,
                     triggers: Some(triggers),
@@ -1294,6 +1354,7 @@ impl Parser {
                     description: None,
                     synonyms: None,
                     tier: None,
+                    target_trait,
                     span,
                 })
             }
@@ -1330,6 +1391,11 @@ impl Parser {
                 self.advance();
                 self.expect_keyword("every")?;
                 let interval = self.parse_tick_interval()?;
+                let background = if matches!(self.peek(), TokenKind::LBracket) {
+                    self.parse_tick_tags()?
+                } else {
+                    false
+                };
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
                 }
@@ -1366,6 +1432,7 @@ impl Parser {
                     interval,
                     guard,
                     effects,
+                    background,
                     span,
                     guard_spans,
                     effect_spans,
@@ -1375,6 +1442,28 @@ impl Parser {
             }
         }
         Ok(out)
+    }
+
+    /// `[background]` after a tick's interval; any other tag is rejected.
+    fn parse_tick_tags(&mut self) -> Result<bool, ParseError> {
+        self.expect_kind(&TokenKind::LBracket, "[")?;
+        let mut background = false;
+        loop {
+            let tag_span = self.peek_span();
+            let tag = self.expect_ident()?;
+            let tag = self.lang.canon_tag(&tag).map(str::to_string).unwrap_or(tag);
+            match tag.as_str() {
+                "background" => background = true,
+                _ => return Err(ParseError::InvalidTickTag { value: tag, span: tag_span }),
+            }
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+                continue;
+            }
+            break;
+        }
+        self.expect_kind(&TokenKind::RBracket, "]")?;
+        Ok(background)
     }
 
     pub(crate) fn parse_tick_interval(&mut self) -> Result<TickInterval, ParseError> {

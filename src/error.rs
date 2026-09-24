@@ -139,6 +139,12 @@ pub enum ParseError {
     #[error("invalid persistence mode {value:?} at {}:{}: expected 'persistent', 'runtime', or 'shared'", span.line, span.col)]
     InvalidPersistenceMode { value: String, span: Span },
 
+    #[error("invalid tick tag {value:?} at {}:{}: expected 'background'", span.line, span.col)]
+    InvalidTickTag { value: String, span: Span },
+
+    #[error("`@{annotation}` at {}:{} can't annotate a sourced listen `Source.EVENT -> TRIGGER`; only the local form `EVENT {{ fields }}` takes @description/@synonyms/@tier", span.line, span.col)]
+    SourcedListenAnnotation { annotation: String, span: Span },
+
     #[error("invalid type expression at {}:{}: {message}", span.line, span.col)]
     InvalidType { message: String, span: Span },
 
@@ -169,6 +175,8 @@ impl ParseError {
             ParseError::UnexpectedToken { span, .. }
             | ParseError::UnknownKeyword { span, .. }
             | ParseError::InvalidPersistenceMode { span, .. }
+            | ParseError::InvalidTickTag { span, .. }
+            | ParseError::SourcedListenAnnotation { span, .. }
             | ParseError::InvalidType { span, .. }
             | ParseError::InvalidSExpr { span, .. }
             | ParseError::InvalidDuration { span, .. }

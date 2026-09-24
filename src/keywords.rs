@@ -80,11 +80,12 @@ const KEYWORDS: &[&str] = &[
 /// (`parse_type_body_atom`) plus `VALID_TYPE_PARAM_KINDS`.
 const SHAPES: &[&str] = &["Entity", "Trait", "Page", "Orbital", "Event"];
 
-/// `persistent runtime shared identity instance collection local` — the
+/// `persistent runtime shared identity instance collection local background` — the
 /// entity `[...]` persistence-tag list (`parser/entity.rs
 /// parse_persistence_tag`) plus the trait `[category, scope, ...]` modifier
 /// list's `instance`/`collection` scope markers and `local` client-only-
-/// dispatch flag (`parser/trait.rs parse_trait`). `identity` is shared with
+/// dispatch flag (`parser/trait.rs parse_trait`), and the tick `[background]` flag
+/// (`parser/trait.rs parse_tick_tags`). `identity` is shared with
 /// `KEYWORDS` (same English word, same translation, B1 rule 3).
 const TAGS: &[&str] = &[
     "persistent",
@@ -94,6 +95,7 @@ const TAGS: &[&str] = &[
     "instance",
     "collection",
     "local",
+    "background",
 ];
 
 /// `interaction integration lifecycle game-core game-entity game-ui` — the
@@ -146,14 +148,26 @@ const ANNOTATIONS: &[&str] = &[
     "icon",
 ];
 
-/// `entity payload state now config user trait` — sigil roots (the text
+/// `entity payload state now config user trait event prevEvents prevStates
+/// fromState toState` — sigil roots (the text
 /// before the first `.` of a `@x`/`@x.y` token) recognized at value
 /// position (`parser/expression.rs`), type position (`parser/type.rs`),
 /// term-match scrutinees (`parser/trait.rs parse_term_match_scrutinee`),
 /// and the `@config.<knob>` event/type reference form
 /// (`parser/mod.rs config_ref_knob`).
 const SIGILS: &[&str] = &[
-    "entity", "payload", "state", "now", "config", "user", "trait",
+    "entity",
+    "payload",
+    "state",
+    "now",
+    "config",
+    "user",
+    "trait",
+    "event",
+    "prevEvents",
+    "prevStates",
+    "fromState",
+    "toState",
 ];
 
 /// `set fetch persist emit navigate navigate-back render-ui notify ref

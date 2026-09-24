@@ -525,6 +525,7 @@ fn listens_from_object(value: &SExpression, span: Span) -> Result<Vec<Listen>, P
             description: None,
             synonyms: None,
             tier: None,
+            target_trait: None,
             span,
         });
     }

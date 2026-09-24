@@ -878,6 +878,25 @@ impl Formatter {
             self.output.push('}');
             self.write_newline();
         }
+        if !orbital.import_listens.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("listens {");
+            self.write_newline();
+            self.indent();
+            for listen in &orbital.import_listens {
+                self.write_indent();
+                self.fmt_listen(listen);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
         if !orbital.roles_remap.is_empty() {
             if wrote_any {
                 self.write_newline();
@@ -1208,6 +1227,9 @@ impl Formatter {
             if let Some(le) = &tr.linked_entity {
                 self.output.push_str(" -> ");
                 self.output.push_str(le);
+            }
+            if tr.local {
+                self.output.push_str(" [local]");
             }
             self.output.push_str(" {");
             self.write_newline();
@@ -1607,6 +1629,10 @@ impl Formatter {
         self.output.push_str(&listen.event);
         if let Some(triggers) = &listen.triggers {
             self.output.push_str(" -> ");
+            if let Some(target) = &listen.target_trait {
+                self.output.push_str(target);
+                self.output.push('.');
+            }
             self.output.push_str(triggers);
         }
         if let Some(guard) = &listen.guard {
@@ -1654,6 +1680,9 @@ impl Formatter {
             TickInterval::Cron(cron) => {
                 self.write_quoted_string(cron);
             }
+        }
+        if tick.background {
+            self.output.push_str(" [background]");
         }
         if let Some(guard) = &tick.guard {
             self.output.push_str(" when ");

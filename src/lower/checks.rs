@@ -1928,6 +1928,7 @@ pub(crate) fn check_behavior_contracts(
                 reference: Some(ref_str),
                 linked_entity,
                 config,
+                fields: field_remap,
                 ..
             } = tref
             else {
@@ -1971,7 +1972,13 @@ pub(crate) fn check_behavior_contracts(
                         let missing: Vec<String> = tc
                             .requires
                             .iter()
-                            .filter(|r| !fields.contains(*r))
+                            .filter(|r| {
+                                let target = field_remap
+                                    .as_ref()
+                                    .and_then(|m| m.get(*r))
+                                    .unwrap_or(*r);
+                                !fields.contains(target)
+                            })
                             .cloned()
                             .collect();
                         if !missing.is_empty() {

@@ -194,6 +194,19 @@ pub(crate) fn lower_orbital_reference(
         entities: pairs_to_map(&orb.entities_remap),
         mounts: list_pairs_to_map(&orb.mounts),
         extend,
+        listens: if orb.import_listens.is_empty() {
+            None
+        } else {
+            Some(
+                orb.import_listens
+                    .iter()
+                    .map(|l| orbital_core::schema::OrbitalRefListen {
+                        trait_name: l.target_trait.clone().unwrap_or_default(),
+                        listen: crate::lower::emit_listen::lower_listen(l),
+                    })
+                    .collect(),
+            )
+        },
     };
 
     // Sibling traits (Stage B): authored locally in the reference body,

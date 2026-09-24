@@ -1056,6 +1056,7 @@ pub(crate) fn lower_tick(t: &Tick) -> Result<TickDefinition, LowerError> {
             .collect::<Result<Vec<_>, LowerError>>()?,
         applies_to: None,
         description: None,
+        background: t.background,
     })
 }
 

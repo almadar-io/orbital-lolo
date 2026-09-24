@@ -507,3 +507,78 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
     assert_eq!(orb.extend_fields.len(), 1);
     assert_eq!(orb.extend_fields[0].name, "overtimeHours");
 }
+
+const IMPORT_LISTENS: &str = r#"
+uses Pm from "almadar-behaviors/std-project-manager"
+
+orbital ProjectOrbital = Pm.orbitals.ProjectOrbital {
+  listens {
+    ProjectLifecycle.PROJECT_CREATE_REQUESTED -> ProjectPersistor.PROJECT_CREATE_REQUESTED
+  }
+  trait ProjectLifecycle -> Project [lifecycle, instance] {
+    state idle {
+      OPEN -> idle
+        (emit PROJECT_CREATE_REQUESTED { data: @entity })
+    }
+  }
+}
+"#;
+
+/// project-friday's host→import handoff: a route INTO an imported trait.
+#[test]
+fn orbital_ref_listens_lowers_a_route_into_an_imported_trait() {
+    let schema = parse_and_lower_str(IMPORT_LISTENS).expect("lower");
+    let listens = schema.orbitals[0]
+        .reference
+        .as_ref()
+        .and_then(|r| r.listens.as_ref())
+        .expect("import listens lowered");
+    assert_eq!(listens.len(), 1);
+    assert_eq!(listens[0].trait_name, "ProjectPersistor");
+    assert_eq!(listens[0].listen.event, "PROJECT_CREATE_REQUESTED");
+    assert_eq!(listens[0].listen.triggers.as_deref(), Some("PROJECT_CREATE_REQUESTED"));
+    match &listens[0].listen.source {
+        Some(orbital_core::schema::ListenSource::Trait { trait_name, .. }) => {
+            assert_eq!(trait_name, "ProjectLifecycle")
+        }
+        other => panic!("expected a trait source, got {other:?}"),
+    }
+}
+
+#[test]
+fn orbital_ref_listens_round_trips_through_format() {
+    let program = parse_str(IMPORT_LISTENS).expect("parse");
+    let printed = orbital_lolo::format::format_program(&program);
+    assert!(
+        printed.contains("ProjectLifecycle.PROJECT_CREATE_REQUESTED -> ProjectPersistor.PROJECT_CREATE_REQUESTED"),
+        "{printed}"
+    );
+    let again = parse_str(&printed).expect("reparse");
+    assert_eq!(again.orbitals[0].import_listens.len(), 1);
+}
+
+#[test]
+fn orbital_ref_listens_without_a_target_is_a_parse_error() {
+    let src = IMPORT_LISTENS.replace("-> ProjectPersistor.PROJECT_CREATE_REQUESTED", "-> PROJECT_CREATE_REQUESTED");
+    assert!(parse_str(&src).is_err());
+}
+
+#[test]
+fn a_trait_listens_with_a_target_is_a_parse_error() {
+    let src = r#"
+orbital O {
+  entity Row [runtime] {
+    id : string
+  }
+  trait A -> Row [interaction, instance] {
+    listens {
+      B.GO -> C.GO
+    }
+    state idle {
+      GO -> idle
+    }
+  }
+}
+"#;
+    assert!(parse_str(src).is_err());
+}
