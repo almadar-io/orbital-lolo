@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-25T03:49:13.459Z",
+  "exportedAt": "2026-09-26T10:53:57.077Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -9440,6 +9440,11 @@
                 ],
                 "kind": "event"
               },
+              "href": {
+                "types": [
+                  "string"
+                ]
+              },
               "url": {
                 "types": [
                   "string"
@@ -12082,6 +12087,7 @@
     "header": {
       "type": "header",
       "category": "header",
+      "sourceFile": "components/core/molecules/Header.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Header Organism Component  A header component for mobile/responsive layouts with menu toggle, brand, and user avatar. Styled to match the main Layout component's mobile header.",
@@ -12150,6 +12156,18 @@
                 "types": [
                   "boolean"
                 ]
+              },
+              "children": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "cyclic": true,
+                  "cyclicTypeName": "HeaderNavigationItem"
+                }
               }
             },
             "required": [
@@ -48856,6 +48874,7 @@
     "dock-layout": {
       "type": "dock-layout",
       "category": "layout",
+      "sourceFile": "components/core/organisms/layout/DockLayout.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "DockLayout component",
@@ -48907,8 +48926,7 @@
           "types": [
             "number"
           ],
-          "description": "Width of `rail` in pixels. @default 56",
-          "default": 56
+          "description": "Width of `rail` in pixels; the rail sizes the column itself when omitted."
         },
         "secondarySidebarWidth": {
           "types": [
@@ -48921,8 +48939,7 @@
           "types": [
             "boolean"
           ],
-          "description": "Whether `sidebar` is collapsed. @default false",
-          "default": false
+          "description": "Whether `sidebar` is collapsed. @default false"
         },
         "onSidebarCollapsedChange": {
           "types": [
@@ -48968,8 +48985,7 @@
           "types": [
             "boolean"
           ],
-          "description": "Whether `bottomPanel` is collapsed. @default false",
-          "default": false
+          "description": "Whether `bottomPanel` is collapsed. @default false"
         },
         "onBottomPanelCollapsedChange": {
           "types": [
@@ -49015,8 +49031,7 @@
           "types": [
             "boolean"
           ],
-          "description": "Whether `secondarySidebar` is collapsed. @default false",
-          "default": false
+          "description": "Whether `secondarySidebar` is collapsed. @default false"
         },
         "onSecondarySidebarCollapsedChange": {
           "types": [
@@ -49030,6 +49045,44 @@
               "type": "boolean"
             }
           ]
+        },
+        "compact": {
+          "types": [
+            "boolean"
+          ],
+          "description": "The mobile variant; decided by the viewport (narrower than 1024px) when omitted."
+        },
+        "secondarySidebarLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Compact: the top-bar button that opens `secondarySidebar` (e.g. \"Inspector\", \"Chat\")."
+        },
+        "secondarySidebarIcon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "secondarySidebarIcon prop"
+        },
+        "bottomPanelLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Compact: the top-bar button that opens `bottomPanel`."
+        },
+        "bottomPanelIcon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "bottomPanelIcon prop"
+        },
+        "topBarActions": {
+          "types": [
+            "node"
+          ],
+          "description": "Compact: the host's own actions at the end of the top bar (e.g. Run)."
         },
         "className": {
           "types": [
@@ -50293,6 +50346,318 @@
             "node"
           ],
           "description": "Content to wrap (used in frame mode)"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "icon-button": {
+      "type": "icon-button",
+      "category": "component",
+      "sourceFile": "components/core/molecules/IconButton.tsx",
+      "tier": "molecules",
+      "family": "core",
+      "description": "IconButton component",
+      "suggestedFor": [
+        "icon",
+        "button",
+        "icon button"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "Additional CSS classes applied to the root element."
+        },
+        "variant": {
+          "types": [
+            "string"
+          ],
+          "description": "variant prop",
+          "enumValues": [
+            "primary",
+            "secondary",
+            "ghost",
+            "danger",
+            "success",
+            "warning",
+            "default",
+            "link"
+          ],
+          "default": "ghost"
+        },
+        "size": {
+          "types": [
+            "string"
+          ],
+          "description": "size prop",
+          "enumValues": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "sm"
+        },
+        "isLoading": {
+          "types": [
+            "boolean"
+          ],
+          "description": "isLoading prop"
+        },
+        "iconAsset": {
+          "types": [
+            "object"
+          ],
+          "description": "Asset image rendered as the leading icon; takes precedence over icon/leftIcon when provided.",
+          "properties": {
+            "url": {
+              "types": [
+                "asset"
+              ]
+            },
+            "role": {
+              "types": [
+                "string"
+              ]
+            },
+            "category": {
+              "types": [
+                "string"
+              ]
+            },
+            "animations": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "style": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "pixel",
+                "vector",
+                "hd",
+                "1-bit",
+                "isometric"
+              ]
+            },
+            "variant": {
+              "types": [
+                "string"
+              ]
+            },
+            "dimension": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "2d",
+                "3d"
+              ]
+            },
+            "aspect": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "1:1",
+                "16:9",
+                "5:7",
+                "8:1",
+                "4:1",
+                "5:3",
+                "1:2"
+              ]
+            },
+            "atlas": {
+              "types": [
+                "asset"
+              ]
+            },
+            "sprite": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "thumbnailUrl": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "url",
+            "role",
+            "category"
+          ]
+        },
+        "action": {
+          "types": [
+            "string"
+          ],
+          "description": "Declarative event name — emits UI:{action} via eventBus on click",
+          "kind": "event"
+        },
+        "actionPayload": {
+          "types": [
+            "object"
+          ],
+          "description": "Payload to include with the action event",
+          "payloadFor": "action",
+          "eventPayloadBrand": true
+        },
+        "disabled": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Disable the button (greys out, blocks click events)"
+        },
+        "href": {
+          "types": [
+            "string"
+          ],
+          "description": "Makes the button a link: `#anchor` scrolls, an absolute URL loads, a path navigates in-app"
+        },
+        "data-testid": {
+          "types": [
+            "string"
+          ],
+          "description": "Test identifier for automated tests"
+        },
+        "icon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "icon prop",
+          "required": true
+        },
+        "label": {
+          "types": [
+            "string"
+          ],
+          "description": "What the button does — its accessible name and its tooltip.",
+          "required": true
+        },
+        "tooltipPosition": {
+          "types": [
+            "string"
+          ],
+          "description": "Where the tooltip opens.",
+          "enumValues": [
+            "top",
+            "bottom",
+            "left",
+            "right"
+          ],
+          "default": "right"
+        }
+      }
+    },
+    "top-nav-item": {
+      "type": "top-nav-item",
+      "category": "navigation",
+      "sourceFile": "components/core/molecules/TopNavItem.tsx",
+      "tier": "molecules",
+      "family": "core",
+      "description": "TopNavItem component",
+      "suggestedFor": [
+        "top",
+        "nav",
+        "item",
+        "top nav item"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "item": {
+          "types": [
+            "object"
+          ],
+          "description": "item prop",
+          "required": true,
+          "properties": {
+            "label": {
+              "types": [
+                "string"
+              ]
+            },
+            "href": {
+              "types": [
+                "string"
+              ]
+            },
+            "icon": {
+              "types": [
+                "icon",
+                "string"
+              ]
+            },
+            "badge": {
+              "types": [
+                "string",
+                "number"
+              ]
+            },
+            "active": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "onClick": {
+              "types": [
+                "function"
+              ]
+            },
+            "children": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "cyclic": true,
+                "cyclicTypeName": "TopNavItemData"
+              }
+            }
+          },
+          "propertyRequired": [
+            "label"
+          ]
+        },
+        "activeHref": {
+          "types": [
+            "string"
+          ],
+          "description": "The href of the active page, used to mark the item (or its parent) active."
+        },
+        "tone": {
+          "types": [
+            "string"
+          ],
+          "description": "Active styling: `solid` fills with the primary colour (dashboard top bar); `soft` tints it (site header).",
+          "enumValues": [
+            "solid",
+            "soft"
+          ],
+          "default": "solid"
         },
         "className": {
           "types": [
