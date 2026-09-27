@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-26T10:53:57.077Z",
+  "exportedAt": "2026-09-27T02:12:25.691Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -24007,9 +24007,11 @@
     "version-diff": {
       "type": "version-diff",
       "category": "display",
+      "sourceFile": "components/core/molecules/VersionDiff.tsx",
       "tier": "molecules",
       "family": "core",
-      "description": "VersionDiff component",
+      "description": "A line diff between two versions — two whole texts, or a pre-computed diff such as one commit.",
+      "capabilities": "version diff, compare revisions, what changed, before and after, code diff, commit diff, revision comparison",
       "suggestedFor": [
         "version",
         "diff",
@@ -24023,7 +24025,6 @@
             "object"
           ],
           "description": "All available revisions (at least 2). Accepts either a typed array (direct consumers) or the runtime payload shape from a render-ui binding (`@payload.revisions`). Narrowed to `[]` internally when the value isn't an array.",
-          "required": true,
           "items": {
             "types": [
               "object"
@@ -24062,6 +24063,70 @@
             ]
           }
         },
+        "hunks": {
+          "types": [
+            "array"
+          ],
+          "description": "A pre-computed diff to render instead of diffing `revisions` (no revision pickers).",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "header": {
+                "types": [
+                  "string"
+                ]
+              },
+              "lines": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "type": {
+                      "types": [
+                        "string"
+                      ],
+                      "enumValues": [
+                        "added",
+                        "removed",
+                        "unchanged",
+                        "context"
+                      ]
+                    },
+                    "beforeLineNumber": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "afterLineNumber": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "content": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "type",
+                    "content"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "header",
+              "lines"
+            ]
+          }
+        },
         "beforeId": {
           "types": [
             "string"
@@ -24078,7 +24143,7 @@
           "types": [
             "string"
           ],
-          "description": "Display mode.",
+          "description": "Display mode to start in; the toggle switches it.",
           "enumValues": [
             "side-by-side",
             "inline"
@@ -50658,6 +50723,219 @@
             "soft"
           ],
           "default": "solid"
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "change-list": {
+      "type": "change-list",
+      "category": "display",
+      "sourceFile": "components/core/molecules/ChangeList.tsx",
+      "tier": "molecules",
+      "family": "core",
+      "description": "The plain-language changes in one version (added / modified / removed).",
+      "capabilities": "change summary, what changed, version changes, diff summary, release notes list, modification list",
+      "suggestedFor": [
+        "change",
+        "list",
+        "change list"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "changes": {
+          "types": [
+            "array",
+            "object"
+          ],
+          "description": "The changes. Accepts a typed list or a render-ui payload binding.",
+          "required": true,
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "added",
+                  "modified",
+                  "removed"
+                ]
+              },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
+              "description": {
+                "types": [
+                  "string"
+                ]
+              },
+              "before": {
+                "types": [
+                  "string"
+                ]
+              },
+              "after": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "type",
+              "title"
+            ]
+          }
+        },
+        "inspectEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emitted by a change's Inspect button. Payload: { title, type }.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "title",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "type",
+              "type": "string",
+              "required": true,
+              "enumValues": [
+                "added",
+                "modified",
+                "removed"
+              ]
+            }
+          ]
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "commit-row": {
+      "type": "commit-row",
+      "category": "component",
+      "sourceFile": "components/core/molecules/CommitRow.tsx",
+      "tier": "molecules",
+      "family": "core",
+      "description": "One version in a history list — a commit row with select and restore.",
+      "capabilities": "version history row, commit entry, revision list item, change log entry, restore point, undo history item",
+      "suggestedFor": [
+        "commit",
+        "row",
+        "commit row"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "sha": {
+          "types": [
+            "string"
+          ],
+          "description": "Commit id; the first 7 characters are shown, the whole id on hover.",
+          "required": true
+        },
+        "message": {
+          "types": [
+            "string"
+          ],
+          "description": "Commit message.",
+          "required": true
+        },
+        "author": {
+          "types": [
+            "string"
+          ],
+          "description": "author prop"
+        },
+        "timestamp": {
+          "types": [
+            "string"
+          ],
+          "description": "Display time (already formatted, e.g. \"2 min ago\")."
+        },
+        "kind": {
+          "types": [
+            "string"
+          ],
+          "description": "What made this version (a user save, an agent turn, a restore, an undo/redo, a snapshot).",
+          "enumValues": [
+            "user",
+            "agent",
+            "restore",
+            "undo",
+            "redo",
+            "snapshot"
+          ]
+        },
+        "additions": {
+          "types": [
+            "number"
+          ],
+          "description": "additions prop"
+        },
+        "deletions": {
+          "types": [
+            "number"
+          ],
+          "description": "deletions prop"
+        },
+        "selected": {
+          "types": [
+            "boolean"
+          ],
+          "description": "The row the user picked (shows its detail).",
+          "default": false
+        },
+        "current": {
+          "types": [
+            "boolean"
+          ],
+          "description": "The version the app is at now — it cannot be restored to.",
+          "default": false
+        },
+        "selectEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emitted when the row is picked. Payload: { sha }.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "sha",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "restoreEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emitted by the Restore button. Payload: { sha }.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "sha",
+              "type": "string",
+              "required": true
+            }
+          ]
         },
         "className": {
           "types": [
