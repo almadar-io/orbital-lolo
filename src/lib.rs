@@ -14,6 +14,8 @@
 #![allow(clippy::too_many_arguments, clippy::large_enum_variant)]
 
 pub mod ast;
+pub mod complete;
+pub mod embeds;
 pub mod error;
 pub mod format;
 pub mod keywords;

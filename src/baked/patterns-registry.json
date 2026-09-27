@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-27T02:12:25.691Z",
+  "exportedAt": "2026-09-27T13:02:32.256Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -3903,6 +3903,7 @@
     "search-input": {
       "type": "search-input",
       "category": "filter",
+      "sourceFile": "components/core/molecules/SearchInput.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Search input with events",
@@ -4000,6 +4001,7 @@
     "filter-group": {
       "type": "filter-group",
       "category": "filter",
+      "sourceFile": "components/core/molecules/FilterGroup.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FilterGroup — a panel of filter controls that narrows a collection by field values.",
@@ -4703,7 +4705,16 @@
             "required": [
               "label"
             ]
-          }
+          },
+          "example": [
+            {
+              "label": "Home",
+              "href": "/"
+            },
+            {
+              "label": "Page"
+            }
+          ]
         },
         "fromNavStack": {
           "types": [
@@ -4761,6 +4772,7 @@
     "wizard-progress": {
       "type": "wizard-progress",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/WizardProgress.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Wizard step progress indicator",
@@ -4862,6 +4874,7 @@
     "wizard-navigation": {
       "type": "wizard-navigation",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/WizardNavigation.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Wizard navigation buttons",
@@ -5837,6 +5850,7 @@
     "pagination": {
       "type": "pagination",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/Pagination.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Page navigation controls",
@@ -5982,6 +5996,7 @@
     "empty-state": {
       "type": "empty-state",
       "category": "state",
+      "sourceFile": "components/core/molecules/EmptyState.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Message when no data exists",
@@ -6081,6 +6096,7 @@
     "loading-state": {
       "type": "loading-state",
       "category": "state",
+      "sourceFile": "components/core/molecules/LoadingState.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Loading indicator",
@@ -6119,6 +6135,7 @@
     "error-state": {
       "type": "error-state",
       "category": "state",
+      "sourceFile": "components/core/molecules/ErrorState.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Error message display",
@@ -6173,6 +6190,7 @@
     "notification": {
       "type": "notification",
       "category": "state",
+      "sourceFile": "components/core/molecules/Toast.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Toast notification message",
@@ -6279,6 +6297,7 @@
     "modal": {
       "type": "modal",
       "category": "container",
+      "sourceFile": "components/core/molecules/Modal.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Modal dialog overlay",
@@ -6405,6 +6424,7 @@
     "drawer": {
       "type": "drawer",
       "category": "container",
+      "sourceFile": "components/core/molecules/Drawer.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Side drawer panel",
@@ -6506,6 +6526,7 @@
     "confirm-dialog": {
       "type": "confirm-dialog",
       "category": "container",
+      "sourceFile": "components/core/molecules/ConfirmDialog.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Confirmation dialog",
@@ -6659,6 +6680,7 @@
     "master-detail": {
       "type": "master-detail",
       "category": "layout",
+      "sourceFile": "components/core/organisms/MasterDetail.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "List on left, selected item detail on right",
@@ -6861,7 +6883,8 @@
             "lg",
             "xl",
             "2xl"
-          ]
+          ],
+          "example": "md"
         },
         "paddingX": {
           "types": [
@@ -6962,7 +6985,8 @@
             "boolean"
           ],
           "description": "Show border",
-          "default": false
+          "default": false,
+          "example": true
         },
         "rounded": {
           "types": [
@@ -7105,6 +7129,7 @@
     "grid": {
       "type": "grid",
       "category": "layout",
+      "sourceFile": "components/core/molecules/Grid.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "CSS Grid layout for multi-column content",
@@ -7299,6 +7324,7 @@
     "center": {
       "type": "center",
       "category": "layout",
+      "sourceFile": "components/core/atoms/Center.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Centers content horizontally and vertically",
@@ -7387,6 +7413,7 @@
     "spacer": {
       "type": "spacer",
       "category": "layout",
+      "sourceFile": "components/core/atoms/Spacer.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Flexible space that expands to fill available room",
@@ -7435,6 +7462,7 @@
     "divider": {
       "type": "divider",
       "category": "layout",
+      "sourceFile": "components/core/atoms/Divider.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Visual separator between content sections",
@@ -7485,6 +7513,7 @@
     "runtime-debugger": {
       "type": "runtime-debugger",
       "category": "debug",
+      "sourceFile": "components/core/organisms/debug/RuntimeDebugger.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "Debug overlay showing FPS, entity states, event logs",
@@ -7749,7 +7778,8 @@
           "types": [
             "string"
           ],
-          "description": "Button label text (alternative to children for schema-driven rendering)"
+          "description": "Button label text (alternative to children for schema-driven rendering)",
+          "example": "Button"
         },
         "disabled": {
           "types": [
@@ -7959,6 +7989,7 @@
     "avatar": {
       "type": "avatar",
       "category": "component",
+      "sourceFile": "components/core/atoms/Avatar.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "User avatar image or initials",
@@ -8059,13 +8090,15 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         }
       }
     },
     "icon": {
       "type": "icon",
       "category": "component",
+      "sourceFile": "components/core/atoms/Icon.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Icon from Lucide icon set",
@@ -8149,6 +8182,7 @@
     "card": {
       "type": "card",
       "category": "component",
+      "sourceFile": "components/core/atoms/Card.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Card container with optional header and footer",
@@ -8255,6 +8289,7 @@
     "progress-bar": {
       "type": "progress-bar",
       "category": "component",
+      "sourceFile": "components/core/atoms/ProgressBar.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Progress indicator bar",
@@ -8370,6 +8405,7 @@
     "spinner": {
       "type": "spinner",
       "category": "component",
+      "sourceFile": "components/core/atoms/Spinner.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Loading spinner animation",
@@ -8878,6 +8914,7 @@
     "checkbox": {
       "type": "checkbox",
       "category": "component",
+      "sourceFile": "components/core/atoms/Checkbox.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Checkbox input",
@@ -8932,6 +8969,7 @@
     "radio": {
       "type": "radio",
       "category": "component",
+      "sourceFile": "components/core/atoms/Radio.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Radio button input",
@@ -9013,6 +9051,7 @@
     "switch": {
       "type": "switch",
       "category": "component",
+      "sourceFile": "components/core/atoms/Switch.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Toggle switch input",
@@ -9085,6 +9124,7 @@
     "label": {
       "type": "label",
       "category": "component",
+      "sourceFile": "components/core/atoms/Label.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Form field label",
@@ -9123,6 +9163,7 @@
     "alert": {
       "type": "alert",
       "category": "component",
+      "sourceFile": "components/core/molecules/Alert.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Alert message box",
@@ -9212,6 +9253,7 @@
     "tooltip": {
       "type": "tooltip",
       "category": "component",
+      "sourceFile": "components/core/molecules/Tooltip.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Hover tooltip",
@@ -9281,6 +9323,7 @@
     "popover": {
       "type": "popover",
       "category": "component",
+      "sourceFile": "components/core/molecules/Popover.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Click-triggered popover",
@@ -9517,6 +9560,7 @@
     "accordion": {
       "type": "accordion",
       "category": "component",
+      "sourceFile": "components/core/molecules/Accordion.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Collapsible accordion sections",
@@ -9661,6 +9705,7 @@
     "container": {
       "type": "container",
       "category": "component",
+      "sourceFile": "components/core/molecules/Container.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Centered max-width container",
@@ -9744,6 +9789,7 @@
     "simple-grid": {
       "type": "simple-grid",
       "category": "component",
+      "sourceFile": "components/core/molecules/SimpleGrid.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Simple responsive grid with auto columns",
@@ -10136,6 +10182,7 @@
     "law-reference-tooltip": {
       "type": "law-reference-tooltip",
       "category": "component",
+      "sourceFile": "components/core/atoms/LawReferenceTooltip.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "LawReferenceTooltip Atom Component  A specialized tooltip for displaying law references in inspection forms. Shows law name, article number, and relevant clause text.",
@@ -10216,6 +10263,7 @@
     "overlay": {
       "type": "overlay",
       "category": "container",
+      "sourceFile": "components/core/atoms/Overlay.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Overlay Atom Component  A fixed backdrop for modals and drawers.",
@@ -10270,6 +10318,7 @@
     "stack": {
       "type": "stack",
       "category": "component",
+      "sourceFile": "components/core/atoms/Stack.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Stack Component  A layout primitive for arranging children in a vertical or horizontal stack with consistent spacing. Includes convenience exports VStack and HStack for common use cases.",
@@ -10436,7 +10485,8 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         },
         "responsive": {
           "types": [
@@ -10450,6 +10500,7 @@
     "text-highlight": {
       "type": "text-highlight",
       "category": "component",
+      "sourceFile": "components/core/atoms/TextHighlight.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "TextHighlight Atom Component  A styled span component for highlighting text with annotations (questions or notes). Uses different colors for different annotation types: - Questions: Blue highlight - Notes: Yellow highlight",
@@ -10559,6 +10610,7 @@
     "theme-toggle": {
       "type": "theme-toggle",
       "category": "component",
+      "sourceFile": "components/core/atoms/ThemeToggle.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "ThemeToggle Atom Component  A button that toggles between light and dark themes. Uses Sun and Moon icons to indicate current/target theme.",
@@ -10599,6 +10651,7 @@
     "typography": {
       "type": "typography",
       "category": "component",
+      "sourceFile": "components/core/atoms/Typography.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Typography Atom Component  Text elements following the KFlow design system with theme-aware styling.",
@@ -11019,6 +11072,7 @@
     "flex": {
       "type": "flex",
       "category": "component",
+      "sourceFile": "components/core/molecules/Flex.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Flex Component  A flexbox wrapper with all common flex properties exposed as props. More explicit than Stack for when you need full flex control.",
@@ -11287,6 +11341,7 @@
     "form-field": {
       "type": "form-field",
       "category": "form",
+      "sourceFile": "components/core/molecules/FormField.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FormField Molecule Component  A form field wrapper with label, hint, and error message support. **Atomic Design**: Composed using Label and Typography atoms.",
@@ -11340,6 +11395,7 @@
     "form-section-header": {
       "type": "form-section-header",
       "category": "form",
+      "sourceFile": "components/core/molecules/FormSectionHeader.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FormSectionHeader  Header component for collapsible form sections. Provides consistent styling and interaction for section headers.",
@@ -11621,6 +11677,7 @@
     "relation-select": {
       "type": "relation-select",
       "category": "form",
+      "sourceFile": "components/core/molecules/RelationSelect.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "RelationSelect Molecule Component  A searchable select component for relation fields. Allows users to search and select from related entities.  Composed from: Box, HStack, VStack, Input, Button, Spinner, Typography atoms",
@@ -11758,6 +11815,7 @@
     "side-panel": {
       "type": "side-panel",
       "category": "component",
+      "sourceFile": "components/core/molecules/SidePanel.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "SidePanel Molecule Component  A side panel that slides in from the right (or left) with header and content. Uses Button, Typography atoms.",
@@ -11842,6 +11900,7 @@
     "violation-alert": {
       "type": "violation-alert",
       "category": "state",
+      "sourceFile": "components/core/molecules/ViolationAlert.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ViolationAlert  Displays inspection violations with law references and action types. Used in inspection forms to show detected compliance violations.  Action Types: - measure: Corrective measure required (warning) - admin: Administrative action (error) - penalty: Penalty proceedings (error, severe)",
@@ -11980,6 +12039,7 @@
     "drawer-slot": {
       "type": "drawer-slot",
       "category": "layout",
+      "sourceFile": "components/core/organisms/DrawerSlot.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "DrawerSlot Component  Wraps drawer slot content in a proper Drawer component. Used by trait-driven pages to display drawer UI from render_ui effects.  Handles: - Auto-open when content is present - Dispatches CLOSE/CANCEL events when closed - Extracts title from Form or DetailPanel components - Configurable position and size",
@@ -12354,6 +12414,7 @@
     "modal-slot": {
       "type": "modal-slot",
       "category": "layout",
+      "sourceFile": "components/core/organisms/ModalSlot.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "ModalSlot Component  Wraps modal slot content in a proper Modal component. Used by trait-driven pages to display modal UI from render_ui effects.  Handles: - Auto-open when content is present - Dispatches CLOSE/CANCEL events when closed - Extracts title from Form components",
@@ -12733,6 +12794,7 @@
     "section": {
       "type": "section",
       "category": "display",
+      "sourceFile": "components/core/molecules/Section.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Section Component  A semantic section wrapper with optional title, description, and action. Perfect for grouping related content with consistent spacing.",
@@ -13236,6 +13298,7 @@
     "toast-slot": {
       "type": "toast-slot",
       "category": "layout",
+      "sourceFile": "components/core/organisms/ToastSlot.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "ToastSlot Component  Wraps toast slot content in a proper Toast component with positioning. Used by trait-driven pages to display toast UI from render_ui effects.  Handles: - Auto-show when content is present - Dispatches DISMISS event when dismissed - Fixed positioning in corner of screen",
@@ -13385,6 +13448,7 @@
     "counter-template": {
       "type": "counter-template",
       "category": "template",
+      "sourceFile": "components/core/templates/CounterTemplate.tsx",
       "tier": "templates",
       "family": "core",
       "description": "CounterTemplate  A presentational template for counter/incrementer features. Supports increment, decrement, and reset operations.",
@@ -13851,6 +13915,7 @@
     "generic-app-template": {
       "type": "generic-app-template",
       "category": "template",
+      "sourceFile": "components/core/templates/GenericAppTemplate.tsx",
       "tier": "templates",
       "family": "core",
       "description": "GenericAppTemplate  A simple, generic template for any application. Includes a header with title and actions, and a main content area. **Atomic Design**: Composed using Box, Typography, and Button atoms.",
@@ -15260,6 +15325,7 @@
     "signature-pad": {
       "type": "signature-pad",
       "category": "form",
+      "sourceFile": "components/core/molecules/SignaturePad.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "SignaturePad — a draw-to-sign canvas that captures a handwritten signature or initials.",
@@ -16364,6 +16430,7 @@
     "error-boundary": {
       "type": "error-boundary",
       "category": "state",
+      "sourceFile": "components/core/molecules/ErrorBoundary.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ErrorBoundary component",
@@ -16417,6 +16484,7 @@
     "skeleton": {
       "type": "skeleton",
       "category": "component",
+      "sourceFile": "components/core/molecules/Skeleton.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Skeleton component",
@@ -16471,6 +16539,7 @@
     "quiz-block": {
       "type": "quiz-block",
       "category": "component",
+      "sourceFile": "components/core/molecules/QuizBlock.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "QuizBlock — a single quiz question with answer choices and submit/reveal feedback.",
@@ -17180,12 +17249,31 @@
             "replace"
           ],
           "tier": "presentation"
+        },
+        "completions": {
+          "types": [
+            "function"
+          ],
+          "description": "Editable only: answers the caret's valid continuations after a keystroke (and on Ctrl-Space); they show under the editor and Tab or a click inserts one.",
+          "callbackArgs": [
+            {
+              "name": "code",
+              "type": "string"
+            },
+            {
+              "name": "offset",
+              "type": "number"
+            }
+          ],
+          "renderCallback": true,
+          "tier": "presentation"
         }
       }
     },
     "markdown-content": {
       "type": "markdown-content",
       "category": "component",
+      "sourceFile": "components/core/molecules/markdown/MarkdownContent.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "MarkdownContent Molecule Component  Renders markdown content with support for GFM (GitHub Flavored Markdown), math equations (KaTeX), and raw HTML. Handles inline code only — fenced code blocks should be parsed out and rendered with CodeBlock component.  Event Contract: - No events emitted (display-only component) - entityAware: false  NOTE: react-markdown's `components` override API requires native HTML elements — this is the same library-boundary exception as `<iframe>` in DocumentViewer and `<svg>` in JazariStateMachine/StateMachineView.",
@@ -17225,6 +17313,7 @@
     "content-renderer": {
       "type": "content-renderer",
       "category": "display",
+      "sourceFile": "components/core/molecules/ContentRenderer.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ContentRenderer Organism  Renders rich content as a sequence of typed segments: markdown, code, orbital diagrams (via JazariStateMachine), and quiz blocks. Accepts either raw content string (auto-parsed) or pre-parsed segments.  Event Contract: - Delegates to child components (CodeBlock -> UI:COPY_CODE) - entityAware: false",
@@ -17392,6 +17481,7 @@
     "jazari-state-machine": {
       "type": "jazari-state-machine",
       "category": "display",
+      "sourceFile": "components/core/molecules/JazariStateMachine.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "JazariStateMachine component",
@@ -17774,6 +17864,7 @@
     "scaled-diagram": {
       "type": "scaled-diagram",
       "category": "component",
+      "sourceFile": "components/core/molecules/ScaledDiagram.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ScaledDiagram Molecule  Wraps a fixed-size diagram (like JazariStateMachine / StateMachineView) and CSS-scales it to fit the parent container width.  The diagram renders at its natural (large) size. We observe the content element and once the diagram is measured we apply transform:scale() with a corrected container height so surrounding layout flows correctly.  Event Contract: - No events emitted (layout-only wrapper) - entityAware: false",
@@ -17802,6 +17893,7 @@
     "day-cell": {
       "type": "day-cell",
       "category": "component",
+      "sourceFile": "components/core/atoms/DayCell.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "DayCell component",
@@ -17849,6 +17941,7 @@
     "flip-container": {
       "type": "flip-container",
       "category": "layout",
+      "sourceFile": "components/core/atoms/FlipContainer.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "FlipContainer component",
@@ -17892,6 +17985,7 @@
     "time-slot-cell": {
       "type": "time-slot-cell",
       "category": "layout",
+      "sourceFile": "components/core/atoms/TimeSlotCell.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "TimeSlotCell component",
@@ -18182,6 +18276,7 @@
     "chart-legend": {
       "type": "chart-legend",
       "category": "display",
+      "sourceFile": "components/core/molecules/ChartLegend.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ChartLegend component",
@@ -18242,6 +18337,7 @@
     "date-range-selector": {
       "type": "date-range-selector",
       "category": "form",
+      "sourceFile": "components/core/molecules/DateRangeSelector.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DateRangeSelector component",
@@ -18311,6 +18407,7 @@
     "flip-card": {
       "type": "flip-card",
       "category": "display",
+      "sourceFile": "components/core/molecules/FlipCard.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FlipCard — flip card that reveals a hidden back face on tap or click, toggling between a front and back content slot.",
@@ -18369,6 +18466,7 @@
     "graph-view": {
       "type": "graph-view",
       "category": "component",
+      "sourceFile": "components/core/molecules/GraphView.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "GraphView component",
@@ -19900,6 +19998,7 @@
     "map-view": {
       "type": "map-view",
       "category": "component",
+      "sourceFile": "components/core/molecules/MapView.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "MapView component",
@@ -20341,6 +20440,7 @@
     "status-dot": {
       "type": "status-dot",
       "category": "display",
+      "sourceFile": "components/core/atoms/StatusDot.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "StatusDot component",
@@ -20402,6 +20502,7 @@
     "trend-indicator": {
       "type": "trend-indicator",
       "category": "component",
+      "sourceFile": "components/core/atoms/TrendIndicator.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "TrendIndicator component",
@@ -20472,6 +20573,7 @@
     "lightbox": {
       "type": "lightbox",
       "category": "component",
+      "sourceFile": "components/core/molecules/Lightbox.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Lightbox component",
@@ -20569,6 +20671,7 @@
     "number-stepper": {
       "type": "number-stepper",
       "category": "component",
+      "sourceFile": "components/core/molecules/NumberStepper.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "NumberStepper component",
@@ -20656,7 +20759,8 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         },
         "className": {
           "types": [
@@ -20675,6 +20779,7 @@
     "star-rating": {
       "type": "star-rating",
       "category": "component",
+      "sourceFile": "components/core/molecules/StarRating.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "StarRating component",
@@ -20748,7 +20853,8 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         },
         "onChange": {
           "types": [
@@ -20780,6 +20886,7 @@
     "upload-drop-zone": {
       "type": "upload-drop-zone",
       "category": "component",
+      "sourceFile": "components/core/molecules/UploadDropZone.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "UploadDropZone component",
@@ -20893,7 +21000,8 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         },
         "onFiles": {
           "types": [
@@ -20991,6 +21099,7 @@
     "confetti-effect": {
       "type": "confetti-effect",
       "category": "component",
+      "sourceFile": "components/core/atoms/ConfettiEffect.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "ConfettiEffect component",
@@ -21033,6 +21142,7 @@
     "infinite-scroll-sentinel": {
       "type": "infinite-scroll-sentinel",
       "category": "component",
+      "sourceFile": "components/core/atoms/InfiniteScrollSentinel.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "InfiniteScrollSentinel component",
@@ -21057,7 +21167,8 @@
             "object"
           ],
           "description": "Optional payload to include with the load-more event",
-          "payloadFor": "loadMoreEvent"
+          "payloadFor": "loadMoreEvent",
+          "eventPayloadBrand": true
         },
         "isLoading": {
           "types": [
@@ -21091,6 +21202,7 @@
     "typewriter-text": {
       "type": "typewriter-text",
       "category": "component",
+      "sourceFile": "components/core/atoms/TypewriterText.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "TypewriterText component",
@@ -21330,6 +21442,7 @@
     "pull-to-refresh": {
       "type": "pull-to-refresh",
       "category": "component",
+      "sourceFile": "components/core/molecules/PullToRefresh.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "PullToRefresh component",
@@ -21353,7 +21466,8 @@
             "object"
           ],
           "description": "Payload to include with the refresh event",
-          "payloadFor": "refreshEvent"
+          "payloadFor": "refreshEvent",
+          "eventPayloadBrand": true
         },
         "threshold": {
           "types": [
@@ -21630,6 +21744,7 @@
     "stat-display": {
       "type": "stat-display",
       "category": "display",
+      "sourceFile": "components/core/molecules/StatDisplay.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "StatDisplay component",
@@ -21849,6 +21964,7 @@
     "section-header": {
       "type": "section-header",
       "category": "header",
+      "sourceFile": "components/core/atoms/SectionHeader.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SectionHeader component",
@@ -21989,6 +22105,7 @@
     "feature-grid": {
       "type": "feature-grid",
       "category": "display",
+      "sourceFile": "components/core/molecules/FeatureGrid.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FeatureGrid component",
@@ -22105,6 +22222,7 @@
     "social-proof": {
       "type": "social-proof",
       "category": "component",
+      "sourceFile": "components/core/molecules/SocialProof.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "SocialProof component",
@@ -22443,6 +22561,7 @@
     "edge-decoration": {
       "type": "edge-decoration",
       "category": "component",
+      "sourceFile": "components/core/molecules/EdgeDecoration.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "EdgeDecoration component",
@@ -22516,6 +22635,7 @@
     "ui-slot-renderer": {
       "type": "ui-slot-renderer",
       "category": "layout",
+      "sourceFile": "components/core/organisms/UISlotRenderer.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "UISlotRenderer component",
@@ -22632,6 +22752,7 @@
     "trait-frame": {
       "type": "trait-frame",
       "category": "component",
+      "sourceFile": "components/core/atoms/TraitFrame.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "TraitFrame — renders the current frame of a referenced trait.  Resolves the `@trait.X[.slot]` binding at render time by looking up the referenced trait's last `render-ui` payload from the orbital's `UISlotManager`. Re-renders automatically when that trait transitions via the per-trait subscription channel (`subscribeTrait`).  This is the single rendering primitive both runtime paths converge on:  - **Interpreted path** — the trait-binding resolver in `renderer/trait-binding-resolver.ts` walks pattern trees at render time, substituting `\"@trait.X\"` string children with this component. - **Compiled path** — the TypeScript shell codegen in `orbital-shell-typescript/src/backend.rs::pattern_to_jsx_with_data` emits this component directly into generated JSX wherever a `@trait.*` string appears in a pattern tree.  Embedding is passive: the referenced trait's state machine runs unchanged; TraitFrame is only a read-only lens on its current frame. Event propagation happens over the shared event bus, not through this component.",
@@ -22712,6 +22833,11 @@
                   "cyclic": true,
                   "cyclicTypeName": "FileTreeNode"
                 }
+              },
+              "note": {
+                "types": [
+                  "string"
+                ]
               },
               "size": {
                 "types": [
@@ -22884,6 +23010,7 @@
     "filter-pill": {
       "type": "filter-pill",
       "category": "filter",
+      "sourceFile": "components/core/atoms/FilterPill.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "FilterPill component",
@@ -23001,6 +23128,7 @@
     "likert-scale": {
       "type": "likert-scale",
       "category": "component",
+      "sourceFile": "components/core/molecules/LikertScale.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "LikertScale component",
@@ -23121,6 +23249,7 @@
     "matrix-question": {
       "type": "matrix-question",
       "category": "component",
+      "sourceFile": "components/core/molecules/MatrixQuestion.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "MatrixQuestion component",
@@ -23270,6 +23399,7 @@
     "qr-scanner": {
       "type": "qr-scanner",
       "category": "component",
+      "sourceFile": "components/core/molecules/QrScanner.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "QrScanner component",
@@ -23406,6 +23536,7 @@
     "vote-stack": {
       "type": "vote-stack",
       "category": "component",
+      "sourceFile": "components/core/molecules/VoteStack.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "VoteStack component",
@@ -23514,6 +23645,7 @@
     "branching-logic-builder": {
       "type": "branching-logic-builder",
       "category": "display",
+      "sourceFile": "components/core/molecules/BranchingLogicBuilder.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "BranchingLogicBuilder component",
@@ -24248,6 +24380,7 @@
     "option-constraint-group": {
       "type": "option-constraint-group",
       "category": "component",
+      "sourceFile": "components/core/molecules/OptionConstraintGroup.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "OptionConstraintGroup Molecule Component  Generic constrained option selector (radio for \"single\", checkbox for \"multi\") with required/optional/multi constraints. Renders radio inputs for `single` constraint and checkboxes for `multi`. Reports validation errors inline when the current selection violates the constraint.  **Atomic Design**: Composed using Typography atom and native form controls.",
@@ -24431,6 +24564,7 @@
     "positioned-canvas": {
       "type": "positioned-canvas",
       "category": "game",
+      "sourceFile": "components/core/molecules/PositionedCanvas.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "PositionedCanvas component",
@@ -25782,6 +25916,7 @@
     "svg-branch": {
       "type": "svg-branch",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgBranch.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgBranch component",
@@ -25878,6 +26013,7 @@
     "svg-connection": {
       "type": "svg-connection",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgConnection.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgConnection component",
@@ -25981,6 +26117,7 @@
     "svg-flow": {
       "type": "svg-flow",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgFlow.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgFlow component",
@@ -26067,6 +26204,7 @@
     "svg-grid": {
       "type": "svg-grid",
       "category": "display",
+      "sourceFile": "components/core/atoms/svg/SvgGrid.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgGrid component",
@@ -26177,6 +26315,7 @@
     "svg-lobe": {
       "type": "svg-lobe",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgLobe.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgLobe component",
@@ -26275,6 +26414,7 @@
     "svg-mesh": {
       "type": "svg-mesh",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgMesh.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgMesh component",
@@ -26366,6 +26506,7 @@
     "svg-morph": {
       "type": "svg-morph",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgMorph.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgMorph component",
@@ -26455,6 +26596,7 @@
     "svg-node": {
       "type": "svg-node",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgNode.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgNode component",
@@ -26550,6 +26692,7 @@
     "svg-pulse": {
       "type": "svg-pulse",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgPulse.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgPulse component",
@@ -26641,6 +26784,7 @@
     "svg-ring": {
       "type": "svg-ring",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgRing.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgRing component",
@@ -26743,6 +26887,7 @@
     "svg-shield": {
       "type": "svg-shield",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgShield.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgShield component",
@@ -26832,6 +26977,7 @@
     "svg-stack": {
       "type": "svg-stack",
       "category": "component",
+      "sourceFile": "components/core/atoms/svg/SvgStack.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "SvgStack component",
@@ -26933,6 +27079,7 @@
     "doc-breadcrumb": {
       "type": "doc-breadcrumb",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/DocBreadcrumb.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DocBreadcrumb component",
@@ -26981,6 +27128,7 @@
     "doc-pagination": {
       "type": "doc-pagination",
       "category": "navigation",
+      "sourceFile": "components/core/molecules/DocPagination.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DocPagination component",
@@ -27163,6 +27311,7 @@
     "doc-toc": {
       "type": "doc-toc",
       "category": "component",
+      "sourceFile": "components/core/molecules/DocTOC.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DocTOC component",
@@ -27223,6 +27372,7 @@
     "gradient-divider": {
       "type": "gradient-divider",
       "category": "component",
+      "sourceFile": "components/core/molecules/GradientDivider.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "GradientDivider component",
@@ -27250,6 +27400,7 @@
     "behavior-view": {
       "type": "behavior-view",
       "category": "component",
+      "sourceFile": "components/avl/molecules/BehaviorView.tsx",
       "tier": "molecules",
       "family": "avl",
       "description": "BehaviorView component",
@@ -27619,6 +27770,7 @@
     "module-card": {
       "type": "module-card",
       "category": "display",
+      "sourceFile": "components/avl/molecules/ModuleCard.tsx",
       "tier": "molecules",
       "family": "avl",
       "description": "ModuleCard — a card summarizing one course module or lesson with progress and entry point.",
@@ -31812,6 +31964,7 @@
     "dashboard-grid": {
       "type": "dashboard-grid",
       "category": "game",
+      "sourceFile": "components/core/organisms/layout/DashboardGrid.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "DashboardGrid Component  Multi-column grid for widgets and stats cards. Supports cell spanning for flexible dashboard layouts.  Uses wireframe theme styling (high contrast, sharp edges).",
@@ -32001,6 +32154,7 @@
     "split-pane": {
       "type": "split-pane",
       "category": "layout",
+      "sourceFile": "components/core/organisms/layout/SplitPane.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "SplitPane component",
@@ -32092,6 +32246,7 @@
     "tabbed-container": {
       "type": "tabbed-container",
       "category": "navigation",
+      "sourceFile": "components/core/organisms/layout/TabbedContainer.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "TabbedContainer component",
@@ -32198,6 +32353,7 @@
     "master-detail-layout": {
       "type": "master-detail-layout",
       "category": "display",
+      "sourceFile": "components/core/organisms/layout/MasterDetailLayout.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "MasterDetail Component  Classic master-detail pattern with a list on the left and selected item detail on the right.  Uses wireframe theme styling (high contrast, sharp edges).",
@@ -32266,6 +32422,7 @@
     "sparkline": {
       "type": "sparkline",
       "category": "component",
+      "sourceFile": "components/core/atoms/Sparkline.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Sparkline Atom Component  Minimal inline trend chart. Pure SVG polyline over a numeric series. Extracted from StatCard's sparkline path so any KPI or list row can include a trend visualization without compositing the whole card.",
@@ -32341,6 +32498,7 @@
     "date-range-picker": {
       "type": "date-range-picker",
       "category": "component",
+      "sourceFile": "components/core/molecules/DateRangePicker.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "DateRangePicker component",
@@ -32491,6 +32649,7 @@
     "aside": {
       "type": "aside",
       "category": "component",
+      "sourceFile": "components/core/atoms/Aside.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Aside — a secondary side panel that hosts navigation links or supplementary content alongside a main content area.",
@@ -32517,6 +32676,7 @@
     "dialog": {
       "type": "dialog",
       "category": "container",
+      "sourceFile": "components/core/atoms/Dialog.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Dialog Atom Component  Semantic wrapper for the native `<dialog>` element. Owns the raw HTML rendering so molecules (Modal, ConfirmDialog, etc.) can compose the dialog primitive without dropping back to raw HTML.  Defaults `role=\"dialog\"` and `aria-modal=\"true\"`; both overridable for non-modal use cases.",
@@ -32542,6 +32702,7 @@
     "tag-input": {
       "type": "tag-input",
       "category": "form",
+      "sourceFile": "components/core/molecules/TagInput.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "TagInput component",
@@ -33257,6 +33418,7 @@
     "stat-card": {
       "type": "stat-card",
       "category": "display",
+      "sourceFile": "components/core/organisms/StatCard.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "StatCard component",
@@ -33567,6 +33729,7 @@
     "activation-block": {
       "type": "activation-block",
       "category": "component",
+      "sourceFile": "components/core/molecules/ActivationBlock.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ActivationBlock component",
@@ -33608,6 +33771,7 @@
     "bloom-quiz-block": {
       "type": "bloom-quiz-block",
       "category": "component",
+      "sourceFile": "components/core/molecules/BloomQuizBlock.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "BloomQuizBlock component",
@@ -33678,6 +33842,7 @@
     "connection-block": {
       "type": "connection-block",
       "category": "component",
+      "sourceFile": "components/core/molecules/ConnectionBlock.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ConnectionBlock component",
@@ -33706,6 +33871,7 @@
     "reflection-block": {
       "type": "reflection-block",
       "category": "component",
+      "sourceFile": "components/core/molecules/ReflectionBlock.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ReflectionBlock component",
@@ -35522,6 +35688,7 @@
     "vstack": {
       "type": "vstack",
       "category": "component",
+      "sourceFile": "components/core/atoms/Stack.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "VStack - Vertical stack shorthand",
@@ -35678,7 +35845,8 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         },
         "responsive": {
           "types": [
@@ -35692,6 +35860,7 @@
     "hstack": {
       "type": "hstack",
       "category": "component",
+      "sourceFile": "components/core/atoms/Stack.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "HStack - Horizontal stack shorthand",
@@ -35848,7 +36017,8 @@
             "object"
           ],
           "description": "Payload to include with the action event",
-          "payloadFor": "action"
+          "payloadFor": "action",
+          "eventPayloadBrand": true
         },
         "responsive": {
           "types": [
@@ -35862,6 +36032,7 @@
     "form-layout": {
       "type": "form-layout",
       "category": "form",
+      "sourceFile": "components/core/molecules/FormSection.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "Form layout with multiple sections",
@@ -35997,6 +36168,7 @@
     "learning-canvas": {
       "type": "learning-canvas",
       "category": "learning",
+      "sourceFile": "components/learning/atoms/LearningCanvas.tsx",
       "tier": "atoms",
       "family": "learning",
       "description": "LearningCanvas component",
@@ -36601,6 +36773,7 @@
     "biology-canvas": {
       "type": "biology-canvas",
       "category": "learning",
+      "sourceFile": "components/learning/molecules/BiologyCanvas.tsx",
       "tier": "molecules",
       "family": "learning",
       "description": "BiologyCanvas component",
@@ -37897,6 +38070,7 @@
     "chemistry-canvas": {
       "type": "chemistry-canvas",
       "category": "learning",
+      "sourceFile": "components/learning/molecules/ChemistryCanvas.tsx",
       "tier": "molecules",
       "family": "learning",
       "description": "ChemistryCanvas component",
@@ -40274,6 +40448,7 @@
     "physics-canvas": {
       "type": "physics-canvas",
       "category": "learning",
+      "sourceFile": "components/learning/molecules/PhysicsCanvas.tsx",
       "tier": "molecules",
       "family": "learning",
       "description": "PhysicsCanvas component",
@@ -41791,6 +41966,7 @@
     "state-graph": {
       "type": "state-graph",
       "category": "game",
+      "sourceFile": "components/game/molecules/StateGraph.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "StateGraph (molecule)  Dumb visual renderer for a state-machine graph: lays states out on a circle, draws the player's transitions as SVG arrows, and emits a node-click event. All state (which transitions exist, the pending \"from\" selection, test results) lives in the .lolo FSM — this molecule only renders and reports clicks.",
@@ -41915,6 +42091,7 @@
     "state-json-view": {
       "type": "state-json-view",
       "category": "game",
+      "sourceFile": "components/game/molecules/StateJsonView.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "StateJsonView Component  Shows a state machine's definition as an expandable code block, so the learner sees the declarative schema behind the visual graph. Dumb molecule: takes the machine as plain typed fields (name/states/initialState/transitions) — the .lolo organism owns the entity and the molecule renders + stringifies it.",
@@ -42010,6 +42187,7 @@
     "algorithm-canvas": {
       "type": "algorithm-canvas",
       "category": "learning",
+      "sourceFile": "components/learning/molecules/AlgorithmCanvas.tsx",
       "tier": "molecules",
       "family": "learning",
       "description": "AlgorithmCanvas component",
@@ -42801,6 +42979,7 @@
     "atlas-image": {
       "type": "atlas-image",
       "category": "component",
+      "sourceFile": "components/core/atoms/AtlasImage.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "AtlasImage component",
@@ -42915,6 +43094,7 @@
     "atlas-panel": {
       "type": "atlas-panel",
       "category": "component",
+      "sourceFile": "components/core/atoms/AtlasImage.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "AtlasPanel component",
@@ -43017,6 +43197,7 @@
     "draw-shape": {
       "type": "draw-shape",
       "category": "game",
+      "sourceFile": "components/game/atoms/DrawShape.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "DrawShape component",
@@ -43984,6 +44165,7 @@
     "draw-text": {
       "type": "draw-text",
       "category": "game",
+      "sourceFile": "components/game/atoms/DrawText.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "DrawText component",
@@ -44121,6 +44303,7 @@
     "draw-shape-layer": {
       "type": "draw-shape-layer",
       "category": "game",
+      "sourceFile": "components/game/molecules/DrawShapeLayer.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "DrawShapeLayer component",
@@ -45111,6 +45294,7 @@
     "draw-text-layer": {
       "type": "draw-text-layer",
       "category": "game",
+      "sourceFile": "components/game/molecules/DrawTextLayer.tsx",
       "tier": "molecules",
       "family": "game",
       "description": "DrawTextLayer component",
@@ -46046,6 +46230,7 @@
     "presence": {
       "type": "presence",
       "category": "component",
+      "sourceFile": "components/core/atoms/Presence.tsx",
       "tier": "atoms",
       "family": "core",
       "description": "Presence component",
@@ -46079,6 +46264,7 @@
     "page-transition": {
       "type": "page-transition",
       "category": "component",
+      "sourceFile": "components/core/molecules/PageTransition.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "PageTransition component",
@@ -46275,6 +46461,7 @@
     "import-progress": {
       "type": "import-progress",
       "category": "component",
+      "sourceFile": "components/core/molecules/import/ImportProgress.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ImportProgress component",
@@ -46345,6 +46532,7 @@
     "import-source-picker": {
       "type": "import-source-picker",
       "category": "component",
+      "sourceFile": "components/core/molecules/import/ImportSourcePicker.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "ImportSourcePicker component",
@@ -46479,6 +46667,7 @@
     "draw-group": {
       "type": "draw-group",
       "category": "game",
+      "sourceFile": "components/game/atoms/DrawGroup.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "DrawGroup component",
@@ -46698,6 +46887,7 @@
     "emoji-picker": {
       "type": "emoji-picker",
       "category": "component",
+      "sourceFile": "components/core/molecules/EmojiPicker.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "EmojiPicker component",
@@ -46759,6 +46949,7 @@
     "draw-mesh": {
       "type": "draw-mesh",
       "category": "game",
+      "sourceFile": "components/game/atoms/DrawMesh.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "DrawMesh component",
@@ -47236,6 +47427,7 @@
     "algo-graph-canvas": {
       "type": "algo-graph-canvas",
       "category": "learning",
+      "sourceFile": "components/learning/molecules/AlgoGraphCanvas.tsx",
       "tier": "molecules",
       "family": "learning",
       "description": "AlgoGraphCanvas component",
@@ -47801,6 +47993,7 @@
     "fx-overlay": {
       "type": "fx-overlay",
       "category": "container",
+      "sourceFile": "components/core/molecules/FxOverlay.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "FxOverlay component",
@@ -48378,6 +48571,7 @@
     "rich-text-editor": {
       "type": "rich-text-editor",
       "category": "component",
+      "sourceFile": "components/core/molecules/RichTextEditor.tsx",
       "tier": "molecules",
       "family": "core",
       "description": "RichTextEditor component",
@@ -49415,6 +49609,7 @@
     "game-audio-cue": {
       "type": "game-audio-cue",
       "category": "game",
+      "sourceFile": "components/game/atoms/GameAudioCue.tsx",
       "tier": "atoms",
       "family": "game",
       "description": "GameAudioCue component",
@@ -49525,6 +49720,7 @@
     "ui-slot-component": {
       "type": "ui-slot-component",
       "category": "layout",
+      "sourceFile": "components/core/organisms/UISlotRenderer.tsx",
       "tier": "organisms",
       "family": "core",
       "description": "UISlotComponent component",

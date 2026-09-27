@@ -123,7 +123,8 @@ pub enum LoadError {
 /// package in walk order. See [`LoloContracts::get_behavior`].
 pub struct LoloContracts {
     std: HashMap<String, Behavior>,
-    others: Vec<(String, HashMap<String, Behavior>)>,
+    /// (`name@version` label, the package's `orb.prefix`, its behaviors).
+    others: Vec<(String, String, HashMap<String, Behavior>)>,
 }
 
 impl LoloContracts {
@@ -147,7 +148,11 @@ impl LoloContracts {
             if pkg.prefix == STD_PREFIX {
                 std_source = Some(parsed.behaviors);
             } else {
-                others.push((format!("{}@{}", pkg.name, pkg.version), parsed.behaviors));
+                others.push((
+                    format!("{}@{}", pkg.name, pkg.version),
+                    pkg.prefix.clone(),
+                    parsed.behaviors,
+                ));
             }
         }
         Ok(LoloContracts {
@@ -167,7 +172,7 @@ impl LoloContracts {
         }
 
         let mut found: Option<(&str, &Behavior)> = None;
-        for (name_version, map) in &self.others {
+        for (name_version, _, map) in &self.others {
             if let Some(behavior) = map.get(key) {
                 match found {
                     None => found = Some((name_version.as_str(), behavior)),
@@ -182,6 +187,30 @@ impl LoloContracts {
             }
         }
         Ok(found.map(|(_, behavior)| behavior))
+    }
+
+    /// Contracts assembled in memory (tests; callers that already hold the maps).
+    pub fn from_parts(
+        std: HashMap<String, Behavior>,
+        others: Vec<(String, String, HashMap<String, Behavior>)>,
+    ) -> LoloContracts {
+        LoloContracts { std, others }
+    }
+
+    /// Every installed behavior as `(import path, key)`: std's as
+    /// `std/behaviors/<key>`, another package's as `<orb.prefix>/<key>` —
+    /// the spellings `uses … from "…"` resolves (see [`behavior_key_from_path`]).
+    pub fn import_paths(&self) -> Vec<(String, &str)> {
+        let mut out: Vec<(String, &str)> = self
+            .std
+            .keys()
+            .map(|k| (format!("std/behaviors/{k}"), k.as_str()))
+            .collect();
+        for (_, prefix, map) in &self.others {
+            out.extend(map.keys().map(|k| (format!("{prefix}/{k}"), k.as_str())));
+        }
+        out.sort();
+        out
     }
 }
 
