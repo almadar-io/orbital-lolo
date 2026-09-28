@@ -32,6 +32,26 @@ impl LoloSourceMap {
         self.entries.entry(pointer.into()).or_insert(span);
     }
 
+    /// Record the `uses` line that declares import `path`.
+    pub fn insert_import(&mut self, path: &str, span: Span) {
+        self.insert(format!("uses({path})"), span);
+    }
+
+    /// The `uses` line declaring import `path`: the path exactly as written, or
+    /// the one import whose trailing name is `path` — the loader resolves `uses`
+    /// by trailing name, and reports a missing behavior by that name.
+    pub fn import_span(&self, path: &str) -> Option<Span> {
+        if let Some(span) = self.entries.get(&format!("uses({path})")) {
+            return Some(*span);
+        }
+        let mut by_name = self.entries.iter().filter_map(|(key, span)| {
+            let declared = key.strip_prefix("uses(")?.strip_suffix(')')?;
+            (declared.rsplit('/').next() == Some(path)).then_some(*span)
+        });
+        let first = by_name.next()?;
+        by_name.next().is_none().then_some(first)
+    }
+
     /// Look up an L2 path. Normalizes `[N (name)]` annotations to `[N]`, then
     /// tries the exact path and progressively shorter prefixes (dropping one
     /// trailing `[N]` or `.key` segment at a time) until a tracked pointer is

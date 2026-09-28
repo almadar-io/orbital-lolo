@@ -12,6 +12,7 @@
 //! those are locally owned, never prefixed, and lower now.
 
 use super::*;
+use crate::error::Located;
 
 /// `Vec<(String, String, Span)>` → `Option<HashMap<String, String>>`, `None`
 /// when empty — the same "absent beats empty" convention every other
@@ -219,17 +220,20 @@ pub(crate) fn lower_orbital_reference(
     let mut traits = Vec::new();
     for (trait_index, t) in orb.traits.iter().enumerate() {
         let trait_base = format!("{base}.traits[{trait_index}]");
-        traits.push(lower_trait_decl(
-            t,
-            aliases,
-            entities,
-            entity_names,
-            event_aliases,
-            &no_intrinsics,
-            shared_entity_names,
-            source_map,
-            &trait_base,
-        )?);
+        traits.push(
+            lower_trait_decl(
+                t,
+                aliases,
+                entities,
+                entity_names,
+                event_aliases,
+                &no_intrinsics,
+                shared_entity_names,
+                source_map,
+                &trait_base,
+            )
+            .located(t.span)?,
+        );
     }
 
     Ok(CoreOrbital {

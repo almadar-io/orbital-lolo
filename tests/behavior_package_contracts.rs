@@ -112,7 +112,7 @@ fn minimal_std_package(tmp: &Path) -> BehaviorPackage {
 
 fn lower_error(source: &str, options: &LowerOptions) -> LowerError {
     match parse_and_lower_str_with(source, options).expect_err("must fail to lower") {
-        LoloError::Lower { inner, .. } => inner,
+        LoloError::Lower { inner, .. } => inner.innermost().clone(),
         other => panic!("expected a LowerError, got {other:?}"),
     }
 }

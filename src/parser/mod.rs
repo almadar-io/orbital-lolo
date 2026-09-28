@@ -163,6 +163,31 @@ impl Parser {
         }
     }
 
+    /// Record a placeholder span for the current trail, to be widened by
+    /// [`Self::widen_reserved_span`] once the construct's end is known. It is
+    /// recorded first, so it wins over spans nested parses record on the same trail.
+    pub(crate) fn reserve_expr_span(&mut self) -> Option<usize> {
+        let entry = (self.expr_trail.clone(), self.peek_span());
+        let capture = self.expr_span_capture.as_mut()?;
+        capture.push(entry);
+        Some(capture.len() - 1)
+    }
+
+    /// Widen a reserved span to end where the last consumed token ends, when
+    /// both sit on one line (a span is single-line).
+    pub(crate) fn widen_reserved_span(&mut self, slot: Option<usize>) {
+        let (Some(slot), Some(last)) = (slot, self.pos.checked_sub(1).map(|i| self.tokens[i].span))
+        else {
+            return;
+        };
+        if let Some(capture) = self.expr_span_capture.as_mut() {
+            let start = capture[slot].1;
+            if last.line == start.line && last.col + last.len as u32 >= start.col {
+                capture[slot].1.len = (last.col + last.len as u32 - start.col) as u16;
+            }
+        }
+    }
+
     /// Push `seg` onto the trail for the duration of `f`, then restore it.
     /// A no-op (aside from the string manipulation) outside a capture
     /// window — cheap enough not to special-case.

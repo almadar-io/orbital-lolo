@@ -72,14 +72,111 @@ pub(crate) fn check_entity_fields_have_setters(
     entries.sort_by(|a, b| a.0.cmp(b.0));
     for (field, first_event) in entries {
         if !set_fields.contains(field) && !intrinsic_fields.contains(field) {
-            return Err(LowerError::EntityFieldNeverSet {
+            let err = LowerError::EntityFieldNeverSet {
                 trait_name: t.name.clone(),
                 field: field.clone(),
                 first_event: first_event.clone(),
+            };
+            return Err(match first_read_span(t, field) {
+                Some(span) => LowerError::At {
+                    span,
+                    exact: true,
+                    inner: Box::new(err),
+                },
+                None => err,
             });
         }
     }
     Ok(())
+}
+
+/// The node a parser trail (`[2].content`, `.children[0]`, …) names inside `expr`.
+fn node_at<'a>(expr: &'a SExpression, trail: &str) -> Option<&'a SExpression> {
+    let mut node = expr;
+    let mut rest = trail;
+    while !rest.is_empty() {
+        if let Some(after) = rest.strip_prefix('[') {
+            let close = after.find(']')?;
+            let index: usize = after[..close].parse().ok()?;
+            node = match node {
+                SExpression::Array(items) => items.get(index)?,
+                _ => return None,
+            };
+            rest = &after[close + 1..];
+        } else if let Some(after) = rest.strip_prefix('.') {
+            let end = after.find(['.', '[']).unwrap_or(after.len());
+            node = match node {
+                SExpression::Object(map) => map.get(&after[..end])?,
+                _ => return None,
+            };
+            rest = &after[end..];
+        } else {
+            return None;
+        }
+    }
+    Some(node)
+}
+
+/// `@entity.<field>…` read of `field` (same field parse as `collect_entity_field_refs`).
+fn reads_field(node: &SExpression, field: &str) -> bool {
+    let SExpression::String(s) = node else {
+        return false;
+    };
+    let Some(path) = s.strip_prefix("@entity.") else {
+        return false;
+    };
+    let head = path.split('.').next().unwrap_or("");
+    head.split('[').next().unwrap_or(head) == field
+}
+
+/// An expression and the source spans its parse recorded, by trail.
+type Spanned<'a> = (Option<&'a SExpression>, &'a [(String, Span)]);
+
+/// Where `field` is first read: the first transition (or tick) in declaration
+/// order that reads it, and within it the earliest recorded source position.
+fn first_read_span(t: &Trait, field: &str) -> Option<Span> {
+    let earliest = |parts: &[Spanned<'_>]| {
+        parts
+            .iter()
+            .flat_map(|(expr, spans)| {
+                spans.iter().filter_map(move |(trail, span)| {
+                    expr.and_then(|e| node_at(e, trail))
+                        .filter(|n| reads_field(n, field))
+                        .map(|_| *span)
+                })
+            })
+            .min_by_key(|s| (s.line, s.col))
+    };
+    for state in &t.states {
+        for tr in &state.transitions {
+            for tr in expand_term_match(tr) {
+                let mut parts: Vec<Spanned<'_>> =
+                    vec![(tr.guard.as_ref(), tr.guard_spans.as_slice())];
+                parts.extend(
+                    tr.effects
+                        .iter()
+                        .zip(&tr.effect_spans)
+                        .map(|(e, s)| (Some(e), s.as_slice())),
+                );
+                if let Some(span) = earliest(&parts) {
+                    return Some(span);
+                }
+            }
+        }
+    }
+    for tick in &t.ticks {
+        let mut parts: Vec<Spanned<'_>> = vec![(tick.guard.as_ref(), tick.guard_spans.as_slice())];
+        parts.extend(
+            tick.effects
+                .iter()
+                .zip(&tick.effect_spans)
+                .map(|(e, s)| (Some(e), s.as_slice())),
+        );
+        if let Some(span) = earliest(&parts) {
+            return Some(span);
+        }
+    }
+    None
 }
 
 /// L1.4 check: for every `(set @entity.X <value>)` in this trait,

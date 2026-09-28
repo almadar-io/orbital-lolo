@@ -159,11 +159,8 @@ fn odd_type_arg_count_is_a_lower_error() {
     let err = parse_and_lower_str(&src).expect_err("odd pairing must error");
     assert!(
         matches!(
-            err,
-            LoloError::Lower {
-                inner: LowerError::OddTypeArgCount { .. },
-                ..
-            }
+            &err,
+            LoloError::Lower { inner, .. } if matches!(inner.innermost(), LowerError::OddTypeArgCount { .. })
         ),
         "expected OddTypeArgCount, got {err:?}"
     );

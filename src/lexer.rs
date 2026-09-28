@@ -267,11 +267,10 @@ impl Lexer {
                     self.advance();
                     if let Some(ch) = self.peek() {
                         if ch.is_alphabetic() || ch == '_' {
-                            let start_col = col + 1;
                             let name = self.read_dotted_ident();
                             self.tokens.push(Token {
                                 kind: TokenKind::PayloadSigil(name.clone()),
-                                span: Span::new(line, start_col, name.len() as u16),
+                                span: Span::new(line, col, name.chars().count() as u16 + 1),
                             });
                             continue;
                         }
@@ -293,11 +292,10 @@ impl Lexer {
                         });
                         continue;
                     }
-                    let start_col = col + 1;
                     let name = self.read_dotted_ident();
                     self.tokens.push(Token {
                         kind: TokenKind::Sigil(name.clone()),
-                        span: Span::new(line, start_col, name.len() as u16),
+                        span: Span::new(line, col, name.chars().count() as u16 + 1),
                     });
                 }
                 '"' => {

@@ -192,6 +192,9 @@ pub(crate) fn lower_trait_decl(
     source_map: &mut crate::source_map::LoloSourceMap,
     base: &str,
 ) -> Result<TraitReference, LowerError> {
+    if let Some(span) = t.linked_entity_span {
+        source_map.insert(format!("{base}.linkedEntity"), span);
+    }
     if let Some(ref_data) = &t.reference {
         // Trait REFERENCES don't declare their own transitions/ticks (those
         // live in the imported atom's `.lolo`, a different source file), so
@@ -413,6 +416,7 @@ pub(crate) fn lower_trait(
     // Increment 3-II: this trait's own declared type-parameter names, usable
     // directly in its `emits`/`listens`/`config` type positions.
     let trait_type_params: Vec<&str> = t.type_params.iter().map(|p| p.name.as_str()).collect();
+    source_map.insert(base.to_string(), t.span);
 
     // Build the state machine: states (with isInitial), events (collected
     // from transitions), transitions (one per Transition AST node, plus
@@ -451,6 +455,7 @@ pub(crate) fn lower_trait(
                 // `stateMachine.transitions[k]` path) and to key the source-map
                 // inserts below.
                 let k = transitions.len();
+                source_map.insert(format!("{base}.stateMachine.transitions[{k}]"), tr.span);
                 for (suffix, sp) in &tr.guard_spans {
                     source_map.insert(
                         format!("{base}.stateMachine.transitions[{k}].guard{suffix}"),
@@ -830,6 +835,7 @@ pub(crate) fn lower_trait(
                 .iter()
                 .enumerate()
                 .map(|(ti, tk)| {
+                    source_map.insert(format!("{base}.ticks[{ti}]"), tk.span);
                     for (suffix, sp) in &tk.guard_spans {
                         source_map.insert(format!("{base}.ticks[{ti}].guard{suffix}"), *sp);
                     }

@@ -5,7 +5,7 @@
 //! "Lowering to .orb" table for the rules.
 
 use crate::ast::*;
-use crate::error::LowerError;
+use crate::error::{Located, LowerError};
 use crate::patterns_meta::event_prop_names;
 use crate::registry::LoloContracts;
 use crate::types::check_program;
@@ -208,6 +208,13 @@ fn lower_to_orb_names_only(
     source_map: &mut crate::source_map::LoloSourceMap,
     contracts: &LoloContracts,
 ) -> Result<OrbitalSchema, LowerError> {
+    for u in ast
+        .uses
+        .iter()
+        .chain(ast.orbitals.iter().flat_map(|o| o.uses.iter()))
+    {
+        source_map.insert_import(&u.path, u.span);
+    }
     // Phase 0: run the type-system resolver. Any unknown type / cycle /
     // kind-mismatch / composition-conflict / annotation-mismatch is reported
     // as `LowerError::Type(..)` before lowering proceeds. Types are stripped
@@ -306,17 +313,20 @@ fn lower_to_orb_names_only(
             );
         }
         let orbital_base = format!("orbitals[{orbital_index}]");
-        orbitals.push(lower_orbital(
-            orb,
-            &ast.uses,
-            &local_aliases,
-            &local_entities,
-            &local_entity_names,
-            &local_events,
-            &file_shared_entity_names,
-            source_map,
-            &orbital_base,
-        )?);
+        orbitals.push(
+            lower_orbital(
+                orb,
+                &ast.uses,
+                &local_aliases,
+                &local_entities,
+                &local_entity_names,
+                &local_events,
+                &file_shared_entity_names,
+                source_map,
+                &orbital_base,
+            )
+            .located(orb.span)?,
+        );
     }
 
     check_listens_integrity(&orbitals)?;
@@ -680,8 +690,13 @@ fn lower_orbital(
             base,
         );
     }
+    source_map.insert(base.to_string(), orb.span);
     let entity = orb.entity.as_ref().ok_or(LowerError::MissingEntity)?;
-    let entity_def = lower_entity(entity, aliases, entity_names)?;
+    source_map.insert(format!("{base}.entity"), entity.span);
+    for (j, f) in entity.fields.iter().enumerate() {
+        source_map.insert(format!("{base}.entity.fields[{j}]"), f.span);
+    }
+    let entity_def = lower_entity(entity, aliases, entity_names).located(entity.span)?;
     // Entity declarations beyond the first lower into `auxiliary_entities` —
     // the IR slot the validators, binding checks, and mock tier already
     // accept (Gap #22) — so a multi-collection orbital (e.g. a dashboard
@@ -689,7 +704,7 @@ fn lower_orbital(
     let extra_entity_defs: Vec<EntityDefinition> = orb
         .extra_entities
         .iter()
-        .map(|e| lower_entity(e, aliases, entity_names))
+        .map(|e| lower_entity(e, aliases, entity_names).located(e.span))
         .collect::<Result<_, _>>()?;
 
     // Reject lolo where an entity's name matches a sibling trait's
@@ -766,17 +781,20 @@ fn lower_orbital(
             .as_deref()
             .and_then(|n| intrinsic_by_entity.get(n))
             .unwrap_or(primary_intrinsics);
-        traits.push(lower_trait_decl(
-            t,
-            aliases,
-            entities,
-            entity_names,
-            event_aliases,
-            intrinsic_fields,
-            shared_entity_names,
-            source_map,
-            &trait_base,
-        )?);
+        traits.push(
+            lower_trait_decl(
+                t,
+                aliases,
+                entities,
+                entity_names,
+                event_aliases,
+                intrinsic_fields,
+                shared_entity_names,
+                source_map,
+                &trait_base,
+            )
+            .located(t.span)?,
+        );
     }
 
     // Top-level s-expressions (e.g. `(behavior/compose ...)`) are surfaced as
@@ -1026,7 +1044,7 @@ mod tests {
         // downstream); it must now name a persistence mode explicitly.
         let ast = parse_str("orbital Foo { entity Bar [shared] { id : string! } }").expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
+        match result.map_err(|e| e.innermost().clone()) {
             Err(LowerError::SharedEntityWithoutPersistenceMode { entity }) => {
                 assert_eq!(entity, "Bar");
             }
@@ -1231,7 +1249,7 @@ mod tests {
         ";
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
+        match result.map_err(|e| e.innermost().clone()) {
             Err(LowerError::EntityFieldNeverSet {
                 trait_name, field, ..
             }) => {
@@ -1308,7 +1326,7 @@ mod tests {
         ";
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
+        match result.map_err(|e| e.innermost().clone()) {
             Err(LowerError::EntityFieldNeverSet {
                 trait_name, field, ..
             }) => {
@@ -1554,7 +1572,7 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
+        match result.map_err(|e| e.innermost().clone()) {
             Err(LowerError::EmitPayloadMissingRequired { event, field, .. }) => {
                 assert_eq!(event, "DELETED");
                 assert_eq!(field, "id");
@@ -1583,7 +1601,7 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
+        match result.map_err(|e| e.innermost().clone()) {
             Err(LowerError::EmitPayloadExtraField { event, field, .. }) => {
                 assert_eq!(event, "DELETED");
                 assert_eq!(field, "stale");
@@ -1612,7 +1630,7 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
+        match result.map_err(|e| e.innermost().clone()) {
             Err(LowerError::EmitPayloadFieldTypeMismatch {
                 event,
                 field,
@@ -1714,7 +1732,7 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
+        match result.map_err(|e| e.innermost().clone()) {
             Err(LowerError::SetValueTypeMismatch {
                 field,
                 expected_type,
@@ -1751,7 +1769,7 @@ mod tests {
             }
         "#;
         let ast = parse_str(src).expect("parse");
-        match lower_to_orb(&ast) {
+        match lower_to_orb(&ast).map_err(|e| e.innermost().clone()) {
             Err(LowerError::EnumValueNotMember {
                 field,
                 value,
@@ -1846,7 +1864,7 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         let result = lower_to_orb(&ast);
-        match result {
+        match result.map_err(|e| e.innermost().clone()) {
             Err(LowerError::SetValueTypeMismatch {
                 field,
                 expected_type,
@@ -2028,3 +2046,4 @@ mod tests {
         assert!(s.orbitals[0].expects.is_none());
     }
 }
+

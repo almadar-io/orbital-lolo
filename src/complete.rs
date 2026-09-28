@@ -150,6 +150,46 @@ fn header_before(before: &str, brace: usize) -> &str {
     head[line_start..].trim()
 }
 
+const TOP_LEVEL: &[&str] = &["app", "type", "uses", "orbital", "theme", "config"];
+const ORBITAL_BODY: &[&str] = &[
+    "uses", "expects", "type", "entity", "trait", "page", "theme", "config",
+];
+const ORBITAL_REF_BODY: &[&str] = &[
+    "entity", "entities", "fields", "roles", "events", "pages", "omit", "only", "config", "extend",
+    "listens", "trait",
+];
+const TRAIT_BODY: &[&str] = &["initial", "state", "emits", "listens", "ticks", "config"];
+const TRAIT_REF_BODY: &[&str] = &[
+    "events",
+    "fields",
+    "config",
+    "on",
+    "name",
+    "listens",
+    "emitsScope",
+];
+const ENTITY_BODY: &[&str] = &["derived"];
+
+/// The statements the parser dispatches on at the start of a line inside the block
+/// headed `header` (`""` = top level) — `parser/mod.rs`, `orbital.rs`, `trait.rs`,
+/// `entity.rs`. `None` where a line starts with a free name (a state's events, an
+/// entity's fields, emits/listens/ticks/config entries).
+fn block_keywords(header: &str) -> Option<&'static [&'static str]> {
+    let words: Vec<&str> = header.split_whitespace().collect();
+    let is_ref = words.get(2) == Some(&"=");
+    match words.first() {
+        None => Some(TOP_LEVEL),
+        Some(&"orbital") => Some(if is_ref {
+            ORBITAL_REF_BODY
+        } else {
+            ORBITAL_BODY
+        }),
+        Some(&"trait") => Some(if is_ref { TRAIT_REF_BODY } else { TRAIT_BODY }),
+        Some(&"entity") => Some(ENTITY_BODY),
+        _ => None,
+    }
+}
+
 /// The entity fields declared by the orbital enclosing `offset`.
 fn enclosing_entity_fields(source: &str, offset: usize) -> Vec<(String, String)> {
     let before = &source[..offset];
@@ -405,12 +445,40 @@ pub fn complete(
         );
     }
 
-    // At the start of a line: a keyword.
+    // `name : ` inside an entity body: a field type.
+    let entity_body = open_braces(before)
+        .last()
+        .is_some_and(|&brace| header_before(before, brace).starts_with("entity "));
+    if entity_body {
+        let head = line[..line.len() - word.len()].trim_start();
+        if let Some(name) = head.trim_end().strip_suffix(':') {
+            if !name.trim().is_empty() && name.trim().chars().all(is_word_char) {
+                return filtered(
+                    word,
+                    "field-type",
+                    vocabulary().types.iter().map(|t| Completion {
+                        label: (*t).to_string(),
+                        kind: CompletionKind::Keyword,
+                        detail: Some("type".to_string()),
+                    }),
+                );
+            }
+        }
+    }
+
+    // At the start of a line: a statement keyword of the enclosing block.
     if lead.trim().is_empty() || line[..line.len() - word.len()].trim().is_empty() {
+        let header = open_braces(before)
+            .last()
+            .map(|&brace| header_before(before, brace))
+            .unwrap_or("");
+        let Some(allowed) = block_keywords(header) else {
+            return none(word);
+        };
         return filtered(
             word,
             "keyword",
-            vocabulary().keywords.iter().map(|k| Completion {
+            allowed.iter().map(|k| Completion {
                 label: (*k).to_string(),
                 kind: CompletionKind::Keyword,
                 detail: None,
@@ -555,6 +623,71 @@ mod tests {
         let r = complete(&src, off, None);
         assert_eq!(r.context, "keyword");
         assert!(labels(&r).contains(&"entity"));
+    }
+
+    #[test]
+    fn line_start_keywords_are_the_ones_the_enclosing_block_parses() {
+        let (src, off) = at("orbital O {\n  trait T -> E [interaction] {\n    em|");
+        let r = complete(&src, off, None);
+        assert_eq!((r.context, labels(&r)), ("keyword", vec!["emits"]));
+        let (src, off) = at("orbital O {\n  trait T -> E [interaction] {\n    e|");
+        assert!(
+            !labels(&complete(&src, off, None)).contains(&"entity"),
+            "entity is not a trait statement"
+        );
+        let (src, off) = at("orbital O {\n  entity E [runtime] {\n    id : string!\n    de|");
+        assert_eq!(labels(&complete(&src, off, None)), vec!["derived"]);
+        let (src, off) = at("orbital O {\n  trait L = Browse.traits.B -> E {\n    na|");
+        assert_eq!(labels(&complete(&src, off, None)), vec!["name"]);
+    }
+
+    #[test]
+    fn a_field_type_after_the_colon_in_an_entity() {
+        let (src, off) = at("orbital O {\n  entity E [runtime] {\n    title : str|");
+        let r = complete(&src, off, None);
+        assert_eq!((r.context, labels(&r)), ("field-type", vec!["string"]));
+        let (src, off) = at("orbital O {\n  entity E [runtime] {\n    total : |");
+        assert!(labels(&complete(&src, off, None)).contains(&"money"));
+    }
+
+    #[test]
+    fn control_a_colon_outside_an_entity_is_not_a_field_type() {
+        let (src, off) = at("orbital O {\n  trait T -> E [interaction] {\n    initial: id|");
+        assert_ne!(complete(&src, off, None).context, "field-type");
+    }
+
+    #[test]
+    fn control_a_name_position_offers_no_keyword() {
+        let (src, off) = at("orbital O {\n  entity E [runtime] {\n    id : string!\n    ti|");
+        let r = complete(&src, off, None);
+        assert_eq!(
+            r.candidates,
+            vec![],
+            "a field name is free — `ticks` is not an entity statement"
+        );
+        let (src, off) =
+            at("orbital O {\n  trait T -> E [interaction] {\n    state idle {\n      IN|");
+        assert_eq!(complete(&src, off, None).candidates, vec![]);
+    }
+
+    #[test]
+    fn edge_every_scoped_keyword_is_a_parser_keyword() {
+        let all = vocabulary().keywords;
+        for header in [
+            "",
+            "orbital O",
+            "orbital O = A.orbitals.X",
+            "trait T -> E",
+            "trait T = A.traits.X -> E",
+            "entity E [runtime]",
+        ] {
+            for k in block_keywords(header).unwrap_or(&[]) {
+                assert!(
+                    all.contains(k),
+                    "{k} (in `{header}`) is not in the parser's vocabulary"
+                );
+            }
+        }
     }
 
     #[test]

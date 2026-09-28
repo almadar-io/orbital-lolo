@@ -42,6 +42,7 @@ impl Parser {
         // arrow and the entity opts the trait into consumer rebinding via
         // `linkedEntity`; without it the binding is fixed.
         let mut entity_rebindable = false;
+        let mut linked_entity_span = None;
         let linked_entity = if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
             self.advance();
             let is_rebindable = matches!(self.peek(), TokenKind::Sigil(s) if self.canon_annotation_sigil(s) == "rebindable");
@@ -49,6 +50,7 @@ impl Parser {
                 self.advance();
                 entity_rebindable = true;
             }
+            linked_entity_span = Some(self.peek_span());
             Some(self.expect_ident()?)
         } else {
             None
@@ -234,6 +236,7 @@ impl Parser {
             type_params,
             type_annotation,
             linked_entity,
+            linked_entity_span,
             entity_rebindable,
             entity_binding_description,
             entity_binding_synonyms,
@@ -343,8 +346,10 @@ impl Parser {
         let reference = self.parse_dotted_ident()?;
 
         // Optional `-> Entity` linkedEntity override.
+        let mut linked_entity_span = None;
         let linked_entity = if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
             self.advance();
+            linked_entity_span = Some(self.peek_span());
             Some(self.expect_ident()?)
         } else {
             None
@@ -384,6 +389,7 @@ impl Parser {
             type_params,
             type_annotation,
             linked_entity,
+            linked_entity_span,
             entity_rebindable: false,
             entity_binding_description: None,
             entity_binding_synonyms: None,

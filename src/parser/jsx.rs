@@ -46,6 +46,10 @@ impl Parser {
         // consume `<`
         self.advance();
 
+        self.with_trail_seg(".type".to_string(), |p| {
+            p.record_expr_span();
+            Ok(())
+        })?;
         let first = self.expect_ident()?;
         let dotted = matches!(self.peek(), TokenKind::Dot);
 
@@ -132,14 +136,20 @@ impl Parser {
             match self.peek().clone() {
                 TokenKind::Identifier(s) if s == ">" || s == "/" => break,
                 TokenKind::Identifier(name) => {
-                    self.advance();
-                    let value = if matches!(self.peek(), TokenKind::Equals) {
-                        self.advance();
-                        self.parse_jsx_attr_value()?
-                    } else {
-                        // Boolean shorthand: bare `disabled` ⇒ `true`.
-                        SExpression::Bool(true)
-                    };
+                    // The prop's pointer spans the whole attribute, `name={value}`.
+                    let value = self.with_trail_seg(format!(".{name}"), |p| {
+                        let slot = p.reserve_expr_span();
+                        p.advance();
+                        let value = if matches!(p.peek(), TokenKind::Equals) {
+                            p.advance();
+                            p.parse_jsx_attr_value()?
+                        } else {
+                            // Boolean shorthand: bare `disabled` ⇒ `true`.
+                            SExpression::Bool(true)
+                        };
+                        p.widen_reserved_span(slot);
+                        Ok(value)
+                    })?;
                     attrs.push((name, value));
                 }
                 other => {
@@ -222,13 +232,18 @@ impl Parser {
                     if matches!(self.peek_n(1), TokenKind::Identifier(t) if t == "/") {
                         break;
                     }
-                    let child = self.parse_jsx_element()?;
+                    let child = self.with_trail_seg(format!(".children[{}]", children.len()), |p| {
+                        p.record_expr_span();
+                        p.parse_jsx_element()
+                    })?;
                     children.push(child);
                 }
                 TokenKind::LBrace => {
                     self.advance();
                     self.skip_newlines();
-                    let v = self.parse_sexpr_or_value()?;
+                    let v = self.with_trail_seg(format!(".children[{}]", children.len()), |p| {
+                        p.parse_sexpr_or_value()
+                    })?;
                     self.skip_newlines();
                     self.expect_kind(&TokenKind::RBrace, "}")?;
                     children.push(v);
@@ -238,7 +253,11 @@ impl Parser {
                 // for inline refs that carry a `listens` override, which JSX
                 // can't express).
                 TokenKind::AtParen => {
-                    children.push(self.parse_inline_trait_ref()?);
+                    let child = self.with_trail_seg(format!(".children[{}]", children.len()), |p| {
+                        p.record_expr_span();
+                        p.parse_inline_trait_ref()
+                    })?;
+                    children.push(child);
                 }
                 other => {
                     return Err(ParseError::InvalidSExpr {
@@ -421,6 +440,7 @@ impl Parser {
             type_params: Vec::new(),
             type_annotation: None,
             linked_entity,
+            linked_entity_span: None,
             entity_rebindable: false,
             entity_binding_description: None,
             entity_binding_synonyms: None,

@@ -6,8 +6,9 @@ use super::*;
 impl Parser {
     pub(crate) fn parse_sexpr(&mut self) -> Result<SExpression, ParseError> {
         let span = self.peek_span();
-        self.record_expr_span();
         self.expect_kind(&TokenKind::LParen, "(")?;
+        // An expression is located by its operator, the token a diagnostic names.
+        self.record_expr_span();
         if matches!(self.peek(), TokenKind::RParen) {
             self.advance();
             return Ok(SExpression::Array(Vec::new()));
@@ -374,7 +375,9 @@ impl Parser {
 
     /// Parse one s-expression argument: an atom, a paren list, an object literal, or an array literal.
     pub(crate) fn parse_sexpr_or_value(&mut self) -> Result<SExpression, ParseError> {
-        self.record_expr_span();
+        if !matches!(self.peek(), TokenKind::LParen) {
+            self.record_expr_span();
+        }
         let pattern_type_value = std::mem::take(&mut self.pattern_type_value);
         match self.peek().clone() {
             TokenKind::AtParen => self.parse_inline_trait_ref(),
@@ -545,6 +548,7 @@ impl Parser {
             type_params: Vec::new(),
             type_annotation: None,
             linked_entity,
+            linked_entity_span: None,
             entity_rebindable: false,
             entity_binding_description: None,
             entity_binding_synonyms: None,

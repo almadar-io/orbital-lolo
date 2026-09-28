@@ -999,6 +999,15 @@ pub enum LowerError {
     /// Carries a span so the CLI can surface `file:line:col: …`.
     #[error("{0}")]
     Type(TypeError),
+
+    /// `inner`, located in the source. `exact`: `span` is the offending token;
+    /// otherwise it is the enclosing construct the error was raised in.
+    #[error("{inner}")]
+    At {
+        span: Span,
+        exact: bool,
+        inner: Box<LowerError>,
+    },
 }
 
 /// Type-system errors from the `.lolo` resolver.
@@ -1160,13 +1169,54 @@ fn hint_suggestion(s: &Option<String>) -> String {
 }
 
 impl LowerError {
-    /// Span on lowering errors — available for the Type variant only; older
-    /// variants predate span tracking and return a dummy span.
+    /// Where the error sits in the source, when lowering located it.
     pub fn span(&self) -> Option<Span> {
         match self {
             LowerError::Type(te) => Some(te.span()),
+            LowerError::At { span, .. } => Some(*span),
             _ => None,
         }
+    }
+
+    /// True when [`Self::span`] is the offending token itself, not an enclosing construct.
+    pub fn span_is_exact(&self) -> bool {
+        match self {
+            LowerError::Type(_) => true,
+            LowerError::At { exact, .. } => *exact,
+            _ => false,
+        }
+    }
+
+    /// The error itself, past any location wrapper.
+    pub fn innermost(&self) -> &LowerError {
+        match self {
+            LowerError::At { inner, .. } => inner.innermost(),
+            other => other,
+        }
+    }
+
+    /// Locate an error raised inside a construct at `span`, unless it is already located.
+    pub fn located(self, span: Span) -> LowerError {
+        if self.span().is_some() || span == Span::default() {
+            self
+        } else {
+            LowerError::At {
+                span,
+                exact: false,
+                inner: Box::new(self),
+            }
+        }
+    }
+}
+
+/// `result.located(span)`: see [`LowerError::located`].
+pub(crate) trait Located<T> {
+    fn located(self, span: Span) -> Result<T, LowerError>;
+}
+
+impl<T> Located<T> for Result<T, LowerError> {
+    fn located(self, span: Span) -> Result<T, LowerError> {
+        self.map_err(|e| e.located(span))
     }
 }
 

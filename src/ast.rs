@@ -676,6 +676,8 @@ pub struct Trait {
     /// Optional `::` type annotation above the trait declaration.
     pub type_annotation: Option<TypeAnnotation>,
     pub linked_entity: Option<String>,
+    /// Where the entity name after `->` is written.
+    pub linked_entity_span: Option<Span>,
     /// Set when the binding was authored as `-> @rebindable Entity`. Opts
     /// the trait into consumer entity-rebinding via `linkedEntity`. Only
     /// meaningful on inline trait definitions (atoms); a reference's `->`
