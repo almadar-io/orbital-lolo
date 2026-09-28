@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-27T13:02:32.256Z",
+  "exportedAt": "2026-09-28T12:49:04.761Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -17267,6 +17267,166 @@
           ],
           "renderCallback": true,
           "tier": "presentation"
+        },
+        "assist": {
+          "types": [
+            "function"
+          ],
+          "description": "Editable only: model-assisted editing. Asked after a pause (and on Ctrl-Space) for a completion at the caret, shown as ghost text; on ⌘/Ctrl-. for fixes, listed under the editor. Tab accepts the next, ⌘/Ctrl-Enter accepts all, Escape dismisses.",
+          "callbackArgs": [
+            {
+              "name": "request",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "code": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "offset": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "kind": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "complete",
+                      "fix"
+                    ]
+                  },
+                  "trigger": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "idle",
+                      "explicit"
+                    ]
+                  }
+                },
+                "required": [
+                  "code",
+                  "offset",
+                  "kind",
+                  "trigger"
+                ]
+              }
+            }
+          ],
+          "renderCallback": true,
+          "tier": "presentation"
+        },
+        "problems": {
+          "types": [
+            "number"
+          ],
+          "description": "Editable only: how many problems the host knows the code has (some, like a parse error, have no line to mark). With `assist`, the editor offers to fix them.",
+          "tier": "presentation"
+        },
+        "diagnostics": {
+          "types": [
+            "array"
+          ],
+          "description": "Editable only: problems located in the code (1-based line/column in characters, `endColumn` just past the last one), each underlined exactly — red wavy for an error, amber for a warning, dotted where the position is approximate. The message of the one under the caret shows below the editor.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "line": {
+                "types": [
+                  "number"
+                ]
+              },
+              "column": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endLine": {
+                "types": [
+                  "number"
+                ]
+              },
+              "endColumn": {
+                "types": [
+                  "number"
+                ]
+              },
+              "severity": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "error",
+                  "warning"
+                ]
+              },
+              "message": {
+                "types": [
+                  "string"
+                ]
+              },
+              "approximate": {
+                "types": [
+                  "boolean"
+                ]
+              }
+            },
+            "required": [
+              "line",
+              "severity",
+              "message"
+            ]
+          },
+          "tier": "presentation"
+        },
+        "definitionAt": {
+          "types": [
+            "function"
+          ],
+          "description": "Editable only: go to definition. Whether the identifier (a dotted path is one) leads somewhere; with Cmd/Ctrl held the one under the pointer is underlined when it does. Comments and strings never qualify.",
+          "callbackArgs": [
+            {
+              "name": "identifier",
+              "type": "string"
+            }
+          ],
+          "renderCallback": true
+        },
+        "onGoToDefinition": {
+          "types": [
+            "function"
+          ],
+          "description": "Editable only: Cmd/Ctrl+click, or Cmd/Ctrl+Enter at the caret, on an identifier `definitionAt` accepts.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "identifier",
+              "type": "string"
+            }
+          ]
+        },
+        "diagnosticsCode": {
+          "types": [
+            "string"
+          ],
+          "description": "The code `diagnostics` were computed on. When the editor's text has moved on, each range is carried over the edit; a range the edit touches is dropped until the code is checked again. Absent: they describe the current text.",
+          "tier": "presentation"
+        },
+        "lineNumbers": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Editable only: number the lines in a gutter (lines with errors in red). Default on.",
+          "tier": "presentation"
         }
       }
     },
@@ -17598,18 +17758,284 @@
       ],
       "typicalSize": "large",
       "propsSchema": {
+        "activeState": {
+          "types": [
+            "string"
+          ],
+          "description": "State execution is currently in."
+        },
+        "activeTransition": {
+          "types": [
+            "number"
+          ],
+          "description": "`index` of the transition that just fired."
+        },
+        "visitedStates": {
+          "types": [
+            "array"
+          ],
+          "description": "States already passed through, in order.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "stateClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{stateClickEvent} with { stateId } when a state is clicked.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "stateId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "transitionClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{transitionClickEvent} with { index, event, from, to } when a transition label is clicked.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "index",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "event",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "from",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "selectedState": {
+          "types": [
+            "string"
+          ],
+          "description": "State picked in an editor (first click)."
+        },
+        "pendingSourceState": {
+          "types": [
+            "string"
+          ],
+          "description": "Source of a transition being drawn — the next state click picks its target."
+        },
+        "nodeShape": {
+          "types": [
+            "string"
+          ],
+          "description": "Node silhouette. @default 'pill'",
+          "enumValues": [
+            "pill",
+            "gear"
+          ]
+        },
+        "entityFields": {
+          "types": [
+            "array"
+          ],
+          "description": "Entity field names listed in the header.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "direction": {
+          "types": [
+            "string"
+          ],
+          "description": "Flow direction. @default 'ltr'",
+          "enumValues": [
+            "ltr",
+            "rtl"
+          ]
+        },
+        "showHeader": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show the trait header (name, entity, listens/emits). @default true"
+        },
         "className": {
           "types": [
             "string"
           ],
-          "description": "Additional CSS classes",
-          "default": ""
+          "description": "className prop"
+        },
+        "trait": {
+          "types": [
+            "object"
+          ],
+          "description": "The trait to draw (see `parseTraitLevel` / `traitLevelFromTrait`).",
+          "properties": {
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "linkedEntity": {
+              "types": [
+                "string"
+              ]
+            },
+            "states": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "isInitial": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "isTerminal": {
+                    "types": [
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            },
+            "transitions": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "from": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "to": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "guard": {
+                    "types": [
+                      "sexpr"
+                    ]
+                  },
+                  "effects": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "type": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "args": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "sexpr"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "args"
+                      ]
+                    }
+                  },
+                  "index": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "event",
+                  "effects",
+                  "index"
+                ]
+              }
+            },
+            "emittedEvents": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "listenedEvents": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "name",
+            "linkedEntity",
+            "states",
+            "transitions",
+            "emittedEvents",
+            "listenedEvents"
+          ]
         },
         "isLoading": {
           "types": [
             "boolean"
           ],
-          "description": "Loading state indicator"
+          "description": "Loading state indicator",
+          "default": false
         },
         "error": {
           "types": [
@@ -17640,224 +18066,8 @@
           },
           "propertyRequired": [
             "message"
-          ]
-        },
-        "layoutData": {
-          "types": [
-            "object"
           ],
-          "description": "Pre-computed visualizer layout. Optional: when absent the view renders nothing (an author wires real layout via config; the generic factory can't synthesize a `DomLayoutData`).",
-          "nonAuthorable": true
-        },
-        "renderStateNode": {
-          "types": [
-            "function"
-          ],
-          "description": "Custom state node renderer — when provided, replaces the default circle nodes",
-          "callbackArgs": [
-            {
-              "name": "state",
-              "type": "object",
-              "schema": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "id": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "name": {
-                    "types": [
-                      "string"
-                    ]
-                  },
-                  "x": {
-                    "types": [
-                      "number"
-                    ]
-                  },
-                  "y": {
-                    "types": [
-                      "number"
-                    ]
-                  },
-                  "radius": {
-                    "types": [
-                      "number"
-                    ]
-                  },
-                  "isInitial": {
-                    "types": [
-                      "boolean"
-                    ]
-                  },
-                  "isFinal": {
-                    "types": [
-                      "boolean"
-                    ]
-                  },
-                  "description": {
-                    "types": [
-                      "string"
-                    ]
-                  }
-                },
-                "required": [
-                  "id",
-                  "name",
-                  "x",
-                  "y",
-                  "radius",
-                  "isInitial",
-                  "isFinal"
-                ]
-              }
-            },
-            {
-              "name": "config",
-              "type": "object",
-              "schema": {
-                "types": [
-                  "object"
-                ],
-                "properties": {
-                  "nodeRadius": {
-                    "types": [
-                      "number"
-                    ]
-                  },
-                  "nodeSpacing": {
-                    "types": [
-                      "number"
-                    ]
-                  },
-                  "initialIndicatorOffset": {
-                    "types": [
-                      "number"
-                    ]
-                  },
-                  "arrowSize": {
-                    "types": [
-                      "number"
-                    ]
-                  },
-                  "colors": {
-                    "types": [
-                      "object"
-                    ],
-                    "properties": {
-                      "background": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "node": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "nodeBorder": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "nodeText": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "initialNode": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "finalNode": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "arrow": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "arrowText": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "effectText": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "guardText": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "initial": {
-                        "types": [
-                          "string"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "background",
-                      "node",
-                      "nodeBorder",
-                      "nodeText",
-                      "initialNode",
-                      "finalNode",
-                      "arrow",
-                      "arrowText",
-                      "effectText",
-                      "guardText",
-                      "initial"
-                    ]
-                  },
-                  "fonts": {
-                    "types": [
-                      "object"
-                    ],
-                    "properties": {
-                      "node": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "event": {
-                        "types": [
-                          "string"
-                        ]
-                      },
-                      "effect": {
-                        "types": [
-                          "string"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "node",
-                      "event",
-                      "effect"
-                    ]
-                  }
-                },
-                "required": [
-                  "nodeRadius",
-                  "nodeSpacing",
-                  "initialIndicatorOffset",
-                  "arrowSize",
-                  "colors",
-                  "fonts"
-                ]
-              }
-            }
-          ],
-          "renderCallback": true
+          "default": null
         }
       }
     },
@@ -22839,6 +23049,11 @@
                   "string"
                 ]
               },
+              "expandable": {
+                "types": [
+                  "boolean"
+                ]
+              },
               "size": {
                 "types": [
                   "number"
@@ -22929,6 +23144,30 @@
               "type": "string"
             }
           ]
+        },
+        "onNodeExpand": {
+          "types": [
+            "function"
+          ],
+          "description": "Called the first time a node marked `expandable` is expanded, with its path, so its children can be loaded.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "path",
+              "type": "string"
+            }
+          ]
+        },
+        "expandedPaths": {
+          "types": [
+            "array"
+          ],
+          "description": "Paths to show expanded (e.g. to reveal a node): each is expanded when it appears here, loading its children if needed.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "onNodeSelect": {
           "types": [
@@ -27415,7 +27654,7 @@
           "types": [
             "object"
           ],
-          "description": "data prop",
+          "description": "The orbital to summarize.",
           "required": true,
           "properties": {
             "orbitalName": {
@@ -27430,7 +27669,7 @@
             },
             "persistence": {
               "types": [
-                "string"
+                "object"
               ]
             },
             "fields": {
@@ -27602,9 +27841,7 @@
                         }
                       },
                       "required": [
-                        "name",
-                        "isInitial",
-                        "isTerminal"
+                        "name"
                       ]
                     }
                   },
@@ -27678,7 +27915,6 @@
                         "from",
                         "to",
                         "event",
-                        "guard",
                         "effects",
                         "index"
                       ]
@@ -27763,7 +27999,188 @@
             "pages",
             "traitDetails",
             "externalLinks"
-          ]
+          ],
+          "example": {
+            "orbitalName": "OrderOrbital",
+            "entityName": "Order",
+            "persistence": "persistent",
+            "fields": [
+              {
+                "name": "customer",
+                "type": "string",
+                "required": true,
+                "hasDefault": false
+              },
+              {
+                "name": "qty",
+                "type": "number",
+                "required": true,
+                "hasDefault": true
+              },
+              {
+                "name": "status",
+                "type": "string",
+                "required": false,
+                "hasDefault": true
+              }
+            ],
+            "traits": [
+              {
+                "name": "OrderFlow",
+                "stateCount": 5,
+                "eventCount": 7,
+                "transitionCount": 7,
+                "emits": [
+                  "ORDER_SAVED"
+                ],
+                "listens": [
+                  "PAYMENT_OK"
+                ]
+              }
+            ],
+            "pages": [
+              {
+                "name": "Orders",
+                "route": "/orders"
+              }
+            ],
+            "traitDetails": {
+              "OrderFlow": {
+                "name": "OrderFlow",
+                "linkedEntity": "Order",
+                "states": [
+                  {
+                    "name": "browsing",
+                    "isInitial": true,
+                    "isTerminal": false
+                  },
+                  {
+                    "name": "editing",
+                    "isInitial": false,
+                    "isTerminal": false
+                  },
+                  {
+                    "name": "saving",
+                    "isInitial": false,
+                    "isTerminal": false
+                  },
+                  {
+                    "name": "confirmed",
+                    "isInitial": false,
+                    "isTerminal": true
+                  },
+                  {
+                    "name": "failed",
+                    "isInitial": false,
+                    "isTerminal": false
+                  }
+                ],
+                "transitions": [
+                  {
+                    "from": "browsing",
+                    "to": "editing",
+                    "event": "EDIT",
+                    "effects": [
+                      {
+                        "type": "render-ui",
+                        "args": []
+                      }
+                    ],
+                    "index": 0
+                  },
+                  {
+                    "from": "editing",
+                    "to": "saving",
+                    "event": "SAVE",
+                    "effects": [
+                      {
+                        "type": "persist",
+                        "args": []
+                      },
+                      {
+                        "type": "notify",
+                        "args": []
+                      }
+                    ],
+                    "index": 1
+                  },
+                  {
+                    "from": "saving",
+                    "to": "confirmed",
+                    "event": "SAVED",
+                    "effects": [
+                      {
+                        "type": "emit",
+                        "args": []
+                      },
+                      {
+                        "type": "render-ui",
+                        "args": []
+                      }
+                    ],
+                    "index": 2
+                  },
+                  {
+                    "from": "saving",
+                    "to": "failed",
+                    "event": "SAVE_FAILED",
+                    "effects": [
+                      {
+                        "type": "notify",
+                        "args": []
+                      }
+                    ],
+                    "index": 3
+                  },
+                  {
+                    "from": "failed",
+                    "to": "editing",
+                    "event": "RETRY",
+                    "effects": [],
+                    "index": 4
+                  },
+                  {
+                    "from": "editing",
+                    "to": "browsing",
+                    "event": "CANCEL",
+                    "effects": [
+                      {
+                        "type": "render-ui",
+                        "args": []
+                      }
+                    ],
+                    "index": 5
+                  },
+                  {
+                    "from": "confirmed",
+                    "to": "browsing",
+                    "event": "DONE",
+                    "effects": [
+                      {
+                        "type": "navigate",
+                        "args": []
+                      }
+                    ],
+                    "index": 6
+                  }
+                ],
+                "emittedEvents": [
+                  "ORDER_SAVED"
+                ],
+                "listenedEvents": [
+                  "PAYMENT_OK"
+                ]
+              }
+            },
+            "externalLinks": [
+              {
+                "targetOrbital": "PaymentOrbital",
+                "eventName": "PAYMENT_OK",
+                "direction": "in",
+                "traitName": "OrderFlow"
+              }
+            ]
+          }
         }
       }
     },
@@ -27773,8 +28190,8 @@
       "sourceFile": "components/avl/molecules/ModuleCard.tsx",
       "tier": "molecules",
       "family": "avl",
-      "description": "ModuleCard — a card summarizing one course module or lesson with progress and entry point.",
-      "capabilities": "course module card, lesson card, curriculum unit card, learning-path step card",
+      "description": "ModuleCard — a compact summary card for one orbital module: its entity and fields, a mini state machine per trait, and its pages.",
+      "capabilities": "orbital module summary card, entity and trait overview card, app architecture node card",
       "suggestedFor": [
         "module",
         "card",
@@ -27786,7 +28203,7 @@
           "types": [
             "object"
           ],
-          "description": "data prop",
+          "description": "The orbital to summarize.",
           "required": true,
           "properties": {
             "orbitalName": {
@@ -27801,7 +28218,7 @@
             },
             "persistence": {
               "types": [
-                "string"
+                "object"
               ]
             },
             "fields": {
@@ -27973,9 +28390,7 @@
                         }
                       },
                       "required": [
-                        "name",
-                        "isInitial",
-                        "isTerminal"
+                        "name"
                       ]
                     }
                   },
@@ -28049,7 +28464,6 @@
                         "from",
                         "to",
                         "event",
-                        "guard",
                         "effects",
                         "index"
                       ]
@@ -28134,7 +28548,188 @@
             "pages",
             "traitDetails",
             "externalLinks"
-          ]
+          ],
+          "example": {
+            "orbitalName": "OrderOrbital",
+            "entityName": "Order",
+            "persistence": "persistent",
+            "fields": [
+              {
+                "name": "customer",
+                "type": "string",
+                "required": true,
+                "hasDefault": false
+              },
+              {
+                "name": "qty",
+                "type": "number",
+                "required": true,
+                "hasDefault": true
+              },
+              {
+                "name": "status",
+                "type": "string",
+                "required": false,
+                "hasDefault": true
+              }
+            ],
+            "traits": [
+              {
+                "name": "OrderFlow",
+                "stateCount": 5,
+                "eventCount": 7,
+                "transitionCount": 7,
+                "emits": [
+                  "ORDER_SAVED"
+                ],
+                "listens": [
+                  "PAYMENT_OK"
+                ]
+              }
+            ],
+            "pages": [
+              {
+                "name": "Orders",
+                "route": "/orders"
+              }
+            ],
+            "traitDetails": {
+              "OrderFlow": {
+                "name": "OrderFlow",
+                "linkedEntity": "Order",
+                "states": [
+                  {
+                    "name": "browsing",
+                    "isInitial": true,
+                    "isTerminal": false
+                  },
+                  {
+                    "name": "editing",
+                    "isInitial": false,
+                    "isTerminal": false
+                  },
+                  {
+                    "name": "saving",
+                    "isInitial": false,
+                    "isTerminal": false
+                  },
+                  {
+                    "name": "confirmed",
+                    "isInitial": false,
+                    "isTerminal": true
+                  },
+                  {
+                    "name": "failed",
+                    "isInitial": false,
+                    "isTerminal": false
+                  }
+                ],
+                "transitions": [
+                  {
+                    "from": "browsing",
+                    "to": "editing",
+                    "event": "EDIT",
+                    "effects": [
+                      {
+                        "type": "render-ui",
+                        "args": []
+                      }
+                    ],
+                    "index": 0
+                  },
+                  {
+                    "from": "editing",
+                    "to": "saving",
+                    "event": "SAVE",
+                    "effects": [
+                      {
+                        "type": "persist",
+                        "args": []
+                      },
+                      {
+                        "type": "notify",
+                        "args": []
+                      }
+                    ],
+                    "index": 1
+                  },
+                  {
+                    "from": "saving",
+                    "to": "confirmed",
+                    "event": "SAVED",
+                    "effects": [
+                      {
+                        "type": "emit",
+                        "args": []
+                      },
+                      {
+                        "type": "render-ui",
+                        "args": []
+                      }
+                    ],
+                    "index": 2
+                  },
+                  {
+                    "from": "saving",
+                    "to": "failed",
+                    "event": "SAVE_FAILED",
+                    "effects": [
+                      {
+                        "type": "notify",
+                        "args": []
+                      }
+                    ],
+                    "index": 3
+                  },
+                  {
+                    "from": "failed",
+                    "to": "editing",
+                    "event": "RETRY",
+                    "effects": [],
+                    "index": 4
+                  },
+                  {
+                    "from": "editing",
+                    "to": "browsing",
+                    "event": "CANCEL",
+                    "effects": [
+                      {
+                        "type": "render-ui",
+                        "args": []
+                      }
+                    ],
+                    "index": 5
+                  },
+                  {
+                    "from": "confirmed",
+                    "to": "browsing",
+                    "event": "DONE",
+                    "effects": [
+                      {
+                        "type": "navigate",
+                        "args": []
+                      }
+                    ],
+                    "index": 6
+                  }
+                ],
+                "emittedEvents": [
+                  "ORDER_SAVED"
+                ],
+                "listenedEvents": [
+                  "PAYMENT_OK"
+                ]
+              }
+            },
+            "externalLinks": [
+              {
+                "targetOrbital": "PaymentOrbital",
+                "eventName": "PAYMENT_OK",
+                "direction": "in",
+                "traitName": "OrderFlow"
+              }
+            ]
+          }
         }
       }
     },
@@ -50152,7 +50747,6 @@
             },
             "required": [
               "name",
-              "parent",
               "pivot",
               "tip"
             ]
@@ -51132,6 +51726,524 @@
               "required": true
             }
           ]
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "avl-state-machine": {
+      "type": "avl-state-machine",
+      "category": "display",
+      "sourceFile": "components/avl/molecules/AvlStateMachine.tsx",
+      "tier": "molecules",
+      "family": "avl",
+      "description": "AvlStateMachine component",
+      "suggestedFor": [
+        "avl",
+        "state",
+        "machine",
+        "avl state machine"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "trait": {
+          "types": [
+            "object"
+          ],
+          "description": "The trait to draw (see `parseTraitLevel`).",
+          "required": true,
+          "properties": {
+            "name": {
+              "types": [
+                "string"
+              ]
+            },
+            "linkedEntity": {
+              "types": [
+                "string"
+              ]
+            },
+            "states": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "name": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "isInitial": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "isTerminal": {
+                    "types": [
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            },
+            "transitions": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "from": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "to": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "guard": {
+                    "types": [
+                      "sexpr"
+                    ]
+                  },
+                  "effects": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "type": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "args": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "sexpr"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "type",
+                        "args"
+                      ]
+                    }
+                  },
+                  "index": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "from",
+                  "to",
+                  "event",
+                  "effects",
+                  "index"
+                ]
+              }
+            },
+            "emittedEvents": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "listenedEvents": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "name",
+            "linkedEntity",
+            "states",
+            "transitions",
+            "emittedEvents",
+            "listenedEvents"
+          ],
+          "example": {
+            "name": "OrderFlow",
+            "linkedEntity": "Order",
+            "states": [
+              {
+                "name": "browsing",
+                "isInitial": true,
+                "isTerminal": false
+              },
+              {
+                "name": "editing",
+                "isInitial": false,
+                "isTerminal": false
+              },
+              {
+                "name": "saving",
+                "isInitial": false,
+                "isTerminal": false
+              },
+              {
+                "name": "confirmed",
+                "isInitial": false,
+                "isTerminal": true
+              },
+              {
+                "name": "failed",
+                "isInitial": false,
+                "isTerminal": false
+              }
+            ],
+            "transitions": [
+              {
+                "from": "browsing",
+                "to": "editing",
+                "event": "EDIT",
+                "effects": [
+                  {
+                    "type": "render-ui",
+                    "args": []
+                  }
+                ],
+                "index": 0
+              },
+              {
+                "from": "editing",
+                "to": "saving",
+                "event": "SAVE",
+                "effects": [
+                  {
+                    "type": "persist",
+                    "args": []
+                  },
+                  {
+                    "type": "notify",
+                    "args": []
+                  }
+                ],
+                "index": 1
+              },
+              {
+                "from": "saving",
+                "to": "confirmed",
+                "event": "SAVED",
+                "effects": [
+                  {
+                    "type": "emit",
+                    "args": []
+                  },
+                  {
+                    "type": "render-ui",
+                    "args": []
+                  }
+                ],
+                "index": 2
+              },
+              {
+                "from": "saving",
+                "to": "failed",
+                "event": "SAVE_FAILED",
+                "effects": [
+                  {
+                    "type": "notify",
+                    "args": []
+                  }
+                ],
+                "index": 3
+              },
+              {
+                "from": "failed",
+                "to": "editing",
+                "event": "RETRY",
+                "effects": [],
+                "index": 4
+              },
+              {
+                "from": "editing",
+                "to": "browsing",
+                "event": "CANCEL",
+                "effects": [
+                  {
+                    "type": "render-ui",
+                    "args": []
+                  }
+                ],
+                "index": 5
+              },
+              {
+                "from": "confirmed",
+                "to": "browsing",
+                "event": "DONE",
+                "effects": [
+                  {
+                    "type": "navigate",
+                    "args": []
+                  }
+                ],
+                "index": 6
+              }
+            ],
+            "emittedEvents": [
+              "ORDER_SAVED"
+            ],
+            "listenedEvents": [
+              "PAYMENT_OK"
+            ]
+          }
+        },
+        "activeState": {
+          "types": [
+            "string"
+          ],
+          "description": "State execution is currently in."
+        },
+        "activeTransition": {
+          "types": [
+            "number"
+          ],
+          "description": "`index` of the transition that just fired."
+        },
+        "visitedStates": {
+          "types": [
+            "array"
+          ],
+          "description": "States already passed through, in order.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "stateClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{stateClickEvent} with { stateId } when a state is clicked.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "stateId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "transitionClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emits UI:{transitionClickEvent} with { index, event, from, to } when a transition label is clicked.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "index",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "event",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "from",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "to",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "selectedState": {
+          "types": [
+            "string"
+          ],
+          "description": "State picked in an editor (first click)."
+        },
+        "pendingSourceState": {
+          "types": [
+            "string"
+          ],
+          "description": "Source of a transition being drawn — the next state click picks its target."
+        },
+        "nodeShape": {
+          "types": [
+            "string"
+          ],
+          "description": "Node silhouette. @default 'pill'",
+          "enumValues": [
+            "pill",
+            "gear"
+          ],
+          "default": "pill"
+        },
+        "entityFields": {
+          "types": [
+            "array"
+          ],
+          "description": "Entity field names listed in the header.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "direction": {
+          "types": [
+            "string"
+          ],
+          "description": "Flow direction. @default 'ltr'",
+          "enumValues": [
+            "ltr",
+            "rtl"
+          ],
+          "default": "ltr"
+        },
+        "showHeader": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show the trait header (name, entity, listens/emits). @default true",
+          "default": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        }
+      }
+    },
+    "avl-glyph": {
+      "type": "avl-glyph",
+      "category": "component",
+      "sourceFile": "components/avl/molecules/AvlGlyph.tsx",
+      "tier": "molecules",
+      "family": "avl",
+      "description": "AvlGlyph component",
+      "suggestedFor": [
+        "avl",
+        "glyph",
+        "avl glyph"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "kind": {
+          "types": [
+            "string"
+          ],
+          "description": "Which notation symbol to draw.",
+          "required": true,
+          "enumValues": [
+            "application",
+            "orbital",
+            "entity",
+            "trait",
+            "page",
+            "state",
+            "transition",
+            "event",
+            "guard",
+            "effect",
+            "field",
+            "fieldType",
+            "binding",
+            "bindingRef",
+            "persistence",
+            "operator",
+            "sexpr",
+            "literal"
+          ],
+          "example": "state"
+        },
+        "label": {
+          "types": [
+            "string"
+          ],
+          "description": "Caption, and the drawn text for operator / literal / bindingRef symbols."
+        },
+        "effectType": {
+          "types": [
+            "string"
+          ],
+          "description": "Effect symbol variant. @default 'set'"
+        },
+        "fieldType": {
+          "types": [
+            "object"
+          ],
+          "description": "Field-type symbol variant. @default 'string'"
+        },
+        "persistence": {
+          "types": [
+            "object"
+          ],
+          "description": "Persistence symbol variant (also the entity's ring). @default 'persistent'"
+        },
+        "namespace": {
+          "types": [
+            "object"
+          ],
+          "description": "Operator category tint. @default 'arithmetic'"
+        },
+        "size": {
+          "types": [
+            "string"
+          ],
+          "description": "Symbol height. @default 'md'",
+          "enumValues": [
+            "sm",
+            "md",
+            "lg"
+          ],
+          "default": "md"
+        },
+        "showCaption": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Show the caption under the symbol. @default true",
+          "default": true
         },
         "className": {
           "types": [
