@@ -265,7 +265,7 @@ const FIXTURE_CONFIG_ENTITY: &str = r#"
         trait Lifecycle -> Account [interaction, instance] {
             initial: idle
             state idle {
-                RUN -> idle
+                RUN -> idle when @config.targetEntity
                     (set @entity.balance 1)
             }
             config {

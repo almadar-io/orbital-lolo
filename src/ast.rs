@@ -88,13 +88,17 @@ pub enum ThemeDecl {
 #[derive(Debug, Clone, PartialEq)]
 pub struct InlineTheme {
     pub name: String,
+    pub display_name: Option<String>,
     pub tokens: ThemeTokenMaps,
     pub variants: Vec<(String, ThemeTokenMaps)>,
 }
 
-/// The five flat token categories (`colors`/`radii`/`spacing`/`typography`/
-/// `shadows`); entries keep source order. The typed axes (density, typeScale,
-/// motion, iconography, elevation, geometry) stay `.orb`-JSON-only.
+/// The theme token categories; entries keep source order. The five legacy
+/// maps (`colors`/`radii`/`spacing`/`typography`/`shadows`) are free-form;
+/// the typed axes `typeScale`/`geometry`/`elevation`/`surface` take only
+/// their flat string fields (camelCase keys, see [`THEME_TYPED_AXIS_KEYS`]).
+/// Nested typed fields (type scale/intents) and density/motion/iconography
+/// stay `.orb`-JSON-only.
 #[derive(Debug, Clone, Default, PartialEq)]
 pub struct ThemeTokenMaps {
     pub colors: Vec<(String, String)>,
@@ -102,7 +106,74 @@ pub struct ThemeTokenMaps {
     pub spacing: Vec<(String, String)>,
     pub typography: Vec<(String, String)>,
     pub shadows: Vec<(String, String)>,
+    pub type_scale: Vec<(String, String)>,
+    pub geometry: Vec<(String, String)>,
+    pub elevation: Vec<(String, String)>,
+    pub surface: Vec<(String, String)>,
+    pub motion: Vec<(String, String)>,
 }
+
+/// The `.lolo`-authorable flat string keys of each typed theme axis — the
+/// camelCase wire names of the matching `orbital_core::schema::*Tokens` fields.
+pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 5] = [
+    (
+        "typeScale",
+        &[
+            "displayFamily",
+            "bodyFamily",
+            "monoFamily",
+            "fontImport",
+            "headingWeight",
+            "headingTransform",
+            "headingTracking",
+            "headingStyle",
+            "headingShadow",
+        ],
+    ),
+    (
+        "geometry",
+        &[
+            "radiusContainer",
+            "radiusInteractive",
+            "radiusPill",
+            "borderHairline",
+            "borderStandard",
+            "borderHeavy",
+            "cornerShape",
+            "cornerShapePill",
+            "borderStyle",
+            "borderStyleInteractive",
+        ],
+    ),
+    (
+        "elevation",
+        &[
+            "cardElevation",
+            "popoverElevation",
+            "dialogElevation",
+            "toastElevation",
+            "interactiveElevation",
+            "pressedElevation",
+        ],
+    ),
+    (
+        "surface",
+        &["backdrop", "cardImage", "pageImage", "pageImageSize"],
+    ),
+    // `motion` keys are the motion-shape fields; they lower into `motion.shapes`.
+    (
+        "motion",
+        &[
+            "modalEnter",
+            "modalExit",
+            "popoverEnter",
+            "popoverExit",
+            "toastEnter",
+            "toastExit",
+            "pageEnter",
+        ],
+    ),
+];
 
 /// `type Name [T] = ...` declaration. The optional `type_param` is the single
 /// entity-type variable used in parameterized shapes (`type Browsable T = ...`);

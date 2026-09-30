@@ -139,7 +139,6 @@ orbital GuardTruthinessOrbital {
     }
 
     config {
-      threshold : number = 0
     }
   }
 

@@ -44,8 +44,6 @@ orbital ValueDeterminismOrbital {
     }
 
     config {
-      base : number = 10
-      label : string = "base"
     }
   }
 

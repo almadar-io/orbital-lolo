@@ -28,6 +28,11 @@ fn theme_maps_empty(maps: &ThemeTokenMaps) -> bool {
         && maps.spacing.is_empty()
         && maps.typography.is_empty()
         && maps.shadows.is_empty()
+        && maps.type_scale.is_empty()
+        && maps.geometry.is_empty()
+        && maps.elevation.is_empty()
+        && maps.surface.is_empty()
+        && maps.motion.is_empty()
 }
 
 struct Formatter {
@@ -217,6 +222,12 @@ impl Formatter {
                 self.write_indent();
                 self.output.push_str("name: ");
                 self.write_quoted_string(&inline.name);
+                if let Some(display_name) = &inline.display_name {
+                    self.write_newline();
+                    self.write_indent();
+                    self.output.push_str("displayName: ");
+                    self.write_quoted_string(display_name);
+                }
                 if !theme_maps_empty(&inline.tokens) {
                     self.write_newline();
                     self.write_indent();
@@ -257,12 +268,17 @@ impl Formatter {
         self.output.push('{');
         self.write_newline();
         self.indent();
-        let categories: [(&str, &[(String, String)]); 5] = [
+        let categories: [(&str, &[(String, String)]); 10] = [
             ("colors", &maps.colors),
             ("radii", &maps.radii),
             ("spacing", &maps.spacing),
             ("typography", &maps.typography),
             ("shadows", &maps.shadows),
+            ("typeScale", &maps.type_scale),
+            ("geometry", &maps.geometry),
+            ("elevation", &maps.elevation),
+            ("surface", &maps.surface),
+            ("motion", &maps.motion),
         ];
         let mut first = true;
         for (cat, entries) in categories {

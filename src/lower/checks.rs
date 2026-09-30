@@ -1619,6 +1619,31 @@ fn collect_button_actions_recursive(expr: &SExpression, actions: &mut HashSet<St
     }
 }
 
+/// True when `host` embeds `child` in `orbital`, directly or through other traits.
+fn embeds_transitively(
+    embeds: &HashMap<(String, String), HashSet<String>>,
+    orbital: &str,
+    host: &str,
+    child: &str,
+) -> bool {
+    let mut seen: HashSet<&str> = HashSet::from([host]);
+    let mut stack = vec![host];
+    while let Some(current) = stack.pop() {
+        let Some(children) = embeds.get(&(orbital.to_string(), current.to_string())) else {
+            continue;
+        };
+        for next in children {
+            if next == child {
+                return true;
+            }
+            if seen.insert(next.as_str()) {
+                stack.push(next.as_str());
+            }
+        }
+    }
+    false
+}
+
 /// L1 check: for every button action rendered by trait A, if some sibling
 /// inline trait B in the same orbital has a transition on that event but
 /// B does NOT declare `listens { A event -> ... }`, fail fast.
@@ -1633,11 +1658,17 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
     let mut trait_transitions: HashMap<(String, String), HashSet<String>> = HashMap::new();
     // Track reference-trait names so we can skip them as targets.
     let mut reference_traits: HashSet<(String, String)> = HashSet::new();
+    // (orbital, trait) -> the traits it embeds via `@trait.<Name>`.
+    let mut embeds: HashMap<(String, String), HashSet<String>> = HashMap::new();
 
     for orbital in orbitals {
         for trait_ref in &orbital.traits {
             match trait_ref {
                 TraitReference::Inline(td) => {
+                    embeds.insert(
+                        (orbital.name.clone(), td.name.clone()),
+                        orbital_core::schema::trait_embed_children(td),
+                    );
                     let entry = trait_transitions
                         .entry((orbital.name.clone(), td.name.clone()))
                         .or_default();
@@ -1731,6 +1762,11 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
                     }
                     if events.contains(&action) {
                         found_target = true;
+                        // A host that embeds the source hears the button on its own embed-chain
+                        // scope; a route back would deliver the same click twice.
+                        if embeds_transitively(&embeds, t_orbital, t_trait, source_trait) {
+                            continue;
+                        }
                         let target_key = (t_orbital.clone(), t_trait.clone());
                         let has_listen = trait_listens
                             .get(&target_key)
@@ -2070,10 +2106,8 @@ pub(crate) fn check_behavior_contracts(
                             .requires
                             .iter()
                             .filter(|r| {
-                                let target = field_remap
-                                    .as_ref()
-                                    .and_then(|m| m.get(*r))
-                                    .unwrap_or(*r);
+                                let target =
+                                    field_remap.as_ref().and_then(|m| m.get(*r)).unwrap_or(*r);
                                 !fields.contains(target)
                             })
                             .cloned()
@@ -2416,5 +2450,106 @@ mod config_type_compatible_tests {
         // it can't reason about.
         assert!(config_type_compatible("array", "unknown"));
         assert!(config_type_compatible("object", "pattern"));
+    }
+}
+
+#[cfg(test)]
+mod button_transition_embed_tests {
+    use super::*;
+
+    fn trait_json(
+        name: &str,
+        handles: Option<&str>,
+        renders: Option<&str>,
+        embeds: Option<&str>,
+        listens: Option<&str>,
+    ) -> serde_json::Value {
+        let mut transitions = vec![serde_json::json!(
+            { "from": "idle", "to": "idle", "event": "INIT", "effects": renders.map_or_else(
+                Vec::new,
+                |action| vec![serde_json::json!(["render-ui", "main", { "type": "button", "action": action, "label": "Go" }])]
+            ) }
+        )];
+        if let Some(event) = handles {
+            transitions.push(serde_json::json!({ "from": "idle", "to": "idle", "event": event }));
+        }
+        if let Some(child) = embeds {
+            transitions[0]["effects"] = serde_json::json!([[
+                "render-ui", "main", { "type": "stack", "children": [format!("@trait.{child}")] }
+            ]]);
+        }
+        let mut t = serde_json::json!({
+            "name": name, "linkedEntity": "Row", "category": "interaction",
+            "stateMachine": { "states": [], "events": [], "transitions": transitions }
+        });
+        if let Some(source) = listens {
+            t["listens"] = serde_json::json!([{
+                "event": "REQUEST", "triggers": "REQUEST",
+                "source": { "kind": "trait", "trait": source }
+            }]);
+        }
+        t
+    }
+
+    fn check(traits: Vec<serde_json::Value>) -> Result<(), LowerError> {
+        let orbital: CoreOrbital = serde_json::from_value(serde_json::json!({
+            "name": "O",
+            "entity": { "name": "Row", "persistence": "persistent",
+                "fields": [{ "name": "id", "type": "string", "required": true }] },
+            "traits": traits, "pages": []
+        }))
+        .expect("orbital deserializes");
+        check_button_transitions(&[orbital])
+    }
+
+    #[test]
+    fn unembedded_sibling_without_a_route_is_unreachable() {
+        assert!(matches!(
+            check(vec![
+                trait_json("Panel", None, Some("REQUEST"), None, None),
+                trait_json("Host", Some("REQUEST"), None, None, None),
+            ]),
+            Err(LowerError::ButtonTransitionUnreachable { .. })
+        ));
+    }
+
+    #[test]
+    fn unembedded_sibling_with_a_route_is_reachable() {
+        assert!(check(vec![
+            trait_json("Panel", None, Some("REQUEST"), None, None),
+            trait_json("Host", Some("REQUEST"), None, None, Some("Panel")),
+        ])
+        .is_ok());
+    }
+
+    #[test]
+    fn host_that_embeds_the_source_hears_it_without_a_route() {
+        assert!(check(vec![
+            trait_json("Panel", None, Some("REQUEST"), None, None),
+            trait_json("Host", Some("REQUEST"), None, Some("Panel"), None),
+        ])
+        .is_ok());
+    }
+
+    #[test]
+    fn host_that_embeds_the_source_transitively_hears_it_without_a_route() {
+        assert!(check(vec![
+            trait_json("Panel", None, Some("REQUEST"), None, None),
+            trait_json("Mid", None, None, Some("Panel"), None),
+            trait_json("Host", Some("REQUEST"), None, Some("Mid"), None),
+        ])
+        .is_ok());
+    }
+
+    #[test]
+    fn host_that_embeds_a_different_trait_still_needs_the_route() {
+        assert!(matches!(
+            check(vec![
+                trait_json("Panel", None, Some("REQUEST"), None, None),
+                trait_json("Other", None, None, None, None),
+                trait_json("Host", Some("REQUEST"), None, Some("Other"), None),
+            ]),
+            Err(LowerError::ButtonTransitionUnreachable { .. })
+        ));
     }
 }

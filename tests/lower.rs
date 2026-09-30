@@ -386,6 +386,7 @@ orbital W {
     state idle {
       LOAD -> idle
         (fetch Widget { id: ?id })
+        (render-ui main { type: typography, content: @config.title })
     }
   }
 }
@@ -419,6 +420,7 @@ orbital W {
     state idle {
       LOAD -> idle
         (fetch Widget { id: ?id })
+        (render-ui main { type: page-header, title: @config.title, icon: @config.icon })
     }
   }
 }
@@ -542,4 +544,47 @@ fn orbital_ref_extend_lowers() {
 #[test]
 fn jsx_empty_children_lowers() {
     assert_lowering_matches("jsx_empty_children");
+}
+
+#[test]
+fn inline_theme_typed_axes_lower_to_typed_tokens() {
+    let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    name: \"deco\"\n    tokens {\n      typeScale {\n        fontImport: \"https://fonts.example/deco.css\"\n        headingTracking: \"0.2em\"\n      }\n      geometry {\n        cornerShape: \"notch\"\n      }\n      surface {\n        backdrop: \"blur(8px)\"\n      }\n    }\n    variants {\n      dark {\n        elevation {\n          interactiveElevation: \"none\"\n        }\n      }\n    }\n  }\n  page \"/\" -> Foo\n}";
+    let schema = parse_and_lower_str(src).expect("lowers");
+    let json = serde_json::to_value(&schema).unwrap();
+    let theme = &json["orbitals"][0]["theme"];
+    assert_eq!(
+        theme["tokens"]["typeScale"]["fontImport"],
+        "https://fonts.example/deco.css"
+    );
+    assert_eq!(theme["tokens"]["typeScale"]["headingTracking"], "0.2em");
+    assert_eq!(theme["tokens"]["geometry"]["cornerShape"], "notch");
+    assert_eq!(theme["tokens"]["surface"]["backdrop"], "blur(8px)");
+    assert!(
+        theme["tokens"]["elevation"].is_null(),
+        "control: base elevation absent"
+    );
+    assert_eq!(
+        theme["variants"]["dark"]["elevation"]["interactiveElevation"],
+        "none"
+    );
+}
+
+#[test]
+fn inline_theme_motion_category_lowers_into_motion_shapes() {
+    let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    name: \"snappy\"\n    tokens {\n      motion {\n        modalEnter: \"scale(0.9)\"\n        pageEnter: \"none\"\n      }\n    }\n  }\n  page \"/\" -> Foo\n}";
+    let schema = parse_and_lower_str(src).expect("lowers");
+    let json = serde_json::to_value(&schema).unwrap();
+    let motion = &json["orbitals"][0]["theme"]["tokens"]["motion"];
+    assert_eq!(motion["shapes"]["modalEnter"], "scale(0.9)");
+    assert_eq!(motion["shapes"]["pageEnter"], "none");
+    assert!(
+        motion["durations"].is_null(),
+        "control: only shapes are authored from .lolo"
+    );
+}
+
+#[test]
+fn inline_theme_motion_category_rejects_non_shape_keys() {
+    let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    name: \"snappy\"\n    tokens {\n      motion {\n        durations: \"200ms\"\n      }\n    }\n  }\n  page \"/\" -> Foo\n}";
+    assert!(parse_and_lower_str(src).is_err());
 }

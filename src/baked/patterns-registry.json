@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-28T12:49:04.761Z",
+  "exportedAt": "2026-09-30T15:57:56.420Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -281,6 +281,12 @@
                 "types": [
                   "function"
                 ]
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
+                ]
               }
             },
             "required": [
@@ -396,6 +402,12 @@
                   "string"
                 ],
                 "kind": "event"
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
+                ]
               }
             },
             "required": [
@@ -714,6 +726,12 @@
               },
               "onClick": {
                 "types": [
+                  "function"
+                ]
+              },
+              "when": {
+                "types": [
+                  "sexpr",
                   "function"
                 ]
               }
@@ -1213,6 +1231,12 @@
                 "types": [
                   "string"
                 ]
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
+                ]
               }
             },
             "required": [
@@ -1550,6 +1574,12 @@
                   "ghost",
                   "danger"
                 ]
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
+                ]
               }
             },
             "required": [
@@ -1606,6 +1636,12 @@
                 "secondary",
                 "ghost",
                 "danger"
+              ]
+            },
+            "when": {
+              "types": [
+                "sexpr",
+                "function"
               ]
             }
           },
@@ -1819,6 +1855,13 @@
             "number"
           ],
           "description": "Page title - accepts string or number from generated code accessing dynamic entity data"
+        },
+        "icon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "Icon shown before the title."
         },
         "subtitle": {
           "types": [
@@ -3907,6 +3950,7 @@
       "tier": "molecules",
       "family": "core",
       "description": "Search input with events",
+      "minUsableWidth": 160,
       "suggestedFor": [
         "search functionality",
         "quick filters"
@@ -6418,6 +6462,13 @@
             "full-screen"
           ],
           "default": "centered-card"
+        },
+        "contained": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Render inside the nearest positioned ancestor (a preview frame) instead of portaling over the whole window; page scroll is left alone.",
+          "default": false
         }
       }
     },
@@ -6441,6 +6492,21 @@
           ],
           "description": "Whether the drawer is open (defaults to true when rendered by slot wrapper)",
           "default": true
+        },
+        "onExited": {
+          "types": [
+            "function"
+          ],
+          "description": "Fires after the exit animation completes (the drawer is about to unmount).",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "contained": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Render inside the nearest positioned ancestor (a preview frame) instead of over the window.",
+          "default": false
         },
         "onClose": {
           "types": [
@@ -6548,6 +6614,14 @@
             "function"
           ],
           "description": "Callback when dialog is closed (injected by slot wrapper)",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "onExited": {
+          "types": [
+            "function"
+          ],
+          "description": "Fires after the exit animation completes (the dialog is about to unmount).",
           "kind": "callback",
           "callbackArgs": []
         },
@@ -14497,6 +14571,19 @@
           "description": "Format X-axis labels as time (ISO date in → \"Mar 2026\"-style label out)",
           "default": false
         },
+        "period": {
+          "types": [
+            "string"
+          ],
+          "description": "Bucket granularity of a time axis — labels read \"Oct 2\", \"Week of Sep 28\", \"Oct 2026\", \"Q4 2026\" or \"2026\"",
+          "enumValues": [
+            "day",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
         "drillEvent": {
           "types": [
             "string"
@@ -17824,6 +17911,52 @@
             }
           ]
         },
+        "onTransitionClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Direct transition-click callback, for React hosts (e.g. a canvas node).",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "transition",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "index": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "from": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "to": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "index",
+                  "event",
+                  "from",
+                  "to"
+                ]
+              }
+            }
+          ]
+        },
         "selectedState": {
           "types": [
             "string"
@@ -19104,6 +19237,7 @@
       "description": "DataGrid — structured records grid rendering rows over configurable columns, with sort, select, and drag-reorder.",
       "capabilities": "admin table, records grid, user list, CRUD list, manage-records view, spreadsheet-style data grid, sortable columns",
       "fieldsContract": "display",
+      "minUsableWidth": 200,
       "suggestedFor": [
         "data",
         "grid",
@@ -19158,6 +19292,47 @@
             "boolean"
           ],
           "description": "Mark this container as the DnD root for its subtree — descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
+        },
+        "emptyIcon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "Domain icon for the empty state."
+        },
+        "emptyTitle": {
+          "types": [
+            "string"
+          ],
+          "description": "Specific title (\"No orders yet\")."
+        },
+        "emptyDescription": {
+          "types": [
+            "string"
+          ],
+          "description": "What will appear here once rows exist."
+        },
+        "emptyAction": {
+          "types": [
+            "object"
+          ],
+          "description": "Create-the-first-item action.",
+          "properties": {
+            "label": {
+              "types": [
+                "string"
+              ]
+            },
+            "event": {
+              "types": [
+                "string"
+              ],
+              "kind": "event"
+            }
+          },
+          "propertyRequired": [
+            "label"
+          ]
         },
         "entity": {
           "types": [
@@ -19348,6 +19523,12 @@
                   "secondary",
                   "ghost",
                   "danger"
+                ]
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
                 ]
               }
             },
@@ -19612,6 +19793,7 @@
       "family": "core",
       "description": "DataList component",
       "fieldsContract": "display",
+      "minUsableWidth": 200,
       "suggestedFor": [
         "data",
         "list",
@@ -19667,6 +19849,47 @@
             "boolean"
           ],
           "description": "Mark this container as the DnD root for its subtree — descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
+        },
+        "emptyIcon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "Domain icon for the empty state."
+        },
+        "emptyTitle": {
+          "types": [
+            "string"
+          ],
+          "description": "Specific title (\"No orders yet\")."
+        },
+        "emptyDescription": {
+          "types": [
+            "string"
+          ],
+          "description": "What will appear here once rows exist."
+        },
+        "emptyAction": {
+          "types": [
+            "object"
+          ],
+          "description": "Create-the-first-item action.",
+          "properties": {
+            "label": {
+              "types": [
+                "string"
+              ]
+            },
+            "event": {
+              "types": [
+                "string"
+              ],
+              "kind": "event"
+            }
+          },
+          "propertyRequired": [
+            "label"
+          ]
         },
         "entity": {
           "types": [
@@ -19832,6 +20055,12 @@
                   "secondary",
                   "ghost",
                   "danger"
+                ]
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
                 ]
               }
             },
@@ -21857,14 +22086,19 @@
                 ],
                 "eventPayloadBrand": true,
                 "payloadFor": "event"
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
+                ]
               }
             },
             "required": [
               "label",
               "event"
             ]
-          },
-          "default": []
+          }
         },
         "rightActions": {
           "types": [
@@ -21912,14 +22146,19 @@
                 ],
                 "eventPayloadBrand": true,
                 "payloadFor": "event"
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
+                ]
               }
             },
             "required": [
               "label",
               "event"
             ]
-          },
-          "default": []
+          }
         },
         "threshold": {
           "types": [
@@ -22956,6 +23195,12 @@
           "propertyRequired": [
             "enabled"
           ]
+        },
+        "pageKey": {
+          "types": [
+            "string"
+          ],
+          "description": "The current page (path or name). When set, the main slot's content animates in on every page change (`PageTransition`); a layout's own content region claims the transition so its chrome stays still."
         }
       }
     },
@@ -33467,6 +33712,7 @@
       "description": "TableView — sortable, selectable data table rendering rows over configurable columns, with inline row actions and grouping.",
       "capabilities": "admin console table, records list, CRUD data table, user list, manage-users grid, sortable columns, row selection with bulk actions, grouped list view",
       "fieldsContract": "display",
+      "minUsableWidth": 240,
       "suggestedFor": [
         "table",
         "view",
@@ -33521,6 +33767,47 @@
             "boolean"
           ],
           "description": "Mark this container as the DnD root for its subtree — descendant zones share one DndContext (cross-container drag). Use on an outer container whose own items are not draggable."
+        },
+        "emptyIcon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "Domain icon for the empty state."
+        },
+        "emptyTitle": {
+          "types": [
+            "string"
+          ],
+          "description": "Specific title (\"No orders yet\")."
+        },
+        "emptyDescription": {
+          "types": [
+            "string"
+          ],
+          "description": "What will appear here once rows exist."
+        },
+        "emptyAction": {
+          "types": [
+            "object"
+          ],
+          "description": "Create-the-first-item action.",
+          "properties": {
+            "label": {
+              "types": [
+                "string"
+              ]
+            },
+            "event": {
+              "types": [
+                "string"
+              ],
+              "kind": "event"
+            }
+          },
+          "propertyRequired": [
+            "label"
+          ]
         },
         "entity": {
           "types": [
@@ -33750,6 +34037,12 @@
                   "secondary",
                   "ghost",
                   "danger"
+                ]
+              },
+              "when": {
+                "types": [
+                  "sexpr",
+                  "function"
                 ]
               }
             },
@@ -46834,6 +47127,37 @@
       ],
       "typicalSize": "small",
       "propsSchema": {
+        "animation": {
+          "types": [
+            "string"
+          ],
+          "description": "Which motion preset to use (maps to `animate-<name>-in/out`).",
+          "required": true,
+          "enumValues": [
+            "modal",
+            "overlay",
+            "slide-up",
+            "drawer",
+            "popover",
+            "toast",
+            "fade",
+            "page"
+          ]
+        },
+        "animate": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Per-instance opt-out. Global opt-out is `--motion-enable` / reduced-motion. @default true"
+        },
+        "onExited": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired after the exit animation completes (before unmount).",
+          "kind": "callback",
+          "callbackArgs": []
+        },
         "show": {
           "types": [
             "boolean"
@@ -46874,7 +47198,7 @@
           "types": [
             "string"
           ],
-          "description": "Value that changes on navigation (e.g. `location.pathname`).",
+          "description": "Value that changes on navigation (a page path).",
           "required": true
         },
         "children": {
@@ -50411,9 +50735,10 @@
         },
         "children": {
           "types": [
-            "node"
+            "node",
+            "function"
           ],
-          "description": "Compiled mode: render children directly instead of resolving from context"
+          "description": "Compiled mode: render children directly instead of resolving from context. A function receives the slot's presence — compiled self-overlaying content (Modal / ConfirmDialog) takes it as `isOpen`/`onExited` to play its exit."
         },
         "pattern": {
           "types": [
@@ -51663,14 +51988,15 @@
           "types": [
             "string"
           ],
-          "description": "What made this version (a user save, an agent turn, a restore, an undo/redo, a snapshot).",
+          "description": "What made this version (a user save, an agent turn, a restore, an undo/redo, a snapshot, a merge of a teammate's work).",
           "enumValues": [
             "user",
             "agent",
             "restore",
             "undo",
             "redo",
-            "snapshot"
+            "snapshot",
+            "merge"
           ]
         },
         "additions": {
@@ -52091,6 +52417,52 @@
               "name": "to",
               "type": "string",
               "required": true
+            }
+          ]
+        },
+        "onTransitionClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Direct transition-click callback, for React hosts (e.g. a canvas node).",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "transition",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "index": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "from": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "to": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "index",
+                  "event",
+                  "from",
+                  "to"
+                ]
+              }
             }
           ]
         },

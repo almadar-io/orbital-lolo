@@ -216,6 +216,7 @@ pub(crate) fn lower_trait_decl(
         // sees the same `PayloadField[]` the compiler will, and only judges
         // call sites this file can decide alone (see `payload_contract`).
         super::payload_contract::check_trait_payload_contracts(&lowered, entities)?;
+        super::render_prop_types::check_trait_render_prop_types(&lowered, entity_names)?;
         Ok(lowered)
     }
 }
@@ -333,6 +334,7 @@ pub(crate) fn lower_trait_reference(
                     required: None,
                     ref_id: None,
                     forwarded_from: None,
+                    nested_forwarded_from: Vec::new(),
                     payload_for: None,
                 }
             } else {
@@ -359,6 +361,7 @@ pub(crate) fn lower_trait_reference(
                     required: None,
                     ref_id: None,
                     forwarded_from: None,
+                    nested_forwarded_from: Vec::new(),
                     payload_for: None,
                 }
             };

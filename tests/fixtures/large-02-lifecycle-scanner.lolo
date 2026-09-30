@@ -45,10 +45,6 @@ orbital LifecycleOrbital {
         @label "Age threshold (days)"
         @description "Records older than this many days transition fromStatus → toStatus."
         @tier "infra"
-      dryRun        : boolean = false
-        @label "Dry-run mode"
-        @description "When true, surfaces the knobs but the scan does not persist transitions."
-        @tier "infra"
     }
     initial: idle
     state idle {

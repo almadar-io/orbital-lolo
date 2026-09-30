@@ -508,6 +508,26 @@ pub enum LowerError {
         entity: String,
     },
 
+    /// A declared config knob nothing in the orbital reads (no `@config.<knob>`
+    /// in an effect, guard, render tree or another knob's default): a call site
+    /// can set it and nothing changes (G-ORB-027).
+    #[error("config knobs declared but never read (no `@config.<knob>` anywhere in the orbital): {} — use each where its label promises, or remove it", unread.join(", "))]
+    ConfigKnobUnread { unread: Vec<String> },
+
+    /// A render-ui prop the pattern declares object-only takes ONE record, but
+    /// the binding carries a collection, or (for an `entity`-kind prop) a row
+    /// of another entity. `orbital_core::type_compat::record_prop_binding_mismatch`
+    /// owns the rule; the compiler's L2 binding check applies the same one.
+    #[error("trait {trait_name:?}: `{pattern}.{prop}` takes a single {expected} record but `{binding}` is {actual} — bind one row of the trait's entity (a by-id fetch result, or the selected row)")]
+    RenderPropNotARecord {
+        trait_name: String,
+        pattern: String,
+        prop: String,
+        binding: String,
+        expected: String,
+        actual: String,
+    },
+
     /// Trait reads `@entity.<field>` in render-ui / a guard / an effect but
     /// no transition runs `(set @entity.<field> <value>)`. Per the
     /// explicit-binding rule, every `@entity.X` read must be backed by an

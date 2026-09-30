@@ -688,6 +688,7 @@ impl Parser {
                     span,
                 }
             };
+            reject_duplicate_config_key(&out, &field)?;
             out.push(field);
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -1460,7 +1461,12 @@ impl Parser {
             let tag = self.lang.canon_tag(&tag).map(str::to_string).unwrap_or(tag);
             match tag.as_str() {
                 "background" => background = true,
-                _ => return Err(ParseError::InvalidTickTag { value: tag, span: tag_span }),
+                _ => {
+                    return Err(ParseError::InvalidTickTag {
+                        value: tag,
+                        span: tag_span,
+                    })
+                }
             }
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -1574,7 +1580,7 @@ impl Parser {
                 if ann_tier.is_some() {
                     tier = ann_tier;
                 }
-                out.push(ConfigField {
+                let field = ConfigField {
                     name,
                     type_expr,
                     default,
@@ -1584,7 +1590,9 @@ impl Parser {
                     tier,
                     required,
                     span,
-                });
+                };
+                reject_duplicate_config_key(&out, &field)?;
+                out.push(field);
             } else {
                 break;
             }
@@ -1669,4 +1677,23 @@ impl Parser {
         }
         false
     }
+}
+
+/// A `config { … }` block naming the same key twice: the later entry would
+/// silently shadow (or be shadowed by) the earlier one.
+fn reject_duplicate_config_key(
+    existing: &[ConfigField],
+    field: &ConfigField,
+) -> Result<(), ParseError> {
+    let Some(first) = existing.iter().find(|f| f.name == field.name) else {
+        return Ok(());
+    };
+    Err(ParseError::InvalidType {
+        span: field.span,
+        message: format!(
+            "ELOLO_DUPLICATE_CONFIG_KEY: config key '{}' is stated twice in the same block \
+             (first at {}:{}, again at {}:{}) — keep one entry",
+            field.name, first.span.line, first.span.col, field.span.line, field.span.col
+        ),
+    })
 }

@@ -250,7 +250,7 @@ orbital SigilOrbital {
   trait SigilRender -> SigilData [interaction, instance] {
     initial: idle
     state idle {
-      INIT -> idle
+      INIT -> idle when (and @config.actionPayload @config.targetRow @config.actor)
         (render-ui main { type: box  padding: md })
     }
     config {
@@ -327,7 +327,7 @@ orbital SiblingOrbital {
   trait SiblingRender -> SiblingData [interaction, instance] {
     initial: idle
     state idle {
-      INIT -> idle
+      INIT -> idle when @config.items
         (render-ui main { type: box  padding: md })
       SAVE -> idle
         (notify info "saved")

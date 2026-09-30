@@ -17,7 +17,8 @@ use orbital_core::schema::{
     FieldDefinition, FieldType, ListenDefinition, ListenSource, Orbital as CoreOrbital,
     OrbitalRefObject, OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
     Persistence as CorePersistence, RelationDefinition, SExpression, StateDefinition, StateMachine,
-    StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef, ThemeTokens, ThemeVariant,
+    MotionShapeTokens, MotionTokens, StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef,
+    ThemeTokens, ThemeVariant,
     TickDefinition, TraitCategory, TraitDefinition, TraitReference, TransitionDefinition,
     UseDeclaration,
 };
@@ -29,6 +30,8 @@ pub(crate) mod entity;
 mod orbital_ref;
 mod page;
 mod payload_contract;
+mod config_knob_read;
+mod render_prop_types;
 mod r#trait;
 mod type_helpers;
 
@@ -370,6 +373,10 @@ fn lower_to_orb_names_only(
     // `.orb` carries one shape (see `orbital_core::schema::normalize_fn_shapes`).
     orbital_core::schema::normalize_fn_shapes(&mut schema);
 
+    for orbital in &schema.orbitals {
+        config_knob_read::check_orbital_config_knobs_read(orbital)?;
+    }
+
     Ok(schema)
 }
 
@@ -380,6 +387,7 @@ fn lower_theme_decl(decl: &ThemeDecl) -> ThemeRef {
         ThemeDecl::Reference(key) => ThemeRef::Reference(key.clone()),
         ThemeDecl::Inline(inline) => ThemeRef::Inline(ThemeDefinition {
             name: inline.name.clone(),
+            display_name: inline.display_name.clone(),
             tokens: lower_theme_tokens(&inline.tokens),
             variants: if inline.variants.is_empty() {
                 None
@@ -404,6 +412,31 @@ fn theme_map(entries: &[(String, String)]) -> Option<HashMap<String, String>> {
     }
 }
 
+/// A typed-axis category's flat `key: "value"` entries → the typed struct.
+/// Keys were checked against `THEME_TYPED_AXIS_KEYS` at parse time, so every
+/// entry maps to a `String` field and deserialization cannot fail.
+fn typed_theme_axis<T: serde::de::DeserializeOwned>(entries: &[(String, String)]) -> Option<T> {
+    if entries.is_empty() {
+        return None;
+    }
+    let obj: serde_json::Map<String, serde_json::Value> = entries
+        .iter()
+        .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
+        .collect();
+    serde_json::from_value(serde_json::Value::Object(obj)).ok()
+}
+
+/// The `.lolo` `motion { … }` category carries only motion-shape keys; they
+/// become `MotionTokens.shapes` (durations/easings/intents stay `.orb`-only).
+fn motion_shapes(entries: &[(String, String)]) -> Option<MotionTokens> {
+    typed_theme_axis::<MotionShapeTokens>(entries).map(|shapes| MotionTokens {
+        durations: None,
+        easings: None,
+        intents: None,
+        shapes: Some(shapes),
+    })
+}
+
 fn lower_theme_tokens(maps: &ThemeTokenMaps) -> ThemeTokens {
     ThemeTokens {
         colors: theme_map(&maps.colors),
@@ -412,15 +445,16 @@ fn lower_theme_tokens(maps: &ThemeTokenMaps) -> ThemeTokens {
         typography: theme_map(&maps.typography),
         shadows: theme_map(&maps.shadows),
         density: None,
-        type_scale: None,
-        motion: None,
+        type_scale: typed_theme_axis(&maps.type_scale),
+        motion: motion_shapes(&maps.motion),
         iconography: None,
-        elevation: None,
-        geometry: None,
+        elevation: typed_theme_axis(&maps.elevation),
+        geometry: typed_theme_axis(&maps.geometry),
         // Typed color/illustration axis (§157/C1): not yet authored from `.lolo`
         // theme blocks, same as every other still-unauthored knob above.
         color: None,
         illustration: None,
+        surface: typed_theme_axis(&maps.surface),
     }
 }
 
@@ -432,13 +466,14 @@ fn lower_theme_variant(maps: &ThemeTokenMaps) -> ThemeVariant {
         typography: theme_map(&maps.typography),
         shadows: theme_map(&maps.shadows),
         density: None,
-        type_scale: None,
-        motion: None,
+        type_scale: typed_theme_axis(&maps.type_scale),
+        motion: motion_shapes(&maps.motion),
         iconography: None,
-        elevation: None,
-        geometry: None,
+        elevation: typed_theme_axis(&maps.elevation),
+        geometry: typed_theme_axis(&maps.geometry),
         color: None,
         illustration: None,
+        surface: typed_theme_axis(&maps.surface),
     }
 }
 

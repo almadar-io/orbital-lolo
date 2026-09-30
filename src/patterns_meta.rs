@@ -13,7 +13,7 @@
 //! for L1.3's payload-literal mismatch), extend the parsed shape here
 //! rather than reaching into orbital-compiler.
 
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
 const PATTERNS_JSON: &str = include_str!("baked/patterns-registry.json");
@@ -85,6 +85,43 @@ pub fn event_prop_names() -> &'static HashSet<String> {
         }
         names
     })
+}
+
+/// Props the registry declares object-only (types carry `object`, never
+/// `array`): each takes ONE record. The value is whether the prop is
+/// `kind: "entity"` (it renders the trait's linked entity).
+static RECORD_PROPS: OnceLock<HashMap<(String, String), bool>> = OnceLock::new();
+
+pub fn record_prop(pattern: &str, prop: &str) -> Option<bool> {
+    RECORD_PROPS
+        .get_or_init(|| {
+            let mut out = HashMap::new();
+            let Ok(parsed) = serde_json::from_str::<serde_json::Value>(PATTERNS_JSON) else {
+                return out;
+            };
+            let Some(patterns) = parsed.get("patterns").and_then(|v| v.as_object()) else {
+                return out;
+            };
+            for (pattern_name, pattern_value) in patterns {
+                let Some(props) = pattern_value.get("propsSchema").and_then(|v| v.as_object()) else {
+                    continue;
+                };
+                for (prop_name, prop_value) in props {
+                    let types: Vec<&str> = prop_value
+                        .get("types")
+                        .and_then(|v| v.as_array())
+                        .map(|a| a.iter().filter_map(|t| t.as_str()).collect())
+                        .unwrap_or_default();
+                    if types.contains(&"object") && !types.contains(&"array") {
+                        let entity_kind = prop_value.get("kind").and_then(|v| v.as_str()) == Some("entity");
+                        out.insert((pattern_name.clone(), prop_name.clone()), entity_kind);
+                    }
+                }
+            }
+            out
+        })
+        .get(&(pattern.to_string(), prop.to_string()))
+        .copied()
 }
 
 #[cfg(test)]

@@ -50,43 +50,7 @@ orbital TradeOrderOrbital {
         @label "Row actions"
         @description "Buttons users can click on each trade order row"
         @tier "presentation"
-      orderType : "market" | "limit" | "stop" | "stop-limit" | "trailing" = "market"
-        @label "Default order type"
-        @tier "domain"
         @synonyms "order kind"
-      executionVenuePolicy : "best-execution" | "primary-only" | "dark-pool-preferred" | "lit-only" = "best-execution"
-        @label "Execution venue policy"
-        @description "Routing strategy across listed venues + dark pools."
-        @tier "domain"
-        @synonyms "smart order routing, SOR"
-      positionLimitUSD : number = 1000000
-        @label "Position limit (USD)"
-        @description "Maximum notional position per instrument before block."
-        @tier "domain"
-        @synonyms "size limit, max position"
-      dailyVarLimitUSD : number = 250000
-        @label "Daily VaR limit (USD)"
-        @description "Maximum daily value-at-risk before new orders block."
-        @tier "domain"
-        @synonyms "risk limit, daily loss limit"
-      washTradePreventionMinutes : number = 30
-        @label "Wash-trade prevention (min)"
-        @description "Minimum minutes between offsetting trades on the same instrument."
-        @tier "domain"
-        @synonyms "self-cross prevention"
-      priceCollarsBps : number = 500
-        @label "Price collars (bps)"
-        @description "Maximum bps deviation from reference price before order rejected."
-        @tier "domain"
-        @synonyms "price band, fat-finger guard"
-      partialFillsAllowed : boolean = true
-        @label "Allow partial fills"
-        @description "When false, only fill-or-kill is accepted."
-        @tier "domain"
-      clientSideRiskCheck : "soft" | "hard" | "off" = "hard"
-        @label "Pre-trade risk check"
-        @description "soft = warn-and-allow; hard = block; off = skip."
-        @tier "domain"
     }
     initial: loading
     state loading {

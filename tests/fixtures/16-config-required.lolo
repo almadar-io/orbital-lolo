@@ -14,6 +14,7 @@ orbital ConfigRequiredOrbital {
     state idle {
       LOAD -> idle
         (fetch Widget { id: ?id })
+        (render-ui main { type: page-header, title: @config.title, subtitle: @config.subtitle, icon: @config.icon })
     }
   }
 }

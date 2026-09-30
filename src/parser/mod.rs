@@ -699,6 +699,7 @@ impl Parser {
         let span = self.peek_span();
         self.expect_kind(&TokenKind::LBrace, "'{' to open an inline theme")?;
         let mut name: Option<String> = None;
+        let mut display_name: Option<String> = None;
         let mut tokens = ThemeTokenMaps::default();
         let mut variants: Vec<(String, ThemeTokenMaps)> = Vec::new();
         loop {
@@ -719,6 +720,24 @@ impl Parser {
                         other => {
                             return Err(ParseError::UnexpectedToken {
                                 expected: "a quoted theme name".to_string(),
+                                got: format!("{:?}", other),
+                                span: self.peek_span(),
+                            })
+                        }
+                    }
+                    self.expect_newline_or_eof()?;
+                }
+                TokenKind::Identifier(kw) if kw == "displayName" => {
+                    self.advance();
+                    self.expect_kind(&TokenKind::Colon, "':' after displayName")?;
+                    match self.peek().clone() {
+                        TokenKind::String(s) => {
+                            self.advance();
+                            display_name = Some(s);
+                        }
+                        other => {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: "a quoted theme display name".to_string(),
                                 got: format!("{:?}", other),
                                 span: self.peek_span(),
                             })
@@ -747,7 +766,8 @@ impl Parser {
                 }
                 other => {
                     return Err(ParseError::UnexpectedToken {
-                        expected: "name:, tokens { … }, variants { … }, or }".to_string(),
+                        expected: "name:, displayName:, tokens { … }, variants { … }, or }"
+                            .to_string(),
                         got: format!("{:?}", other),
                         span: self.peek_span(),
                     })
@@ -762,6 +782,7 @@ impl Parser {
         })?;
         Ok(ThemeDecl::Inline(InlineTheme {
             name,
+            display_name,
             tokens,
             variants,
         }))
@@ -784,15 +805,31 @@ impl Parser {
                     let cat_span = self.peek_span();
                     self.advance();
                     let entries = self.parse_theme_string_map()?;
+                    if let Some((_, keys)) =
+                        THEME_TYPED_AXIS_KEYS.iter().find(|(axis, _)| *axis == cat)
+                    {
+                        if let Some((bad, _)) = entries.iter().find(|(k, _)| !keys.contains(&k.as_str())) {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: format!("a `{}` token: {}", cat, keys.join(", ")),
+                                got: bad.clone(),
+                                span: cat_span,
+                            });
+                        }
+                    }
                     match cat.as_str() {
                         "colors" => maps.colors = entries,
                         "radii" => maps.radii = entries,
                         "spacing" => maps.spacing = entries,
                         "typography" => maps.typography = entries,
                         "shadows" => maps.shadows = entries,
+                        "typeScale" => maps.type_scale = entries,
+                        "geometry" => maps.geometry = entries,
+                        "elevation" => maps.elevation = entries,
+                        "surface" => maps.surface = entries,
+                        "motion" => maps.motion = entries,
                         _ => return Err(ParseError::UnexpectedToken {
                             expected:
-                                "a token category: colors, radii, spacing, typography, or shadows"
+                                "a token category: colors, radii, spacing, typography, shadows, typeScale, geometry, elevation, surface, or motion"
                                     .to_string(),
                             got: cat,
                             span: cat_span,
@@ -802,7 +839,7 @@ impl Parser {
                 other => {
                     return Err(ParseError::UnexpectedToken {
                         expected:
-                            "a token category (colors, radii, spacing, typography, shadows) or }"
+                            "a token category (colors, radii, spacing, typography, shadows, typeScale, geometry, elevation, surface, motion) or }"
                                 .to_string(),
                         got: format!("{:?}", other),
                         span: self.peek_span(),
@@ -1399,6 +1436,63 @@ mod tests {
         }
     }
 
+    const TYPED_AXES_THEME: &str = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    name: \"deco\"\n    tokens {\n      typeScale {\n        displayFamily: \"Limelight, serif\"\n        headingTransform: \"uppercase\"\n      }\n      geometry {\n        cornerShape: \"bevel\"\n        borderStyle: \"double\"\n      }\n      elevation {\n        pressedElevation: \"inset 1px 1px 0 #000\"\n      }\n      surface {\n        pageImage: \"linear-gradient(#000, #111)\"\n      }\n    }\n    variants {\n      dark {\n        surface {\n          backdrop: \"blur(4px)\"\n        }\n      }\n    }\n  }\n}";
+
+    #[test]
+    fn parse_inline_theme_typed_axes() {
+        let prog = p(TYPED_AXES_THEME);
+        let Some(ThemeDecl::Inline(inline)) = prog.orbitals[0].theme.clone() else {
+            panic!("expected inline theme");
+        };
+        assert_eq!(
+            inline.tokens.type_scale,
+            vec![
+                ("displayFamily".to_string(), "Limelight, serif".to_string()),
+                ("headingTransform".to_string(), "uppercase".to_string()),
+            ]
+        );
+        assert_eq!(inline.tokens.geometry.len(), 2);
+        assert_eq!(inline.tokens.elevation.len(), 1);
+        assert_eq!(inline.tokens.surface.len(), 1);
+        assert!(
+            inline.tokens.colors.is_empty(),
+            "control: legacy maps untouched"
+        );
+        assert_eq!(
+            inline.variants[0].1.surface,
+            vec![("backdrop".to_string(), "blur(4px)".to_string())]
+        );
+    }
+
+    #[test]
+    fn parse_inline_theme_typed_axis_rejects_unknown_key() {
+        let src = TYPED_AXES_THEME.replace("cornerShape", "cornerShap");
+        let err = parse_str(&src).expect_err("unknown geometry key must fail");
+        let msg = format!("{err}");
+        assert!(
+            msg.contains("cornerShap") && msg.contains("cornerShape"),
+            "got: {msg}"
+        );
+    }
+
+    #[test]
+    fn parse_inline_theme_typed_axis_rejects_nested_scale_key() {
+        let src = TYPED_AXES_THEME.replace("headingTransform", "scale");
+        assert!(
+            parse_str(&src).is_err(),
+            "nested typeScale fields stay .orb-only"
+        );
+    }
+
+    #[test]
+    fn parse_inline_theme_legacy_typography_accepts_any_key() {
+        let src = TYPED_AXES_THEME.replace("typeScale {", "typography {");
+        assert!(
+            parse_str(&src).is_ok(),
+            "control: typography stays free-form"
+        );
+    }
+
     #[test]
     fn parse_inline_theme_requires_name() {
         let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    tokens {\n      colors {\n        primary: \"#e11d48\"\n      }\n    }\n  }\n}";
@@ -1784,6 +1878,38 @@ mod tests {
         let prog = p(src);
         let t = &prog.orbitals[0].traits[0];
         assert_eq!(t.config[0].tier, None);
+    }
+
+    fn config_dup_src(a: &str, b: &str) -> String {
+        format!("orbital O {{\n  uses M from \"std/behaviors/x\"\n  entity E {{ id : string! }}\n  trait A = M.traits.T -> E {{\n    config {{\n{a}\n    }}\n  }}\n  trait B = M.traits.T -> E {{\n    config {{\n{b}\n    }}\n  }}\n}}")
+    }
+
+    #[test]
+    fn duplicate_call_site_config_key_errors() {
+        let src = config_dup_src("      viewerRole: @user.role\n      viewerRole: @user.role", "      x: 1");
+        let err = parse_str(&src).expect_err("duplicate key must fail");
+        let msg = err.to_string();
+        assert!(msg.contains("ELOLO_DUPLICATE_CONFIG_KEY"), "unexpected: {msg}");
+        assert!(msg.contains("viewerRole"), "must name the key: {msg}");
+    }
+
+    #[test]
+    fn duplicate_declared_config_key_errors() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E {\n    state s { I -> s }\n    config {\n      k : string = \"a\"\n      k : string = \"b\"\n    }\n  }\n}";
+        let err = parse_str(src).expect_err("duplicate key must fail");
+        assert!(err.to_string().contains("ELOLO_DUPLICATE_CONFIG_KEY"), "unexpected: {err}");
+    }
+
+    #[test]
+    fn distinct_config_keys_pass() {
+        let src = config_dup_src("      a: 1\n      b: 2", "      c: 3");
+        parse_str(&src).expect("distinct keys must parse");
+    }
+
+    #[test]
+    fn same_config_key_in_different_blocks_passes() {
+        let src = config_dup_src("      viewerRole: @user.role", "      viewerRole: @user.role");
+        parse_str(&src).expect("the same key in two traits must parse");
     }
 
     #[test]

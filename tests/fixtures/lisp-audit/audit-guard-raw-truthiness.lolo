@@ -63,7 +63,6 @@ orbital GuardRawOrbital {
     }
 
     config {
-      threshold : number = 0
     }
   }
 

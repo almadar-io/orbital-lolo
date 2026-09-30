@@ -302,6 +302,7 @@ pub(crate) fn lower_config_fields_to_map(
                 required: if cf.required { Some(true) } else { None },
                 ref_id: None,
                 forwarded_from: None,
+                nested_forwarded_from: Vec::new(),
                 payload_for: None,
             },
         );
