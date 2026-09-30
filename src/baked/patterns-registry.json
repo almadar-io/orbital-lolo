@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-09-30T15:57:56.420Z",
+  "exportedAt": "2026-09-30T21:06:42.691Z",
   "patterns": {
     "entity-table": {
       "type": "entity-table",
@@ -177,6 +177,28 @@
                   "boolean"
                 ]
               },
+              "align": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "left",
+                  "center",
+                  "right"
+                ]
+              },
+              "format": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "date",
+                  "currency",
+                  "number",
+                  "boolean",
+                  "percent"
+                ]
+              },
               "render": {
                 "types": [
                   "function"
@@ -225,6 +247,28 @@
                   "boolean"
                 ]
               },
+              "align": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "left",
+                  "center",
+                  "right"
+                ]
+              },
+              "format": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "date",
+                  "currency",
+                  "number",
+                  "boolean",
+                  "percent"
+                ]
+              },
               "render": {
                 "types": [
                   "function"
@@ -232,6 +276,26 @@
               }
             }
           }
+        },
+        "itemClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "When set, rows are activatable and emit UI:{itemClickEvent} with { id, row }",
+          "kind": "event-ref",
+          "entityRowField": "row",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "row",
+              "type": "@entity",
+              "required": true
+            }
+          ]
         },
         "itemActions": {
           "types": [
@@ -724,6 +788,12 @@
                   "default"
                 ]
               },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
               "onClick": {
                 "types": [
                   "function"
@@ -880,7 +950,7 @@
           "types": [
             "array"
           ],
-          "description": "Fields to display - accepts string[] or {key, header}[] for unified interface",
+          "description": "Fields to display: field names, or declared fields ({ name, label, variant, format, colorMap, labels })",
           "required": true,
           "items": {
             "types": [
@@ -888,16 +958,6 @@
               "object"
             ],
             "properties": {
-              "key": {
-                "types": [
-                  "string"
-                ]
-              },
-              "header": {
-                "types": [
-                  "string"
-                ]
-              },
               "name": {
                 "types": [
                   "string"
@@ -907,8 +967,75 @@
                 "types": [
                   "string"
                 ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "h3",
+                  "h4",
+                  "body",
+                  "caption",
+                  "badge",
+                  "small",
+                  "progress"
+                ]
+              },
+              "format": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "date",
+                  "currency",
+                  "number",
+                  "boolean",
+                  "percent"
+                ]
+              },
+              "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
-            }
+            },
+            "required": [
+              "name"
+            ]
           }
         },
         "fieldNames": {
@@ -921,6 +1048,38 @@
               "string"
             ]
           }
+        },
+        "itemClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "When set, clicking a row emits UI:{itemClickEvent} with { id, row }. Omit = rows are not clickable.",
+          "kind": "event-ref",
+          "entityRowField": "row",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "row",
+              "type": "@entity",
+              "required": true
+            }
+          ]
+        },
+        "completedField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field that marks an item completed (`true` strikes its title through)"
+        },
+        "disabledField": {
+          "types": [
+            "string"
+          ],
+          "description": "Row field that marks an item disabled (`true` dims the row and disables its click)"
         }
       }
     },
@@ -1121,16 +1280,6 @@
               "object"
             ],
             "properties": {
-              "key": {
-                "types": [
-                  "string"
-                ]
-              },
-              "header": {
-                "types": [
-                  "string"
-                ]
-              },
               "name": {
                 "types": [
                   "string"
@@ -1140,8 +1289,75 @@
                 "types": [
                   "string"
                 ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "h3",
+                  "h4",
+                  "body",
+                  "caption",
+                  "badge",
+                  "small",
+                  "progress"
+                ]
+              },
+              "format": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "date",
+                  "currency",
+                  "number",
+                  "boolean",
+                  "percent"
+                ]
+              },
+              "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
-            }
+            },
+            "required": [
+              "name"
+            ]
           }
         },
         "fieldNames": {
@@ -1166,16 +1382,6 @@
               "object"
             ],
             "properties": {
-              "key": {
-                "types": [
-                  "string"
-                ]
-              },
-              "header": {
-                "types": [
-                  "string"
-                ]
-              },
               "name": {
                 "types": [
                   "string"
@@ -1185,9 +1391,96 @@
                 "types": [
                   "string"
                 ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "h3",
+                  "h4",
+                  "body",
+                  "caption",
+                  "badge",
+                  "small",
+                  "progress"
+                ]
+              },
+              "format": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "date",
+                  "currency",
+                  "number",
+                  "boolean",
+                  "percent"
+                ]
+              },
+              "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
-            }
+            },
+            "required": [
+              "name"
+            ]
           }
+        },
+        "itemClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "When set, clicking a card emits UI:{itemClickEvent} with { id, row }. Omit = cards are not clickable.",
+          "kind": "event-ref",
+          "entityRowField": "row",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "row",
+              "type": "@entity",
+              "required": true
+            }
+          ]
         },
         "itemActions": {
           "types": [
@@ -1649,6 +1942,13 @@
             "label"
           ]
         },
+        "closeEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "The event of the declared action that dismisses the panel. The matching action renders as the header close ×; omitted, no × is drawn.",
+          "kind": "event"
+        },
         "footer": {
           "types": [
             "node"
@@ -1666,7 +1966,7 @@
           "types": [
             "array"
           ],
-          "description": "Fields to display - accepts string[], {key, header}[], or DetailField[]",
+          "description": "Fields to display: field names, or declared fields ({ name, label, variant, format, colorMap, labels })",
           "required": true,
           "items": {
             "types": [
@@ -1674,15 +1974,79 @@
               "object"
             ],
             "properties": {
-              "key": {
+              "name": {
                 "types": [
                   "string"
                 ]
               },
-              "header": {
+              "label": {
                 "types": [
                   "string"
                 ]
+              },
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "h3",
+                  "h4",
+                  "body",
+                  "caption",
+                  "badge",
+                  "small",
+                  "progress"
+                ]
+              },
+              "format": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "date",
+                  "currency",
+                  "number",
+                  "boolean",
+                  "percent"
+                ]
+              },
+              "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
               },
               "type": {
                 "types": [
@@ -1728,7 +2092,7 @@
               }
             },
             "required": [
-              "key"
+              "name"
             ]
           }
         },
@@ -2275,6 +2639,16 @@
                   ]
                 }
               },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
               "relation": {
                 "types": [
                   "object"
@@ -2828,6 +3202,16 @@
                         "array"
                       ],
                       "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "labels": {
+                      "types": [
+                        "object"
+                      ],
+                      "mapValue": {
                         "types": [
                           "string"
                         ]
@@ -3192,6 +3576,16 @@
                   ]
                 }
               },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
               "relation": {
                 "types": [
                   "object"
@@ -3745,6 +4139,16 @@
                         "array"
                       ],
                       "items": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "labels": {
+                      "types": [
+                        "object"
+                      ],
+                      "mapValue": {
                         "types": [
                           "string"
                         ]
@@ -9309,6 +9713,13 @@
           ],
           "description": "actions prop"
         },
+        "icon": {
+          "types": [
+            "icon",
+            "string"
+          ],
+          "description": "Icon shown instead of the variant's default (Lucide name or component)"
+        },
         "className": {
           "types": [
             "string"
@@ -9514,6 +9925,15 @@
               "object"
             ],
             "properties": {
+              "type": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "item",
+                  "divider"
+                ]
+              },
               "id": {
                 "types": [
                   "string"
@@ -10541,6 +10961,12 @@
           ],
           "description": "Role for accessibility"
         },
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Element id"
+        },
         "tabIndex": {
           "types": [
             "number"
@@ -10877,6 +11303,12 @@
               "string"
             ]
           }
+        },
+        "role": {
+          "types": [
+            "string"
+          ],
+          "description": "Accessibility role"
         },
         "format": {
           "types": [
@@ -13489,8 +13921,7 @@
           "types": [
             "string"
           ],
-          "description": "App name",
-          "default": "My App"
+          "description": "App name"
         },
         "logo": {
           "types": [
@@ -13637,8 +14068,7 @@
           "types": [
             "string"
           ],
-          "description": "Title displayed above the counter",
-          "default": "Counter"
+          "description": "Title displayed above the counter"
         },
         "showReset": {
           "types": [
@@ -13690,8 +14120,7 @@
           "types": [
             "string"
           ],
-          "description": "App name shown in sidebar",
-          "default": "{{APP_TITLE}}"
+          "description": "App name shown in sidebar"
         },
         "logo": {
           "types": [
@@ -14066,8 +14495,7 @@
           "types": [
             "string"
           ],
-          "description": "Application / game title shown as a floating chip",
-          "default": "Game"
+          "description": "Application / game title shown as a floating chip"
         },
         "hud": {
           "types": [
@@ -15030,13 +15458,36 @@
           "types": [
             "array"
           ],
-          "description": "Fields to display",
-          "required": true,
+          "description": "Entity fields the timeline draws; each slot is named by its own `*Field` prop.",
           "items": {
             "types": [
               "string"
             ]
           }
+        },
+        "titleField": {
+          "types": [
+            "string"
+          ],
+          "description": "Entity field holding each item's title."
+        },
+        "descriptionField": {
+          "types": [
+            "string"
+          ],
+          "description": "Entity field holding each item's description."
+        },
+        "dateField": {
+          "types": [
+            "string"
+          ],
+          "description": "Entity field holding each item's date."
+        },
+        "statusField": {
+          "types": [
+            "string"
+          ],
+          "description": "Entity field holding each item's status (complete | active | pending | error)."
         },
         "itemActions": {
           "types": [
@@ -15406,6 +15857,20 @@
             "portrait"
           ],
           "default": "square"
+        },
+        "srcField": {
+          "types": [
+            "string"
+          ],
+          "description": "Record field holding each image's URL (entity mode). Default `src`.",
+          "default": "src"
+        },
+        "captionField": {
+          "types": [
+            "string"
+          ],
+          "description": "Record field holding each image's caption (entity mode). Default `caption`.",
+          "default": "caption"
         }
       }
     },
@@ -18378,6 +18843,44 @@
           ],
           "description": "Whether this slot contains an event",
           "default": false
+        },
+        "onPointerDown": {
+          "types": [
+            "function"
+          ],
+          "description": "onPointerDown prop",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "onPointerUp": {
+          "types": [
+            "function"
+          ],
+          "description": "onPointerUp prop",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "onPointerCancel": {
+          "types": [
+            "function"
+          ],
+          "description": "onPointerCancel prop",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "onPointerLeave": {
+          "types": [
+            "function"
+          ],
+          "description": "onPointerLeave prop",
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "data-testid": {
+          "types": [
+            "string"
+          ],
+          "description": "data-testid prop"
         }
       }
     },
@@ -19403,6 +19906,28 @@
                 "mapValue": {
                   "types": [
                     "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
                   ]
                 }
               }
@@ -19465,6 +19990,28 @@
                 ]
               },
               "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
                 "types": [
                   "object"
                 ],
@@ -19536,6 +20083,26 @@
               "label"
             ]
           }
+        },
+        "itemClickEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "When set, clicking a card emits UI:{itemClickEvent} with { id, row }. Omit = cards are not clickable.",
+          "kind": "event-ref",
+          "entityRowField": "row",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "row",
+              "type": "@entity",
+              "required": true
+            }
+          ]
         },
         "maxInlineActions": {
           "types": [
@@ -19952,6 +20519,38 @@
                   "boolean",
                   "percent"
                 ]
+              },
+              "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -20010,6 +20609,38 @@
                   "boolean",
                   "percent"
                 ]
+              },
+              "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
               }
             },
             "required": [
@@ -21525,7 +22156,7 @@
           "types": [
             "string"
           ],
-          "description": "\"number\" (locale grouping), \"currency\" ($x.xx), \"percent\" (rounded %). Unset keeps the value's own decimals."
+          "description": "\"number\" (locale grouping), \"currency\" (locale currency), \"percent\" (rounded %). Unset keeps the value's own decimals."
         },
         "className": {
           "types": [
@@ -22515,8 +23146,7 @@
           "types": [
             "string"
           ],
-          "description": "Label for the link button",
-          "default": "Learn more"
+          "description": "Label for the link button"
         },
         "variant": {
           "types": [
@@ -23633,7 +24263,7 @@
           "types": [
             "array"
           ],
-          "description": "Scale points (defaults to a 5-point agree/disagree set)",
+          "description": "Scale points (defaults to a translated 5-point agree/disagree set)",
           "items": {
             "types": [
               "object"
@@ -25256,8 +25886,7 @@
             "string"
           ],
           "description": "Choice text content",
-          "required": true,
-          "default": "Charge forward into the fray"
+          "required": true
         },
         "index": {
           "types": [
@@ -25634,16 +26263,14 @@
           "types": [
             "string"
           ],
-          "description": "Speaker name displayed at the top",
-          "default": "Hero"
+          "description": "Speaker name displayed at the top"
         },
         "text": {
           "types": [
             "string"
           ],
           "description": "Dialogue text content",
-          "required": true,
-          "default": "The dungeon awaits. Choose your path wisely."
+          "required": true
         },
         "portrait": {
           "types": [
@@ -26227,8 +26854,7 @@
           "types": [
             "string"
           ],
-          "description": "Number formatting locale",
-          "default": "en-US"
+          "description": "Number formatting locale"
         }
       }
     },
@@ -29721,8 +30347,7 @@
             "string"
           ],
           "description": "Menu title",
-          "required": true,
-          "default": "Epic Quest"
+          "required": true
         },
         "subtitle": {
           "types": [
@@ -33419,7 +34044,7 @@
           "types": [
             "array"
           ],
-          "description": "Preset shortcuts. Defaults to the standard finance set (Last 7d / Last 30d / This Month / This Quarter / YTD). Pass an empty array to hide presets entirely.",
+          "description": "Preset shortcuts. Defaults to the translated standard finance set (Last 7d / Last 30d / This Month / This Quarter / YTD). Pass an empty array to hide presets entirely.",
           "items": {
             "types": [
               "object"
@@ -33468,15 +34093,13 @@
           "types": [
             "string"
           ],
-          "description": "From-input label.",
-          "default": "From"
+          "description": "From-input label."
         },
         "toLabel": {
           "types": [
             "string"
           ],
-          "description": "To-input label.",
-          "default": "To"
+          "description": "To-input label."
         },
         "className": {
           "types": [
@@ -33892,6 +34515,47 @@
                   "boolean"
                 ]
               },
+              "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "h3",
+                  "h4"
+                ]
+              },
               "icon": {
                 "types": [
                   "icon",
@@ -33982,6 +34646,47 @@
                   "boolean"
                 ]
               },
+              "colorMap": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "default",
+                    "primary",
+                    "secondary",
+                    "success",
+                    "warning",
+                    "danger",
+                    "error",
+                    "info",
+                    "neutral",
+                    "destructive"
+                  ]
+                }
+              },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "h3",
+                  "h4"
+                ]
+              },
               "icon": {
                 "types": [
                   "icon",
@@ -34062,9 +34767,21 @@
           "types": [
             "string"
           ],
-          "description": "When set, the whole row is clickable and emits UI:{itemClickEvent} with { id, row } (action-button clicks stopPropagation so they still win). Mirrors DataList's contract. When OMITTED and `itemActions` exist, the row click defaults to the first non-danger item action (the view/open action by authoring convention) — a danger action never becomes the row default (destructive actions require intentional reach).",
-          "kind": "event",
-          "default": ""
+          "description": "When set, the whole row is clickable and emits UI:{itemClickEvent} with { id, row } (action-button clicks stopPropagation so they still win). Mirrors DataList's contract. Omit = rows are not clickable.",
+          "kind": "event-ref",
+          "entityRowField": "row",
+          "emitPayloadSchema": [
+            {
+              "name": "id",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "row",
+              "type": "@entity",
+              "required": true
+            }
+          ]
         },
         "selectable": {
           "types": [
@@ -34587,6 +35304,38 @@
               "format": {
                 "types": [
                   "string"
+                ]
+              },
+              "aggregate": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "count",
+                  "sum"
+                ]
+              },
+              "filter": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "field": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "equals": {
+                    "types": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "field",
+                  "equals"
                 ]
               }
             },
@@ -36715,6 +37464,12 @@
           ],
           "description": "Role for accessibility"
         },
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Element id"
+        },
         "tabIndex": {
           "types": [
             "number"
@@ -36886,6 +37641,12 @@
             "string"
           ],
           "description": "Role for accessibility"
+        },
+        "id": {
+          "types": [
+            "string"
+          ],
+          "description": "Element id"
         },
         "tabIndex": {
           "types": [
@@ -47252,6 +48013,11 @@
                   "string"
                 ]
               },
+              "title": {
+                "types": [
+                  "string"
+                ]
+              },
               "fields": {
                 "types": [
                   "object"
@@ -47352,15 +48118,13 @@
           "types": [
             "string"
           ],
-          "description": "Confirm button label",
-          "default": "Confirm import"
+          "description": "Confirm button label"
         },
         "cancelLabel": {
           "types": [
             "string"
           ],
-          "description": "Cancel button label",
-          "default": "Cancel"
+          "description": "Cancel button label"
         },
         "indent": {
           "types": [
@@ -47854,8 +48618,7 @@
           "types": [
             "string"
           ],
-          "description": "Accessible label for the trigger button",
-          "default": "Add emoji"
+          "description": "Accessible label for the trigger button"
         },
         "className": {
           "types": [
@@ -49849,6 +50612,16 @@
                   ]
                 }
               },
+              "labels": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
               "format": {
                 "types": [
                   "string"
@@ -50507,15 +51280,13 @@
           "types": [
             "string"
           ],
-          "description": "Search field placeholder. Consumers own i18n — plain string prop, no package-internal translation (matches FloatingToolbar's convention).",
-          "default": "Type a command..."
+          "description": "Search field placeholder. Defaults to the translated \"Type a command...\"."
         },
         "emptyLabel": {
           "types": [
             "string"
           ],
-          "description": "Label shown when no command matches the query",
-          "default": "No matching commands"
+          "description": "Label shown when no command matches the query. Defaults to the translated message."
         },
         "className": {
           "types": [
@@ -51246,8 +52017,31 @@
           "types": [
             "string"
           ],
-          "description": "Row field holding the bar status (drives bar colour). Defaults to `status`.",
+          "description": "Row field holding the bar status. Defaults to `status`.",
           "default": "status"
+        },
+        "statusColorMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Bar colour per exact status value; unmapped statuses are primary bars.",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "enumValues": [
+              "default",
+              "primary",
+              "secondary",
+              "success",
+              "warning",
+              "danger",
+              "error",
+              "info",
+              "neutral",
+              "destructive"
+            ]
+          }
         },
         "groupField": {
           "types": [
