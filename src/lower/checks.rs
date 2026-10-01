@@ -1475,6 +1475,13 @@ pub(crate) fn check_listens_integrity(orbitals: &[CoreOrbital]) -> Result<(), Lo
     // post-inline pass do the real check once references are materialized.
     let mut trait_emits: HashMap<(String, String), HashSet<String>> = HashMap::new();
     let mut reference_traits: HashSet<(String, String)> = HashSet::new();
+    // An imported orbital's upstream traits arrive at inline, so a source
+    // naming one is the compiler's post-inline check too.
+    let imported_orbitals: HashSet<&str> = orbitals
+        .iter()
+        .filter(|o| o.reference.is_some())
+        .map(|o| o.name.as_str())
+        .collect();
     for orbital in orbitals {
         for trait_ref in &orbital.traits {
             match trait_ref {
@@ -1528,6 +1535,11 @@ pub(crate) fn check_listens_integrity(orbitals: &[CoreOrbital]) -> Result<(), Lo
                 // source trait is a reference — its emits aren't
                 // visible at this stage.
                 if reference_traits.contains(&(source_orbital.clone(), source_trait.clone())) {
+                    continue;
+                }
+                if imported_orbitals.contains(source_orbital.as_str())
+                    && !trait_emits.contains_key(&(source_orbital.clone(), source_trait.clone()))
+                {
                     continue;
                 }
                 let resolved = trait_emits

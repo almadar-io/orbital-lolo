@@ -365,6 +365,7 @@ impl Parser {
                     synonyms: None,
                     tier: None,
                     required: false,
+                    event_refs: Vec::new(),
                     span,
                 }),
             }
@@ -384,6 +385,7 @@ impl Parser {
                 synonyms: None,
                 tier: None,
                 required: false,
+                event_refs: Vec::new(),
                 span,
             });
         }
@@ -546,6 +548,7 @@ fn listens_from_object(value: &SExpression, span: Span) -> Result<Vec<Listen>, P
             synonyms: None,
             tier: None,
             target_trait: None,
+            external: false,
             span,
         });
     }

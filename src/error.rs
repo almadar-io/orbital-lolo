@@ -259,11 +259,11 @@ impl ParseError {
                 Some("`uses` needs a source path: `uses <name> from \"std/behaviors/<name>\"`".to_string()),
                 Some("std imports use the flat canonical form `std/behaviors/<name>` — topic folders never appear in import paths".to_string()),
             ),
-            ParseError::UnexpectedToken { expected, got, .. }
-                if expected.contains("{ or . or newline") && got.contains("Arrow") =>
+            ParseError::UnexpectedToken { expected, .. }
+                if expected.starts_with("`external` after `->` on a local listen") =>
             (
-                Some("a `listens` entry is `EVENT { … }` — the `EVENT -> target { payload }` direction form belongs to `emits`, not `listens`".to_string()),
-                Some("drop the `-> …` part; declare just the event name with its payload block".to_string()),
+                Some("on a local `listens` entry `->` only declares an external input (`EVENT -> external { … }`); `-> internal` and other scopes belong to `emits`".to_string()),
+                Some("write `EVENT { … }` for a local payload, `EVENT -> external { … }` for an input clients may send, or move the event to `emits`".to_string()),
             ),
             // `payload: { … }` under an emits entry (run 33: ActivityHeatmap
             // — the listens brace-block shape guessed with a keyword; the old
@@ -1114,6 +1114,17 @@ pub enum TypeError {
         reason: String,
         span: Span,
     },
+
+    #[error(
+        "ELOLO_T_EVENT_REF_POSITION: config `{knob}` holds a dotted event address at `{trail}`, \
+         which is not an `event`-typed position — `Trait.EVENT` / `Orbital.Trait.EVENT` is only \
+         an event value"
+    )]
+    EventRefPosition {
+        knob: String,
+        trail: String,
+        span: Span,
+    },
 }
 
 /// String label for the `TypeBody` kind — used only in error messages so we
@@ -1158,7 +1169,8 @@ impl TypeError {
             | TypeError::WrongTypeArgCount { span, .. }
             | TypeError::EventTypeWrongKind { span, .. }
             | TypeError::GenericTypeForbidden { span, .. }
-            | TypeError::PayloadSiblingUnresolved { span, .. } => *span,
+            | TypeError::PayloadSiblingUnresolved { span, .. }
+            | TypeError::EventRefPosition { span, .. } => *span,
         }
     }
 }

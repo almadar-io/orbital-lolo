@@ -689,6 +689,15 @@ pub(crate) fn lower_trait(
         }
     }
 
+    // Declared external inputs (`EVENT -> external { … }`), marked on their
+    // own event definition.
+    let external_inputs: HashSet<String> = t
+        .listens
+        .iter()
+        .filter(|l| l.external)
+        .map(|l| l.event.clone())
+        .collect();
+
     let events: Option<Vec<EventDefinition>> = if event_keys.is_empty() {
         None
     } else {
@@ -696,6 +705,7 @@ pub(crate) fn lower_trait(
             event_keys
                 .into_iter()
                 .map(|k| -> Result<EventDefinition, LowerError> {
+                    let is_external = external_inputs.contains(&k);
                     let name = humanize_event_key(&k, entity_hint);
                     let (description, synonyms, tier) = event_annotations
                         .get(&k)
@@ -786,6 +796,7 @@ pub(crate) fn lower_trait(
                         tier,
                         payload_schema: payload,
                         payload_entity,
+                        external: is_external.then_some(true),
                     })
                 })
                 .collect::<Result<Vec<_>, _>>()?,

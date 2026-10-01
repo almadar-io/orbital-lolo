@@ -141,6 +141,7 @@ pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 5] = [
             "borderHeavy",
             "cornerShape",
             "cornerShapePill",
+            "cornerShapeInteractive",
             "borderStyle",
             "borderStyleInteractive",
         ],
@@ -1013,6 +1014,9 @@ pub struct Listen {
     /// `-> Target.TRIGGER`: the imported trait that gains this route. Only
     /// an orbital import's `listens {}` carries one.
     pub target_trait: Option<String>,
+    /// `EVENT -> external { … }`: a declared external input, an event a client
+    /// outside the program may send this trait.
+    pub external: bool,
     pub span: Span,
 }
 
@@ -1077,6 +1081,9 @@ pub struct ConfigField {
     /// owning trait (the atom's own page binding is exempt). May
     /// coexist with a `default` (the default serves the demo page).
     pub required: bool,
+    /// Dotted event atoms in `default`, keyed by their trail inside it — each
+    /// must sit at an `event`-typed position.
+    pub event_refs: Vec<(String, Span)>,
     pub span: Span,
 }
 

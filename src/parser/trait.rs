@@ -649,11 +649,12 @@ impl Parser {
             let field = if !is_jsx_value && self.has_equals_before_entry_end() {
                 // Declaration form: `key : type = default [@annotations]`
                 let type_expr = self.parse_type_expr()?;
-                let default = if matches!(self.peek(), TokenKind::Equals) {
+                let (default, event_refs) = if matches!(self.peek(), TokenKind::Equals) {
                     self.advance();
-                    Some(self.parse_sexpr_or_value()?)
+                    let (value, refs) = self.parse_config_value()?;
+                    (Some(value), refs)
                 } else {
-                    None
+                    (None, Vec::new())
                 };
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
@@ -668,11 +669,12 @@ impl Parser {
                     synonyms,
                     tier,
                     required: false,
+                    event_refs,
                     span,
                 }
             } else {
                 // Plain wiring form: `key : value`
-                let value = self.parse_sexpr_or_value()?;
+                let (value, event_refs) = self.parse_config_value()?;
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
                 }
@@ -685,6 +687,7 @@ impl Parser {
                     synonyms: None,
                     tier: None,
                     required: false,
+                    event_refs,
                     span,
                 }
             };
@@ -1241,6 +1244,46 @@ impl Parser {
                     synonyms,
                     tier,
                     target_trait: None,
+                    external: false,
+                    span,
+                })
+            }
+            // Declared external input: `EVENT -> external { fields }`. The
+            // payload braces are mandatory (an empty `{}` declares no fields).
+            TokenKind::Arrow | TokenKind::UnicodeArrow => {
+                self.advance();
+                let word = self.expect_ident()?;
+                let word = self.lang.canon_keyword(&word).map(str::to_string).unwrap_or(word);
+                if word != "external" {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "`external` after `->` on a local listen (`EVENT -> external { … }`)".to_string(),
+                        got: word,
+                        span: self.peek_span(),
+                    });
+                }
+                if !matches!(self.peek(), TokenKind::LBrace) {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "a payload `{ … }` after `-> external` (write `{}` for none)".to_string(),
+                        got: format!("{:?}", self.peek()),
+                        span: self.peek_span(),
+                    });
+                }
+                let payload = self.parse_event_field_list()?;
+                if matches!(self.peek(), TokenKind::Newline) {
+                    self.advance();
+                }
+                let (description, synonyms, tier) = self.parse_event_annotations()?;
+                Ok(Listen {
+                    event: self.canon_event_name(first),
+                    triggers: None,
+                    guard: None,
+                    payload_mapping: Vec::new(),
+                    payload,
+                    description,
+                    synonyms,
+                    tier,
+                    target_trait: None,
+                    external: true,
                     span,
                 })
             }
@@ -1260,6 +1303,7 @@ impl Parser {
                     synonyms,
                     tier,
                     target_trait: None,
+                    external: false,
                     span,
                 })
             }
@@ -1362,6 +1406,7 @@ impl Parser {
                     synonyms: None,
                     tier: None,
                     target_trait,
+                    external: false,
                     span,
                 })
             }
@@ -1548,9 +1593,12 @@ impl Parser {
                     false
                 };
                 let mut default = None;
+                let mut event_refs = Vec::new();
                 if matches!(self.peek(), TokenKind::Equals) {
                     self.advance();
-                    default = Some(self.parse_sexpr_or_value()?);
+                    let (value, refs) = self.parse_config_value()?;
+                    default = Some(value);
+                    event_refs = refs;
                 }
                 // Legacy trailing-string description (kept as a fallback
                 // for the rare authoring that uses it directly).
@@ -1589,6 +1637,7 @@ impl Parser {
                     synonyms,
                     tier,
                     required,
+                    event_refs,
                     span,
                 };
                 reject_duplicate_config_key(&out, &field)?;

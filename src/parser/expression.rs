@@ -426,6 +426,9 @@ impl Parser {
                 }
                 let span = self.peek_span();
                 self.advance();
+                if let Some(dotted) = self.take_dotted_event_ref(&name, span) {
+                    return Ok(SExpression::String(dotted));
+                }
                 // A native rendering of `true`/`false`/`null` lexes as a
                 // plain identifier (the lexer stays language-free); the
                 // parser is the one place that knows the current language,

@@ -875,6 +875,7 @@ fn lower_orbital(
                     tier: None,
                     payload_schema: None,
                     payload_entity: None,
+                    external: None,
                 }]),
                 transitions: vec![TransitionDefinition {
                     from: StringOrArray::Single("init".to_string()),

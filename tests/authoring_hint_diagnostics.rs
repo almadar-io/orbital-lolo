@@ -149,19 +149,25 @@ fn unquoted_multiword_value_gets_quote_hint() {
 }
 
 #[test]
-fn emits_form_in_listens_gets_direction_hint() {
-    // Observed live (C-LISTENS-ARROW): emits' `EVENT -> external { … }` form
-    // copied into a listens block.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n    listens {\n      PING -> external {\n        x : number\n      }\n    }\n  }\n}";
+fn emits_scope_form_in_listens_gets_direction_hint() {
+    // Observed live (C-LISTENS-ARROW): emits' `EVENT -> internal { … }` form
+    // copied into a listens block. `-> external` is the external-input form.
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n    listens {\n      PING -> internal {\n        x : number\n      }\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
         suggestion
             .as_deref()
-            .is_some_and(|s| s.contains("belongs to `emits`")),
+            .is_some_and(|s| s.contains("belong to `emits`")),
         "expected listens-form hint, got {suggestion:?} for {err:?}"
     );
-    assert!(fix.as_deref().is_some_and(|f| f.contains("drop the `->")));
+    assert!(fix.as_deref().is_some_and(|f| f.contains("-> external")));
+}
+
+#[test]
+fn external_input_form_in_listens_parses() {
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      PING -> idle\n        (set @entity.x ?x)\n    }\n    listens {\n      PING -> external {\n        x : number\n      }\n    }\n  }\n}";
+    assert!(parse_str(src).is_ok());
 }
 
 #[test]

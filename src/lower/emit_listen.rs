@@ -1001,43 +1001,10 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
 }
 
 /// Split the parser's concatenated event string into (bare_event, source).
-/// Returns `(event, None)` when the event has no source prefix (local shape).
 pub(crate) fn split_listen_source(
     raw: &str,
 ) -> (String, Option<orbital_core::schema::ListenSource>) {
-    use orbital_core::schema::ListenSource;
-    let parts: Vec<&str> = raw.split('.').collect();
-    match parts.len() {
-        0 | 1 => (raw.to_string(), None),
-        2 => {
-            let (src, ev) = (parts[0], parts[1]);
-            if src == "*" {
-                (ev.to_string(), Some(ListenSource::Any))
-            } else {
-                (
-                    ev.to_string(),
-                    Some(ListenSource::Trait {
-                        trait_name: src.to_string(),
-                        trait_id: None,
-                    }),
-                )
-            }
-        }
-        n => {
-            let ev = parts[n - 1];
-            let trait_name = parts[n - 2];
-            let orbital = parts[..n - 2].join(".");
-            (
-                ev.to_string(),
-                Some(ListenSource::Orbital {
-                    orbital,
-                    trait_name: trait_name.to_string(),
-                    orbital_id: None,
-                    trait_id: None,
-                }),
-            )
-        }
-    }
+    orbital_core::schema::split_event_address(raw)
 }
 
 pub(crate) fn lower_tick(t: &Tick) -> Result<TickDefinition, LowerError> {

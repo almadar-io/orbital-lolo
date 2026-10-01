@@ -1111,6 +1111,59 @@ fn check_payload_sibling_literals(
     Ok(())
 }
 
+/// The declared type at `trail` (`""`, `"[0].event"`) inside a value of type `te`.
+fn type_at_trail<'a>(te: &'a TypeExpr, trail: &str, ctx: &ResolveCtx<'a>) -> Option<&'a TypeExpr> {
+    let te = match te {
+        TypeExpr::Optional(inner) => inner.as_ref(),
+        TypeExpr::Named(name) => match &ctx.lookup(name)?.body {
+            TypeBody::Alias(inner) => return type_at_trail(inner, trail, ctx),
+            _ => te,
+        },
+        _ => te,
+    };
+    if trail.is_empty() {
+        return Some(te);
+    }
+    if let Some(rest) = trail.strip_prefix('[') {
+        let (_, rest) = rest.split_once(']')?;
+        return match te {
+            TypeExpr::Array(inner) => type_at_trail(inner, rest, ctx),
+            _ => None,
+        };
+    }
+    let rest = trail.strip_prefix('.')?;
+    let end = rest.find(['.', '[']).unwrap_or(rest.len());
+    let (key, rest) = rest.split_at(end);
+    let member = match te {
+        TypeExpr::Object(fields) => fields.iter().find(|(n, _, _)| n == key).map(|(_, t, _)| t),
+        TypeExpr::Named(name) => match &ctx.lookup(name)?.body {
+            TypeBody::Struct(fields) => fields.iter().find(|(n, _, _)| n == key).map(|(_, t, _)| t),
+            _ => None,
+        },
+        _ => None,
+    }?;
+    type_at_trail(member, rest, ctx)
+}
+
+/// A dotted event atom (`Trait.EVENT`, `Orbital.Trait.EVENT`) in a declared
+/// config default must sit at an `event`-typed position. A call-site override
+/// carries no declared type here; its merged knob is checked at L2.
+fn check_event_ref_positions(cf: &ConfigField, ctx: &ResolveCtx<'_>) -> Result<(), TypeError> {
+    if matches!(&cf.type_expr, TypeExpr::Primitive(p) if p == "unknown") {
+        return Ok(());
+    }
+    for (trail, span) in &cf.event_refs {
+        if !matches!(type_at_trail(&cf.type_expr, trail, ctx), Some(TypeExpr::EventRef)) {
+            return Err(TypeError::EventRefPosition {
+                knob: cf.name.clone(),
+                trail: trail.clone(),
+                span: *span,
+            });
+        }
+    }
+    Ok(())
+}
+
 pub fn check_program(program: &Program) -> Result<(), TypeError> {
     let mut file = TypeRegistry::new();
     for ta in &program.type_aliases {
@@ -1210,6 +1263,7 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
                     &trait_type_params,
                 )?;
                 check_payload_sibling_literals(cf, &ctx, &payload_index)?;
+                check_event_ref_positions(cf, &ctx)?;
             }
             for emit in &trt.emits {
                 for f in &emit.payload {

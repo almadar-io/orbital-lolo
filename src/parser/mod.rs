@@ -109,6 +109,10 @@ struct Parser {
     /// reference. Consumed (reset) on entry to `parse_sexpr_or_value`, so it
     /// never leaks into nested expressions.
     pub(crate) pattern_type_value: bool,
+    /// Active while a config value parses: a dotted atom (`Trait.EVENT`,
+    /// `Orbital.Trait.EVENT`) is legal there and is recorded with its trail
+    /// so the type check can require an `event` position.
+    event_ref_capture: Option<Vec<(String, Span)>>,
     /// The `.lolo` source's detected language (English by default). Every
     /// keyword/shape/tag/category/capability/annotation/sigil/type/unit/
     /// literal/reserved-event lookup canonicalizes through this before
@@ -130,6 +134,7 @@ impl Parser {
             expr_span_capture: None,
             expr_trail: String::new(),
             pattern_type_value: false,
+            event_ref_capture: None,
             lang,
         }
     }
@@ -186,6 +191,43 @@ impl Parser {
                 capture[slot].1.len = (last.col + last.len as u32 - start.col) as u16;
             }
         }
+    }
+
+    /// Parse one config value, returning it with the dotted event atoms it
+    /// holds, each keyed by its trail inside the value (`""`, `"[0].event"`).
+    pub(crate) fn parse_config_value(
+        &mut self,
+    ) -> Result<(SExpression, Vec<(String, Span)>), ParseError> {
+        let prev_capture = self.event_ref_capture.replace(Vec::new());
+        let prev_trail = std::mem::take(&mut self.expr_trail);
+        let result = self.parse_sexpr_or_value();
+        self.expr_trail = prev_trail;
+        let refs = self.event_ref_capture.take().unwrap_or_default();
+        self.event_ref_capture = prev_capture;
+        result.map(|v| (v, refs))
+    }
+
+    /// Inside a config value, extend a just-consumed identifier into a dotted
+    /// event address and record it; `None` when not at one.
+    pub(crate) fn take_dotted_event_ref(&mut self, head: &str, span: Span) -> Option<String> {
+        self.event_ref_capture.as_ref()?;
+        let mut out = head.to_string();
+        while matches!(self.peek(), TokenKind::Dot)
+            && matches!(self.peek_n(1), TokenKind::Identifier(_))
+        {
+            self.advance();
+            if let TokenKind::Identifier(seg) = self.peek().clone() {
+                self.advance();
+                out.push('.');
+                out.push_str(&seg);
+            }
+        }
+        if out.len() == head.len() {
+            return None;
+        }
+        let trail = self.expr_trail.clone();
+        self.event_ref_capture.as_mut()?.push((trail, span));
+        Some(out)
     }
 
     /// Push `seg` onto the trail for the duration of `f`, then restore it.
