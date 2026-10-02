@@ -735,6 +735,22 @@ fn check_named_payload_ref(
         {
             Ok(())
         }
+        // `type Step = StepCall | StepResult` parses as a bare-name union; when
+        // every name is a struct it is the same type union (a tagged one).
+        TypeBody::Enum(names)
+            if crate::lower::entity::is_type_union_with(
+                &names
+                    .iter()
+                    .map(|n| TypeExpr::Named(n.clone()))
+                    .collect::<Vec<_>>(),
+                |n| {
+                    ctx.lookup(n)
+                        .map(|a| matches!(&a.body, TypeBody::Struct(_)))
+                },
+            ) && names.iter().all(|n| ctx.lookup(n).is_some()) =>
+        {
+            Ok(())
+        }
         _ => Err(TypeError::KindMismatch {
             expected: TypeKindName::Entity,
             actual: kind_label(kind_from_alias(ctx, name)),
@@ -1750,6 +1766,46 @@ orbital OrbU {
     state s { INIT -> s (ref Rec) }
     emits {
       DECIDED -> external { matched : DecisionMatch!, label : string }
+    }
+  }
+  page "/rs" -> R
+}
+"#;
+        check(src).unwrap();
+    }
+
+    #[test]
+    fn ok_tagged_struct_union_alias_bare_in_payload_position() {
+        let src = r#"
+type StepCall = { type: "call", tool: string! }
+type StepResult = { type: "result", ok: boolean! }
+type Step = StepCall | StepResult
+orbital OrbT {
+  entity Rec { id : string! }
+  trait R -> Rec [interaction] {
+    state s { INIT -> s (ref Rec) }
+    emits {
+      STEPPED -> external { step : Step! }
+    }
+  }
+  page "/rs" -> R
+}
+"#;
+        check(src).unwrap();
+    }
+
+    #[test]
+    fn ok_tagged_struct_union_alias_in_orbital_scope_bare_in_payload_position() {
+        let src = r#"
+orbital OrbT2 {
+  type StepCall = { type: "call", tool: string! }
+  type StepResult = { type: "result", ok: boolean! }
+  type Step = StepCall | StepResult
+  entity Rec { id : string! }
+  trait R -> Rec [interaction] {
+    state s { INIT -> s (ref Rec) }
+    emits {
+      STEPPED -> external { step : Step! }
     }
   }
   page "/rs" -> R
