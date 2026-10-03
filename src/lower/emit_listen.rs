@@ -171,11 +171,13 @@ pub(crate) fn lower_emit(
     let mut fields: Vec<PayloadField> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
     for f in &e.payload {
+        let projected = f.type_expr.payload_projection();
+        let ty = f.type_expr.peel();
         // Increment 3-II: a field referencing this trait's OWN declared type
         // parameter (`candidate : V` / `candidate : [V]`) lowers to the
         // `$V` / `[$V]` sentinel — checked first since a param name never
         // resolves as a struct alias or entity.
-        if let Some(sentinel) = type_param_sentinel(&f.type_expr, trait_type_params) {
+        if let Some(sentinel) = type_param_sentinel(ty, trait_type_params) {
             if !seen.insert(f.name.clone()) {
                 return Err(LowerError::PayloadFieldCollision {
                     event: e.event.clone(),
@@ -190,6 +192,7 @@ pub(crate) fn lower_emit(
                 properties: None,
                 type_when: None,
                 entity: None,
+                projected_from: projected.clone(),
             });
             continue;
         }
@@ -201,7 +204,7 @@ pub(crate) fn lower_emit(
         // emitted member name is a bare identifier (`row`), never a dotted
         // `row.category` that is illegal as a TS member name. This also matches
         // the runtime DataGrid shape `{ id, row: itemData }`.
-        if let Some(props) = struct_payload_properties(&f.type_expr, aliases, trait_type_params) {
+        if let Some(props) = struct_payload_properties(ty, aliases, trait_type_params) {
             if !seen.insert(f.name.clone()) {
                 return Err(LowerError::PayloadFieldCollision {
                     event: e.event.clone(),
@@ -216,9 +219,10 @@ pub(crate) fn lower_emit(
                 properties: Some(props),
                 type_when: None,
                 entity: None,
+                projected_from: projected.clone(),
             });
         } else if let Some(variants) =
-            union_payload_variants(&f.type_expr, aliases, trait_type_params)
+            union_payload_variants(ty, aliases, trait_type_params)
         {
             // A TYPE union — inline (`a | [b]`) or via a named alias — lowers
             // the same way the alias-restatement path already does: parent
@@ -237,8 +241,9 @@ pub(crate) fn lower_emit(
                 properties: Some(variants),
                 type_when: None,
                 entity: None,
+                projected_from: projected.clone(),
             });
-        } else if let TypeExpr::Named(type_name) = &f.type_expr {
+        } else if let TypeExpr::Named(type_name) = ty {
             // Scalar entity reference (`row : Note`) — resolve through
             // `entities_by_name` only (not `aliases`; struct aliases are
             // handled above), so `type_name` is a declared entity. Stamp it
@@ -259,8 +264,9 @@ pub(crate) fn lower_emit(
                 properties: Some(nested),
                 type_when: None,
                 entity: Some(type_name.clone()),
+                projected_from: projected.clone(),
             });
-        } else if let TypeExpr::Array(inner) = &f.type_expr {
+        } else if let TypeExpr::Array(inner) = ty {
             if let TypeExpr::Named(type_name) = inner.as_ref() {
                 if entities_by_name.contains_key(type_name) {
                     // Array-of-entity (`rows : [Note]`) — same flatten as the
@@ -281,6 +287,7 @@ pub(crate) fn lower_emit(
                         properties: Some(nested),
                         type_when: None,
                         entity: Some(type_name.clone()),
+                        projected_from: projected.clone(),
                     });
                     continue;
                 }
@@ -291,7 +298,7 @@ pub(crate) fn lower_emit(
                     field: f.name.clone(),
                 });
             }
-            let (field_type, type_when) = lower_match_field_type(&f.type_expr);
+            let (field_type, type_when) = lower_match_field_type(ty);
             fields.push(PayloadField {
                 name: f.name.clone(),
                 field_type,
@@ -300,6 +307,7 @@ pub(crate) fn lower_emit(
                 properties: None,
                 type_when,
                 entity: None,
+                projected_from: projected.clone(),
             });
         } else {
             if !seen.insert(f.name.clone()) {
@@ -308,7 +316,7 @@ pub(crate) fn lower_emit(
                     field: f.name.clone(),
                 });
             }
-            let (field_type, type_when) = lower_match_field_type(&f.type_expr);
+            let (field_type, type_when) = lower_match_field_type(ty);
             fields.push(PayloadField {
                 name: f.name.clone(),
                 field_type,
@@ -317,6 +325,7 @@ pub(crate) fn lower_emit(
                 properties: None,
                 type_when,
                 entity: None,
+                projected_from: projected.clone(),
             });
         }
     }
@@ -457,6 +466,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                     properties: None,
                     type_when: None,
                     entity: None,
+                    projected_from: None,
                 })
                 .collect()
         })
@@ -486,6 +496,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                         // `base` may be an entity OR a struct alias name
                         // here; the marker isn't read by this comparator.
                         entity: None,
+                        projected_from: None,
                     },
                     Some(base.to_string()),
                 );
@@ -587,6 +598,7 @@ pub(crate) fn type_expr_to_payload_fields(
             properties: None,
             type_when: None,
             entity: None,
+            projected_from: None,
         }]);
     }
     match payload {
@@ -662,6 +674,7 @@ pub(crate) fn type_expr_to_payload_fields(
                     properties,
                     type_when: None,
                     entity,
+                    projected_from: None,
                 });
             }
             Ok(flat)
@@ -679,6 +692,7 @@ pub(crate) fn type_expr_to_payload_fields(
                 properties: None,
                 type_when: None,
                 entity: None,
+                projected_from: None,
             }])
         }
     }
@@ -721,6 +735,7 @@ pub(crate) fn named_entity_fields(
                 properties: None,
                 type_when: None,
                 entity: None,
+                projected_from: None,
             })
             .collect(),
         is_array,
@@ -822,6 +837,7 @@ pub(crate) fn union_payload_variants(
             properties,
             type_when: None,
             entity: None,
+            projected_from: None,
         });
     }
     Some(out)
@@ -853,7 +869,7 @@ pub(crate) fn struct_payload_properties(
     aliases: &BTreeMap<String, TypeAliasResolved>,
     type_params: &[&str],
 ) -> Option<Vec<PayloadField>> {
-    let (guard_name, items): (Option<&str>, &Vec<(String, TypeExpr, bool)>) = match te {
+    let (guard_name, items): (Option<&str>, &Vec<(String, TypeExpr, bool)>) = match te.peel() {
         TypeExpr::Object(items) => (None, items),
         TypeExpr::Named(n) => match aliases.get(n) {
             Some(TypeAliasResolved::Type(TypeExpr::Object(items))) => (Some(n.as_str()), items),
@@ -878,6 +894,8 @@ pub(crate) fn struct_payload_properties(
     }
     let mut props = Vec::with_capacity(items.len());
     for (name, ty, req) in items {
+        let projected = ty.payload_projection();
+        let ty = ty.peel();
         // An array-of-struct field (`[StructAlias]` / `[{ … }]`) carries the
         // ELEMENT shape: `field_type` is `[object]` (signals array) and
         // `properties` holds the element's fields — the resolve phase wraps it
@@ -917,6 +935,7 @@ pub(crate) fn struct_payload_properties(
             properties,
             type_when: None,
             entity: None,
+            projected_from: projected,
         });
     }
     if let Some(n) = guard_name {
@@ -1160,6 +1179,7 @@ mod recursive_struct_payload_tests {
             properties: None,
             type_when: None,
             entity: None,
+            projected_from: None,
         }];
 
         // Terminating at all is the assertion; agreeing is the consequence.
@@ -1288,6 +1308,7 @@ mod recursive_struct_payload_tests {
                     properties: None,
                     type_when: None,
                     entity: None,
+                    projected_from: None,
                 },
                 PayloadField {
                     name: "ports".to_string(),
@@ -1297,10 +1318,12 @@ mod recursive_struct_payload_tests {
                     properties: None,
                     type_when: None,
                     entity: None,
+                    projected_from: None,
                 },
             ]),
             type_when: None,
             entity: None,
+            projected_from: None,
         }];
         assert_eq!(
             payload_fields_mismatch_norm(

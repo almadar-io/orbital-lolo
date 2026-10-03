@@ -388,6 +388,7 @@ fn format_type_expr(te: &TypeExpr) -> String {
             p.join("|")
         }
         TypeExpr::Optional(inner) => format!("{}?", format_type_expr(inner)),
+        TypeExpr::FieldOf { ty, field, .. } => format!("{ty}.{field}"),
         TypeExpr::RelationMany(n) => format!("{n}*"),
         TypeExpr::RelationManyNonEmpty(n) => format!("{n}+"),
         TypeExpr::Trait => "trait".to_string(),
@@ -577,6 +578,9 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         | TypeExpr::ExpectedIdentityRow => {}
         TypeExpr::RelationMany(n) | TypeExpr::RelationManyNonEmpty(n) => {
             out.insert(n.clone());
+        }
+        TypeExpr::FieldOf { ty, .. } => {
+            out.insert(ty.clone());
         }
         // `@entity` references no NAMED type — nothing to collect.
         TypeExpr::BoundEntityRow => {}
@@ -922,7 +926,7 @@ pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
 /// of the prevention ladder) closes that loophole at its source; `scalar`,
 /// `node`, and shaped types are the sanctioned vocabulary.
 fn reject_generic_types(te: &TypeExpr, position: &str, span: Span) -> Result<(), TypeError> {
-    match te {
+    match te.peel() {
         TypeExpr::Primitive(n) | TypeExpr::Named(n)
             if n == "json" || n == "any" || n == "object" || n == "array" =>
         {
@@ -1057,7 +1061,7 @@ fn struct_alias_fields<'a>(
     te: &TypeExpr,
     ctx: &ResolveCtx<'a>,
 ) -> Option<&'a [(String, TypeExpr, bool)]> {
-    match te {
+    match te.peel() {
         TypeExpr::Array(inner) | TypeExpr::Optional(inner) => struct_alias_fields(inner, ctx),
         TypeExpr::Named(name) => match &ctx.lookup(name)?.body {
             TypeBody::Struct(fields) => Some(fields.as_slice()),
@@ -1129,6 +1133,7 @@ fn check_payload_sibling_literals(
 
 /// The declared type at `trail` (`""`, `"[0].event"`) inside a value of type `te`.
 fn type_at_trail<'a>(te: &'a TypeExpr, trail: &str, ctx: &ResolveCtx<'a>) -> Option<&'a TypeExpr> {
+    let te = te.peel();
     let te = match te {
         TypeExpr::Optional(inner) => inner.as_ref(),
         TypeExpr::Named(name) => match &ctx.lookup(name)?.body {
@@ -1165,7 +1170,7 @@ fn type_at_trail<'a>(te: &'a TypeExpr, trail: &str, ctx: &ResolveCtx<'a>) -> Opt
 /// config default must sit at an `event`-typed position. A call-site override
 /// carries no declared type here; its merged knob is checked at L2.
 fn check_event_ref_positions(cf: &ConfigField, ctx: &ResolveCtx<'_>) -> Result<(), TypeError> {
-    if matches!(&cf.type_expr, TypeExpr::Primitive(p) if p == "unknown") {
+    if matches!(cf.type_expr.peel(), TypeExpr::Primitive(p) if p == "unknown") {
         return Ok(());
     }
     for (trail, span) in &cf.event_refs {

@@ -26,6 +26,7 @@ use std::collections::{BTreeMap, HashMap, HashSet};
 
 mod checks;
 mod emit_listen;
+mod projection;
 pub(crate) mod entity;
 mod orbital_ref;
 mod page;
@@ -176,6 +177,7 @@ fn lower_impl(
     contracts: &LoloContracts,
 ) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
     let mut source_map = crate::source_map::LoloSourceMap::new();
+    let ast = &projection::resolve_field_projections(ast)?;
     let mut schema = lower_to_orb_names_only(ast, &mut source_map, contracts)?;
     let synthetic_traits: HashSet<String> = ast
         .orbitals
@@ -351,6 +353,9 @@ fn lower_to_orb_names_only(
     )?;
 
     let mut schema = OrbitalSchema {
+        locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
+        public_dir: ast.app.public.clone(),
+        lazy_pages: None,
         name: if ast.app.name.is_empty() {
             ast.orbitals
                 .first()
@@ -377,7 +382,24 @@ fn lower_to_orb_names_only(
         config_knob_read::check_orbital_config_knobs_read(orbital)?;
     }
 
-    Ok(schema)
+    qualify_message_keys(schema)
+}
+
+/// Qualifies every `(i18n/t "key")` with this program's name — see
+/// `orbital_core::messages`.
+fn qualify_message_keys(schema: OrbitalSchema) -> Result<OrbitalSchema, LowerError> {
+    use orbital_core::messages::{qualify_message_keys, MessageKeyIssue};
+    let mut value = serde_json::to_value(&schema).map_err(|e| LowerError::MessageKeys {
+        detail: e.to_string(),
+    })?;
+    let namespace = schema.name.clone();
+    if let Some(issue) = qualify_message_keys(&mut value, &namespace).into_iter().next() {
+        return Err(match issue {
+            MessageKeyIssue::Dynamic { path } => LowerError::MessageKeyDynamic { path },
+            MessageKeyIssue::Invalid { path, key } => LowerError::MessageKeyInvalid { path, key },
+        });
+    }
+    serde_json::from_value(value).map_err(|e| LowerError::MessageKeys { detail: e.to_string() })
 }
 
 /// `ThemeDecl` → `ThemeRef`: a quoted key stays a reference; an inline
@@ -682,6 +704,7 @@ pub(crate) fn merge_uses(
         .chain(orbital_uses.iter())
         .map(|u| {
             Ok(UseDeclaration {
+                lazy: u.lazy.then_some(true),
                 from: u.path.clone(),
                 alias: u.alias.clone(),
                 // Override site, not a declaration — `@config.<key>`

@@ -38,6 +38,10 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
             type_expr_to_config_string(key),
             type_expr_to_config_string(value)
         ),
+        TypeExpr::FieldOf { ty, field, resolved } => match resolved {
+            Some(inner) => type_expr_to_config_string(inner),
+            None => format!("{ty}.{field}"),
+        },
         TypeExpr::Optional(inner) => type_expr_to_config_string(inner),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Union(_) => "string".to_string(),
@@ -118,6 +122,10 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
             }
         }
         TypeExpr::Optional(inner) => type_expr_to_compat_str(inner),
+        TypeExpr::FieldOf { ty, field, resolved } => match resolved {
+            Some(inner) => type_expr_to_compat_str(inner),
+            None => format!("{ty}.{field}"),
+        },
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => "array".to_string(),
         TypeExpr::Trait => "trait".to_string(),
         // Entity/event refs are name strings at the bus-payload level.
@@ -192,6 +200,10 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::Object(_) => "object".to_string(),
         TypeExpr::Union(_) => "string".to_string(),
         TypeExpr::Optional(inner) => type_expr_to_string(inner),
+        TypeExpr::FieldOf { ty, field, resolved } => match resolved {
+            Some(inner) => type_expr_to_string(inner),
+            None => format!("{ty}.{field}"),
+        },
         TypeExpr::RelationMany(name) => format!("{name}*"),
         TypeExpr::RelationManyNonEmpty(name) => format!("{name}+"),
         TypeExpr::Trait => "trait".to_string(),
@@ -271,17 +283,17 @@ pub(crate) fn lower_config_fields_to_map(
         // parameters (`config { result : V }`, trait-only) lowers its
         // `field_type` to the `$V` sentinel directly — checked first since a
         // param name never resolves as a struct alias/entity.
-        let sentinel = emit_listen::type_param_sentinel(&cf.type_expr, type_params);
+        let sentinel = emit_listen::type_param_sentinel(cf.type_expr.peel(), type_params);
         let (field_type, items, properties, values) = if let Some(s) = sentinel {
             (s, None, None, None)
         } else {
             let (_, _, items, properties, _) =
-                lower_type_expr(&cf.type_expr, aliases, entity_names);
+                lower_type_expr(cf.type_expr.peel(), aliases, entity_names);
             (
-                type_expr_to_config_string(&cf.type_expr),
+                type_expr_to_config_string(cf.type_expr.peel()),
                 items,
                 properties,
-                type_expr_to_config_values(&cf.type_expr),
+                type_expr_to_config_values(cf.type_expr.peel()),
             )
         };
         map.insert(
@@ -289,7 +301,7 @@ pub(crate) fn lower_config_fields_to_map(
             SchemaConfigField {
                 field_type,
                 default: canonicalize_unbound_trait_default(
-                    &cf.type_expr,
+                    cf.type_expr.peel(),
                     cf.default.as_ref().map(desugar_expr_match),
                 ),
                 label: cf.label.clone(),
@@ -304,6 +316,7 @@ pub(crate) fn lower_config_fields_to_map(
                 forwarded_from: None,
                 nested_forwarded_from: Vec::new(),
                 payload_for: None,
+                projected_from: cf.type_expr.projection(),
             },
         );
     }

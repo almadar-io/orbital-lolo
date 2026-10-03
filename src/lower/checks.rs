@@ -241,7 +241,7 @@ pub(crate) fn check_set_value_types(
     let config_fields: HashMap<&str, &TypeExpr> = t
         .config
         .iter()
-        .map(|cf| (cf.name.as_str(), &cf.type_expr))
+        .map(|cf| (cf.name.as_str(), cf.type_expr.peel()))
         .collect();
 
     // Per-entity-field type lookup on the linked entity.
@@ -545,7 +545,7 @@ fn check_one_set_value(
                         .or_else(|| emit_payloads.get(event))?;
                     let declared_payload_field = payload.iter().find(|pf| pf.name == f)?;
                     Some((
-                        type_expr_to_compat_str(&declared_payload_field.type_expr),
+                        type_expr_to_compat_str(declared_payload_field.type_expr.peel()),
                         format!("@payload.{}", f),
                     ))
                 })
@@ -649,12 +649,12 @@ pub(crate) fn check_match_types(
         t.config.iter().map(|cf| (cf.name.as_str(), cf)).collect();
     for e in &t.emits {
         for f in &e.payload {
-            check_one_match_field(t, &f.type_expr, &config, aliases)?;
+            check_one_match_field(t, f.type_expr.peel(), &config, aliases)?;
         }
     }
     for l in &t.listens {
         for f in &l.payload {
-            check_one_match_field(t, &f.type_expr, &config, aliases)?;
+            check_one_match_field(t, f.type_expr.peel(), &config, aliases)?;
         }
     }
     Ok(())
@@ -675,7 +675,7 @@ fn check_one_match_field(
             knob: knob.clone(),
         });
     };
-    let vocabulary = closed_vocabulary_of(&cf.type_expr, aliases);
+    let vocabulary = closed_vocabulary_of(cf.type_expr.peel(), aliases);
     let scrutinee = format!("@config.{knob}");
 
     let mut seen_spellings: HashSet<String> = HashSet::new();
@@ -1074,7 +1074,7 @@ fn resolve_term_scrutinee_type<'a>(
                     detail: format!("field {field:?} is not declared on event {event:?}'s payload"),
                 });
             };
-            Ok(&pf.type_expr)
+            Ok(pf.type_expr.peel())
         }
     }
 }
@@ -1228,7 +1228,7 @@ pub(crate) fn check_expr_match_types(
     let config_fields: HashMap<&str, &TypeExpr> = t
         .config
         .iter()
-        .map(|cf| (cf.name.as_str(), &cf.type_expr))
+        .map(|cf| (cf.name.as_str(), cf.type_expr.peel()))
         .collect();
 
     let ctx = ExprMatchCtx {
@@ -1414,7 +1414,7 @@ fn resolve_expr_match_vocabulary(
             .get(event)
             .or_else(|| ctx.emit_payloads.get(event))?;
         let pf = payload.iter().find(|pf| pf.name == f)?;
-        return closed_vocabulary_of(&pf.type_expr, ctx.aliases);
+        return closed_vocabulary_of(pf.type_expr.peel(), ctx.aliases);
     }
     if let Some(f) = s.strip_prefix("@config.").and_then(resolve_top_segment) {
         let ty = ctx.config_fields.get(f.as_str())?;

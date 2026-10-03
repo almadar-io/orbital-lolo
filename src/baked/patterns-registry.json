@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-10-02T05:56:20.125Z",
+  "exportedAt": "2026-10-03T06:45:52.290Z",
   "patterns": {
     "detail-panel": {
       "type": "detail-panel",
@@ -29181,6 +29181,12 @@
           "description": "Callback when logo/brand is clicked",
           "kind": "callback",
           "callbackArgs": []
+        },
+        "brandHref": {
+          "types": [
+            "string"
+          ],
+          "description": "Where the brand (logo + name) links to, usually the home page; empty leaves it unlinked"
         },
         "className": {
           "types": [

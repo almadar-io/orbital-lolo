@@ -1,6 +1,7 @@
 //! Type-alias / type-body / type-expression parsing for the .lolo parser.
 
 use super::*;
+use super::entity::EntityTags;
 
 /// The six kind names a parenthesized type parameter may declare — shared by
 /// the type-alias parameter form (`type Foo (E : Entity) = ...`, Increment
@@ -211,11 +212,11 @@ impl Parser {
         // `TypeBody::Entity` (the `type X = Entity [...] { ... }` alias shape)
         // has no `shared`/`identity` field yet — only orbital-level `entity`
         // headers carry those through to `EntityDefinition` (lower/entity.rs).
-        let (persistence, collection, _shared, _identity) =
+        let EntityTags { persistence, collection, .. } =
             if matches!(self.peek(), TokenKind::LBracket) {
                 self.parse_persistence_tag()?
             } else {
-                (None, None, false, false)
+                EntityTags::default()
             };
         let mut fields = Vec::new();
         if matches!(self.peek(), TokenKind::LBrace) {
@@ -643,6 +644,16 @@ impl Parser {
         } else {
             TypeExpr::Named(name)
         };
+        // `T.f` — a field of a declared type.
+        if let TypeExpr::Named(ty) = &base {
+            if matches!(self.peek(), TokenKind::Dot) {
+                if let TokenKind::Identifier(field) = self.peek_n(1).clone() {
+                    self.advance();
+                    self.advance();
+                    return Ok(TypeExpr::FieldOf { ty: ty.clone(), field, resolved: None });
+                }
+            }
+        }
         // Trailing relation modifier (we look at the next token without consuming it).
         match self.peek() {
             TokenKind::Identifier(s) if s == "*" => {

@@ -2,6 +2,17 @@
 
 use super::*;
 
+/// The entity header bracket's tags.
+#[derive(Debug, Default)]
+pub(crate) struct EntityTags {
+    pub persistence: Option<Persistence>,
+    pub collection: Option<String>,
+    pub shared: bool,
+    pub identity: bool,
+    pub local: bool,
+    pub mock: bool,
+}
+
 impl Parser {
     pub(crate) fn parse_entity(&mut self) -> Result<Entity, ParseError> {
         let span = self.peek_span();
@@ -11,11 +22,11 @@ impl Parser {
         // Optional `:: TypeName [args]` annotation above the body.
         let type_annotation = self.try_parse_type_annotation()?;
 
-        let (persistence, collection, shared, identity) =
+        let EntityTags { persistence, collection, shared, identity, local, mock: seed_mock } =
             if matches!(self.peek(), TokenKind::LBracket) {
                 self.parse_persistence_tag()?
             } else {
-                (None, None, false, false)
+                EntityTags::default()
             };
 
         let brace_form = matches!(self.peek(), TokenKind::LBrace);
@@ -30,11 +41,43 @@ impl Parser {
         let mut update_policy = None;
         let mut delete_policy = None;
         let mut access_waivers: Vec<(String, String)> = Vec::new();
+        let mut instances: Vec<std::collections::HashMap<String, SExpression>> = Vec::new();
+        let mut locale_instances: std::collections::BTreeMap<String, Vec<std::collections::HashMap<String, SExpression>>> =
+            std::collections::BTreeMap::new();
         loop {
             self.skip_newlines();
             if brace_form && matches!(self.peek(), TokenKind::RBrace) {
                 self.advance();
                 break;
+            }
+            if let Some(locale) = self.at_instances_block() {
+                let block_span = self.peek_span();
+                let seen = match &locale {
+                    Some(l) => locale_instances.contains_key(l),
+                    None => !instances.is_empty(),
+                };
+                if seen {
+                    return Err(ParseError::InvalidType {
+                        span: block_span,
+                        message: match &locale {
+                            Some(l) => format!("ELOLO_DUPLICATE_INSTANCES: entity declares `instances {l}` more than once"),
+                            None => "ELOLO_DUPLICATE_INSTANCES: entity declares `instances` more than once".to_string(),
+                        },
+                    });
+                }
+                self.advance();
+                if locale.is_some() {
+                    self.advance();
+                }
+                let rows = self.parse_instance_rows(block_span)?;
+                match locale {
+                    Some(l) => {
+                        locale_instances.insert(l, rows);
+                    }
+                    None => instances = rows,
+                }
+                self.expect_newline_or_eof()?;
+                continue;
             }
             if let TokenKind::Sigil(raw_name) = self.peek().clone() {
                 let name = self.canon_annotation_sigil(&raw_name);
@@ -144,6 +187,10 @@ impl Parser {
             collection,
             shared,
             identity,
+            local,
+            seed_mock,
+            instances,
+            locale_instances,
             read_policy,
             access_waivers,
             create_policy,
@@ -174,14 +221,14 @@ impl Parser {
     /// `: collection` — or `runtime`) plus the orthogonal `shared` and
     /// `identity` flags, e.g. `[runtime, shared]`, `[persistent: bars]`,
     /// `[shared]`, `[persistent: people, identity]`.
-    pub(crate) fn parse_persistence_tag(
-        &mut self,
-    ) -> Result<(Option<Persistence>, Option<String>, bool, bool), ParseError> {
+    pub(crate) fn parse_persistence_tag(&mut self) -> Result<EntityTags, ParseError> {
         self.expect_kind(&TokenKind::LBracket, "[")?;
         let mut persistence: Option<Persistence> = None;
         let mut collection: Option<String> = None;
         let mut shared = false;
         let mut identity = false;
+        let mut local = false;
+        let mut mock = false;
         loop {
             let tag_span = self.peek_span();
             let kind = self.expect_ident()?;
@@ -193,6 +240,8 @@ impl Parser {
             match kind.as_str() {
                 "shared" => shared = true,
                 "identity" => identity = true,
+                "local" => local = true,
+                "mock" => mock = true,
                 "persistent" | "runtime" => {
                     let mode = if kind == "persistent" {
                         Persistence::Persistent
@@ -238,7 +287,46 @@ impl Parser {
             break;
         }
         self.expect_kind(&TokenKind::RBracket, "]")?;
-        Ok((persistence, collection, shared, identity))
+        Ok(EntityTags { persistence, collection, shared, identity, local, mock })
+    }
+
+    /// `instances [` (the default rows, `Some(None)`) or `instances <lang> [` (one
+    /// locale's rows, `Some(Some(lang))`) at the start of an entity-body line.
+    fn at_instances_block(&self) -> Option<Option<String>> {
+        let keyword = matches!(self.peek(), TokenKind::Identifier(name)
+            if name == "instances" || self.lang.canon_any(name) == Some("instances"));
+        if !keyword {
+            return None;
+        }
+        match (self.peek_n(1), self.peek_n(2)) {
+            (TokenKind::LBracket, _) => Some(None),
+            (TokenKind::Identifier(lang), TokenKind::LBracket) => Some(Some(lang.clone())),
+            _ => None,
+        }
+    }
+
+    /// `[ { field: value, … }, … ]` — each row an object literal.
+    fn parse_instance_rows(
+        &mut self,
+        span: Span,
+    ) -> Result<Vec<std::collections::HashMap<String, SExpression>>, ParseError> {
+        let SExpression::Array(rows) = self.parse_sexpr_or_value()? else {
+            return Err(ParseError::InvalidType {
+                span,
+                message: "ELOLO_INSTANCES_NOT_A_LIST: `instances` takes a list of rows, `instances [ { … }, … ]`".to_string(),
+            });
+        };
+        rows.into_iter()
+            .map(|row| match row {
+                SExpression::Object(fields) => Ok(fields.into_iter().collect()),
+                other => Err(ParseError::InvalidType {
+                    span,
+                    message: format!(
+                        "ELOLO_INSTANCE_NOT_A_ROW: every `instances` entry is a row object `{{ field: value }}`, got {other:?}"
+                    ),
+                }),
+            })
+            .collect()
     }
 
     pub(crate) fn parse_field_decl(&mut self) -> Result<EntityField, ParseError> {

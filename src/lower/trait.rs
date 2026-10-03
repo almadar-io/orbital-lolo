@@ -336,6 +336,7 @@ pub(crate) fn lower_trait_reference(
                     forwarded_from: None,
                     nested_forwarded_from: Vec::new(),
                     payload_for: None,
+                    projected_from: None,
                 }
             } else {
                 // Declaration-form entries (an alias trait declaring its OWN
@@ -344,18 +345,18 @@ pub(crate) fn lower_trait_reference(
                 // aliases (e.g. `[StepCard]`) resolve to full `items`/
                 // `properties` schemas instead of the string fallback.
                 let (_, _, items, properties, _) =
-                    lower_type_expr(&cf.type_expr, aliases, entity_names);
+                    lower_type_expr(cf.type_expr.peel(), aliases, entity_names);
                 SchemaConfigField {
-                    field_type: type_expr_to_config_string(&cf.type_expr),
+                    field_type: type_expr_to_config_string(cf.type_expr.peel()),
                     default: canonicalize_unbound_trait_default(
-                        &cf.type_expr,
+                        cf.type_expr.peel(),
                         cf.default.as_ref().map(desugar_expr_match),
                     ),
                     label: cf.label.clone(),
                     description: cf.description.clone(),
                     synonyms: cf.synonyms.clone(),
                     tier: cf.tier.clone(),
-                    values: type_expr_to_config_values(&cf.type_expr),
+                    values: type_expr_to_config_values(cf.type_expr.peel()),
                     items,
                     properties,
                     required: None,
@@ -363,6 +364,7 @@ pub(crate) fn lower_trait_reference(
                     forwarded_from: None,
                     nested_forwarded_from: Vec::new(),
                     payload_for: None,
+                    projected_from: cf.type_expr.projection(),
                 }
             };
             map.insert(cf.name.clone(), schema_field);
@@ -560,17 +562,19 @@ pub(crate) fn lower_trait(
             l.payload
                 .iter()
                 .map(|f| {
+                    let projected = f.type_expr.payload_projection();
+                    let ty = f.type_expr.peel();
                     // Increment 3-II: a field referencing this trait's OWN
                     // declared type parameter lowers to the `$V` / `[$V]`
                     // sentinel — checked first, same as the emit-payload path.
                     let sentinel =
-                        emit_listen::type_param_sentinel(&f.type_expr, &trait_type_params);
+                        emit_listen::type_param_sentinel(ty, &trait_type_params);
                     // Inline `{ … }` struct shapes (and struct aliases /
                     // arrays of them) keep their nested `properties` — the
                     // same contract emits payloads carry. Without this a
                     // typed `payload : { id : string … }` listen lowered to
                     // a shapeless `object` (Gate B finding).
-                    let array_elem = match &f.type_expr {
+                    let array_elem = match ty {
                         crate::ast::TypeExpr::Array(inner) => {
                             emit_listen::struct_payload_properties(
                                 inner,
@@ -585,13 +589,13 @@ pub(crate) fn lower_trait(
                     } else if let Some(elem) = array_elem {
                         ("[object]".to_string(), Some(elem), None, None)
                     } else if let Some(nested) = emit_listen::struct_payload_properties(
-                        &f.type_expr,
+                        ty,
                         aliases,
                         &trait_type_params,
                     ) {
                         ("object".to_string(), Some(nested), None, None)
                     } else if let Some((entity_name, entity_fields, is_array)) =
-                        emit_listen::named_entity_fields(&f.type_expr, entities)
+                        emit_listen::named_entity_fields(ty, entities)
                     {
                         // Expand an entity reference exactly as the `emits`
                         // side does. `emits { EVT { row : E } }` and
@@ -609,7 +613,7 @@ pub(crate) fn lower_trait(
                         )
                     } else {
                         let (field_type, type_when) =
-                            emit_listen::lower_match_field_type(&f.type_expr);
+                            emit_listen::lower_match_field_type(ty);
                         (field_type, None, type_when, None)
                     };
                     PayloadField {
@@ -620,6 +624,7 @@ pub(crate) fn lower_trait(
                         properties,
                         type_when,
                         entity,
+                        projected_from: projected,
                     }
                 })
                 .collect()

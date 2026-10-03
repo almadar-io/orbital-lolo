@@ -468,6 +468,15 @@ pub enum LowerError {
     )]
     NotifyInvalidLevel { level: String },
 
+    #[error("ORB_I18N_KEY_DYNAMIC: `i18n/t` at {path} needs a string-literal key so every catalog can be checked")]
+    MessageKeyDynamic { path: String },
+
+    #[error("ORB_I18N_KEY_INVALID: `i18n/t` key {key:?} at {path} is empty or uses the reserved `:` separator")]
+    MessageKeyInvalid { path: String, key: String },
+
+    #[error("message keys: {detail}")]
+    MessageKeys { detail: String },
+
     /// Emit payload references a named type that cannot be resolved to an
     /// Entity- or Struct-shaped type alias or to the orbital's own entity.
     /// The type-system resolver catches most of these before lowering; this
@@ -480,6 +489,11 @@ pub enum LowerError {
     /// expansion on the same emit.
     #[error("emit {event:?} has duplicate payload field {field:?}")]
     PayloadFieldCollision { event: String, field: String },
+
+    /// `T.f` names a type no entity or struct type in the program declares,
+    /// a field `T` does not have, or a type two declarations share.
+    #[error("ELOLO_FIELD_PROJECTION: `{projection}` — {reason}")]
+    FieldProjection { projection: String, reason: String },
 
     /// An emits/listens entry restates its event's payload inline while an
     /// orbital-scope `type X = Event { … }` alias also types the same event,

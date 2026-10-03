@@ -192,6 +192,19 @@ impl Formatter {
             self.write_indent();
             self.fmt_theme_decl(theme);
         }
+        if !app.locales.is_empty() {
+            self.write_newline();
+            self.write_indent();
+            self.output.push_str("locales [");
+            self.output.push_str(&app.locales.join(", "));
+            self.output.push(']');
+        }
+        if let Some(public) = &app.public {
+            self.write_newline();
+            self.write_indent();
+            self.output.push_str("public ");
+            self.write_quoted_string(public);
+        }
         if !app.config.is_empty() {
             self.write_newline();
             self.write_indent();
@@ -373,8 +386,7 @@ impl Formatter {
                 self.fmt_persistence_tag(
                     persistence.as_ref(),
                     collection.as_ref().map(|s| s.as_str()),
-                    false,
-                    false,
+                    &[],
                 );
                 self.output.push_str(" {");
                 if !fields.is_empty() {
@@ -546,6 +558,11 @@ impl Formatter {
                 self.fmt_type_expr(inner);
                 self.output.push('?');
             }
+            TypeExpr::FieldOf { ty, field, .. } => {
+                self.output.push_str(ty);
+                self.output.push('.');
+                self.output.push_str(field);
+            }
             TypeExpr::RelationMany(name) => {
                 self.output.push_str(name);
                 self.output.push('*');
@@ -609,8 +626,7 @@ impl Formatter {
         &mut self,
         persistence: Option<&Persistence>,
         collection: Option<&str>,
-        shared: bool,
-        identity: bool,
+        flags: &[(&str, bool)],
     ) {
         let mut tags = Vec::new();
         match (persistence, collection) {
@@ -619,12 +635,7 @@ impl Formatter {
             (Some(Persistence::Runtime), _) => tags.push("runtime".to_string()),
             (None, _) => {}
         }
-        if shared {
-            tags.push("shared".to_string());
-        }
-        if identity {
-            tags.push("identity".to_string());
-        }
+        tags.extend(flags.iter().filter(|(_, on)| *on).map(|(tag, _)| tag.to_string()));
         if !tags.is_empty() {
             self.output.push_str(" [");
             self.output.push_str(&tags.join(", "));
@@ -1075,6 +1086,9 @@ impl Formatter {
 
     fn fmt_use_decl(&mut self, u: &UseDecl) {
         self.output.push_str("uses ");
+        if u.lazy {
+            self.output.push_str("lazy ");
+        }
         self.output.push_str(&u.alias);
         self.output.push_str(" from ");
         self.write_quoted_string(&u.path);
@@ -1151,6 +1165,29 @@ impl Formatter {
         self.output.push('}');
     }
 
+    /// `instances [ … ]`, or `instances <lang> [ … ]` for one locale's rows.
+    fn fmt_instance_block(&mut self, locale: Option<&String>, rows: &[std::collections::HashMap<String, SExpression>]) {
+        self.write_indent();
+        match locale {
+            Some(l) => self.output.push_str(&format!("instances {l} [")),
+            None => self.output.push_str("instances ["),
+        }
+        self.write_newline();
+        self.indent();
+        for (i, row) in rows.iter().enumerate() {
+            self.write_indent();
+            self.fmt_sexpr_object(row);
+            if i + 1 < rows.len() {
+                self.output.push(',');
+            }
+            self.write_newline();
+        }
+        self.dedent();
+        self.write_indent();
+        self.output.push(']');
+        self.write_newline();
+    }
+
     fn fmt_entity(&mut self, entity: &Entity) {
         self.output.push_str("entity ");
         self.output.push_str(&entity.name);
@@ -1161,8 +1198,12 @@ impl Formatter {
         self.fmt_persistence_tag(
             entity.persistence.as_ref(),
             entity.collection.as_ref().map(|s| s.as_str()),
-            entity.shared,
-            entity.identity,
+            &[
+                ("shared", entity.shared),
+                ("identity", entity.identity),
+                ("local", entity.local),
+                ("mock", entity.seed_mock),
+            ],
         );
         self.output.push_str(" {");
         let has_access_directives = entity.read_policy.is_some()
@@ -1170,7 +1211,7 @@ impl Formatter {
             || entity.update_policy.is_some()
             || entity.delete_policy.is_some()
             || !entity.access_waivers.is_empty();
-        if !entity.fields.is_empty() || has_access_directives {
+        if !entity.fields.is_empty() || has_access_directives || !entity.instances.is_empty() || !entity.locale_instances.is_empty() {
             self.write_newline();
             self.indent();
             for (sigil, expr) in [
@@ -1206,6 +1247,12 @@ impl Formatter {
                 self.write_indent();
                 self.fmt_entity_field(field);
                 self.write_newline();
+            }
+            if !entity.instances.is_empty() {
+                self.fmt_instance_block(None, &entity.instances);
+            }
+            for (locale, rows) in &entity.locale_instances {
+                self.fmt_instance_block(Some(locale), rows);
             }
             self.dedent();
             self.write_indent();

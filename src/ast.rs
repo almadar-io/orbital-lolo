@@ -67,6 +67,10 @@ pub struct AppHeader {
     /// declares its own `theme`. A full `<base>-<light|dark>` registry key,
     /// or an inline `theme { … }` token definition.
     pub theme: Option<ThemeDecl>,
+    /// `locales [en, ar, sl]` — the locales this program ships.
+    pub locales: Vec<String>,
+    /// `public "./public"` — a folder copied verbatim to the built site's root.
+    pub public: Option<String>,
     /// App-level `config { ... }` block, declared right after the header
     /// (orbital-import Stage A, `OrbitalSchema.config`) — ORGANISM-wide
     /// knobs every orbital's traits may forward with `@config.<knob>`.
@@ -405,6 +409,9 @@ pub struct Orbital {
 pub struct UseDecl {
     pub alias: String,
     pub path: String,
+    /// `uses lazy A from "…"` — compiled to its own `.orb`, loaded when one of
+    /// its pages is opened.
+    pub lazy: bool,
     /// Optional `{ config { ... } }` body (orbital-import Stage A) —
     /// overrides the imported behavior's ORGANISM-wide `config {}` knobs for
     /// every orbital taken from this alias. Empty for the bare form.
@@ -458,6 +465,14 @@ pub struct Entity {
     /// directory is both persisted and the identity, so it cannot be a
     /// persistence mode.
     pub identity: bool,
+    /// `local` header tag — `[persistent: x, local]`: the rows live in the browser.
+    pub local: bool,
+    /// `mock` header tag — seed an empty browser store from the shared mock seeder.
+    pub seed_mock: bool,
+    /// `instances [ { … }, … ]` — written-out rows the entity starts with.
+    pub instances: Vec<std::collections::HashMap<String, SExpression>>,
+    /// `instances <lang> [ … ]` — the written-out rows for one declared locale.
+    pub locale_instances: std::collections::BTreeMap<String, Vec<std::collections::HashMap<String, SExpression>>>,
     /// `@read <sexpr>` — a per-row predicate evaluated with `@entity` bound to
     /// the candidate row and `@user` to the viewer. ANDed with any call-site
     /// `filter:`; enforced once, for every trait that fetches this entity —
@@ -602,6 +617,15 @@ pub enum TypeExpr {
     ExpectedIdentityRow,
     /// `T?` nullable.
     Optional(Box<TypeExpr>),
+    /// `T.f` — the declared type of field `f` of the entity or struct type `T`,
+    /// legal in every type position. `resolved` is `f`'s own type expression,
+    /// filled by `lower::projection` before lowering; [`TypeExpr::peel`] reads
+    /// through it, and field builders record the provenance (`projectedFrom`).
+    FieldOf {
+        ty: String,
+        field: String,
+        resolved: Option<Box<TypeExpr>>,
+    },
     /// `T*` one-to-many relation.
     RelationMany(String),
     /// `T+` one-or-more relation.
@@ -643,6 +667,36 @@ pub enum TypeExpr {
     /// nested inside another type) — see `check_match_types` +
     /// `type_expr_config_only_type`/`type_expr_contains_match`.
     Match { knob: String, arms: Vec<MatchArm> },
+}
+
+impl TypeExpr {
+    /// The type this expression stands for: a resolved `T.f` is its field's
+    /// type (recursively); every other form is itself.
+    pub fn peel(&self) -> &TypeExpr {
+        match self {
+            TypeExpr::FieldOf { resolved: Some(inner), .. } => inner.peel(),
+            other => other,
+        }
+    }
+
+    /// A payload field's provenance: `T.f` itself, or for `[T.f]` each element's.
+    pub fn payload_projection(&self) -> Option<orbital_core::FieldProjection> {
+        self.projection().or_else(|| match self.peel() {
+            TypeExpr::Array(inner) => inner.projection(),
+            _ => None,
+        })
+    }
+
+    /// `T.f`'s provenance, for the field a projection types.
+    pub fn projection(&self) -> Option<orbital_core::FieldProjection> {
+        match self {
+            TypeExpr::FieldOf { ty, field, .. } => Some(orbital_core::FieldProjection {
+                type_name: ty.clone(),
+                field: field.clone(),
+            }),
+            _ => None,
+        }
+    }
 }
 
 /// One arm of a type-level `match` (`TypeExpr::Match`). `ty` is restricted

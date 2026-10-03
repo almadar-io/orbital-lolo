@@ -424,6 +424,8 @@ impl Parser {
                 version: None,
                 description: None,
                 theme: None,
+                locales: Vec::new(),
+                public: None,
                 config: Vec::new(),
                 span: self.peek_span(),
             }
@@ -508,6 +510,33 @@ impl Parser {
         } else {
             None
         };
+        self.skip_newlines();
+        let locales = if self.check_ident("locales") {
+            self.advance();
+            self.parse_locale_list()?
+        } else {
+            Vec::new()
+        };
+        self.skip_newlines();
+        let public = if self.check_ident("public") {
+            self.advance();
+            match self.peek().clone() {
+                TokenKind::String(dir) => {
+                    self.advance();
+                    self.expect_newline_or_eof()?;
+                    Some(dir)
+                }
+                _ => {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "a quoted folder path after `public`".to_string(),
+                        got: format!("{:?}", self.peek()),
+                        span: self.peek_span(),
+                    })
+                }
+            }
+        } else {
+            None
+        };
         // Optional app-level `config { ... }` block (orbital-import Stage A,
         // `OrbitalSchema.config`) — ORGANISM-wide knobs declared once, beside
         // `theme`, that every orbital's traits may forward via
@@ -524,9 +553,31 @@ impl Parser {
             version,
             description,
             theme,
+            locales,
+            public,
             config,
             span,
         })
+    }
+
+    /// `[en, ar, sl]` after `locales`.
+    fn parse_locale_list(&mut self) -> Result<Vec<String>, ParseError> {
+        self.expect_kind(&TokenKind::LBracket, "[")?;
+        let mut locales = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBracket) {
+                self.advance();
+                break;
+            }
+            locales.push(self.expect_ident()?);
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+        self.expect_newline_or_eof()?;
+        Ok(locales)
     }
 
     // ----- Orbital -----
@@ -965,6 +1016,10 @@ impl Parser {
     fn parse_use_decl(&mut self) -> Result<UseDecl, ParseError> {
         let span = self.peek_span();
         self.expect_keyword("uses")?;
+        let lazy = self.check_ident("lazy") && matches!(self.peek_n(1), TokenKind::Identifier(_));
+        if lazy {
+            self.advance();
+        }
         let alias = self.expect_ident()?;
         self.expect_keyword("from")?;
         let path = match self.peek().clone() {
@@ -1003,6 +1058,7 @@ impl Parser {
         Ok(UseDecl {
             alias,
             path,
+            lazy,
             config,
             span,
         })
@@ -1251,6 +1307,7 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         | TypeExpr::StringLiteral(_)
         | TypeExpr::RelationMany(_)
         | TypeExpr::RelationManyNonEmpty(_) => None,
+        TypeExpr::FieldOf { resolved, .. } => resolved.as_deref().and_then(type_expr_config_only_type),
     }
 }
 

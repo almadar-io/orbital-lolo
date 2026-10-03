@@ -31,9 +31,12 @@ pub(crate) fn lower_entity(
         collection: entity.collection.clone(),
         persistence,
         fields,
-        instances: None,
+        instances: (!entity.instances.is_empty()).then(|| entity.instances.clone()),
         shared: entity.shared,
         identity: entity.identity,
+        local: entity.local,
+        seed_mock: entity.seed_mock,
+        locale_instances: (!entity.locale_instances.is_empty()).then(|| entity.locale_instances.clone()),
         read_policy: entity.read_policy.clone(),
         create_policy: entity.create_policy.clone(),
         update_policy: entity.update_policy.clone(),
@@ -83,6 +86,7 @@ pub(crate) fn lower_field(
         description: f.description.clone(),
         synonyms: f.synonyms.clone(),
         mock: f.mock.clone(),
+        projected_from: f.type_expr.projection(),
     })
 }
 
@@ -147,6 +151,9 @@ pub(crate) fn lower_type_expr(
         // protected by the parser gate (`ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY`);
         // this arm is reached only for struct aliases consumed by config knobs.
         TypeExpr::EventRef => (FieldType::Event, None, None, None, None),
+        TypeExpr::FieldOf { resolved: Some(inner), .. } => lower_type_expr(inner, aliases, entity_names),
+        // Unresolved only if lowering skipped `projection::resolve_field_projections`.
+        TypeExpr::FieldOf { resolved: None, .. } => (FieldType::String, None, None, None, None),
         TypeExpr::Named(name) => {
             if let Some(alias) = aliases.get(name) {
                 match alias {
@@ -207,7 +214,7 @@ pub(crate) fn lower_type_expr(
             // case above. Type aliases that happen to look like entities still
             // take the regular array-of-struct path because they appear in
             // `aliases`, not in `entity_names`.
-            if let TypeExpr::Named(name) = inner.as_ref() {
+            if let TypeExpr::Named(name) = inner.peel() {
                 if entity_names.contains(name) && !aliases.contains_key(name) {
                     return (
                         FieldType::Relation,
@@ -231,7 +238,7 @@ pub(crate) fn lower_type_expr(
             // `json` is not in `is_primitive_type`, so `[json]` parses as
             // `Array(Named("json"))`; accept both the Named and Primitive forms.
             let inner_is_json = matches!(
-                inner.as_ref(),
+                inner.peel(),
                 TypeExpr::Named(p) | TypeExpr::Primitive(p) if p == "json"
             );
             let (inner_ft, inner_values, inner_items, inner_props, _inner_rel) = if inner_is_json {
@@ -255,6 +262,7 @@ pub(crate) fn lower_type_expr(
                 intrinsic: None,
                 description: None,
                 synonyms: None,
+                projected_from: inner.projection(),
             };
             (FieldType::Array, None, Some(Box::new(item)), None, None)
         }
@@ -283,6 +291,7 @@ pub(crate) fn lower_type_expr(
                 intrinsic: None,
                 description: None,
                 synonyms: None,
+                projected_from: value.projection(),
             };
             (
                 FieldType::Object,
@@ -319,6 +328,7 @@ pub(crate) fn lower_type_expr(
                         intrinsic: None,
                         description: None,
                         synonyms: None,
+                        projected_from: v.projection(),
                     },
                 );
             }
@@ -755,6 +765,7 @@ fn struct_union_variants(
                 intrinsic: None,
                 description: None,
                 synonyms: None,
+                projected_from: None,
             },
         ));
     }

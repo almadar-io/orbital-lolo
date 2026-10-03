@@ -25,7 +25,7 @@ pub struct Vocabulary {
 /// `app orbital uses expects entity type derived trait initial state for
 /// page as theme emits listens ticks config when with from to every
 /// capabilities match external internal on name fields events event
-/// emitsScope identity pages omit only roles entities extend` — every
+/// emitsScope identity pages omit only roles entities extend lazy locales public` — every
 /// `expect_keyword`/`check_ident` literal in `parser/*.rs` (`parser/mod.rs`,
 /// `parser/entity.rs`, `parser/trait.rs`, `parser/type.rs`, `parser/page.rs`,
 /// `parser/orbital.rs`) that is not itself a shape/tag/category/capability/
@@ -74,6 +74,10 @@ const KEYWORDS: &[&str] = &[
     "roles",
     "entities",
     "extend",
+    "lazy",
+    "locales",
+    "public",
+    "instances",
 ];
 
 /// `Entity Trait Page Orbital Event` — `check_ident` in `parser/type.rs`
@@ -96,6 +100,7 @@ const TAGS: &[&str] = &[
     "collection",
     "local",
     "background",
+    "mock",
 ];
 
 /// `interaction integration lifecycle game-core game-entity game-ui` — the
@@ -149,7 +154,7 @@ const ANNOTATIONS: &[&str] = &[
 ];
 
 /// `entity payload state now config user trait event prevEvents prevStates
-/// fromState toState` — sigil roots (the text
+/// fromState toState locale` — sigil roots (the text
 /// before the first `.` of a `@x`/`@x.y` token) recognized at value
 /// position (`parser/expression.rs`), type position (`parser/type.rs`),
 /// term-match scrutinees (`parser/trait.rs parse_term_match_scrutinee`),
@@ -168,6 +173,7 @@ const SIGILS: &[&str] = &[
     "prevStates",
     "fromState",
     "toState",
+    "locale",
 ];
 
 /// `set fetch persist emit navigate navigate-back render-ui notify ref
