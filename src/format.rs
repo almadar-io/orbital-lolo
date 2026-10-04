@@ -33,6 +33,8 @@ fn theme_maps_empty(maps: &ThemeTokenMaps) -> bool {
         && maps.elevation.is_empty()
         && maps.surface.is_empty()
         && maps.motion.is_empty()
+        && maps.diagram.is_empty()
+        && maps.scene.is_empty()
 }
 
 struct Formatter {
@@ -281,7 +283,7 @@ impl Formatter {
         self.output.push('{');
         self.write_newline();
         self.indent();
-        let categories: [(&str, &[(String, String)]); 10] = [
+        let categories: [(&str, &[(String, String)]); 12] = [
             ("colors", &maps.colors),
             ("radii", &maps.radii),
             ("spacing", &maps.spacing),
@@ -292,6 +294,8 @@ impl Formatter {
             ("elevation", &maps.elevation),
             ("surface", &maps.surface),
             ("motion", &maps.motion),
+            ("diagram", &maps.diagram),
+            ("scene", &maps.scene),
         ];
         let mut first = true;
         for (cat, entries) in categories {

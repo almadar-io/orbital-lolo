@@ -115,11 +115,13 @@ pub struct ThemeTokenMaps {
     pub elevation: Vec<(String, String)>,
     pub surface: Vec<(String, String)>,
     pub motion: Vec<(String, String)>,
+    pub diagram: Vec<(String, String)>,
+    pub scene: Vec<(String, String)>,
 }
 
 /// The `.lolo`-authorable flat string keys of each typed theme axis — the
 /// camelCase wire names of the matching `orbital_core::schema::*Tokens` fields.
-pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 5] = [
+pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 7] = [
     (
         "typeScale",
         &[
@@ -163,7 +165,43 @@ pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 5] = [
     ),
     (
         "surface",
-        &["backdrop", "cardImage", "pageImage", "pageImageSize"],
+        &["backdrop", "cardImage", "pageImage", "pageImageSize", "diagram"],
+    ),
+    (
+        "diagram",
+        &[
+            "strokeThin",
+            "strokeNormal",
+            "strokeBold",
+            "lineCap",
+            "lineJoin",
+            "dash",
+            "dot",
+            "fillStyle",
+            "fillOpacity",
+            "roughness",
+            "glow",
+            "shadow",
+            "marker",
+            "labelFont",
+            "labelSize",
+            "labelWeight",
+            "labelCase",
+            "corner",
+        ],
+    ),
+    (
+        "scene",
+        &[
+            "materialRoughness",
+            "materialMetalness",
+            "materialFlat",
+            "materialOutline",
+            "lightAmbient",
+            "lightKey",
+            "lightKeyColor",
+            "fog",
+        ],
     ),
     // `motion` keys are the motion-shape fields; they lower into `motion.shapes`.
     (
@@ -178,6 +216,17 @@ pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 5] = [
             "pageEnter",
         ],
     ),
+];
+
+/// Typed theme keys whose value is one of a closed set — checked at parse time so a
+/// misspelled value is an error rather than an axis that silently fails to lower.
+pub const THEME_TYPED_AXIS_VALUES: [(&str, &str, &[&str]); 6] = [
+    ("diagram", "lineCap", &["butt", "round", "square"]),
+    ("diagram", "lineJoin", &["miter", "round", "bevel"]),
+    ("diagram", "fillStyle", &["solid", "tint", "outline", "hatch"]),
+    ("diagram", "marker", &["triangle", "open", "line", "dot"]),
+    ("diagram", "labelFont", &["body", "display", "mono"]),
+    ("diagram", "labelCase", &["none", "uppercase"]),
 ];
 
 /// `type Name [T] = ...` declaration. The optional `type_param` is the single

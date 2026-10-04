@@ -908,6 +908,20 @@ impl Parser {
                                 span: cat_span,
                             });
                         }
+                        for (key, value) in &entries {
+                            if let Some((_, _, allowed)) = THEME_TYPED_AXIS_VALUES
+                                .iter()
+                                .find(|(axis, k, _)| *axis == cat && k == key)
+                            {
+                                if !allowed.contains(&value.as_str()) {
+                                    return Err(ParseError::UnexpectedToken {
+                                        expected: format!("`{}.{}`: {}", cat, key, allowed.join(", ")),
+                                        got: value.clone(),
+                                        span: cat_span,
+                                    });
+                                }
+                            }
+                        }
                     }
                     match cat.as_str() {
                         "colors" => maps.colors = entries,
@@ -920,9 +934,11 @@ impl Parser {
                         "elevation" => maps.elevation = entries,
                         "surface" => maps.surface = entries,
                         "motion" => maps.motion = entries,
+                        "diagram" => maps.diagram = entries,
+                        "scene" => maps.scene = entries,
                         _ => return Err(ParseError::UnexpectedToken {
                             expected:
-                                "a token category: colors, radii, spacing, typography, shadows, typeScale, geometry, elevation, surface, or motion"
+                                "a token category: colors, radii, spacing, typography, shadows, typeScale, geometry, elevation, surface, motion, diagram, or scene"
                                     .to_string(),
                             got: cat,
                             span: cat_span,
@@ -932,7 +948,7 @@ impl Parser {
                 other => {
                     return Err(ParseError::UnexpectedToken {
                         expected:
-                            "a token category (colors, radii, spacing, typography, shadows, typeScale, geometry, elevation, surface, motion) or }"
+                            "a token category (colors, radii, spacing, typography, shadows, typeScale, geometry, elevation, surface, motion, diagram, scene) or }"
                                 .to_string(),
                         got: format!("{:?}", other),
                         span: self.peek_span(),

@@ -476,6 +476,8 @@ fn lower_theme_tokens(maps: &ThemeTokenMaps) -> ThemeTokens {
         // theme blocks, same as every other still-unauthored knob above.
         color: None,
         illustration: None,
+        diagram: typed_theme_axis(&maps.diagram),
+        scene: typed_theme_axis(&maps.scene),
         surface: typed_theme_axis(&maps.surface),
     }
 }
@@ -495,6 +497,8 @@ fn lower_theme_variant(maps: &ThemeTokenMaps) -> ThemeVariant {
         geometry: typed_theme_axis(&maps.geometry),
         color: None,
         illustration: None,
+        diagram: typed_theme_axis(&maps.diagram),
+        scene: typed_theme_axis(&maps.scene),
         surface: typed_theme_axis(&maps.surface),
     }
 }
@@ -1061,6 +1065,51 @@ mod tests {
             panic!("formatted inline theme failed to reparse: {e}\n{formatted}")
         });
         assert_eq!(reparsed.orbitals[0].theme, ast.orbitals[0].theme);
+    }
+
+    fn inline_theme(tokens: &str) -> String {
+        format!("orbital Foo {{\n  entity Bar {{\n    id : string!\n  }}\n  theme {{\n    name: \"chalk\"\n    tokens {{\n{tokens}\n    }}\n  }}\n}}")
+    }
+
+    #[test]
+    fn lower_inline_theme_drawing_axes() {
+        let src = inline_theme(
+            "      diagram {\n        strokeNormal: \"3px\"\n        lineCap: \"round\"\n        fillStyle: \"hatch\"\n      }\n      scene {\n        materialFlat: \"1\"\n      }\n      surface {\n        diagram: \"#1f3a2e\"\n      }",
+        );
+        let s = lower(&src);
+        let orbital_core::schema::ThemeRef::Inline(def) = s.orbitals[0].theme.as_ref().unwrap() else {
+            panic!("expected inline theme");
+        };
+        let diagram = def.tokens.diagram.as_ref().expect("diagram axis lowered");
+        assert_eq!(diagram.stroke_normal.as_deref(), Some("3px"));
+        assert_eq!(diagram.line_cap, Some(orbital_core::schema::DiagramLineCap::Round));
+        assert_eq!(diagram.fill_style, Some(orbital_core::schema::DiagramFillStyle::Hatch));
+        assert_eq!(def.tokens.scene.as_ref().unwrap().material_flat.as_deref(), Some("1"));
+        assert_eq!(def.tokens.surface.as_ref().unwrap().diagram.as_deref(), Some("#1f3a2e"));
+        let ast = parse_str(&src).expect("parse");
+        let formatted = crate::format::format_program(&ast);
+        let reparsed = parse_str(&formatted).unwrap_or_else(|e| panic!("reparse: {e}\n{formatted}"));
+        assert_eq!(reparsed.orbitals[0].theme, ast.orbitals[0].theme);
+    }
+
+    #[test]
+    fn inline_theme_rejects_an_unknown_diagram_value() {
+        let err = parse_str(&inline_theme("      diagram {\n        lineCap: \"wavy\"\n      }")).unwrap_err();
+        assert!(err.to_string().contains("butt, round, square"), "{err}");
+    }
+
+    #[test]
+    fn inline_theme_rejects_an_unknown_diagram_key() {
+        assert!(parse_str(&inline_theme("      diagram {\n        stroke: \"2px\"\n      }")).is_err());
+    }
+
+    #[test]
+    fn control_inline_theme_without_drawing_axes_lowers_none() {
+        let s = lower(&inline_theme("      colors {\n        primary: \"#000\"\n      }"));
+        let orbital_core::schema::ThemeRef::Inline(def) = s.orbitals[0].theme.as_ref().unwrap() else {
+            panic!("expected inline theme");
+        };
+        assert!(def.tokens.diagram.is_none() && def.tokens.scene.is_none());
     }
 
     #[test]

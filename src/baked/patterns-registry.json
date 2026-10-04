@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-10-03T06:45:52.290Z",
+  "exportedAt": "2026-10-04T14:06:38.010Z",
   "patterns": {
     "detail-panel": {
       "type": "detail-panel",
@@ -93488,7 +93488,18 @@
           "types": [
             "string"
           ],
-          "description": "Background color (default transparent)."
+          "description": "Canvas ground: a tone name, `var()` token or literal (default the theme's `--surface-diagram`)."
+        },
+        "series": {
+          "types": [
+            "array"
+          ],
+          "description": "Overrides the theme's categorical palette for this canvas: `series-1…N` resolve to these colors instead. For real-world conventions (CPK atom colors, resistor bands); unset, the theme's `--color-series-*` apply.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "fontFamily": {
           "types": [
@@ -93506,6 +93517,117 @@
               "object"
             ],
             "properties": {
+              "tone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "fillTone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "stroke": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "thin",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "textSize": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "xs",
+                  "sm",
+                  "base",
+                  "lg",
+                  "xl",
+                  "2xl"
+                ]
+              },
+              "font": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "body",
+                  "display",
+                  "mono"
+                ]
+              },
+              "textCase": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "theme",
+                  "verbatim"
+                ]
+              },
+              "fillStyle": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "solid",
+                  "tint",
+                  "outline",
+                  "hatch"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
@@ -93924,6 +94046,32 @@
             ]
           },
           "synonyms": "sparkline, time series, history plot"
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keydown `e.code` — optionally prefixed `Mod+` (⌘/Ctrl), `Shift+`, `Alt+` — to a SEMANTIC event emitted as `UI:{event}` (e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`); keystrokes inside inputs never route.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
         },
         "interactive": {
           "types": [
@@ -94389,6 +94537,43 @@
             "string"
           ],
           "description": "backgroundColor prop"
+        },
+        "series": {
+          "types": [
+            "array"
+          ],
+          "description": "Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
         },
         "mode": {
           "types": [
@@ -95174,6 +95359,117 @@
               "object"
             ],
             "properties": {
+              "tone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "fillTone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "stroke": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "thin",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "textSize": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "xs",
+                  "sm",
+                  "base",
+                  "lg",
+                  "xl",
+                  "2xl"
+                ]
+              },
+              "font": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "body",
+                  "display",
+                  "mono"
+                ]
+              },
+              "textCase": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "theme",
+                  "verbatim"
+                ]
+              },
+              "fillStyle": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "solid",
+                  "tint",
+                  "outline",
+                  "hatch"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
@@ -95970,6 +96266,43 @@
           ],
           "description": "backgroundColor prop"
         },
+        "series": {
+          "types": [
+            "array"
+          ],
+          "description": "Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
         "mode": {
           "types": [
             "string"
@@ -96552,7 +96885,7 @@
           "types": [
             "string"
           ],
-          "description": "Equation text color (default '#111827')."
+          "description": "Equation text color: a tone name, token or literal (default the `ink` tone)."
         },
         "lattice3d": {
           "types": [
@@ -96739,6 +97072,117 @@
               "object"
             ],
             "properties": {
+              "tone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "fillTone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "stroke": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "thin",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "textSize": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "xs",
+                  "sm",
+                  "base",
+                  "lg",
+                  "xl",
+                  "2xl"
+                ]
+              },
+              "font": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "body",
+                  "display",
+                  "mono"
+                ]
+              },
+              "textCase": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "theme",
+                  "verbatim"
+                ]
+              },
+              "fillStyle": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "solid",
+                  "tint",
+                  "outline",
+                  "hatch"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
@@ -97582,21 +98026,43 @@
           "types": [
             "string"
           ],
-          "description": "Canvas fill color; `var(--token, fallback)` strings resolve against the active theme. Default transparent."
+          "description": "Canvas ground: a tone name, `var()` token or literal. Default the theme's `--surface-diagram`."
+        },
+        "series": {
+          "types": [
+            "array"
+          ],
+          "description": "Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
         },
         "gridColor": {
           "types": [
             "string"
           ],
-          "description": "Grid line color; resolves theme tokens (default `var(--color-border, #9ca3af)`).",
-          "default": "var(--color-border, #9ca3af)"
+          "description": "Grid line color: a tone name, token or literal (default the `grid` tone).",
+          "default": "grid"
         },
         "axisColor": {
           "types": [
             "string"
           ],
-          "description": "Axis line color; resolves theme tokens (default `var(--color-muted-foreground, #374151)`).",
-          "default": "var(--color-muted-foreground, #374151)"
+          "description": "Axis line color: a tone name, token or literal (default the `axis` tone).",
+          "default": "axis"
+        },
+        "aspect": {
+          "types": [
+            "string"
+          ],
+          "description": "How the x and y ranges map to the canvas. `fit` stretches each range to fill the plot (function plots); `equal` uses one scale for both axes so circles stay round (geometry). Default `fit`.",
+          "enumValues": [
+            "fit",
+            "equal"
+          ],
+          "default": "fit"
         },
         "showTickLabels": {
           "types": [
@@ -97609,15 +98075,13 @@
           "types": [
             "number"
           ],
-          "description": "Font size in px for axis tick labels (default 10).",
-          "default": 10
+          "description": "Font size in px for axis tick labels (default the theme's `xs` step)."
         },
         "labelFontSize": {
           "types": [
             "number"
           ],
-          "description": "Base font size in px for all other canvas annotations (points, vectors, guides, curves, regions, angles, hops; default 12).",
-          "default": 12
+          "description": "Font size in px for all other canvas annotations (default the theme's diagram label size)."
         },
         "fontFamily": {
           "types": [
@@ -98090,6 +98554,117 @@
               "object"
             ],
             "properties": {
+              "tone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "fillTone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "stroke": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "thin",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "textSize": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "xs",
+                  "sm",
+                  "base",
+                  "lg",
+                  "xl",
+                  "2xl"
+                ]
+              },
+              "font": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "body",
+                  "display",
+                  "mono"
+                ]
+              },
+              "textCase": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "theme",
+                  "verbatim"
+                ]
+              },
+              "fillStyle": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "solid",
+                  "tint",
+                  "outline",
+                  "hatch"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
@@ -98913,6 +99488,43 @@
             "string"
           ],
           "description": "backgroundColor prop"
+        },
+        "series": {
+          "types": [
+            "array"
+          ],
+          "description": "Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
         },
         "mode": {
           "types": [
@@ -99919,6 +100531,117 @@
               "object"
             ],
             "properties": {
+              "tone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "fillTone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "stroke": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "thin",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "textSize": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "xs",
+                  "sm",
+                  "base",
+                  "lg",
+                  "xl",
+                  "2xl"
+                ]
+              },
+              "font": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "body",
+                  "display",
+                  "mono"
+                ]
+              },
+              "textCase": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "theme",
+                  "verbatim"
+                ]
+              },
+              "fillStyle": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "solid",
+                  "tint",
+                  "outline",
+                  "hatch"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
@@ -101502,6 +102225,43 @@
           ],
           "description": "backgroundColor prop"
         },
+        "series": {
+          "types": [
+            "array"
+          ],
+          "description": "Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
         "bars": {
           "types": [
             "array"
@@ -101937,6 +102697,117 @@
               "object"
             ],
             "properties": {
+              "tone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "fillTone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "stroke": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "thin",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "textSize": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "xs",
+                  "sm",
+                  "base",
+                  "lg",
+                  "xl",
+                  "2xl"
+                ]
+              },
+              "font": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "body",
+                  "display",
+                  "mono"
+                ]
+              },
+              "textCase": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "theme",
+                  "verbatim"
+                ]
+              },
+              "fillStyle": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "solid",
+                  "tint",
+                  "outline",
+                  "hatch"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
@@ -109231,6 +110102,43 @@
           ],
           "description": "backgroundColor prop"
         },
+        "series": {
+          "types": [
+            "array"
+          ],
+          "description": "Overrides the theme's categorical palette (`series-1…N`) for this canvas — real-world conventions like CPK atom colors or resistor bands. Unset, the theme's `--color-series-*` apply.",
+          "items": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "keyMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keydown `e.code` (optionally `Mod+`/`Shift+`/`Alt+` prefixed) to a SEMANTIC event emitted as `UI:{event}` — e.g. `{ Space: TOGGLE_RUN, ArrowRight: STEP, KeyR: RESET }`; keystrokes inside inputs never route.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
+        "keyUpMap": {
+          "types": [
+            "object"
+          ],
+          "description": "Maps a keyup `e.code` to a semantic event emitted as `UI:{event}`.",
+          "kind": "event-map",
+          "mapValue": {
+            "types": [
+              "string"
+            ],
+            "kind": "event"
+          }
+        },
         "nodes": {
           "types": [
             "array"
@@ -109400,6 +110308,117 @@
               "object"
             ],
             "properties": {
+              "tone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "fillTone": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "ink",
+                  "label",
+                  "guide",
+                  "axis",
+                  "grid",
+                  "highlight",
+                  "fill",
+                  "series-1",
+                  "series-2",
+                  "series-3",
+                  "series-4",
+                  "series-5",
+                  "series-6",
+                  "series-7",
+                  "series-8",
+                  "primary",
+                  "accent",
+                  "success",
+                  "warning",
+                  "error",
+                  "info",
+                  "muted"
+                ]
+              },
+              "stroke": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "thin",
+                  "normal",
+                  "bold"
+                ]
+              },
+              "textSize": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "xs",
+                  "sm",
+                  "base",
+                  "lg",
+                  "xl",
+                  "2xl"
+                ]
+              },
+              "font": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "body",
+                  "display",
+                  "mono"
+                ]
+              },
+              "textCase": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "theme",
+                  "verbatim"
+                ]
+              },
+              "fillStyle": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "solid",
+                  "tint",
+                  "outline",
+                  "hatch"
+                ]
+              },
               "type": {
                 "types": [
                   "string"
@@ -121416,7 +122435,7 @@
           "types": [
             "string"
           ],
-          "description": "Prefix for the toolbar test id and the switch's element id.",
+          "description": "Prefix for the scroller test id and the switch's element id.",
           "required": true
         },
         "working": {
