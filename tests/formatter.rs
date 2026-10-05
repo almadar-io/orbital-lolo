@@ -714,3 +714,8 @@ fn orbital_ref_extend_round_trips() {
 fn jsx_empty_children_round_trips() {
     assert_round_trip("jsx_empty_children");
 }
+
+#[test]
+fn fixture_34_cancel_call() {
+    assert_round_trip("34-cancel-call");
+}

@@ -2476,6 +2476,15 @@ impl Formatter {
             return;
         }
 
+        if let Some(quoted) = orbital_core::schema::quote::quote_body_of(&SExpression::Array(arr.to_vec()))
+            .and_then(orbital_core::schema::quote::decode_quote_body)
+        {
+            self.output.push_str("(quote ");
+            self.fmt_sexpr_inner(&quoted, false);
+            self.output.push(')');
+            return;
+        }
+
         // Detect let form
         let is_let = matches!(&arr[0], SExpression::String(s) if s == "let");
         if is_let && arr.len() == 3 {

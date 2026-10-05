@@ -1,0 +1,25 @@
+orbital RowOrbital {
+  entity Row [persistent: rows] {
+    id : string!
+    status : string = "pending"
+  }
+  trait RowBatch -> Row [interaction, collection] {
+    initial: ready
+    state ready {
+      INIT -> ready
+        (fetch Row { emit: { success: LOADED, failure: FAILED } })
+      LOADED -> ready
+        (persist batch (array/map ?data (fn row ["update" "Row" (object/get @row id) { status: "done" }]))
+          { emit: { success: SAVED, failure: FAILED } })
+      SEED -> ready
+        (persist batch [["create" "Row" { status: "new" }] ["delete" "Row" ?id]])
+      SAVED -> ready
+      FAILED -> ready
+    }
+    emits {
+      LOADED { data : [Row] }
+      SAVED { operations : number, completedCount : number!, totalCount : number! }
+      FAILED { error : string! }
+    }
+  }
+}

@@ -90,6 +90,7 @@ impl Parser {
             Some("let") if has_let_bindings => Some(1),
             Some("if") => Some(3),
             Some("when") => Some(2),
+            Some("quote") => Some(1),
             // `(fn (a b) body)` — parenthesized params aren't consumed by
             // `parse_lambda_params`, so they reach the loop as its first arg;
             // the budget then covers params + body.
@@ -168,6 +169,21 @@ impl Parser {
                     }
                 }
             }
+        }
+        // `(quote x)` (G-CROSS-041): `x` becomes one encoded JSON string, so
+        // nothing downstream walks, rewrites or resolves inside it.
+        if head.as_deref() == Some("quote") {
+            let Some(quoted) = items.get(1) else {
+                return Err(ParseError::InvalidSExpr {
+                    message: "`(quote x)` takes exactly one expression to hold as data".to_string(),
+                    span,
+                });
+            };
+            let body = orbital_core::schema::quote::encode_quote_body(quoted);
+            return Ok(SExpression::Array(vec![
+                SExpression::String("quote".to_string()),
+                SExpression::String(body),
+            ]));
         }
         // `(persist create|update|delete …)` — the action word (items[1])
         // is a `capabilities`-section word, canonicalized here rather than

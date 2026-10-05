@@ -134,10 +134,9 @@ pub(crate) fn lower_type_expr(
         TypeExpr::Pattern => (FieldType::Pattern, None, None, None, None),
         // Config-only (parser rejects it on entity fields); defensively a string ref.
         TypeExpr::Secret => (FieldType::String, None, None, None, None),
-        // Config-only brands (gated by `config_only_type` in parser/mod.rs); in
-        // an entity context they fall back — SExpr to an opaque object, the
-        // entity/event name refs to a plain string value.
-        TypeExpr::SExpr => (FieldType::Object, None, None, None, None),
+        // Config-only brand (gated by `config_only_type` in parser/mod.rs):
+        // an S-expression as data — atoms, lists and option objects (G-ORB-093).
+        TypeExpr::SExpr => (FieldType::SExpr, None, None, None, None),
         // Payload-position-only (gated by `type_expr_config_only_type` in
         // parser/mod.rs); an entity field reaching here is already an error
         // upstream — lower defensively to an opaque object, same treatment

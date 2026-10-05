@@ -1,0 +1,257 @@
+{
+  "name": "RowOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "rows",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "default": "pending",
+            "name": "status",
+            "type": "string"
+          }
+        ],
+        "name": "Row",
+        "persistence": "persistent"
+      },
+      "name": "RowOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "Row"
+            },
+            {
+              "kind": "persist",
+              "resource": "Row"
+            }
+          ],
+          "emits": [
+            {
+              "event": "LOADED",
+              "payloadSchema": [
+                {
+                  "entity": "Row",
+                  "name": "data",
+                  "properties": [
+                    {
+                      "name": "id",
+                      "required": true,
+                      "type": "string"
+                    },
+                    {
+                      "name": "status",
+                      "type": "string"
+                    }
+                  ],
+                  "type": "[object]"
+                }
+              ]
+            },
+            {
+              "event": "SAVED",
+              "payloadSchema": [
+                {
+                  "name": "operations",
+                  "type": "number"
+                },
+                {
+                  "name": "completedCount",
+                  "required": true,
+                  "type": "number"
+                },
+                {
+                  "name": "totalCount",
+                  "required": true,
+                  "type": "number"
+                }
+              ]
+            },
+            {
+              "event": "FAILED",
+              "payloadSchema": [
+                {
+                  "name": "error",
+                  "required": true,
+                  "type": "string"
+                }
+              ]
+            }
+          ],
+          "linkedEntity": "Row",
+          "name": "RowBatch",
+          "scope": "collection",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "INIT",
+                "name": "Initialize"
+              },
+              {
+                "key": "LOADED",
+                "name": "Loaded",
+                "payloadSchema": [
+                  {
+                    "entity": "Row",
+                    "name": "data",
+                    "properties": [
+                      {
+                        "name": "id",
+                        "required": true,
+                        "type": "string"
+                      },
+                      {
+                        "name": "status",
+                        "type": "string"
+                      }
+                    ],
+                    "type": "[object]"
+                  }
+                ]
+              },
+              {
+                "key": "SEED",
+                "name": "Seed"
+              },
+              {
+                "key": "SAVED",
+                "name": "Saved",
+                "payloadSchema": [
+                  {
+                    "name": "operations",
+                    "type": "number"
+                  },
+                  {
+                    "name": "completedCount",
+                    "required": true,
+                    "type": "number"
+                  },
+                  {
+                    "name": "totalCount",
+                    "required": true,
+                    "type": "number"
+                  }
+                ]
+              },
+              {
+                "key": "FAILED",
+                "name": "Failed",
+                "payloadSchema": [
+                  {
+                    "name": "error",
+                    "required": true,
+                    "type": "string"
+                  }
+                ]
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "ready"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "fetch",
+                    "Row",
+                    {
+                      "emit": {
+                        "failure": "FAILED",
+                        "success": "LOADED"
+                      }
+                    }
+                  ]
+                ],
+                "event": "INIT",
+                "from": "ready",
+                "to": "ready"
+              },
+              {
+                "effects": [
+                  [
+                    "persist",
+                    "batch",
+                    [
+                      "array/map",
+                      "@payload.data",
+                      [
+                        "fn",
+                        "row",
+                        [
+                          "update",
+                          "Row",
+                          [
+                            "object/get",
+                            "@row",
+                            "id"
+                          ],
+                          {
+                            "status": "done"
+                          }
+                        ]
+                      ]
+                    ],
+                    {
+                      "emit": {
+                        "failure": "FAILED",
+                        "success": "SAVED"
+                      }
+                    }
+                  ]
+                ],
+                "event": "LOADED",
+                "from": "ready",
+                "to": "ready"
+              },
+              {
+                "effects": [
+                  [
+                    "persist",
+                    "batch",
+                    [
+                      [
+                        "create",
+                        "Row",
+                        {
+                          "status": "new"
+                        }
+                      ],
+                      [
+                        "delete",
+                        "Row",
+                        "@payload.id"
+                      ]
+                    ]
+                  ]
+                ],
+                "event": "SEED",
+                "from": "ready",
+                "to": "ready"
+              },
+              {
+                "event": "SAVED",
+                "from": "ready",
+                "to": "ready"
+              },
+              {
+                "event": "FAILED",
+                "from": "ready",
+                "to": "ready"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

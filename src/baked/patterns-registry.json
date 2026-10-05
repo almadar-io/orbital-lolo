@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-10-04T14:06:38.010Z",
+  "exportedAt": "2026-10-05T16:34:46.367Z",
   "patterns": {
     "detail-panel": {
       "type": "detail-panel",
@@ -33261,12 +33261,13 @@
           "types": [
             "string"
           ],
-          "description": "Layout mode. Default `\"sidebar\"`. - `sidebar`: Left sidebar nav + top header (classic dashboard) - `topnav`: Horizontal nav in header, no sidebar - `bottomnav`: Bottom tab bar, no sidebar - `minimal`: No nav chrome, content only",
+          "description": "Layout mode. Default `\"sidebar\"`. - `sidebar`: Left sidebar nav + top header (classic dashboard) - `topnav`: Horizontal nav in header, no sidebar - `bottomnav`: Bottom tab bar, no sidebar - `minimal`: No nav chrome, content only - `drawer`: Sidebar nav behind a menu button at every width; content gets the full width",
           "enumValues": [
             "sidebar",
             "topnav",
             "bottomnav",
-            "minimal"
+            "minimal",
+            "drawer"
           ],
           "default": "sidebar"
         },
@@ -40618,6 +40619,97 @@
           ],
           "default": "ltr"
         },
+        "askEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when the reader picks Ask on selected text (as `UI:<askEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "selectedText",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "noteEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when the reader picks Note on selected text (as `UI:<noteEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "selectedText",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "askLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Ask action label (default: translated)"
+        },
+        "noteLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Note action label (default: translated)"
+        },
+        "annotations": {
+          "types": [
+            "array"
+          ],
+          "description": "Passages to highlight. Each `text` is matched exactly, first occurrence in document order inside a single rendered text node (outside code); a passage that spans formatting boundaries is not highlighted.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "kind": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "question",
+                  "note"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "text",
+              "kind"
+            ]
+          }
+        },
+        "annotationEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when a highlighted passage is clicked (as `UI:<annotationEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "annotationId",
+              "type": "string",
+              "required": false
+            }
+          ]
+        },
         "className": {
           "types": [
             "string"
@@ -42032,6 +42124,107 @@
           ],
           "description": "Show the trait header (name, entity, listens/emits). @default true",
           "default": true
+        },
+        "annotations": {
+          "types": [
+            "object"
+          ],
+          "description": "Author explanations shown in a popover on hover: a note per state name, per transition event and per effect type.",
+          "properties": {
+            "states": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            },
+            "transitions": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            },
+            "effects": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          },
+          "example": {
+            "states": {
+              "pending": {
+                "title": "Unpaid",
+                "body": "Every order starts here."
+              }
+            },
+            "transitions": {
+              "PAY": {
+                "body": "Only fires when the amount is positive."
+              }
+            },
+            "effects": {
+              "persist": {
+                "body": "Saves the order."
+              }
+            }
+          }
         },
         "className": {
           "types": [
@@ -51606,6 +51799,17 @@
           ],
           "description": "Disabled state",
           "default": false
+        },
+        "readAs": {
+          "types": [
+            "string"
+          ],
+          "description": "How the file is read into `content`: a base64 data URL (default) or its UTF-8 text",
+          "enumValues": [
+            "dataUrl",
+            "text"
+          ],
+          "default": "dataUrl"
         },
         "action": {
           "types": [
@@ -74346,6 +74550,108 @@
             ]
           }
         },
+        "annotations": {
+          "types": [
+            "object"
+          ],
+          "description": "Author explanations per trait name (states, transition events, effect types), shown in a popover on hover.",
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "states": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "title": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "body": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "body"
+                  ]
+                }
+              },
+              "transitions": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "title": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "body": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "body"
+                  ]
+                }
+              },
+              "effects": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "title": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "body": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "body"
+                  ]
+                }
+              }
+            }
+          },
+          "example": {
+            "OrderFlow": {
+              "states": {
+                "saving": {
+                  "body": "Waiting for the server to confirm."
+                }
+              },
+              "effects": {
+                "persist": {
+                  "body": "Saves the order."
+                }
+              }
+            }
+          }
+        },
         "aria-label": {
           "types": [
             "string"
@@ -87406,38 +87712,415 @@
           "types": [
             "array"
           ],
-          "description": "Parsed lesson segments (see `parseLessonSegments`)",
-          "required": true,
+          "description": "Parsed lesson segments (see `parseLessonSegments`). Ignored when `lesson` is given.",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "variants": [
+              {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "markdown"
+                    ]
+                  },
+                  "content": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "content"
+                ]
+              },
+              {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "code"
+                    ]
+                  },
+                  "language": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "content": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "runnable": {
+                    "types": [
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "language",
+                  "content"
+                ]
+              },
+              {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "quiz"
+                    ]
+                  },
+                  "question": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "answer": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "question",
+                  "answer"
+                ]
+              },
+              {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "activate"
+                    ]
+                  },
+                  "question": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "question"
+                ]
+              },
+              {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "connect"
+                    ]
+                  },
+                  "content": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "content"
+                ]
+              },
+              {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "reflect"
+                    ]
+                  },
+                  "prompt": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "prompt"
+                ]
+              },
+              {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "bloom"
+                    ]
+                  },
+                  "level": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "remember",
+                      "understand",
+                      "apply",
+                      "analyze",
+                      "evaluate",
+                      "create"
+                    ]
+                  },
+                  "question": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "answer": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "level",
+                  "question",
+                  "answer"
+                ]
+              },
+              {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "visualization"
+                    ]
+                  },
+                  "visualizationType": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "algorithms",
+                      "math",
+                      "physics",
+                      "biology",
+                      "chemistry",
+                      "probability"
+                    ]
+                  },
+                  "description": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "type",
+                  "visualizationType",
+                  "description"
+                ]
+              }
+            ],
+            "discriminator": "type"
+          }
+        },
+        "lesson": {
+          "types": [
+            "string"
+          ],
+          "description": "Raw lesson markdown with learning tags; parsed with `parseLessonSegments` and rendered"
+        },
+        "activationSaveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when the activation prompt is saved or skipped (as `UI:<activationSaveEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "response",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "reflectionSaveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when a reflection note is saved (as `UI:<reflectionSaveEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "index",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "note",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "bloomAnswerEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted on the first reveal of a Bloom question (as `UI:<bloomAnswerEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "index",
+              "type": "number",
+              "required": true
+            },
+            {
+              "name": "level",
+              "type": "string",
+              "required": true,
+              "enumValues": [
+                "remember",
+                "understand",
+                "apply",
+                "analyze",
+                "evaluate",
+                "create"
+              ]
+            }
+          ]
+        },
+        "askEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when the reader picks Ask on selected text (as `UI:<askEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "selectedText",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "noteEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when the reader picks Note on selected text (as `UI:<noteEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "selectedText",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "askLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Ask action label (default: translated)"
+        },
+        "noteLabel": {
+          "types": [
+            "string"
+          ],
+          "description": "Note action label (default: translated)"
+        },
+        "annotations": {
+          "types": [
+            "array"
+          ],
+          "description": "Passages to highlight. Each `text` is matched exactly against the markdown segments, first segment whose source contains it, first occurrence inside one rendered text node (outside code); one that spans formatting is not highlighted.",
           "items": {
             "types": [
               "object"
             ],
             "properties": {
-              "type": {
+              "id": {
+                "types": [
+                  "string"
+                ]
+              },
+              "text": {
+                "types": [
+                  "string"
+                ]
+              },
+              "kind": {
                 "types": [
                   "string"
                 ],
                 "enumValues": [
-                  "quiz"
-                ]
-              },
-              "question": {
-                "types": [
-                  "string"
-                ]
-              },
-              "answer": {
-                "types": [
-                  "string"
+                  "question",
+                  "note"
                 ]
               }
             },
             "required": [
-              "type",
-              "question",
-              "answer"
+              "id",
+              "text",
+              "kind"
             ]
           }
+        },
+        "annotationEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted when a highlighted passage is clicked (as `UI:<annotationEvent>`)",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "annotationId",
+              "type": "string",
+              "required": false
+            }
+          ]
         },
         "className": {
           "types": [
@@ -118570,6 +119253,107 @@
           "description": "Show the trait header (name, entity, listens/emits). @default true",
           "default": true
         },
+        "annotations": {
+          "types": [
+            "object"
+          ],
+          "description": "Author explanations shown in a popover on hover: a note per state name, per transition event and per effect type.",
+          "properties": {
+            "states": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            },
+            "transitions": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            },
+            "effects": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          },
+          "example": {
+            "states": {
+              "pending": {
+                "title": "Unpaid",
+                "body": "Every order starts here."
+              }
+            },
+            "transitions": {
+              "PAY": {
+                "body": "Only fires when the amount is positive."
+              }
+            },
+            "effects": {
+              "persist": {
+                "body": "Saves the order."
+              }
+            }
+          }
+        },
         "className": {
           "types": [
             "string"
@@ -122538,6 +123322,511 @@
           ],
           "kind": "skeleton",
           "tier": "presentation"
+        }
+      }
+    },
+    "avl-transition-explainer": {
+      "type": "avl-transition-explainer",
+      "category": "component",
+      "sourceFile": "components/avl/molecules/AvlTransitionExplainer.tsx",
+      "tier": "molecules",
+      "family": "avl",
+      "description": "One transition explained step by step: from-state, event and to-state, the guard that must hold, and each effect it runs in order.",
+      "capabilities": "transition explainer, event guard effects walkthrough, what happens when an event fires",
+      "suggestedFor": [
+        "avl",
+        "transition",
+        "explainer",
+        "avl transition explainer"
+      ],
+      "typicalSize": "medium",
+      "propsSchema": {
+        "orbitalName": {
+          "types": [
+            "string"
+          ],
+          "description": "Orbital the transition belongs to.",
+          "required": true
+        },
+        "traitName": {
+          "types": [
+            "string"
+          ],
+          "description": "Trait the transition belongs to.",
+          "required": true
+        },
+        "transition": {
+          "types": [
+            "object"
+          ],
+          "description": "The transition to explain.",
+          "required": true,
+          "properties": {
+            "from": {
+              "types": [
+                "string"
+              ]
+            },
+            "to": {
+              "types": [
+                "string"
+              ]
+            },
+            "event": {
+              "types": [
+                "string"
+              ]
+            },
+            "guard": {
+              "types": [
+                "sexpr"
+              ]
+            },
+            "effects": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "type": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "args": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "sexpr"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "type",
+                  "args"
+                ]
+              }
+            },
+            "index": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "from",
+            "to",
+            "event",
+            "effects",
+            "index"
+          ],
+          "example": {
+            "from": "pending",
+            "to": "paid",
+            "event": "PAY",
+            "effects": [
+              {
+                "type": "set",
+                "args": []
+              },
+              {
+                "type": "persist",
+                "args": []
+              }
+            ],
+            "index": 0
+          }
+        },
+        "annotations": {
+          "types": [
+            "object"
+          ],
+          "description": "Author explanations shown in a popover on hover: the event's note and per-effect-type notes.",
+          "properties": {
+            "states": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            },
+            "transitions": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            },
+            "effects": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "title": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "body": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "body"
+                ]
+              }
+            }
+          },
+          "example": {
+            "transitions": {
+              "PAY": {
+                "title": "Paying",
+                "body": "The customer pays the order total."
+              }
+            },
+            "effects": {
+              "persist": {
+                "body": "Saves the order."
+              }
+            }
+          }
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "enter": {
+          "types": [
+            "string"
+          ],
+          "description": "How this element animates in when it mounts (theme-styled); overrides the theme's default slot entry. `none` opts out.",
+          "enumValues": [
+            "none",
+            "fade",
+            "rise",
+            "scale",
+            "slide"
+          ],
+          "kind": "entry"
+        },
+        "enterDelay": {
+          "types": [
+            "number"
+          ],
+          "description": "Stagger step for the entry: waits this many `--motion-enter-stagger` steps before animating.",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "kind": "entry"
+        },
+        "skeleton": {
+          "types": [
+            "string",
+            "object"
+          ],
+          "description": "Skeleton shown while this element's server render is in flight: a shape (`table`, `list`, …), `{ variant, rows?, columns?, fields? }`, or `none`.",
+          "enumValues": [
+            "header",
+            "table",
+            "list",
+            "grid",
+            "detail",
+            "stats",
+            "form",
+            "card",
+            "text",
+            "none"
+          ],
+          "properties": {
+            "variant": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "header",
+                "table",
+                "list",
+                "grid",
+                "detail",
+                "stats",
+                "form",
+                "card",
+                "text"
+              ]
+            },
+            "rows": {
+              "types": [
+                "number"
+              ]
+            },
+            "columns": {
+              "types": [
+                "number"
+              ]
+            },
+            "fields": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "variant"
+          ],
+          "kind": "skeleton",
+          "tier": "presentation"
+        },
+        "aria-label": {
+          "types": [
+            "string"
+          ],
+          "description": "Accessible name read by screen readers when the visible text is missing or not descriptive (e.g. an icon-only control)."
+        },
+        "aria-labelledby": {
+          "types": [
+            "string"
+          ],
+          "description": "Id of the element whose text names this one."
+        },
+        "aria-describedby": {
+          "types": [
+            "string"
+          ],
+          "description": "Id of the element whose text describes this one (help text, error)."
+        },
+        "aria-live": {
+          "types": [
+            "string"
+          ],
+          "description": "Announce changes to this region: polite waits for a pause, assertive interrupts.",
+          "enumValues": [
+            "off",
+            "polite",
+            "assertive"
+          ]
+        },
+        "aria-current": {
+          "types": [
+            "string"
+          ],
+          "description": "Marks the current item in a set: the current page, step, location, date or time.",
+          "enumValues": [
+            "page",
+            "step",
+            "location",
+            "date",
+            "time",
+            "true",
+            "false"
+          ]
+        },
+        "aria-pressed": {
+          "types": [
+            "string"
+          ],
+          "description": "Toggle-button state.",
+          "enumValues": [
+            "true",
+            "false",
+            "mixed"
+          ]
+        },
+        "aria-expanded": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether the element it controls is expanded."
+        },
+        "aria-selected": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Whether this item is selected (tabs, options, grid cells)."
+        },
+        "aria-hidden": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Hide from assistive technology (decorative content only)."
+        },
+        "aria-busy": {
+          "types": [
+            "boolean"
+          ],
+          "description": "This region is updating; assistive technology waits before announcing it."
+        },
+        "role": {
+          "types": [
+            "string"
+          ],
+          "description": "WAI-ARIA role when the element's native semantics don't describe it.",
+          "enumValues": [
+            "alert",
+            "alertdialog",
+            "application",
+            "article",
+            "banner",
+            "blockquote",
+            "button",
+            "caption",
+            "cell",
+            "checkbox",
+            "code",
+            "columnheader",
+            "combobox",
+            "complementary",
+            "contentinfo",
+            "definition",
+            "deletion",
+            "dialog",
+            "document",
+            "emphasis",
+            "feed",
+            "figure",
+            "form",
+            "generic",
+            "grid",
+            "gridcell",
+            "group",
+            "heading",
+            "img",
+            "insertion",
+            "link",
+            "list",
+            "listbox",
+            "listitem",
+            "log",
+            "main",
+            "marquee",
+            "math",
+            "menu",
+            "menubar",
+            "menuitem",
+            "menuitemcheckbox",
+            "menuitemradio",
+            "meter",
+            "navigation",
+            "none",
+            "note",
+            "option",
+            "paragraph",
+            "presentation",
+            "progressbar",
+            "radio",
+            "radiogroup",
+            "region",
+            "row",
+            "rowgroup",
+            "rowheader",
+            "scrollbar",
+            "search",
+            "searchbox",
+            "separator",
+            "slider",
+            "spinbutton",
+            "status",
+            "strong",
+            "subscript",
+            "superscript",
+            "switch",
+            "tab",
+            "table",
+            "tablist",
+            "tabpanel",
+            "term",
+            "textbox",
+            "time",
+            "timer",
+            "toolbar",
+            "tooltip",
+            "tree",
+            "treegrid",
+            "treeitem"
+          ]
+        },
+        "lang": {
+          "types": [
+            "string"
+          ],
+          "description": "Language of this element's content (BCP 47, e.g. ar, sl, en)."
+        },
+        "dir": {
+          "types": [
+            "string"
+          ],
+          "description": "Text direction of this element's content.",
+          "enumValues": [
+            "ltr",
+            "rtl",
+            "auto"
+          ]
+        },
+        "tabIndex": {
+          "types": [
+            "number"
+          ],
+          "description": "0 puts the element in the Tab order; -1 makes it focusable only programmatically.",
+          "numericEnumValues": [
+            -1,
+            0
+          ]
         }
       }
     }

@@ -1,0 +1,105 @@
+{
+  "name": "BatchOrbital",
+  "orbitals": [
+    {
+      "entity": {
+        "collection": "batches",
+        "fields": [
+          {
+            "name": "id",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "batchId",
+            "type": "string"
+          }
+        ],
+        "name": "Batch",
+        "persistence": "persistent"
+      },
+      "name": "BatchOrbital",
+      "traits": [
+        {
+          "category": "interaction",
+          "effectRow": [
+            {
+              "kind": "call-service",
+              "resource": "llm.classifyMany"
+            },
+            {
+              "kind": "cancel-call"
+            },
+            {
+              "kind": "set",
+              "resource": "@entity.batchId"
+            }
+          ],
+          "linkedEntity": "Batch",
+          "name": "BatchRunner",
+          "scope": "instance",
+          "stateMachine": {
+            "events": [
+              {
+                "key": "START",
+                "name": "Start"
+              },
+              {
+                "key": "STOP",
+                "name": "Stop"
+              }
+            ],
+            "states": [
+              {
+                "isInitial": true,
+                "name": "idle"
+              }
+            ],
+            "transitions": [
+              {
+                "effects": [
+                  [
+                    "set",
+                    "@entity.batchId",
+                    "@payload.batchId"
+                  ],
+                  [
+                    "call-service",
+                    "llm",
+                    "classifyMany",
+                    {
+                      "categories": "@payload.categories",
+                      "items": "@payload.items"
+                    },
+                    {
+                      "emit": {
+                        "cancelled": "CLASSIFY_CANCELLED",
+                        "failure": "CLASSIFY_FAILED",
+                        "success": "CLASSIFIED"
+                      },
+                      "key": "@entity.batchId"
+                    }
+                  ]
+                ],
+                "event": "START",
+                "from": "idle",
+                "to": "idle"
+              },
+              {
+                "effects": [
+                  [
+                    "cancel-call",
+                    "@entity.batchId"
+                  ]
+                ],
+                "event": "STOP",
+                "from": "idle",
+                "to": "idle"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

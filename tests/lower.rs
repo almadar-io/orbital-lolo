@@ -588,3 +588,76 @@ fn inline_theme_motion_category_rejects_non_shape_keys() {
     let src = "orbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme {\n    name: \"snappy\"\n    tokens {\n      motion {\n        durations: \"200ms\"\n      }\n    }\n  }\n  page \"/\" -> Foo\n}";
     assert!(parse_and_lower_str(src).is_err());
 }
+
+/// G-ORB-093: an `SExpr` struct member lowers to `FieldType::SExpr`, not a
+/// shapeless `Object` that rejects every atom.
+#[test]
+fn sexpr_struct_member_lowers_to_sexpr_field_type() {
+    use orbital_core::schema::FieldType;
+    let source = r#"
+orbital W {
+  type Step = {
+    type : string!
+    args : [SExpr]!
+    guard : SExpr
+    meta : { note : string }
+  }
+  entity Widget [runtime] {
+    id : string!
+  }
+  trait WidgetView -> Widget [interaction] {
+    config {
+      steps : [Step] = []
+    }
+    state idle {
+      INIT -> idle
+        (render-ui main { type: page-header, title: "Steps" })
+      SHOW -> idle when (> (array/len @config.steps) 0)
+        (render-ui main { type: page-header, title: "Has steps" })
+    }
+  }
+}
+"#;
+    let schema = parse_and_lower_str(source).expect("lower");
+    let orbital_core::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
+    else {
+        panic!("expected inline trait");
+    };
+    let steps = trait_def
+        .config
+        .as_ref()
+        .and_then(|c| c.get("steps"))
+        .expect("steps knob");
+    let props = steps
+        .items
+        .as_ref()
+        .and_then(|i| i.properties.as_ref())
+        .expect("Step members");
+    let args = props.get("args").expect("args member");
+    assert_eq!(args.field_type, FieldType::Array);
+    assert_eq!(
+        args.items.as_ref().map(|i| i.field_type.clone()),
+        Some(FieldType::SExpr)
+    );
+    assert_eq!(
+        props.get("guard").map(|g| g.field_type.clone()),
+        Some(FieldType::SExpr)
+    );
+    // Control: an inline object member still lowers to an object.
+    assert_eq!(
+        props.get("meta").map(|m| m.field_type.clone()),
+        Some(FieldType::Object)
+    );
+}
+
+#[test]
+fn fixture_34_cancel_call() {
+    // `call-service` options carry `key` and `emit.cancelled`; `(cancel-call key)`
+    // lowers to `["cancel-call", <expr>]` — the IR shape both runtimes read.
+    assert_lowering_matches("34-cancel-call");
+}
+
+#[test]
+fn fixture_10b_persist_batch() {
+    assert_lowering_matches("10b-persist-batch");
+}

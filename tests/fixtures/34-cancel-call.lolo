@@ -1,0 +1,23 @@
+orbital BatchOrbital {
+  entity Batch [persistent: batches] {
+    id : string!
+    batchId : string
+  }
+
+  trait BatchRunner -> Batch [interaction] {
+    state idle {
+      START -> idle
+        (set "@entity.batchId" "@payload.batchId")
+        (call-service "llm" "classifyMany" { items: "@payload.items", categories: "@payload.categories" } {
+          key: "@entity.batchId",
+          emit: {
+            success: "CLASSIFIED",
+            failure: "CLASSIFY_FAILED",
+            cancelled: "CLASSIFY_CANCELLED"
+          }
+        })
+      STOP -> idle
+        (cancel-call "@entity.batchId")
+    }
+  }
+}
