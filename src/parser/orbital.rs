@@ -26,6 +26,7 @@ struct OrbitalRefBody {
     events_remap: Vec<(String, String)>,
     extend_fields: Vec<EntityField>,
     import_listens: Vec<Listen>,
+    expects: Vec<ExpectsDecl>,
     sibling_traits: Vec<Trait>,
 }
 
@@ -64,7 +65,7 @@ impl Parser {
             name,
             type_annotation,
             uses: Vec::new(),
-            expects: Vec::new(),
+            expects: body.expects,
             type_aliases: Vec::new(),
             entity: None,
             extra_entities: Vec::new(),
@@ -138,6 +139,17 @@ impl Parser {
                 let (pages_remap, mounts) = self.parse_orbital_ref_pages_map()?;
                 out.pages_remap = pages_remap;
                 out.mounts = mounts;
+            } else if self.check_ident("expects") {
+                let decl = self.parse_expects_decl()?;
+                if let Some(dup) = super::expects_duplicate(&out.expects, &decl) {
+                    return Err(ParseError::InvalidType {
+                        span: decl.span,
+                        message: format!(
+                            "ELOLO_DUPLICATE_EXPECTATION: orbital declares {dup} more than once"
+                        ),
+                    });
+                }
+                out.expects.push(decl);
             } else if self.check_ident("omit") {
                 out.omit = self.parse_orbital_ref_name_list()?;
             } else if self.check_ident("only") {
@@ -169,7 +181,7 @@ impl Parser {
             } else {
                 return Err(ParseError::UnexpectedToken {
                     expected:
-                        "entity, entities, fields, roles, pages, omit, only, config, events, extend, listens, trait, or }"
+                        "entity, entities, fields, roles, pages, omit, only, config, events, extend, listens, expects, trait, or }"
                             .to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
@@ -378,7 +390,13 @@ impl Parser {
                 });
             }
             let span = self.peek_span();
-            out.push((self.expect_ident()?, span));
+            // A quoted entry names a page by its path (`omit { "/things/:id" }`).
+            if let TokenKind::String(path) = self.peek().clone() {
+                self.advance();
+                out.push((path, span));
+            } else {
+                out.push((self.expect_ident()?, span));
+            }
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }

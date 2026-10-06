@@ -582,3 +582,74 @@ orbital O {
 "#;
     assert!(parse_str(src).is_err());
 }
+
+const IMPORT_EXPECTS: &str = r#"
+uses Pm from "almadar-behaviors/std-project-manager"
+
+orbital ProjectOrbital = Pm.orbitals.ProjectOrbital {
+  expects page "/enroll"
+  expects identity Person {
+    id : string!
+  }
+}
+"#;
+
+/// An import body may declare what its own sibling traits need from the composing program.
+#[test]
+fn orbital_ref_body_lowers_its_expects() {
+    let schema = parse_and_lower_str(IMPORT_EXPECTS).expect("lower");
+    let expects = schema.orbitals[0]
+        .expects
+        .as_ref()
+        .expect("expects lowered");
+    assert_eq!(expects.len(), 2, "{expects:?}");
+    let rendered = serde_json::to_string(expects).expect("json");
+    assert!(rendered.contains("/enroll"), "{rendered}");
+    assert!(rendered.contains("\"identity\""), "{rendered}");
+}
+
+#[test]
+fn control_an_import_body_without_expects_lowers_none() {
+    let schema = parse_and_lower_str(IMPORT_LISTENS).expect("lower");
+    assert!(schema.orbitals[0].expects.is_none());
+}
+
+#[test]
+fn orbital_ref_body_expects_round_trip_through_format() {
+    let program = parse_str(IMPORT_EXPECTS).expect("parse");
+    let printed = orbital_lolo::format::format_program(&program);
+    assert!(printed.contains("expects page \"/enroll\""), "{printed}");
+    let again = parse_str(&printed).expect("reparse");
+    assert_eq!(again.orbitals[0].expects.len(), 2);
+}
+
+const IMPORT_OMIT_PAGE: &str = r#"
+uses Pm from "almadar-behaviors/std-project-manager"
+
+orbital ProjectOrbital = Pm.orbitals.ProjectOrbital {
+  omit { ProjectDelete, "/projects/:id" }
+}
+"#;
+
+/// `omit` names traits by identifier and pages by their quoted path.
+#[test]
+fn orbital_ref_omit_accepts_a_page_path() {
+    let schema = parse_and_lower_str(IMPORT_OMIT_PAGE).expect("lower");
+    let omit = schema.orbitals[0]
+        .reference
+        .as_ref()
+        .and_then(|r| r.omit.clone())
+        .expect("omit lowered");
+    assert_eq!(
+        omit,
+        vec!["ProjectDelete".to_string(), "/projects/:id".to_string()]
+    );
+}
+
+#[test]
+fn orbital_ref_omit_page_path_round_trips_through_format() {
+    let program = parse_str(IMPORT_OMIT_PAGE).expect("parse");
+    let printed = orbital_lolo::format::format_program(&program);
+    assert!(printed.contains("\"/projects/:id\""), "{printed}");
+    parse_str(&printed).expect("reparse");
+}

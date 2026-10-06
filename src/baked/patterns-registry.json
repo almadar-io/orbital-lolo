@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-10-05T16:34:46.367Z",
+  "exportedAt": "2026-10-06T12:57:46.324Z",
   "patterns": {
     "detail-panel": {
       "type": "detail-panel",
@@ -48253,6 +48253,21 @@
             "string"
           ],
           "description": "Group items by a field value (renders section headers between groups)"
+        },
+        "groupFormat": {
+          "types": [
+            "string"
+          ],
+          "description": "How a `groupBy` value is bucketed and labelled (`date` = one section per day)",
+          "enumValues": [
+            "date",
+            "time",
+            "datetime",
+            "currency",
+            "number",
+            "boolean",
+            "percent"
+          ]
         },
         "senderField": {
           "types": [

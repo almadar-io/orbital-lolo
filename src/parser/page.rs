@@ -64,6 +64,30 @@ impl Parser {
                 }
             }
         }
+        // A page has no `{ }` body: its traits follow `->` (agents often write a block of
+        // `@trait.X` lines instead).
+        let page_line = |extra: Option<&str>| -> String {
+            let mut names = traits.clone();
+            if let Some(x) = extra {
+                names.push(x.to_string());
+            }
+            let as_name = name
+                .as_deref()
+                .map(|n| format!(" as {n}"))
+                .unwrap_or_default();
+            format!("page \"{path}\"{as_name} -> {}", names.join(", "))
+        };
+        if matches!(self.peek(), TokenKind::LBrace) {
+            return Err(ParseError::UnexpectedToken {
+                expected: format!(
+                    "end of page declaration — a page has no `{{ }}` body; its traits follow `->`, \
+                     comma-separated (`{}`)",
+                    page_line(None)
+                ),
+                got: format!("{:?}", self.peek()),
+                span: self.peek_span(),
+            });
+        }
         // Optional `[options]`.
         let mut view = None;
         let mut primary_entity = None;
@@ -103,6 +127,17 @@ impl Parser {
             self.skip_newlines();
             let annotation = match self.peek().clone() {
                 TokenKind::Sigil(raw) => {
+                    if let Some(mounted) = raw.strip_prefix("trait.") {
+                        return Err(ParseError::UnexpectedToken {
+                            expected: format!(
+                                "@icon or @label — a page's traits follow `->`, comma-separated, \
+                                 not `@trait.` lines: write `{}`",
+                                page_line(Some(mounted))
+                            ),
+                            got: format!("{:?}", self.peek()),
+                            span: self.peek_span(),
+                        });
+                    }
                     let s = self.canon_annotation_sigil(&raw);
                     if s == "icon" || s == "label" {
                         s

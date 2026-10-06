@@ -651,7 +651,7 @@ fn resolve_type_alias(body: &TypeBody) -> TypeAliasResolved {
     }
 }
 
-fn lower_expects_decl(
+pub(crate) fn lower_expects_decl(
     decl: &ExpectsDecl,
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,

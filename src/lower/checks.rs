@@ -1482,6 +1482,9 @@ pub(crate) fn check_listens_integrity(orbitals: &[CoreOrbital]) -> Result<(), Lo
         .filter(|o| o.reference.is_some())
         .map(|o| o.name.as_str())
         .collect();
+    // A source orbital this file does not contain (one orbital lowered on its own) is the composed
+    // schema's check, as in the compiler's `validate_listens_integrity`.
+    let orbitals_in_file: HashSet<&str> = orbitals.iter().map(|o| o.name.as_str()).collect();
     for orbital in orbitals {
         for trait_ref in &orbital.traits {
             match trait_ref {
@@ -1540,6 +1543,9 @@ pub(crate) fn check_listens_integrity(orbitals: &[CoreOrbital]) -> Result<(), Lo
                 if imported_orbitals.contains(source_orbital.as_str())
                     && !trait_emits.contains_key(&(source_orbital.clone(), source_trait.clone()))
                 {
+                    continue;
+                }
+                if !orbitals_in_file.contains(source_orbital.as_str()) {
                     continue;
                 }
                 let resolved = trait_emits

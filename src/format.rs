@@ -845,6 +845,12 @@ impl Formatter {
             self.write_newline();
             wrote_any = true;
         }
+        for e in &orbital.expects {
+            self.write_indent();
+            self.fmt_expects_decl(e);
+            self.write_newline();
+            wrote_any = true;
+        }
         if !orbital.entities_remap.is_empty() {
             if wrote_any {
                 self.write_newline();
@@ -1002,7 +1008,11 @@ impl Formatter {
             self.indent();
             for (name, _) in &orbital.omit {
                 self.write_indent();
-                self.output.push_str(name);
+                if name.starts_with('/') {
+                    self.output.push_str(&format!("{name:?}"));
+                } else {
+                    self.output.push_str(name);
+                }
                 self.write_newline();
             }
             self.dedent();

@@ -240,7 +240,16 @@ pub(crate) fn lower_orbital_reference(
         name: orb.name.clone(),
         id: None,
         uses,
-        expects: None,
+        expects: if orb.expects.is_empty() {
+            None
+        } else {
+            Some(
+                orb.expects
+                    .iter()
+                    .map(|e| super::lower_expects_decl(e, aliases, entity_names))
+                    .collect::<Result<Vec<_>, _>>()?,
+            )
+        },
         theme: None,
         services: None,
         // Placeholder — a synthetic reference so the schema stays
