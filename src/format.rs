@@ -528,6 +528,16 @@ impl Formatter {
                 self.fmt_type_expr(inner);
                 self.output.push(']');
             }
+            TypeExpr::Tuple(slots) => {
+                self.output.push('[');
+                for (i, slot) in slots.iter().enumerate() {
+                    if i > 0 {
+                        self.output.push_str(", ");
+                    }
+                    self.fmt_type_expr(slot);
+                }
+                self.output.push(']');
+            }
             TypeExpr::Map(key, value) => {
                 // Surface syntax: `Map K V` (juxtaposition).
                 self.output.push_str("Map ");
@@ -584,6 +594,9 @@ impl Formatter {
             TypeExpr::EventRef => {
                 self.output.push_str("event");
             }
+            TypeExpr::EventAddress => {
+                self.output.push_str("EventAddress");
+            }
             TypeExpr::Slot => {
                 self.output.push_str("slot");
             }
@@ -639,7 +652,12 @@ impl Formatter {
             (Some(Persistence::Runtime), _) => tags.push("runtime".to_string()),
             (None, _) => {}
         }
-        tags.extend(flags.iter().filter(|(_, on)| *on).map(|(tag, _)| tag.to_string()));
+        tags.extend(
+            flags
+                .iter()
+                .filter(|(_, on)| *on)
+                .map(|(tag, _)| tag.to_string()),
+        );
         if !tags.is_empty() {
             self.output.push_str(" [");
             self.output.push_str(&tags.join(", "));
@@ -1180,7 +1198,11 @@ impl Formatter {
     }
 
     /// `instances [ … ]`, or `instances <lang> [ … ]` for one locale's rows.
-    fn fmt_instance_block(&mut self, locale: Option<&String>, rows: &[std::collections::HashMap<String, SExpression>]) {
+    fn fmt_instance_block(
+        &mut self,
+        locale: Option<&String>,
+        rows: &[std::collections::HashMap<String, SExpression>],
+    ) {
         self.write_indent();
         match locale {
             Some(l) => self.output.push_str(&format!("instances {l} [")),
@@ -1225,7 +1247,11 @@ impl Formatter {
             || entity.update_policy.is_some()
             || entity.delete_policy.is_some()
             || !entity.access_waivers.is_empty();
-        if !entity.fields.is_empty() || has_access_directives || !entity.instances.is_empty() || !entity.locale_instances.is_empty() {
+        if !entity.fields.is_empty()
+            || has_access_directives
+            || !entity.instances.is_empty()
+            || !entity.locale_instances.is_empty()
+        {
             self.write_newline();
             self.indent();
             for (sigil, expr) in [
@@ -2486,8 +2512,9 @@ impl Formatter {
             return;
         }
 
-        if let Some(quoted) = orbital_core::schema::quote::quote_body_of(&SExpression::Array(arr.to_vec()))
-            .and_then(orbital_core::schema::quote::decode_quote_body)
+        if let Some(quoted) =
+            orbital_core::schema::quote::quote_body_of(&SExpression::Array(arr.to_vec()))
+                .and_then(orbital_core::schema::quote::decode_quote_body)
         {
             self.output.push_str("(quote ");
             self.fmt_sexpr_inner(&quoted, false);

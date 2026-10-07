@@ -122,7 +122,8 @@ const CATEGORIES: &[&str] = &[
 /// shared with `ANNOTATIONS` (the `@read`/`@create`/`@update`/`@delete`
 /// entity access-policy directives) — same English word, same translation.
 const CAPABILITIES: &[&str] = &[
-    "read", "write", "browse", "create", "update", "delete", "notify", "schedule", "invoke", "batch",
+    "read", "write", "browse", "create", "update", "delete", "notify", "schedule", "invoke",
+    "batch",
 ];
 
 /// `key unique intrinsic label description synonyms tier rebindable read
@@ -207,7 +208,7 @@ const EFFECTS: &[&str] = &[
 /// `string number int float bool boolean timestamp date datetime duration
 /// money scalar file email url phone uuid image icon asset
 /// component object void null any` (`parser/mod.rs is_primitive_type`) plus
-/// `trait entity event slot pattern Map secret SExpr` (`parser/type.rs`
+/// `trait entity event EventAddress slot pattern Map secret SExpr` (`parser/type.rs`
 /// special type names). `entity`/`event`/`trait` are shared with
 /// `KEYWORDS`/`SIGILS` (same English word).
 const TYPES: &[&str] = &[
@@ -243,12 +244,14 @@ const TYPES: &[&str] = &[
     "relation",
     "node",
     "union",
+    "tuple",
     "void",
     "null",
     "any",
     "trait",
     "entity",
     "event",
+    "EventAddress",
     "slot",
     "pattern",
     "Map",

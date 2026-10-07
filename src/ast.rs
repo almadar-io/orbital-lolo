@@ -165,7 +165,13 @@ pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 7] = [
     ),
     (
         "surface",
-        &["backdrop", "cardImage", "pageImage", "pageImageSize", "diagram"],
+        &[
+            "backdrop",
+            "cardImage",
+            "pageImage",
+            "pageImageSize",
+            "diagram",
+        ],
     ),
     (
         "diagram",
@@ -223,7 +229,11 @@ pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 7] = [
 pub const THEME_TYPED_AXIS_VALUES: [(&str, &str, &[&str]); 6] = [
     ("diagram", "lineCap", &["butt", "round", "square"]),
     ("diagram", "lineJoin", &["miter", "round", "bevel"]),
-    ("diagram", "fillStyle", &["solid", "tint", "outline", "hatch"]),
+    (
+        "diagram",
+        "fillStyle",
+        &["solid", "tint", "outline", "hatch"],
+    ),
     ("diagram", "marker", &["triangle", "open", "line", "dot"]),
     ("diagram", "labelFont", &["body", "display", "mono"]),
     ("diagram", "labelCase", &["none", "uppercase"]),
@@ -521,7 +531,8 @@ pub struct Entity {
     /// `instances [ { … }, … ]` — written-out rows the entity starts with.
     pub instances: Vec<std::collections::HashMap<String, SExpression>>,
     /// `instances <lang> [ … ]` — the written-out rows for one declared locale.
-    pub locale_instances: std::collections::BTreeMap<String, Vec<std::collections::HashMap<String, SExpression>>>,
+    pub locale_instances:
+        std::collections::BTreeMap<String, Vec<std::collections::HashMap<String, SExpression>>>,
     /// `@read <sexpr>` — a per-row predicate evaluated with `@entity` bound to
     /// the candidate row and `@user` to the viewer. ANDed with any call-site
     /// `filter:`; enforced once, for every trait that fetches this entity —
@@ -619,6 +630,8 @@ pub enum TypeExpr {
     StringLiteral(String),
     /// `[T]` array type.
     Array(Box<TypeExpr>),
+    /// `[T1, T2, …]` — a fixed-length tuple (two or more slots).
+    Tuple(Vec<TypeExpr>),
     /// `Map K V` dynamic-key map type — a uniform-value dictionary with
     /// arbitrary keys (e.g. `Map string SimulationParameter`). Reserved
     /// built-in binary constructor applied by juxtaposition, mirroring
@@ -689,6 +702,9 @@ pub enum TypeExpr {
     /// `event` — value is an event NAME reference (V4-W5), id-carried by the
     /// stamp like `EntityRef`. Allowed only in `config { ... }` blocks.
     EventRef,
+    /// `EventAddress` — a value addressing a declared external input
+    /// (`Trait.EVENT`, `Orbital.Trait.EVENT`). Allowed only in `config { ... }` blocks.
+    EventAddress,
     /// `slot` — value is a UI slot name. Validated against `VALID_SLOTS`.
     Slot,
     /// `pattern` — value is a pattern type name. Validated against `PATTERN_TYPES`.
@@ -723,7 +739,10 @@ impl TypeExpr {
     /// type (recursively); every other form is itself.
     pub fn peel(&self) -> &TypeExpr {
         match self {
-            TypeExpr::FieldOf { resolved: Some(inner), .. } => inner.peel(),
+            TypeExpr::FieldOf {
+                resolved: Some(inner),
+                ..
+            } => inner.peel(),
             other => other,
         }
     }

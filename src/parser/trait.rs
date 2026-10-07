@@ -1253,17 +1253,24 @@ impl Parser {
             TokenKind::Arrow | TokenKind::UnicodeArrow => {
                 self.advance();
                 let word = self.expect_ident()?;
-                let word = self.lang.canon_keyword(&word).map(str::to_string).unwrap_or(word);
+                let word = self
+                    .lang
+                    .canon_keyword(&word)
+                    .map(str::to_string)
+                    .unwrap_or(word);
                 if word != "external" {
                     return Err(ParseError::UnexpectedToken {
-                        expected: "`external` after `->` on a local listen (`EVENT -> external { … }`)".to_string(),
+                        expected:
+                            "`external` after `->` on a local listen (`EVENT -> external { … }`)"
+                                .to_string(),
                         got: word,
                         span: self.peek_span(),
                     });
                 }
                 if !matches!(self.peek(), TokenKind::LBrace) {
                     return Err(ParseError::UnexpectedToken {
-                        expected: "a payload `{ … }` after `-> external` (write `{}` for none)".to_string(),
+                        expected: "a payload `{ … }` after `-> external` (write `{}` for none)"
+                            .to_string(),
                         got: format!("{:?}", self.peek()),
                         span: self.peek_span(),
                     });

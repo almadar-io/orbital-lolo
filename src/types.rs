@@ -368,6 +368,10 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::Named(s) => format!("named:{s}"),
         TypeExpr::StringLiteral(s) => format!("lit:{s:?}"),
         TypeExpr::Array(inner) => format!("[{}]", format_type_expr(inner)),
+        TypeExpr::Tuple(slots) => format!(
+            "[{}]",
+            slots.iter().map(format_type_expr).collect::<Vec<_>>().join(", ")
+        ),
         TypeExpr::Map(key, value) => {
             format!("map:{}:{}", format_type_expr(key), format_type_expr(value))
         }
@@ -394,6 +398,7 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::EntityRef => "entity".to_string(),
         TypeExpr::EventRef => "event".to_string(),
+        TypeExpr::EventAddress => "EventAddress".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::Secret => "secret".to_string(),
@@ -557,6 +562,11 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
             }
         }
         TypeExpr::Array(inner) | TypeExpr::Optional(inner) => visit_expr_refs(inner, out),
+        TypeExpr::Tuple(slots) => {
+            for slot in slots {
+                visit_expr_refs(slot, out);
+            }
+        }
         TypeExpr::Map(key, value) => {
             visit_expr_refs(key, out);
             visit_expr_refs(value, out);
@@ -589,6 +599,7 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         | TypeExpr::Trait
         | TypeExpr::EntityRef
         | TypeExpr::EventRef
+        | TypeExpr::EventAddress
         | TypeExpr::Slot
         | TypeExpr::Pattern
         | TypeExpr::Secret
@@ -1174,7 +1185,10 @@ fn check_event_ref_positions(cf: &ConfigField, ctx: &ResolveCtx<'_>) -> Result<(
         return Ok(());
     }
     for (trail, span) in &cf.event_refs {
-        if !matches!(type_at_trail(&cf.type_expr, trail, ctx), Some(TypeExpr::EventRef)) {
+        if !matches!(
+            type_at_trail(&cf.type_expr, trail, ctx),
+            Some(TypeExpr::EventRef | TypeExpr::EventAddress)
+        ) {
             return Err(TypeError::EventRefPosition {
                 knob: cf.name.clone(),
                 trail: trail.clone(),

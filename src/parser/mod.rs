@@ -1301,6 +1301,7 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         TypeExpr::ExpectedIdentityRow => Some("@user"),
         TypeExpr::EntityRef => Some("entity"),
         TypeExpr::EventRef => Some("event"),
+        TypeExpr::EventAddress => Some("EventAddress"),
         TypeExpr::Slot => Some("slot"),
         TypeExpr::Pattern => Some("pattern"),
         TypeExpr::Secret => Some("secret"),
@@ -1310,6 +1311,7 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         // reject the other payload-only sigils above.
         TypeExpr::Match { .. } => Some("match"),
         TypeExpr::Array(inner) => type_expr_config_only_type(inner),
+        TypeExpr::Tuple(slots) => slots.iter().find_map(type_expr_config_only_type),
         TypeExpr::Map(key, value) => {
             type_expr_config_only_type(key).or_else(|| type_expr_config_only_type(value))
         }
@@ -1323,7 +1325,9 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         | TypeExpr::StringLiteral(_)
         | TypeExpr::RelationMany(_)
         | TypeExpr::RelationManyNonEmpty(_) => None,
-        TypeExpr::FieldOf { resolved, .. } => resolved.as_deref().and_then(type_expr_config_only_type),
+        TypeExpr::FieldOf { resolved, .. } => {
+            resolved.as_deref().and_then(type_expr_config_only_type)
+        }
     }
 }
 
@@ -2001,10 +2005,16 @@ mod tests {
 
     #[test]
     fn duplicate_call_site_config_key_errors() {
-        let src = config_dup_src("      viewerRole: @user.role\n      viewerRole: @user.role", "      x: 1");
+        let src = config_dup_src(
+            "      viewerRole: @user.role\n      viewerRole: @user.role",
+            "      x: 1",
+        );
         let err = parse_str(&src).expect_err("duplicate key must fail");
         let msg = err.to_string();
-        assert!(msg.contains("ELOLO_DUPLICATE_CONFIG_KEY"), "unexpected: {msg}");
+        assert!(
+            msg.contains("ELOLO_DUPLICATE_CONFIG_KEY"),
+            "unexpected: {msg}"
+        );
         assert!(msg.contains("viewerRole"), "must name the key: {msg}");
     }
 
@@ -2012,7 +2022,10 @@ mod tests {
     fn duplicate_declared_config_key_errors() {
         let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E {\n    state s { I -> s }\n    config {\n      k : string = \"a\"\n      k : string = \"b\"\n    }\n  }\n}";
         let err = parse_str(src).expect_err("duplicate key must fail");
-        assert!(err.to_string().contains("ELOLO_DUPLICATE_CONFIG_KEY"), "unexpected: {err}");
+        assert!(
+            err.to_string().contains("ELOLO_DUPLICATE_CONFIG_KEY"),
+            "unexpected: {err}"
+        );
     }
 
     #[test]
@@ -2023,7 +2036,10 @@ mod tests {
 
     #[test]
     fn same_config_key_in_different_blocks_passes() {
-        let src = config_dup_src("      viewerRole: @user.role", "      viewerRole: @user.role");
+        let src = config_dup_src(
+            "      viewerRole: @user.role",
+            "      viewerRole: @user.role",
+        );
         parse_str(&src).expect("the same key in two traits must parse");
     }
 

@@ -36,7 +36,8 @@ pub(crate) fn lower_entity(
         identity: entity.identity,
         local: entity.local,
         seed_mock: entity.seed_mock,
-        locale_instances: (!entity.locale_instances.is_empty()).then(|| entity.locale_instances.clone()),
+        locale_instances: (!entity.locale_instances.is_empty())
+            .then(|| entity.locale_instances.clone()),
         read_policy: entity.read_policy.clone(),
         create_policy: entity.create_policy.clone(),
         update_policy: entity.update_policy.clone(),
@@ -150,7 +151,11 @@ pub(crate) fn lower_type_expr(
         // protected by the parser gate (`ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY`);
         // this arm is reached only for struct aliases consumed by config knobs.
         TypeExpr::EventRef => (FieldType::Event, None, None, None, None),
-        TypeExpr::FieldOf { resolved: Some(inner), .. } => lower_type_expr(inner, aliases, entity_names),
+        TypeExpr::EventAddress => (FieldType::EventAddress, None, None, None, None),
+        TypeExpr::FieldOf {
+            resolved: Some(inner),
+            ..
+        } => lower_type_expr(inner, aliases, entity_names),
         // Unresolved only if lowering skipped `projection::resolve_field_projections`.
         TypeExpr::FieldOf { resolved: None, .. } => (FieldType::String, None, None, None, None),
         TypeExpr::Named(name) => {
@@ -264,6 +269,37 @@ pub(crate) fn lower_type_expr(
                 projected_from: inner.projection(),
             };
             (FieldType::Array, None, Some(Box::new(item)), None, None)
+        }
+        // `[T1, T2, …]` — each slot's resolved shape rides `properties`, keyed by index.
+        TypeExpr::Tuple(slots) => {
+            let props = slots
+                .iter()
+                .enumerate()
+                .map(|(i, slot)| {
+                    let (ft, values, items, properties, relation) =
+                        lower_type_expr(slot, aliases, entity_names);
+                    let field = FieldDefinition {
+                        mock: None,
+                        merged_from: None,
+                        name: Some(i.to_string()),
+                        field_type: ft,
+                        required: None,
+                        primary_key: None,
+                        unique: None,
+                        default: None,
+                        values,
+                        relation,
+                        items,
+                        properties,
+                        intrinsic: None,
+                        description: None,
+                        synonyms: None,
+                        projected_from: slot.projection(),
+                    };
+                    (i.to_string(), field)
+                })
+                .collect();
+            (FieldType::Tuple, None, None, Some(props), None)
         }
         // `Map K V` — carry the VALUE's resolved shape in the `items` carrier
         // (resolving named-alias values to their struct, exactly like array

@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-10-06T12:57:46.324Z",
+  "exportedAt": "2026-10-07T08:57:47.118Z",
   "patterns": {
     "detail-panel": {
       "type": "detail-panel",
@@ -31575,6 +31575,18 @@
           ],
           "description": "Exactly two children: [left, right]",
           "required": true,
+          "tupleItems": [
+            {
+              "types": [
+                "node"
+              ]
+            },
+            {
+              "types": [
+                "node"
+              ]
+            }
+          ],
           "items": {
             "types": [
               "node"
@@ -42265,12 +42277,14 @@
                   "isInitial": {
                     "types": [
                       "boolean"
-                    ]
+                    ],
+                    "nullable": true
                   },
                   "isTerminal": {
                     "types": [
                       "boolean"
-                    ]
+                    ],
+                    "nullable": true
                   }
                 },
                 "required": [
@@ -42305,7 +42319,8 @@
                   "guard": {
                     "types": [
                       "sexpr"
-                    ]
+                    ],
+                    "nullable": true
                   },
                   "effects": {
                     "types": [
@@ -67491,7 +67506,19 @@
               "types": [
                 "number"
               ]
-            }
+            },
+            "tupleItems": [
+              {
+                "types": [
+                  "number"
+                ]
+              },
+              {
+                "types": [
+                  "number"
+                ]
+              }
+            ]
           }
         },
         "color": {
@@ -73471,12 +73498,14 @@
                         "isInitial": {
                           "types": [
                             "boolean"
-                          ]
+                          ],
+                          "nullable": true
                         },
                         "isTerminal": {
                           "types": [
                             "boolean"
-                          ]
+                          ],
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -73511,7 +73540,8 @@
                         "guard": {
                           "types": [
                             "sexpr"
-                          ]
+                          ],
+                          "nullable": true
                         },
                         "effects": {
                           "types": [
@@ -74215,12 +74245,14 @@
                         "isInitial": {
                           "types": [
                             "boolean"
-                          ]
+                          ],
+                          "nullable": true
                         },
                         "isTerminal": {
                           "types": [
                             "boolean"
-                          ]
+                          ],
+                          "nullable": true
                         }
                       },
                       "required": [
@@ -74255,7 +74287,8 @@
                         "guard": {
                           "types": [
                             "sexpr"
-                          ]
+                          ],
+                          "nullable": true
                         },
                         "effects": {
                           "types": [
@@ -89964,7 +89997,8 @@
                   "priorOrganism": {
                     "types": [
                       "string"
-                    ]
+                    ],
+                    "nullable": true
                   },
                   "timestamp": {
                     "types": [
@@ -91952,6 +91986,12 @@
             "object"
           ],
           "description": "Per-direction PRESS → the board's SEMANTIC event (kind=\"dpad\"), e.g. `{ left: \"LEFT\", right: \"RIGHT\", up: \"JUMP\" }`. Lets the d-pad emit the SAME intent events as the keyboard so the FSM stays device-agnostic.",
+          "mapKeyEnum": [
+            "up",
+            "down",
+            "left",
+            "right"
+          ],
           "kind": "event-map",
           "mapValue": {
             "types": [
@@ -91965,6 +92005,12 @@
             "object"
           ],
           "description": "Per-direction RELEASE → semantic event, e.g. `{ left: \"STOP\", right: \"STOP\" }`. Omit a direction to ignore its release.",
+          "mapKeyEnum": [
+            "up",
+            "down",
+            "left",
+            "right"
+          ],
           "kind": "event-map",
           "mapValue": {
             "types": [
@@ -91978,6 +92024,12 @@
             "object"
           ],
           "description": "Per-direction sprite assets for kind=\"dpad\" buttons (e.g. Kenny arrow PNGs). Falls back to arrow emoji.",
+          "mapKeyEnum": [
+            "up",
+            "down",
+            "left",
+            "right"
+          ],
           "mapValue": {
             "types": [
               "object"
@@ -95406,7 +95458,24 @@
                     "types": [
                       "number"
                     ]
-                  }
+                  },
+                  "tupleItems": [
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -95433,7 +95502,24 @@
                     "types": [
                       "number"
                     ]
-                  }
+                  },
+                  "tupleItems": [
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -95486,7 +95572,24 @@
                       "types": [
                         "number"
                       ]
-                    }
+                    },
+                    "tupleItems": [
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    ]
                   },
                   "distance": {
                     "types": [
@@ -97134,7 +97237,24 @@
                     "types": [
                       "number"
                     ]
-                  }
+                  },
+                  "tupleItems": [
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -97161,7 +97281,24 @@
                     "types": [
                       "number"
                     ]
-                  }
+                  },
+                  "tupleItems": [
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -97214,7 +97351,24 @@
                       "types": [
                         "number"
                       ]
-                    }
+                    },
+                    "tupleItems": [
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    ]
                   },
                   "distance": {
                     "types": [
@@ -100357,7 +100511,24 @@
                     "types": [
                       "number"
                     ]
-                  }
+                  },
+                  "tupleItems": [
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -100384,7 +100555,24 @@
                     "types": [
                       "number"
                     ]
-                  }
+                  },
+                  "tupleItems": [
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -100437,7 +100625,24 @@
                       "types": [
                         "number"
                       ]
-                    }
+                    },
+                    "tupleItems": [
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    ]
                   },
                   "distance": {
                     "types": [
@@ -107122,7 +107327,24 @@
                     "types": [
                       "number"
                     ]
-                  }
+                  },
+                  "tupleItems": [
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -107149,7 +107371,24 @@
                     "types": [
                       "number"
                     ]
-                  }
+                  },
+                  "tupleItems": [
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  ]
                 }
               }
             },
@@ -107202,7 +107441,24 @@
                       "types": [
                         "number"
                       ]
-                    }
+                    },
+                    "tupleItems": [
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    ]
                   },
                   "distance": {
                     "types": [
@@ -108996,6 +109252,14 @@
             "object"
           ],
           "description": "Step label overrides",
+          "mapKeyEnum": [
+            "fetching",
+            "mapping",
+            "reviewing",
+            "committing",
+            "done",
+            "failed"
+          ],
           "mapValue": {
             "types": [
               "string"
@@ -109787,6 +110051,23 @@
             "array"
           ],
           "description": "Euler rotation `[x, y, z]` in radians (world axes) — per-axis joint rotation for the 3D backend; a group placed at a joint with children authored joint-local IS a bone. The 2D painter applies only the in-plane `z` component, after `rotate`.",
+          "tupleItems": [
+            {
+              "types": [
+                "number"
+              ]
+            },
+            {
+              "types": [
+                "number"
+              ]
+            },
+            {
+              "types": [
+                "number"
+              ]
+            }
+          ],
           "items": {
             "types": [
               "number"
@@ -110522,6 +110803,23 @@
             "array"
           ],
           "description": "Euler rotation `[x, y, z]` in radians.",
+          "tupleItems": [
+            {
+              "types": [
+                "number"
+              ]
+            },
+            {
+              "types": [
+                "number"
+              ]
+            },
+            {
+              "types": [
+                "number"
+              ]
+            }
+          ],
           "items": {
             "types": [
               "number"
@@ -115937,7 +116235,24 @@
                   "types": [
                     "number"
                   ]
-                }
+                },
+                "tupleItems": [
+                  {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                ]
               }
             }
           },
@@ -115971,7 +116286,8 @@
               "parent": {
                 "types": [
                   "string"
-                ]
+                ],
+                "nullable": true
               },
               "pivot": {
                 "types": [
@@ -115981,7 +116297,19 @@
                   "types": [
                     "number"
                   ]
-                }
+                },
+                "tupleItems": [
+                  {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                ]
               },
               "tip": {
                 "types": [
@@ -115991,7 +116319,19 @@
                   "types": [
                     "number"
                   ]
-                }
+                },
+                "tupleItems": [
+                  {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                ]
               }
             },
             "required": [
@@ -118860,12 +119200,14 @@
                   "isInitial": {
                     "types": [
                       "boolean"
-                    ]
+                    ],
+                    "nullable": true
                   },
                   "isTerminal": {
                     "types": [
                       "boolean"
-                    ]
+                    ],
+                    "nullable": true
                   }
                 },
                 "required": [
@@ -118900,7 +119242,8 @@
                   "guard": {
                     "types": [
                       "sexpr"
-                    ]
+                    ],
+                    "nullable": true
                   },
                   "effects": {
                     "types": [
@@ -120440,7 +120783,8 @@
                   "priorOrganism": {
                     "types": [
                       "string"
-                    ]
+                    ],
+                    "nullable": true
                   },
                   "timestamp": {
                     "types": [
@@ -121580,7 +121924,8 @@
                 "priorOrganism": {
                   "types": [
                     "string"
-                  ]
+                  ],
+                  "nullable": true
                 },
                 "timestamp": {
                   "types": [
@@ -122626,7 +122971,8 @@
                   "priorOrganism": {
                     "types": [
                       "string"
-                    ]
+                    ],
+                    "nullable": true
                   },
                   "timestamp": {
                     "types": [

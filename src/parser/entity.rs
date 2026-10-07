@@ -22,12 +22,18 @@ impl Parser {
         // Optional `:: TypeName [args]` annotation above the body.
         let type_annotation = self.try_parse_type_annotation()?;
 
-        let EntityTags { persistence, collection, shared, identity, local, mock: seed_mock } =
-            if matches!(self.peek(), TokenKind::LBracket) {
-                self.parse_persistence_tag()?
-            } else {
-                EntityTags::default()
-            };
+        let EntityTags {
+            persistence,
+            collection,
+            shared,
+            identity,
+            local,
+            mock: seed_mock,
+        } = if matches!(self.peek(), TokenKind::LBracket) {
+            self.parse_persistence_tag()?
+        } else {
+            EntityTags::default()
+        };
 
         let brace_form = matches!(self.peek(), TokenKind::LBrace);
         if brace_form {
@@ -42,8 +48,10 @@ impl Parser {
         let mut delete_policy = None;
         let mut access_waivers: Vec<(String, String)> = Vec::new();
         let mut instances: Vec<std::collections::HashMap<String, SExpression>> = Vec::new();
-        let mut locale_instances: std::collections::BTreeMap<String, Vec<std::collections::HashMap<String, SExpression>>> =
-            std::collections::BTreeMap::new();
+        let mut locale_instances: std::collections::BTreeMap<
+            String,
+            Vec<std::collections::HashMap<String, SExpression>>,
+        > = std::collections::BTreeMap::new();
         loop {
             self.skip_newlines();
             if brace_form && matches!(self.peek(), TokenKind::RBrace) {
@@ -287,7 +295,14 @@ impl Parser {
             break;
         }
         self.expect_kind(&TokenKind::RBracket, "]")?;
-        Ok(EntityTags { persistence, collection, shared, identity, local, mock })
+        Ok(EntityTags {
+            persistence,
+            collection,
+            shared,
+            identity,
+            local,
+            mock,
+        })
     }
 
     /// `instances [` (the default rows, `Some(None)`) or `instances <lang> [` (one

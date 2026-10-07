@@ -1,7 +1,7 @@
 //! Type-alias / type-body / type-expression parsing for the .lolo parser.
 
-use super::*;
 use super::entity::EntityTags;
+use super::*;
 
 /// The six kind names a parenthesized type parameter may declare — shared by
 /// the type-alias parameter form (`type Foo (E : Entity) = ...`, Increment
@@ -212,12 +212,15 @@ impl Parser {
         // `TypeBody::Entity` (the `type X = Entity [...] { ... }` alias shape)
         // has no `shared`/`identity` field yet — only orbital-level `entity`
         // headers carry those through to `EntityDefinition` (lower/entity.rs).
-        let EntityTags { persistence, collection, .. } =
-            if matches!(self.peek(), TokenKind::LBracket) {
-                self.parse_persistence_tag()?
-            } else {
-                EntityTags::default()
-            };
+        let EntityTags {
+            persistence,
+            collection,
+            ..
+        } = if matches!(self.peek(), TokenKind::LBracket) {
+            self.parse_persistence_tag()?
+        } else {
+            EntityTags::default()
+        };
         let mut fields = Vec::new();
         if matches!(self.peek(), TokenKind::LBrace) {
             self.advance();
@@ -470,12 +473,21 @@ impl Parser {
     }
 
     pub(crate) fn parse_type_atom(&mut self) -> Result<TypeExpr, ParseError> {
-        // `[T]`
+        // `[T]` — an array; `[T1, T2, …]` — a tuple.
         if matches!(self.peek(), TokenKind::LBracket) {
             self.advance();
             let inner = self.parse_type_expr()?;
+            if !matches!(self.peek(), TokenKind::Comma) {
+                self.expect_kind(&TokenKind::RBracket, "]")?;
+                return Ok(TypeExpr::Array(Box::new(inner)));
+            }
+            let mut slots = vec![inner];
+            while matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+                slots.push(self.parse_type_expr()?);
+            }
             self.expect_kind(&TokenKind::RBracket, "]")?;
-            return Ok(TypeExpr::Array(Box::new(inner)));
+            return Ok(TypeExpr::Tuple(slots));
         }
         // `"literal"` — string-literal type, only useful as a union member.
         // `status : "active" | "inactive"` lowers to a string field with
@@ -615,6 +627,9 @@ impl Parser {
         if name == "event" {
             return Ok(TypeExpr::EventRef);
         }
+        if name == "EventAddress" {
+            return Ok(TypeExpr::EventAddress);
+        }
         // `slot` keyword as a type — value is a UI slot name. Allowed only
         // inside config { ... } blocks.
         if name == "slot" {
@@ -650,7 +665,11 @@ impl Parser {
                 if let TokenKind::Identifier(field) = self.peek_n(1).clone() {
                     self.advance();
                     self.advance();
-                    return Ok(TypeExpr::FieldOf { ty: ty.clone(), field, resolved: None });
+                    return Ok(TypeExpr::FieldOf {
+                        ty: ty.clone(),
+                        field,
+                        resolved: None,
+                    });
                 }
             }
         }

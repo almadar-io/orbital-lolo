@@ -30,6 +30,10 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::ExpectedIdentityRow => "@user".to_string(),
         TypeExpr::Named(name) => name.clone(),
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_config_string(inner)),
+        TypeExpr::Tuple(slots) => format!(
+            "[{}]",
+            slots.iter().map(type_expr_to_config_string).collect::<Vec<_>>().join(", ")
+        ),
         // `Map K V` → round-trippable `Map<K,V>` config-string (the key is a
         // comma-free atom, so resolve splits on the first comma). Parsed back
         // by `parse_payload_field_type` into `OirType::Map`.
@@ -38,7 +42,11 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
             type_expr_to_config_string(key),
             type_expr_to_config_string(value)
         ),
-        TypeExpr::FieldOf { ty, field, resolved } => match resolved {
+        TypeExpr::FieldOf {
+            ty,
+            field,
+            resolved,
+        } => match resolved {
             Some(inner) => type_expr_to_config_string(inner),
             None => format!("{ty}.{field}"),
         },
@@ -50,6 +58,7 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::EntityRef => "entity".to_string(),
         TypeExpr::EventRef => "event".to_string(),
+        TypeExpr::EventAddress => "EventAddress".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::Secret => "secret".to_string(),
@@ -100,7 +109,7 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
         | TypeExpr::NamedEntityRow(_)
         | TypeExpr::ExpectedIdentityRow => "object".to_string(),
         TypeExpr::StringLiteral(_) => "string".to_string(),
-        TypeExpr::Array(_) => "array".to_string(),
+        TypeExpr::Array(_) | TypeExpr::Tuple(_) => "array".to_string(),
         // A map is a record/object at the bus-payload level.
         TypeExpr::Map(_, _) => "object".to_string(),
         TypeExpr::Object(_) => "object".to_string(),
@@ -122,14 +131,18 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
             }
         }
         TypeExpr::Optional(inner) => type_expr_to_compat_str(inner),
-        TypeExpr::FieldOf { ty, field, resolved } => match resolved {
+        TypeExpr::FieldOf {
+            ty,
+            field,
+            resolved,
+        } => match resolved {
             Some(inner) => type_expr_to_compat_str(inner),
             None => format!("{ty}.{field}"),
         },
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => "array".to_string(),
         TypeExpr::Trait => "trait".to_string(),
         // Entity/event refs are name strings at the bus-payload level.
-        TypeExpr::EntityRef | TypeExpr::EventRef => "string".to_string(),
+        TypeExpr::EntityRef | TypeExpr::EventRef | TypeExpr::EventAddress => "string".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::Secret => "secret".to_string(),
@@ -192,6 +205,10 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::ExpectedIdentityRow => "@user".to_string(),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_string(inner)),
+        TypeExpr::Tuple(slots) => format!(
+            "[{}]",
+            slots.iter().map(type_expr_to_string).collect::<Vec<_>>().join(", ")
+        ),
         TypeExpr::Map(key, value) => format!(
             "Map<{},{}>",
             type_expr_to_string(key),
@@ -200,7 +217,11 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::Object(_) => "object".to_string(),
         TypeExpr::Union(_) => "string".to_string(),
         TypeExpr::Optional(inner) => type_expr_to_string(inner),
-        TypeExpr::FieldOf { ty, field, resolved } => match resolved {
+        TypeExpr::FieldOf {
+            ty,
+            field,
+            resolved,
+        } => match resolved {
             Some(inner) => type_expr_to_string(inner),
             None => format!("{ty}.{field}"),
         },
@@ -209,6 +230,7 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::EntityRef => "entity".to_string(),
         TypeExpr::EventRef => "event".to_string(),
+        TypeExpr::EventAddress => "EventAddress".to_string(),
         TypeExpr::Slot => "slot".to_string(),
         TypeExpr::Pattern => "pattern".to_string(),
         TypeExpr::Secret => "secret".to_string(),
