@@ -15,16 +15,21 @@ use super::*;
 #[derive(Debug, Clone, Default)]
 struct OrbitalRefBody {
     entity_rebind: Option<String>,
+    entity_rebind_tags: Option<EntityRebindTags>,
     entities_remap: Vec<(String, String, Span)>,
     fields_remap: Vec<(String, String, Span)>,
     roles_remap: Vec<(String, Vec<String>, Span)>,
     pages_remap: Vec<(String, String, Span)>,
+    page_modifiers: Vec<(String, orbital_core::schema::PageModifiers)>,
     mounts: Vec<(String, Vec<String>, Span)>,
     omit: Vec<(String, Span)>,
     only: Vec<String>,
     config_overrides: Vec<ConfigField>,
     events_remap: Vec<(String, String)>,
     extend_fields: Vec<EntityField>,
+    mock_overrides: Vec<(String, String, Span)>,
+    retype_fields: Vec<EntityField>,
+    trait_overrides: Vec<TraitOverride>,
     import_listens: Vec<Listen>,
     expects: Vec<ExpectsDecl>,
     sibling_traits: Vec<Trait>,
@@ -75,8 +80,10 @@ impl Parser {
             body: Vec::new(),
             reference: Some(reference),
             entity_rebind: body.entity_rebind,
+            entity_rebind_tags: body.entity_rebind_tags,
             fields_remap: body.fields_remap,
             pages_remap: body.pages_remap,
+            page_modifiers: body.page_modifiers,
             omit: body.omit,
             only: body.only,
             config_overrides: body.config_overrides,
@@ -85,6 +92,9 @@ impl Parser {
             entities_remap: body.entities_remap,
             mounts: body.mounts,
             extend_fields: body.extend_fields,
+            mock_overrides: body.mock_overrides,
+            retype_fields: body.retype_fields,
+            trait_overrides: body.trait_overrides,
             import_listens: body.import_listens,
             // A reference-form orbital declares no knobs of its own — its
             // declared surface lives upstream; `config_overrides` above is
@@ -121,7 +131,20 @@ impl Parser {
             }
             if self.check_ident("entity") {
                 self.advance();
-                out.entity_rebind = Some(self.expect_ident()?);
+                if !matches!(self.peek(), TokenKind::LBracket) {
+                    out.entity_rebind = Some(self.expect_ident()?);
+                }
+                if matches!(self.peek(), TokenKind::LBracket) {
+                    let tags = self.parse_persistence_tag()?;
+                    out.entity_rebind_tags = Some(EntityRebindTags {
+                        persistence: tags.persistence,
+                        collection: tags.collection,
+                        shared: tags.shared,
+                        identity: tags.identity,
+                        local: tags.local,
+                        mock: tags.mock,
+                    });
+                }
                 self.expect_newline_or_eof()?;
             } else if self.check_ident("entities") {
                 out.entities_remap = self.parse_orbital_ref_name_map()?;
@@ -136,9 +159,10 @@ impl Parser {
                     .map(|(from, to, _)| (from, to))
                     .collect();
             } else if self.check_ident("pages") {
-                let (pages_remap, mounts) = self.parse_orbital_ref_pages_map()?;
+                let (pages_remap, mounts, page_modifiers) = self.parse_orbital_ref_pages_map()?;
                 out.pages_remap = pages_remap;
                 out.mounts = mounts;
+                out.page_modifiers = page_modifiers;
             } else if self.check_ident("expects") {
                 let decl = self.parse_expects_decl()?;
                 if let Some(dup) = super::expects_duplicate(&out.expects, &decl) {
@@ -162,6 +186,12 @@ impl Parser {
                 out.config_overrides = self.parse_config_override_block()?;
             } else if self.check_ident("extend") {
                 out.extend_fields = self.parse_orbital_ref_extend_block()?;
+            } else if self.check_ident("mock") {
+                out.mock_overrides = self.parse_orbital_ref_mock_map()?;
+            } else if self.check_ident("retype") {
+                out.retype_fields = self.parse_orbital_ref_extend_block()?;
+            } else if self.check_ident("traits") {
+                out.trait_overrides = self.parse_orbital_ref_traits_block()?;
             } else if self.check_ident("listens") {
                 for l in self.parse_listens_block()? {
                     if l.target_trait.is_none() {
@@ -181,7 +211,7 @@ impl Parser {
             } else {
                 return Err(ParseError::UnexpectedToken {
                     expected:
-                        "entity, entities, fields, roles, pages, omit, only, config, events, extend, listens, expects, trait, or }"
+                        "entity, entities, fields, roles, pages, omit, only, config, events, extend, retype, mock, traits, listens, expects, trait, or }"
                             .to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
@@ -225,6 +255,58 @@ impl Parser {
             self.expect_kind(&TokenKind::Colon, ":")?;
             let to = self.expect_ident()?;
             out.push((from, to, key_span));
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+            self.skip_newlines();
+        }
+        if matches!(self.peek(), TokenKind::Newline) {
+            self.advance();
+        }
+        Ok(out)
+    }
+
+    /// `mock { role: "customer, staff"  name: "Maya Chen, Tom Becker" }` — a
+    /// field name → one string literal (the `@mock` sample list), newline- or
+    /// comma-separated entries; a field named twice is a parse error. On entry
+    /// the `mock` keyword has NOT been consumed.
+    fn parse_orbital_ref_mock_map(&mut self) -> Result<Vec<(String, String, Span)>, ParseError> {
+        self.advance(); // the `mock` keyword
+        let open = self.peek_span();
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut out: Vec<(String, String, Span)> = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '{',
+                    closer: '}',
+                    open_span: open,
+                    found: "end of file".to_string(),
+                });
+            }
+            let key_span = self.peek_span();
+            let field = self.expect_ident()?;
+            if out.iter().any(|(f, _, _)| f == &field) {
+                return Err(ParseError::InvalidType {
+                    span: key_span,
+                    message: format!("ELOLO_DUPLICATE_MOCK_FIELD: mock {{}} names `{field}` more than once"),
+                });
+            }
+            self.expect_kind(&TokenKind::Colon, ":")?;
+            let TokenKind::String(samples) = self.peek().clone() else {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "a string of comma-separated samples".to_string(),
+                    got: format!("{:?}", self.peek()),
+                    span: self.peek_span(),
+                });
+            };
+            self.advance();
+            out.push((field, samples, key_span));
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }
@@ -298,17 +380,20 @@ impl Parser {
         Ok(out)
     }
 
-    /// `pages { "/up": "/local" [-> TraitA, TraitB] ... }` — a string-literal
-    /// path remap map with an optional mount tail (Stage B) naming sibling
-    /// trait names to mount on that (upstream-keyed) page, comma- or
-    /// newline-separated. On entry the `pages` keyword has NOT been consumed.
-    /// Returns `(pages_remap, mounts)`.
+    /// `pages { "/up": "/local" [-> TraitA, TraitB] [[access: …, …]] ... }` — a
+    /// string-literal path remap map with an optional mount tail (Stage B)
+    /// naming sibling trait names to mount on that (upstream-keyed) page, then
+    /// an optional page modifier bracket, comma- or newline-separated. On entry
+    /// the `pages` keyword has NOT been consumed. Returns `(pages_remap,
+    /// mounts, page_modifiers)`.
+    #[allow(clippy::type_complexity)]
     fn parse_orbital_ref_pages_map(
         &mut self,
     ) -> Result<
         (
             Vec<(String, String, Span)>,
             Vec<(String, Vec<String>, Span)>,
+            Vec<(String, orbital_core::schema::PageModifiers)>,
         ),
         ParseError,
     > {
@@ -320,6 +405,7 @@ impl Parser {
         self.expect_kind(&TokenKind::LBrace, "{")?;
         let mut out = Vec::new();
         let mut mounts = Vec::new();
+        let mut page_modifiers = Vec::new();
         loop {
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::RBrace) {
@@ -351,6 +437,18 @@ impl Parser {
                 }
                 mounts.push((from.clone(), mount_traits, key_span));
             }
+            if matches!(self.peek(), TokenKind::LBracket) {
+                let mut mods = orbital_core::schema::PageModifiers::default();
+                self.parse_modifier_bracket(
+                    "pages remap entry",
+                    super::REMAP_PAGE_MODIFIERS,
+                    |p, key| {
+                        p.expect_kind(&TokenKind::Colon, "':' after a page modifier")?;
+                        p.parse_head_modifier(key, &mut mods)
+                    },
+                )?;
+                page_modifiers.push((from.clone(), mods));
+            }
             out.push((from, to, key_span));
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -360,7 +458,7 @@ impl Parser {
         if matches!(self.peek(), TokenKind::Newline) {
             self.advance();
         }
-        Ok((out, mounts))
+        Ok((out, mounts, page_modifiers))
     }
 
     /// `omit { A B ... }` / `omit { A, B }` — a bare-NAME list, accepting
@@ -434,6 +532,70 @@ impl Parser {
                 });
             }
             out.push(self.parse_field_decl()?);
+        }
+        if matches!(self.peek(), TokenKind::Newline) {
+            self.advance();
+        }
+        Ok(out)
+    }
+
+    /// `traits { UpstreamTrait [-> Entity] { <trait-reference body> } ... }` — per-imported-trait
+    /// overrides keyed by the UPSTREAM trait name; each body is exactly the §8 trait-reference
+    /// body (`parse_trait_ref_body`). `name:` is not an override here (imports are renamed by
+    /// the unconditional prefix). On entry the `traits` keyword has NOT been consumed.
+    fn parse_orbital_ref_traits_block(&mut self) -> Result<Vec<TraitOverride>, ParseError> {
+        self.advance(); // the `traits` keyword
+        let open = self.peek_span();
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut out: Vec<TraitOverride> = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            if self.at_eof() {
+                return Err(ParseError::UnclosedDelimiter {
+                    delimiter: '{',
+                    closer: '}',
+                    open_span: open,
+                    found: "end of file".to_string(),
+                });
+            }
+            let span = self.peek_span();
+            let trait_name = self.expect_ident()?;
+            if out.iter().any(|t| t.trait_name == trait_name) {
+                return Err(ParseError::InvalidType {
+                    span,
+                    message: format!(
+                        "ELOLO_DUPLICATE_TRAIT_OVERRIDE: traits {{}} names `{trait_name}` more than once"
+                    ),
+                });
+            }
+            let linked_entity = if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow)
+            {
+                self.advance();
+                Some(self.expect_ident()?)
+            } else {
+                None
+            };
+            let name_span = self.peek_span();
+            let body = self.parse_trait_ref_body()?;
+            if body.name_override.is_some() {
+                return Err(ParseError::InvalidType {
+                    span: name_span,
+                    message: format!(
+                        "ELOLO_TRAIT_OVERRIDE_NAME: `name:` is not an override of traits {{ {trait_name} }} — an imported trait is renamed by the import prefix"
+                    ),
+                });
+            }
+            out.push(TraitOverride {
+                trait_name,
+                linked_entity,
+                body,
+                span,
+            });
+            self.skip_newlines();
         }
         if matches!(self.peek(), TokenKind::Newline) {
             self.advance();

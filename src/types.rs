@@ -396,6 +396,7 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::RelationMany(n) => format!("{n}*"),
         TypeExpr::RelationManyNonEmpty(n) => format!("{n}+"),
         TypeExpr::Trait => "trait".to_string(),
+        TypeExpr::Orbital => "orbital".to_string(),
         TypeExpr::EntityRef => "entity".to_string(),
         TypeExpr::EventRef => "event".to_string(),
         TypeExpr::EventAddress => "EventAddress".to_string(),
@@ -597,6 +598,7 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         TypeExpr::Primitive(_)
         | TypeExpr::StringLiteral(_)
         | TypeExpr::Trait
+        | TypeExpr::Orbital
         | TypeExpr::EntityRef
         | TypeExpr::EventRef
         | TypeExpr::EventAddress

@@ -126,6 +126,48 @@ fn uses_aliases(source: &str) -> BTreeMap<String, String> {
     out
 }
 
+/// The modifier keys of the `app`/`page` bracket still open at the end of
+/// `before`, with the bracket's byte offset.
+fn open_modifier_bracket(before: &str) -> Option<(&'static [&'static str], usize)> {
+    let mut stack = Vec::new();
+    let mut in_string = false;
+    for (i, c) in before.char_indices() {
+        match c {
+            '"' => in_string = !in_string,
+            '[' if !in_string => stack.push(i),
+            ']' if !in_string => {
+                stack.pop();
+            }
+            _ => {}
+        }
+    }
+    let bracket = *stack.first()?;
+    let line_start = before[..bracket].rfind('\n').map(|i| i + 1).unwrap_or(0);
+    match before[line_start..bracket].split_whitespace().next() {
+        Some("app") => Some((crate::parser::APP_MODIFIERS, bracket)),
+        Some("page") => Some((crate::parser::PAGE_MODIFIERS, bracket)),
+        _ if in_remap_entry(&before[..bracket]) => {
+            Some((crate::parser::REMAP_PAGE_MODIFIERS, bracket))
+        }
+        _ => None,
+    }
+}
+
+/// Whether a bracket opening at the end of `head` follows a `pages {}` remap
+/// entry (`"/up": "/local" [`): the innermost open block is `pages` and the
+/// entry, after that block's `{` on a one-line form, starts with a path string.
+fn in_remap_entry(head: &str) -> bool {
+    let Some(&brace) = open_braces(head).last() else {
+        return false;
+    };
+    if header_before(head, brace) != "pages" {
+        return false;
+    }
+    let line_start = head.rfind('\n').map(|i| i + 1).unwrap_or(0);
+    let entry_start = line_start.max(brace + 1);
+    head[entry_start..].trim_start().starts_with('"')
+}
+
 /// Byte offsets of the `{` still open at the end of `before`, innermost last.
 fn open_braces(before: &str) -> Vec<usize> {
     let mut stack = Vec::new();
@@ -155,8 +197,8 @@ const ORBITAL_BODY: &[&str] = &[
     "uses", "expects", "type", "entity", "trait", "page", "theme", "config",
 ];
 const ORBITAL_REF_BODY: &[&str] = &[
-    "entity", "entities", "fields", "roles", "events", "pages", "omit", "only", "config", "extend",
-    "listens", "trait",
+    "entity", "entities", "fields", "roles", "events", "pages", "omit", "only", "config", "extend", "retype", "mock",
+    "traits", "listens", "trait",
 ];
 const TRAIT_BODY: &[&str] = &["initial", "state", "emits", "listens", "ticks", "config"];
 const TRAIT_REF_BODY: &[&str] = &[
@@ -289,6 +331,43 @@ pub fn complete(
 
     let word = trailing_word(before);
     let lead = &before[..before.len() - word.len()];
+
+    // Inside an `app … [` / `page … [` modifier bracket.
+    if let Some((keys, bracket)) = open_modifier_bracket(before) {
+        let entry = lead[bracket + 1..]
+            .rsplit([',', '\n'])
+            .next()
+            .unwrap_or("")
+            .trim();
+        if entry.is_empty() {
+            let written = &before[bracket + 1..];
+            return filtered(
+                word,
+                "modifier-key",
+                keys.iter()
+                    .filter(|k| !written.contains(&format!("{k}:")))
+                    .map(|k| Completion {
+                        label: (*k).to_string(),
+                        kind: CompletionKind::Keyword,
+                        detail: None,
+                    }),
+            );
+        }
+        let values: &[&str] = match entry.trim_end_matches(':').trim() {
+            "access" => &["public", "authenticated"],
+            "indexing" => &["index", "noindex"],
+            _ => &[],
+        };
+        return filtered(
+            word,
+            "modifier-value",
+            values.iter().map(|v| Completion {
+                label: (*v).to_string(),
+                kind: CompletionKind::Keyword,
+                detail: None,
+            }),
+        );
+    }
 
     // `Alias.traits.` / `Alias.orbitals.`
     for (member, kind, context) in [
@@ -711,5 +790,53 @@ mod tests {
         }
         let r = complete(src, src.len(), Some(&contracts()));
         assert_eq!(r.prefix, "std/beh");
+    }
+
+    #[test]
+    fn app_bracket_offers_the_unwritten_modifiers() {
+        let src = "app Shop \"1.0.0\" [\n  theme: \"orb-light\",\n  ";
+        let r = complete(src, src.len(), None);
+        assert_eq!(r.context, "modifier-key");
+        assert!(labels(&r).contains(&"signIn") && labels(&r).contains(&"locales"));
+        assert!(!labels(&r).contains(&"theme"));
+    }
+
+    #[test]
+    fn page_bracket_offers_access_values() {
+        let src = "orbital O {\n  page \"/a\" -> T [access: ";
+        let r = complete(src, src.len(), None);
+        assert_eq!(r.context, "modifier-value");
+        assert_eq!(labels(&r), vec!["authenticated", "public"]);
+    }
+
+    #[test]
+    fn a_remap_entry_bracket_offers_only_the_page_head_keys() {
+        for src in [
+            "orbital P = S.orbitals.O {\n  pages {\n    \"/snake\": \"/play/snake\" [",
+            "orbital P = S.orbitals.O {\n  pages { \"/snake\": \"/play/snake\" [access: public, ",
+        ] {
+            let r = complete(src, src.len(), None);
+            assert_eq!(r.context, "modifier-key", "{src}");
+            assert!(
+                labels(&r).contains(&"translationOf") && labels(&r).contains(&"indexing"),
+                "{src}"
+            );
+            assert!(
+                !labels(&r).contains(&"view") && !labels(&r).contains(&"initial"),
+                "{src}"
+            );
+        }
+    }
+
+    #[test]
+    fn control_a_page_bracket_offers_translation_of_too() {
+        let src = "orbital O {\n  page \"/a\" -> T [";
+        assert!(labels(&complete(src, src.len(), None)).contains(&"translationOf"));
+    }
+
+    #[test]
+    fn control_an_entity_tag_bracket_is_not_a_modifier_bracket() {
+        let src = "orbital O {\n  entity E [";
+        assert_ne!(complete(src, src.len(), None).context, "modifier-key");
     }
 }

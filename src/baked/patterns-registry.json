@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-10-07T08:57:47.118Z",
+  "exportedAt": "2026-10-08T14:50:23.918Z",
   "patterns": {
     "detail-panel": {
       "type": "detail-panel",
@@ -11651,7 +11651,9 @@
             "muted",
             "accent",
             "surface",
-            "overlay"
+            "overlay",
+            "gradient",
+            "inverse"
           ],
           "default": "transparent"
         },
@@ -11792,6 +11794,72 @@
             "string"
           ],
           "description": "Maximum width (CSS value, e.g., \"550px\", \"80rem\")"
+        },
+        "edgeTop": {
+          "types": [
+            "string"
+          ],
+          "description": "Shape cut into the top edge of a full-width band; \"curve\" uses the theme's shape",
+          "enumValues": [
+            "none",
+            "curve",
+            "wave",
+            "arc",
+            "tilt",
+            "step",
+            "scallop"
+          ],
+          "default": "none"
+        },
+        "edgeBottom": {
+          "types": [
+            "string"
+          ],
+          "description": "Shape cut into the bottom edge of a full-width band; \"curve\" uses the theme's shape",
+          "enumValues": [
+            "none",
+            "curve",
+            "wave",
+            "arc",
+            "tilt",
+            "step",
+            "scallop"
+          ],
+          "default": "none"
+        },
+        "edgeColor": {
+          "types": [
+            "string"
+          ],
+          "description": "Surface of the neighbouring band, which fills the cut",
+          "enumValues": [
+            "background",
+            "muted",
+            "surface",
+            "gradient",
+            "inverse"
+          ],
+          "default": "background"
+        },
+        "edgeFlip": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Mirror the edge shapes horizontally",
+          "default": false
+        },
+        "texture": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Lay the theme's texture over the band",
+          "default": false
+        },
+        "backdrop": {
+          "types": [
+            "node"
+          ],
+          "description": "Scene behind the band's content (photo, illustration, pattern); never takes clicks"
         },
         "children": {
           "types": [
@@ -14168,6 +14236,20 @@
             "string"
           ],
           "description": "Makes the button a link: `#anchor` scrolls, an absolute URL loads, a path navigates in-app"
+        },
+        "onClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Runs on activation, on the button or, with `href`, on the link; calling `preventDefault()` there keeps a link from following its `href`.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "event",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
         },
         "data-testid": {
           "types": [
@@ -24672,9 +24754,189 @@
         },
         "as": {
           "types": [
-            "component"
+            "string"
           ],
-          "description": "Custom HTML element"
+          "description": "Custom HTML element",
+          "enumValues": [
+            "a",
+            "abbr",
+            "address",
+            "area",
+            "article",
+            "aside",
+            "audio",
+            "b",
+            "base",
+            "bdi",
+            "bdo",
+            "big",
+            "blockquote",
+            "body",
+            "br",
+            "button",
+            "canvas",
+            "caption",
+            "center",
+            "cite",
+            "code",
+            "col",
+            "colgroup",
+            "data",
+            "datalist",
+            "dd",
+            "del",
+            "details",
+            "dfn",
+            "dialog",
+            "div",
+            "dl",
+            "dt",
+            "em",
+            "embed",
+            "fieldset",
+            "figcaption",
+            "figure",
+            "footer",
+            "form",
+            "h1",
+            "h2",
+            "h3",
+            "h4",
+            "h5",
+            "h6",
+            "head",
+            "header",
+            "hgroup",
+            "hr",
+            "html",
+            "i",
+            "iframe",
+            "img",
+            "input",
+            "ins",
+            "kbd",
+            "keygen",
+            "label",
+            "legend",
+            "li",
+            "link",
+            "main",
+            "map",
+            "mark",
+            "menu",
+            "menuitem",
+            "meta",
+            "meter",
+            "nav",
+            "noindex",
+            "noscript",
+            "object",
+            "ol",
+            "optgroup",
+            "option",
+            "output",
+            "p",
+            "param",
+            "picture",
+            "pre",
+            "progress",
+            "q",
+            "rp",
+            "rt",
+            "ruby",
+            "s",
+            "samp",
+            "search",
+            "slot",
+            "script",
+            "section",
+            "select",
+            "small",
+            "source",
+            "span",
+            "strong",
+            "style",
+            "sub",
+            "summary",
+            "sup",
+            "table",
+            "template",
+            "tbody",
+            "td",
+            "textarea",
+            "tfoot",
+            "th",
+            "thead",
+            "time",
+            "title",
+            "tr",
+            "track",
+            "u",
+            "ul",
+            "var",
+            "video",
+            "wbr",
+            "webview",
+            "svg",
+            "animate",
+            "animateMotion",
+            "animateTransform",
+            "circle",
+            "clipPath",
+            "defs",
+            "desc",
+            "ellipse",
+            "feBlend",
+            "feColorMatrix",
+            "feComponentTransfer",
+            "feComposite",
+            "feConvolveMatrix",
+            "feDiffuseLighting",
+            "feDisplacementMap",
+            "feDistantLight",
+            "feDropShadow",
+            "feFlood",
+            "feFuncA",
+            "feFuncB",
+            "feFuncG",
+            "feFuncR",
+            "feGaussianBlur",
+            "feImage",
+            "feMerge",
+            "feMergeNode",
+            "feMorphology",
+            "feOffset",
+            "fePointLight",
+            "feSpecularLighting",
+            "feSpotLight",
+            "feTile",
+            "feTurbulence",
+            "filter",
+            "foreignObject",
+            "g",
+            "image",
+            "line",
+            "linearGradient",
+            "marker",
+            "mask",
+            "metadata",
+            "mpath",
+            "path",
+            "pattern",
+            "polygon",
+            "polyline",
+            "radialGradient",
+            "rect",
+            "set",
+            "stop",
+            "switch",
+            "symbol",
+            "text",
+            "textPath",
+            "tspan",
+            "use",
+            "view"
+          ]
         },
         "id": {
           "types": [
@@ -48203,6 +48465,11 @@
                   "sexpr",
                   "function"
                 ]
+              },
+              "navigatesTo": {
+                "types": [
+                  "string"
+                ]
               }
             },
             "required": [
@@ -48210,6 +48477,19 @@
               "event"
             ]
           }
+        },
+        "itemEnter": {
+          "types": [
+            "string"
+          ],
+          "description": "Entrance animation each row plays when it mounts, so an item arriving in this list (moved from another) animates in",
+          "enumValues": [
+            "none",
+            "fade",
+            "rise",
+            "scale",
+            "slide"
+          ]
         },
         "maxInlineActions": {
           "types": [
@@ -57630,6 +57910,13 @@
           ],
           "description": "How much of the element must be visible before triggering, 0-1 (default: 0.15)",
           "default": 0.15
+        },
+        "revealEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "scroll trigger: event emitted once (as UI:{revealEvent}) the first time the element scrolls into view; never under reduced motion",
+          "kind": "event"
         },
         "once": {
           "types": [
@@ -117017,6 +117304,39 @@
           ],
           "default": "lazy"
         },
+        "position": {
+          "types": [
+            "string"
+          ],
+          "description": "Which part of the image stays visible when it is cropped",
+          "enumValues": [
+            "center",
+            "top",
+            "bottom",
+            "left",
+            "right"
+          ],
+          "default": "center"
+        },
+        "srcSet": {
+          "types": [
+            "string"
+          ],
+          "description": "Candidate sources at different widths (the HTML `srcset`)"
+        },
+        "sizes": {
+          "types": [
+            "string"
+          ],
+          "description": "Rendered widths at each breakpoint (the HTML `sizes`)"
+        },
+        "priority": {
+          "types": [
+            "boolean"
+          ],
+          "description": "The page's main image: load it first",
+          "default": false
+        },
         "className": {
           "types": [
             "string"
@@ -117672,6 +117992,20 @@
             "string"
           ],
           "description": "Makes the button a link: `#anchor` scrolls, an absolute URL loads, a path navigates in-app"
+        },
+        "onClick": {
+          "types": [
+            "function"
+          ],
+          "description": "Runs on activation, on the button or, with `href`, on the link; calling `preventDefault()` there keeps a link from following its `href`.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "event",
+              "type": "object"
+            }
+          ],
+          "nonEmittable": true
         },
         "data-testid": {
           "types": [

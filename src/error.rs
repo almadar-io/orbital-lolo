@@ -166,6 +166,29 @@ pub enum ParseError {
     /// green under every validator, wrong at runtime.
     #[error("bare reference to the bound name {name:?} at {}:{}", span.line, span.col)]
     BareBindingReference { name: String, span: Span },
+
+    #[error("ORB_L_OPTION_UNKNOWN: `{key}` is not a {context} modifier at {}:{} (valid: {valid})", span.line, span.col)]
+    UnknownOption {
+        key: String,
+        context: &'static str,
+        valid: String,
+        span: Span,
+    },
+
+    #[error("ORB_L_OPTION_DUPLICATE: {context} modifier `{key}` is declared twice at {}:{}", span.line, span.col)]
+    DuplicateOption {
+        key: String,
+        context: &'static str,
+        span: Span,
+    },
+
+    #[error("{code}: invalid `{key}` value at {}:{}: {message}", span.line, span.col)]
+    InvalidOptionValue {
+        code: &'static str,
+        key: String,
+        message: String,
+        span: Span,
+    },
 }
 
 impl ParseError {
@@ -182,6 +205,9 @@ impl ParseError {
             | ParseError::InvalidDuration { span, .. }
             | ParseError::InvalidSigil { span, .. }
             | ParseError::BareBindingReference { span, .. }
+            | ParseError::UnknownOption { span, .. }
+            | ParseError::DuplicateOption { span, .. }
+            | ParseError::InvalidOptionValue { span, .. }
             | ParseError::TooManyArgs { span, .. }
             | ParseError::SetExtraArgs { span, .. }
             | ParseError::SetNestedValue { span }

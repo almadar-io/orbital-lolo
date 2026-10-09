@@ -146,6 +146,21 @@ pub(crate) fn lower_orbital_reference(
     for f in &orb.extend_fields {
         source_map.insert(format!("{base}.extend({})", f.name), f.span);
     }
+    for (field, _, span) in &orb.mock_overrides {
+        source_map.insert(format!("{base}.mock({field})"), *span);
+    }
+    for f in &orb.retype_fields {
+        source_map.insert(format!("{base}.retype({})", f.name), f.span);
+    }
+    for t in &orb.trait_overrides {
+        source_map.insert(format!("{base}.traits({})", t.trait_name), t.span);
+        for cf in &t.body.config {
+            source_map.insert(
+                format!("{base}.traits({}).config({})", t.trait_name, cf.name),
+                cf.span,
+            );
+        }
+    }
     // `uses A from "…" { config { … } }` — a per-orbital `uses` body's own
     // override keys (`ORB_U_CONFIG_UNKNOWN_KEY`'s `{path}.uses(alias).config(key)`
     // suffix). File-scope `uses` (declared outside any orbital, shared by
@@ -177,7 +192,59 @@ pub(crate) fn lower_orbital_reference(
         Some(fields)
     };
 
+    let retype: Option<Vec<FieldDefinition>> = if orb.retype_fields.is_empty() {
+        None
+    } else {
+        let mut fields = Vec::with_capacity(orb.retype_fields.len());
+        for f in &orb.retype_fields {
+            fields.push(lower_field(f, aliases, entity_names)?);
+        }
+        Some(fields)
+    };
+
+    let traits: Option<HashMap<String, orbital_core::schema::OrbitalRefTraitOverride>> =
+        if orb.trait_overrides.is_empty() {
+            None
+        } else {
+            let mut map = HashMap::new();
+            for t in &orb.trait_overrides {
+                let ref_data = TraitRefData {
+                    reference: t.trait_name.clone(),
+                    name_override: None,
+                    events: t.body.events.clone(),
+                    fields: t.body.fields.clone(),
+                    config: t.body.config.clone(),
+                    emits_scope: t.body.emits_scope.clone(),
+                };
+                let lowered = super::r#trait::lower_call_site_overrides(
+                    &ref_data,
+                    &t.body.listens,
+                    aliases,
+                    entity_names,
+                );
+                map.insert(
+                    t.trait_name.clone(),
+                    orbital_core::schema::OrbitalRefTraitOverride {
+                        linked_entity: t.linked_entity.clone(),
+                        config: lowered.config,
+                        events: lowered.events,
+                        fields: lowered.fields,
+                        listens: lowered.listens,
+                        emits_scope: lowered.emits_scope,
+                    },
+                );
+            }
+            Some(map)
+        };
+
+    let rebind_tags = orb.entity_rebind_tags.clone().unwrap_or_default();
     let ref_object = OrbitalRefObject {
+        page_modifiers: (!orb.page_modifiers.is_empty()).then(|| {
+            orb.page_modifiers
+                .iter()
+                .map(|(path, mods)| (path.clone(), mods.clone()))
+                .collect()
+        }),
         reference: reference.clone(),
         ref_id: None,
         entity: orb.entity_rebind.clone(),
@@ -195,6 +262,18 @@ pub(crate) fn lower_orbital_reference(
         entities: pairs_to_map(&orb.entities_remap),
         mounts: list_pairs_to_map(&orb.mounts),
         extend,
+        mock: pairs_to_map(&orb.mock_overrides),
+        retype,
+        persistence: rebind_tags.persistence.as_ref().map(|p| match p {
+            crate::ast::Persistence::Persistent => orbital_core::schema::Persistence::Persistent,
+            crate::ast::Persistence::Runtime => orbital_core::schema::Persistence::Runtime,
+        }),
+        collection: rebind_tags.collection.clone(),
+        shared: rebind_tags.shared,
+        identity: rebind_tags.identity,
+        local: rebind_tags.local,
+        seed_mock: rebind_tags.mock,
+        traits,
         listens: if orb.import_listens.is_empty() {
             None
         } else {

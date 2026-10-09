@@ -37,6 +37,9 @@ fn theme_maps_empty(maps: &ThemeTokenMaps) -> bool {
         && maps.scene.is_empty()
 }
 
+/// One `key: value` entry of a modifier bracket; the closure writes the value.
+type ModifierEntry<'a> = (&'a str, Box<dyn Fn(&mut Formatter) + 'a>);
+
 struct Formatter {
     indent: usize,
     output: String,
@@ -73,6 +76,36 @@ impl Formatter {
     }
 
     /// Binding names declared by a `let` binding list (`((a v) (b w))`).
+    /// The authored template of a `(quasiquote x)` IR call: the decoded body
+    /// with each marker `["unquote", i]` put back as `(unquote <hole i>)`.
+    fn quasiquote_template(arr: &[SExpression]) -> Option<SExpression> {
+        let call = SExpression::Array(arr.to_vec());
+        let (body, holes) = orbital_core::schema::quote::quasiquote_of(&call)?;
+        let template = orbital_core::schema::quote::decode_quote_body(body)?;
+        fn restore(e: SExpression, holes: &[SExpression]) -> SExpression {
+            match e {
+                SExpression::Array(items) => {
+                    if let [SExpression::String(h), SExpression::Number(n)] = items.as_slice() {
+                        if h == orbital_core::schema::quote::UNQUOTE_HEAD && n.fract() == 0.0 {
+                            if let Some(hole) = holes.get(*n as usize) {
+                                return SExpression::Array(vec![
+                                    SExpression::String(h.clone()),
+                                    hole.clone(),
+                                ]);
+                            }
+                        }
+                    }
+                    SExpression::Array(items.into_iter().map(|i| restore(i, holes)).collect())
+                }
+                SExpression::Object(map) => {
+                    SExpression::Object(map.into_iter().map(|(k, v)| (k, restore(v, holes))).collect())
+                }
+                other => other,
+            }
+        }
+        Some(restore(template, holes))
+    }
+
     fn let_binding_names(bindings: &SExpression) -> Vec<String> {
         let SExpression::Array(pairs) = bindings else {
             return Vec::new();
@@ -180,33 +213,52 @@ impl Formatter {
         self.write_indent();
         self.output.push_str("app ");
         self.output.push_str(&app.name);
+        let mut entries: Vec<ModifierEntry<'_>> = Vec::new();
         if let Some(v) = &app.version {
-            self.output.push(' ');
-            self.write_quoted_string(v);
+            entries.push((
+                "version",
+                Box::new(move |f: &mut Self| f.write_quoted_string(v)),
+            ));
         }
         if let Some(desc) = &app.description {
-            self.write_newline();
-            self.write_indent();
-            self.write_quoted_string(desc);
+            entries.push((
+                "description",
+                Box::new(move |f: &mut Self| f.write_quoted_string(desc)),
+            ));
         }
         if let Some(theme) = &app.theme {
-            self.write_newline();
-            self.write_indent();
-            self.fmt_theme_decl(theme);
+            entries.push((
+                "theme",
+                Box::new(move |f: &mut Self| f.fmt_theme_value(theme)),
+            ));
         }
         if !app.locales.is_empty() {
-            self.write_newline();
-            self.write_indent();
-            self.output.push_str("locales [");
-            self.output.push_str(&app.locales.join(", "));
-            self.output.push(']');
+            entries.push((
+                "locales",
+                Box::new(move |f: &mut Self| {
+                    f.output.push('[');
+                    f.output.push_str(&app.locales.join(", "));
+                    f.output.push(']');
+                }),
+            ));
         }
         if let Some(public) = &app.public {
-            self.write_newline();
-            self.write_indent();
-            self.output.push_str("public ");
-            self.write_quoted_string(public);
+            entries.push((
+                "public",
+                Box::new(move |f: &mut Self| f.write_quoted_string(public)),
+            ));
         }
+        for (key, value) in [
+            ("origin", &app.site.origin),
+            ("icon", &app.site.icon),
+            ("siteName", &app.site.name),
+            ("signIn", &app.site.sign_in),
+        ] {
+            if let Some(v) = value {
+                entries.push((key, Box::new(move |f: &mut Self| f.write_quoted_string(v))));
+            }
+        }
+        self.fmt_modifier_bracket(entries);
         if !app.config.is_empty() {
             self.write_newline();
             self.write_indent();
@@ -226,12 +278,46 @@ impl Formatter {
 
     fn fmt_theme_decl(&mut self, decl: &ThemeDecl) {
         match decl {
-            ThemeDecl::Reference(key) => {
+            ThemeDecl::Reference(_) | ThemeDecl::Inline(_) => {
                 self.output.push_str("theme ");
+                self.fmt_theme_value(decl);
+            }
+        }
+    }
+
+    /// One `[` … `]` modifier bracket, one entry per line (shared by the app
+    /// header and multi-entry pages). Writes nothing when `entries` is empty.
+    fn fmt_modifier_bracket(&mut self, entries: Vec<ModifierEntry<'_>>) {
+        if entries.is_empty() {
+            return;
+        }
+        self.output.push_str(" [");
+        self.write_newline();
+        self.indent();
+        let last = entries.len() - 1;
+        for (i, (key, value)) in entries.into_iter().enumerate() {
+            self.write_indent();
+            self.output.push_str(key);
+            self.output.push_str(": ");
+            value(self);
+            if i != last {
+                self.output.push(',');
+            }
+            self.write_newline();
+        }
+        self.dedent();
+        self.write_indent();
+        self.output.push(']');
+    }
+
+    /// A theme VALUE: a quoted registry key, or the inline `{ … }` block.
+    fn fmt_theme_value(&mut self, decl: &ThemeDecl) {
+        match decl {
+            ThemeDecl::Reference(key) => {
                 self.write_quoted_string(key);
             }
             ThemeDecl::Inline(inline) => {
-                self.output.push_str("theme {");
+                self.output.push('{');
                 self.write_newline();
                 self.indent();
                 self.write_indent();
@@ -588,6 +674,9 @@ impl Formatter {
             TypeExpr::Trait => {
                 self.output.push_str("trait");
             }
+            TypeExpr::Orbital => {
+                self.output.push_str("orbital");
+            }
             TypeExpr::EntityRef => {
                 self.output.push_str("entity");
             }
@@ -691,6 +780,10 @@ impl Formatter {
         if let Some(syn) = &field.synonyms {
             self.output.push_str(" @synonyms ");
             self.write_quoted_string(syn);
+        }
+        if let Some(mock) = &field.mock {
+            self.output.push_str(" @mock ");
+            self.write_quoted_string(mock);
         }
         if let Some(def) = &field.default {
             self.output.push_str(" = ");
@@ -856,10 +949,25 @@ impl Formatter {
     /// Mirrors `fmt_trait_ref_overrides` one scope up.
     fn fmt_orbital_ref_body(&mut self, orbital: &Orbital) {
         let mut wrote_any = false;
-        if let Some(entity) = &orbital.entity_rebind {
+        if orbital.entity_rebind.is_some() || orbital.entity_rebind_tags.is_some() {
             self.write_indent();
-            self.output.push_str("entity ");
-            self.output.push_str(entity);
+            self.output.push_str("entity");
+            if let Some(entity) = &orbital.entity_rebind {
+                self.output.push(' ');
+                self.output.push_str(entity);
+            }
+            if let Some(tags) = &orbital.entity_rebind_tags {
+                self.fmt_persistence_tag(
+                    tags.persistence.as_ref(),
+                    tags.collection.as_deref(),
+                    &[
+                        ("shared", tags.shared),
+                        ("identity", tags.identity),
+                        ("local", tags.local),
+                        ("mock", tags.mock),
+                    ],
+                );
+            }
             self.write_newline();
             wrote_any = true;
         }
@@ -926,6 +1034,46 @@ impl Formatter {
             for field in &orbital.extend_fields {
                 self.write_indent();
                 self.fmt_entity_field(field);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        if !orbital.retype_fields.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("retype {");
+            self.write_newline();
+            self.indent();
+            for field in &orbital.retype_fields {
+                self.write_indent();
+                self.fmt_entity_field(field);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        if !orbital.mock_overrides.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("mock {");
+            self.write_newline();
+            self.indent();
+            for (field, samples, _) in &orbital.mock_overrides {
+                self.write_indent();
+                self.output.push_str(field);
+                self.output.push_str(": ");
+                self.write_quoted_string(samples);
                 self.write_newline();
             }
             self.dedent();
@@ -1007,6 +1155,12 @@ impl Formatter {
                         }
                         self.output.push_str(t);
                     }
+                }
+                if let Some((_, mods)) = orbital.page_modifiers.iter().find(|(up, _)| up == k) {
+                    self.output.push_str(" [");
+                    self.output
+                        .push_str(&head_modifier_sources(mods).join(", "));
+                    self.output.push(']');
                 }
                 self.write_newline();
             }
@@ -1090,6 +1244,66 @@ impl Formatter {
                 self.output.push_str(k);
                 self.output.push_str(": ");
                 self.output.push_str(v);
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push('}');
+            self.write_newline();
+        }
+        if !orbital.trait_overrides.is_empty() {
+            if wrote_any {
+                self.write_newline();
+            }
+            wrote_any = true;
+            self.write_indent();
+            self.output.push_str("traits {");
+            self.write_newline();
+            self.indent();
+            for ov in &orbital.trait_overrides {
+                self.write_indent();
+                self.output.push_str(&ov.trait_name);
+                if let Some(le) = &ov.linked_entity {
+                    self.output.push_str(" -> ");
+                    self.output.push_str(le);
+                }
+                self.output.push_str(" {");
+                self.write_newline();
+                self.indent();
+                let ref_data = TraitRefData {
+                    reference: ov.trait_name.clone(),
+                    name_override: None,
+                    events: ov.body.events.clone(),
+                    fields: ov.body.fields.clone(),
+                    config: ov.body.config.clone(),
+                    emits_scope: ov.body.emits_scope.clone(),
+                };
+                self.fmt_trait_ref_overrides(&ref_data);
+                if !ov.body.listens.is_empty() {
+                    if !ref_data.events.is_empty()
+                        || !ref_data.fields.is_empty()
+                        || !ref_data.config.is_empty()
+                        || ref_data.emits_scope.is_some()
+                    {
+                        self.write_newline();
+                    }
+                    self.write_indent();
+                    self.output.push_str("listens {");
+                    self.write_newline();
+                    self.indent();
+                    for listen in &ov.body.listens {
+                        self.write_indent();
+                        self.fmt_listen(listen);
+                        self.write_newline();
+                    }
+                    self.dedent();
+                    self.write_indent();
+                    self.output.push('}');
+                    self.write_newline();
+                }
+                self.dedent();
+                self.write_indent();
+                self.output.push('}');
                 self.write_newline();
             }
             self.dedent();
@@ -1758,7 +1972,10 @@ impl Formatter {
             self.write_indent();
             self.output.push('}');
         }
-        if !listen.payload.is_empty() && listen.triggers.is_none() {
+        if listen.external && listen.triggers.is_none() {
+            self.output.push_str(" -> external ");
+            self.fmt_event_payload(&listen.payload);
+        } else if !listen.payload.is_empty() && listen.triggers.is_none() {
             self.output.push(' ');
             self.fmt_event_payload(&listen.payload);
         }
@@ -1933,7 +2150,37 @@ impl Formatter {
         if page.is_initial {
             opts.push("initial".to_string());
         }
-        if !opts.is_empty() {
+        opts.extend(head_modifier_sources(
+            &orbital_core::schema::PageModifiers {
+                access: page.access,
+                indexing: page.indexing,
+                title: page.title.clone(),
+                description: page.description.clone(),
+                translation_of: page.translation_of.clone(),
+            },
+        ));
+        let multiline = page.access.is_some()
+            || page.indexing.is_some()
+            || page.title.is_some()
+            || page.description.is_some()
+            || page.translation_of.is_some();
+        if multiline {
+            self.output.push_str(" [");
+            self.write_newline();
+            self.indent();
+            let last = opts.len() - 1;
+            for (i, opt) in opts.iter().enumerate() {
+                self.write_indent();
+                self.output.push_str(opt);
+                if i != last {
+                    self.output.push(',');
+                }
+                self.write_newline();
+            }
+            self.dedent();
+            self.write_indent();
+            self.output.push(']');
+        } else if !opts.is_empty() {
             self.output.push_str(" [");
             for (i, opt) in opts.iter().enumerate() {
                 if i > 0 {
@@ -2033,8 +2280,7 @@ impl Formatter {
         // heads (`==`, `+`, `<=`, …) print unquoted. Anything else — including
         // a sigil with an array index like `@config.x[0].y`, which the sigil
         // reader can't consume bare — must be quoted to round-trip.
-        if (is_bare_sigil(s) || is_bare_atom(s) || is_operator_symbol(s))
-            && !self.is_lexically_bound(s)
+        if (is_bare_sigil(s) || is_bare_atom(s)) && !self.is_lexically_bound(s)
         {
             self.output.push_str(s);
             return;
@@ -2267,8 +2513,8 @@ impl Formatter {
                 // one-element array by the emitter), or absent.
                 match map.get("children") {
                     None => true,
-                    Some(SExpression::Array(arr)) => arr.iter().all(|c| self.is_jsx_renderable(c)),
-                    Some(single) => self.is_jsx_renderable(single),
+                    Some(SExpression::Array(arr)) => arr.iter().all(|c| self.is_jsx_child(c)),
+                    Some(single) => self.is_jsx_child(single),
                 }
             }
             SExpression::String(s) if s.starts_with("@trait.") => {
@@ -2290,9 +2536,9 @@ impl Formatter {
                         match child_cfg {
                             None => true,
                             Some(SExpression::Array(arr)) => {
-                                arr.iter().all(|c| self.is_jsx_renderable(c))
+                                arr.iter().all(|c| self.is_jsx_child(c))
                             }
-                            Some(single) => self.is_jsx_renderable(single),
+                            Some(single) => self.is_jsx_child(single),
                         }
                     }
                 } else {
@@ -2301,6 +2547,16 @@ impl Formatter {
             }
             SExpression::Array(arr) => arr.iter().all(|c| self.is_jsx_renderable(c)),
             _ => true,
+        }
+    }
+
+    /// A JSX child slot only holds elements: a pattern object or a `@trait.X`
+    /// embed. A binding, a call or a nested list there has no JSX spelling.
+    fn is_jsx_child(&self, child: &SExpression) -> bool {
+        match child {
+            SExpression::Object(_) => self.is_jsx_renderable(child),
+            SExpression::String(s) if s.starts_with("@trait.") => self.is_jsx_renderable(child),
+            _ => false,
         }
     }
 
@@ -2522,6 +2778,13 @@ impl Formatter {
             return;
         }
 
+        if let Some(template) = Self::quasiquote_template(arr) {
+            self.output.push_str("(quasiquote ");
+            self.fmt_sexpr_inner(&template, false);
+            self.output.push(')');
+            return;
+        }
+
         // Detect let form
         let is_let = matches!(&arr[0], SExpression::String(s) if s == "let");
         if is_let && arr.len() == 3 {
@@ -2585,7 +2848,12 @@ impl Formatter {
                 if i > 0 {
                     self.output.push(' ');
                 }
-                self.fmt_sexpr_inner(item, false);
+                match item {
+                    SExpression::String(op) if i == 0 && is_operator_symbol(op) => {
+                        self.output.push_str(op)
+                    }
+                    _ => self.fmt_sexpr_inner(item, false),
+                }
             }
             self.output.push(')');
         } else {
@@ -2597,6 +2865,18 @@ impl Formatter {
                 self.fmt_sexpr_inner(item, false);
             }
             self.output.push(']');
+        }
+    }
+
+    /// An object key prints bare when it re-lexes as a key, quoted otherwise
+    /// (a route like `"/dash"`), so every object round-trips.
+    fn write_object_key(&mut self, k: &str) {
+        let bare = k.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+            && k.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+        if bare {
+            self.output.push_str(k);
+        } else {
+            self.write_quoted_string(k);
         }
     }
 
@@ -2619,7 +2899,7 @@ impl Formatter {
                 if i > 0 {
                     self.output.push_str(", ");
                 }
-                self.output.push_str(k);
+                self.write_object_key(k);
                 self.output.push_str(": ");
                 self.fmt_object_value(k, &map[*k]);
             }
@@ -2630,7 +2910,7 @@ impl Formatter {
             self.indent();
             for k in keys {
                 self.write_indent();
-                self.output.push_str(k);
+                self.write_object_key(k);
                 self.output.push_str(": ");
                 self.fmt_object_value(k, &map[k]);
                 self.write_newline();
@@ -2649,8 +2929,10 @@ impl Formatter {
     fn fmt_object_value(&mut self, key: &str, value: &SExpression) {
         if key == "children" {
             if let SExpression::Array(arr) = value {
-                self.fmt_render_children_array(arr);
-                return;
+                if !is_call_array(arr) {
+                    self.fmt_render_children_array(arr);
+                    return;
+                }
             }
         }
         if let SExpression::String(s) = value {
@@ -2682,18 +2964,7 @@ impl Formatter {
     }
 
     fn write_quoted_string(&mut self, s: &str) {
-        self.output.push('"');
-        for c in s.chars() {
-            match c {
-                '\\' => self.output.push_str("\\\\"),
-                '"' => self.output.push_str("\\\""),
-                '\n' => self.output.push_str("\\n"),
-                '\t' => self.output.push_str("\\t"),
-                '\r' => self.output.push_str("\\r"),
-                c => self.output.push(c),
-            }
-        }
-        self.output.push('"');
+        self.output.push_str(&quote_lolo(s));
     }
 }
 
@@ -2763,7 +3034,7 @@ fn is_bare_atom(s: &str) -> bool {
         return false;
     }
     s.chars()
-        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '/' || c == '=')
+        .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '/')
 }
 
 fn is_call_array(arr: &[SExpression]) -> bool {
@@ -2804,6 +3075,7 @@ fn is_static_pattern_type(s: &str) -> bool {
     s.chars().next().is_some_and(|c| c.is_ascii_lowercase())
         && s.chars()
             .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '-')
+        && crate::parser::jsx::kebab_case(&pascal_case(s)) == s
 }
 
 fn is_simple_value(expr: &SExpression) -> bool {
@@ -2826,4 +3098,67 @@ fn fmt_duration(ms: u64) -> String {
     } else {
         format!("{}ms", ms)
     }
+}
+
+/// A page's head modifiers as `key: value` bracket entries, in canonical order.
+fn head_modifier_sources(mods: &orbital_core::schema::PageModifiers) -> Vec<String> {
+    use orbital_core::schema::{PageAccess, PageIndexing};
+    let mut out = Vec::new();
+    if let Some(access) = mods.access {
+        out.push(format!(
+            "access: {}",
+            match access {
+                PageAccess::Public => "public",
+                PageAccess::Authenticated => "authenticated",
+            }
+        ));
+    }
+    if let Some(indexing) = mods.indexing {
+        out.push(format!(
+            "indexing: {}",
+            match indexing {
+                PageIndexing::Index => "index",
+                PageIndexing::Noindex => "noindex",
+            }
+        ));
+    }
+    if let Some(title) = &mods.title {
+        out.push(format!("title: {}", page_meta_source(title)));
+    }
+    if let Some(description) = &mods.description {
+        out.push(format!("description: {}", page_meta_source(description)));
+    }
+    if let Some(group) = &mods.translation_of {
+        out.push(format!("translationOf: {}", quote_lolo(group)));
+    }
+    out
+}
+
+/// A page metadata value as `.lolo` source.
+fn page_meta_source(meta: &orbital_core::schema::PageMeta) -> String {
+    let quote = quote_lolo;
+    match meta {
+        orbital_core::schema::PageMeta::Literal(s) => quote(s),
+        orbital_core::schema::PageMeta::Message(orbital_core::schema::PageMessage(_, key)) => {
+            format!("(i18n/t {})", quote(key))
+        }
+    }
+}
+
+/// A `.lolo` string literal for `s`.
+fn quote_lolo(s: &str) -> String {
+    let mut out = String::with_capacity(s.len() + 2);
+    out.push('"');
+    for c in s.chars() {
+        match c {
+            '\\' => out.push_str("\\\\"),
+            '"' => out.push_str("\\\""),
+            '\n' => out.push_str("\\n"),
+            '\t' => out.push_str("\\t"),
+            '\r' => out.push_str("\\r"),
+            c => out.push(c),
+        }
+    }
+    out.push('"');
+    out
 }

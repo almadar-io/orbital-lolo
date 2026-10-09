@@ -30,6 +30,7 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
             )
         };
         PageRef::Object(PageRefObject {
+            translation_of: p.translation_of.clone(),
             reference: reference.clone(),
             path: Some(p.path.clone()),
             linked_entity: p.primary_entity.clone(),
@@ -37,6 +38,10 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
             linked_entity_id: None,
             ref_id: None,
             trait_ref_ids: None,
+            access: p.access,
+            indexing: p.indexing,
+            title: p.title.clone(),
+            description: p.description.clone(),
         })
     } else {
         lower_page(p)
@@ -45,6 +50,8 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
 
 pub(crate) fn lower_page(p: &Page) -> PageRef {
     PageRef::Inline(PageDefinition {
+        translation_of: p.translation_of.clone(),
+        source_page: None,
         name: p
             .name
             .clone()
@@ -78,6 +85,10 @@ pub(crate) fn lower_page(p: &Page) -> PageRef {
         icon: p.icon.clone(),
         label: p.label.clone(),
         id: None,
+        access: p.access,
+        indexing: p.indexing,
+        title: p.title.clone(),
+        description: p.description.clone(),
     })
 }
 

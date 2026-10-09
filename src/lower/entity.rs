@@ -78,7 +78,7 @@ pub(crate) fn lower_field(
         required: if f.required { Some(true) } else { None },
         primary_key: if f.is_key { Some(true) } else { None },
         unique: if f.is_unique { Some(true) } else { None },
-        default: f.default.clone(),
+        default: canonicalize_unbound_trait_default(&f.type_expr, f.default.clone()),
         values,
         relation,
         items,
@@ -131,6 +131,7 @@ pub(crate) fn lower_type_expr(
             (FieldType::Object, None, None, None, None)
         }
         TypeExpr::Trait => (FieldType::Trait, None, None, None, None),
+        TypeExpr::Orbital => (FieldType::Orbital, None, None, None, None),
         TypeExpr::Slot => (FieldType::Slot, None, None, None, None),
         TypeExpr::Pattern => (FieldType::Pattern, None, None, None, None),
         // Config-only (parser rejects it on entity fields); defensively a string ref.

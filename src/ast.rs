@@ -56,7 +56,7 @@ pub struct Program {
     pub comments: Vec<Comment>,
 }
 
-/// `app NAME vVERSION` header.
+/// `app NAME "VERSION" [ modifiers ]` header.
 #[derive(Debug, Clone)]
 pub struct AppHeader {
     pub name: String,
@@ -69,8 +69,13 @@ pub struct AppHeader {
     pub theme: Option<ThemeDecl>,
     /// `locales [en, ar, sl]` — the locales this program ships.
     pub locales: Vec<String>,
-    /// `public "./public"` — a folder copied verbatim to the built site's root.
+    /// `public: "./public"` — a folder copied verbatim to the built site's root.
     pub public: Option<String>,
+    /// `origin:` / `icon:` / `siteName:` / `signIn:` site modifiers.
+    pub site: orbital_core::schema::SiteMeta,
+    /// The modifiers were written as loose lines after `app` (the pre-bracket
+    /// form) — still parsed, reported as `ORB_L_APP_HEADER_LEGACY`.
+    pub legacy_lines: bool,
     /// App-level `config { ... }` block, declared right after the header
     /// (orbital-import Stage A, `OrbitalSchema.config`) — ORGANISM-wide
     /// knobs every orbital's traits may forward with `@config.<knob>`.
@@ -171,6 +176,12 @@ pub const THEME_TYPED_AXIS_KEYS: [(&str, &[&str]); 7] = [
             "pageImage",
             "pageImageSize",
             "diagram",
+            "edgeMask",
+            "edgeHeight",
+            "textureMask",
+            "textureSize",
+            "accentImage",
+            "scrim",
         ],
     ),
     (
@@ -406,6 +417,10 @@ pub struct Orbital {
     /// `entity NAME` override body — rebinds the imported orbital's primary
     /// entity, exactly as `-> Entity` does on a trait reference.
     pub entity_rebind: Option<String>,
+    /// The entity-header bracket after `entity [Name]` in an import body
+    /// (`[persistent: tbl]`, `[runtime]`, `[local]`, flags), overriding the
+    /// materialized primary entity's persistence/collection/flags.
+    pub entity_rebind_tags: Option<EntityRebindTags>,
     /// `fields { up: local }` — primary-entity field renames the imported
     /// traits read/write, lifted from the trait form's `fields {}` to
     /// orbital scope. Third tuple element is the KEY token's span (Stage C
@@ -415,6 +430,9 @@ pub struct Orbital {
     /// path keeps its own value; required whenever two imports of the same
     /// orbital would otherwise collide on route. Third element: KEY span.
     pub pages_remap: Vec<(String, String, Span)>,
+    /// `pages { "/up": "/local" [access: …] }` — page modifiers per remap
+    /// entry, keyed by the UPSTREAM path, in source order.
+    pub page_modifiers: Vec<(String, orbital_core::schema::PageModifiers)>,
     /// `omit { A B }` — trait/aux-entity names to drop from the imported set.
     /// Omitting a trait some other imported trait embeds is an error, not a
     /// silent drop (checked post-inline). Second element: the name token's
@@ -457,9 +475,39 @@ pub struct Orbital {
     /// appended to the primary entity, AFTER `fields {}` renames apply.
     /// Unlike `fields {}` (rename-only), each entry is a whole new field.
     pub extend_fields: Vec<EntityField>,
+    /// `mock { field: "a, b" }` — the import's own sample data for fields of
+    /// the materialized primary entity, replacing the upstream `@mock`.
+    pub mock_overrides: Vec<(String, String, Span)>,
+    /// `retype { name : type = default }` — replaces the type/default of fields the
+    /// upstream primary entity already declares (after `fields {}` renames).
+    pub retype_fields: Vec<EntityField>,
+    /// `traits { UpstreamTrait [-> Entity] { events fields config listens emitsScope } }`
+    /// — per-imported-trait overrides, keyed by the UPSTREAM trait name.
+    pub trait_overrides: Vec<TraitOverride>,
     /// Orbital-import `listens { Source.EVENT -> Target.TRIGGER }` — routes
     /// into the imported set; each carries its `target_trait`.
     pub import_listens: Vec<Listen>,
+    pub span: Span,
+}
+
+/// Entity-header tags written on an import body's `entity` line.
+#[derive(Debug, Clone, Default)]
+pub struct EntityRebindTags {
+    pub persistence: Option<Persistence>,
+    pub collection: Option<String>,
+    pub shared: bool,
+    pub identity: bool,
+    pub local: bool,
+    pub mock: bool,
+}
+
+/// One `traits { UpstreamTrait [-> Entity] { ... } }` entry of an orbital-import body.
+#[derive(Debug, Clone)]
+pub struct TraitOverride {
+    /// The trait's UPSTREAM name.
+    pub trait_name: String,
+    pub linked_entity: Option<String>,
+    pub body: TraitRefBody,
     pub span: Span,
 }
 
@@ -695,6 +743,9 @@ pub enum TypeExpr {
     /// `trait` — value is a `@trait.X` reference. Substituted to embedded
     /// trait UI at render time. Allowed only in `config { ... }` blocks.
     Trait,
+    /// `orbital` — an orbital value held as data (`<spec>.orbitals.<O>` plus a
+    /// recorded §8b import body), or `none`. Never rendered.
+    Orbital,
     /// `entity` — value is an entity NAME reference (V4-W5). The stamp records
     /// the referenced entity's id on the config field so a declaration-only
     /// rename resolves the value by id. Allowed only in `config { ... }` blocks.
@@ -1244,6 +1295,12 @@ pub struct Page {
     pub icon: Option<String>,
     /// Human nav label — `@label "..."` annotation below the page line.
     pub label: Option<String>,
+    pub access: Option<orbital_core::schema::PageAccess>,
+    pub indexing: Option<orbital_core::schema::PageIndexing>,
+    pub title: Option<orbital_core::schema::PageMeta>,
+    pub description: Option<orbital_core::schema::PageMeta>,
+    /// `translationOf:` — the translation group this page belongs to.
+    pub translation_of: Option<String>,
 }
 
 /// Top-level AST returned by the parser. The compiler-facing entry point is

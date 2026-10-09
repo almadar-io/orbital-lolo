@@ -221,44 +221,23 @@ pub(crate) fn lower_trait_decl(
     }
 }
 
-/// Build a `TraitReference::Reference` from a parsed `trait Name = Alias.X { ... }`.
-pub(crate) fn lower_trait_reference(
-    t: &Trait,
+/// The lowered override surface of one trait-reference body (`events fields config
+/// listens emitsScope`) — shared by `trait X = A.traits.Y { … }` and an orbital import's
+/// `traits { Y { … } }` entries.
+pub(crate) struct CallSiteOverrides {
+    pub events: Option<HashMap<String, String>>,
+    pub listens: Option<Vec<ListenDefinition>>,
+    pub emits_scope: Option<EventScope>,
+    pub config: Option<HashMap<String, SchemaConfigField>>,
+    pub fields: Option<HashMap<String, String>>,
+}
+
+pub(crate) fn lower_call_site_overrides(
     ref_data: &TraitRefData,
+    listens: &[Listen],
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,
-) -> Result<TraitReference, LowerError> {
-    // Increment 3-II: reinterpret the trait's `::` annotation as call-site
-    // type-parameter arguments — `[type_name] ++ type_args`, chunked into
-    // (name, value) pairs — UNLESS `type_name` resolves as a known LOCAL type
-    // alias, in which case the annotation keeps its pre-existing
-    // alias-conformance meaning (handled entirely by `check_trait_annotation`
-    // in `types.rs`; nothing to lower here) and no `typeArgs` are emitted.
-    // `check_trait_annotation` already skipped the alias-conformance check
-    // for exactly the branch taken here (same `aliases.contains_key` test —
-    // this file's `aliases` map mirrors that check's `ResolveCtx` lookup).
-    // An odd flat-pair count is a structurally malformed annotation — no
-    // source-trait visibility is needed to catch it, so it errors here at
-    // L1 rather than waiting on the L2 inline phase.
-    let type_args = match &t.type_annotation {
-        Some(ann) if !aliases.contains_key(&ann.type_name) => {
-            let mut flat: Vec<String> = Vec::with_capacity(1 + ann.type_args.len());
-            flat.push(ann.type_name.clone());
-            flat.extend(ann.type_args.iter().cloned());
-            if flat.len() % 2 != 0 {
-                return Err(LowerError::OddTypeArgCount {
-                    trait_name: t.name.clone(),
-                    args: flat,
-                });
-            }
-            let mut map: HashMap<String, String> = HashMap::new();
-            for pair in flat.chunks(2) {
-                map.insert(pair[0].clone(), pair[1].clone());
-            }
-            Some(map)
-        }
-        _ => None,
-    };
+) -> CallSiteOverrides {
     let events = if ref_data.events.is_empty() {
         None
     } else {
@@ -276,7 +255,7 @@ pub(crate) fn lower_trait_reference(
     // `stateMachine.events[].payload` in inline-trait lowering; dropped here
     // in trait-reference lowering since references don't declare inputs).
     let cross_orbital_listens: Vec<&Listen> =
-        t.listens.iter().filter(|l| l.event.contains('.')).collect();
+        listens.iter().filter(|l| l.event.contains('.')).collect();
     let listens = if cross_orbital_listens.is_empty() {
         None
     } else {
@@ -383,6 +362,61 @@ pub(crate) fn lower_trait_reference(
                 .collect::<HashMap<String, String>>(),
         )
     };
+
+    CallSiteOverrides {
+        events,
+        listens,
+        emits_scope,
+        config,
+        fields,
+    }
+}
+
+/// Build a `TraitReference::Reference` from a parsed `trait Name = Alias.X { ... }`.
+pub(crate) fn lower_trait_reference(
+    t: &Trait,
+    ref_data: &TraitRefData,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+) -> Result<TraitReference, LowerError> {
+    // Increment 3-II: reinterpret the trait's `::` annotation as call-site
+    // type-parameter arguments — `[type_name] ++ type_args`, chunked into
+    // (name, value) pairs — UNLESS `type_name` resolves as a known LOCAL type
+    // alias, in which case the annotation keeps its pre-existing
+    // alias-conformance meaning (handled entirely by `check_trait_annotation`
+    // in `types.rs`; nothing to lower here) and no `typeArgs` are emitted.
+    // `check_trait_annotation` already skipped the alias-conformance check
+    // for exactly the branch taken here (same `aliases.contains_key` test —
+    // this file's `aliases` map mirrors that check's `ResolveCtx` lookup).
+    // An odd flat-pair count is a structurally malformed annotation — no
+    // source-trait visibility is needed to catch it, so it errors here at
+    // L1 rather than waiting on the L2 inline phase.
+    let type_args = match &t.type_annotation {
+        Some(ann) if !aliases.contains_key(&ann.type_name) => {
+            let mut flat: Vec<String> = Vec::with_capacity(1 + ann.type_args.len());
+            flat.push(ann.type_name.clone());
+            flat.extend(ann.type_args.iter().cloned());
+            if flat.len() % 2 != 0 {
+                return Err(LowerError::OddTypeArgCount {
+                    trait_name: t.name.clone(),
+                    args: flat,
+                });
+            }
+            let mut map: HashMap<String, String> = HashMap::new();
+            for pair in flat.chunks(2) {
+                map.insert(pair[0].clone(), pair[1].clone());
+            }
+            Some(map)
+        }
+        _ => None,
+    };
+    let CallSiteOverrides {
+        events,
+        listens,
+        emits_scope,
+        config,
+        fields,
+    } = lower_call_site_overrides(ref_data, &t.listens, aliases, entity_names);
 
     Ok(TraitReference::Reference {
         local: t.local,
@@ -595,7 +629,7 @@ pub(crate) fn lower_trait(
                     ) {
                         ("object".to_string(), Some(nested), None, None)
                     } else if let Some((entity_name, entity_fields, is_array)) =
-                        emit_listen::named_entity_fields(ty, entities)
+                        emit_listen::named_entity_fields(ty, entities, aliases)
                     {
                         // Expand an entity reference exactly as the `emits`
                         // side does. `emits { EVT { row : E } }` and
@@ -616,7 +650,7 @@ pub(crate) fn lower_trait(
                             emit_listen::lower_match_field_type(ty);
                         (field_type, None, type_when, None)
                     };
-                    PayloadField {
+                    PayloadField { values: emit_listen::payload_literal_values(ty, aliases),
                         name: f.name.clone(),
                         field_type,
                         required: if f.required { Some(true) } else { None },

@@ -88,36 +88,33 @@ impl Parser {
                 span: self.peek_span(),
             });
         }
-        // Optional `[options]`.
+        // Optional `[modifiers]` (shared grammar with the app header).
         let mut view = None;
         let mut primary_entity = None;
         let mut is_initial = false;
+        let mut head = orbital_core::schema::PageModifiers::default();
         if matches!(self.peek(), TokenKind::LBracket) {
-            self.advance();
-            loop {
-                self.skip_newlines();
-                if matches!(self.peek(), TokenKind::RBracket) {
-                    self.advance();
-                    break;
-                }
-                let key = self.expect_ident()?;
-                let key = self.lang.canon_any(&key).map(str::to_string).unwrap_or(key);
-                if matches!(self.peek(), TokenKind::Colon) {
-                    self.advance();
-                    let value = self.expect_ident()?;
-                    match key.as_str() {
-                        "view" => view = Some(value),
-                        "entity" => primary_entity = Some(value),
-                        _ => {}
-                    }
-                } else if key == "initial" {
+            self.parse_modifier_bracket("page", PAGE_MODIFIERS, |p, key| {
+                if key == "initial" {
                     is_initial = true;
+                    return Ok(());
                 }
-                if matches!(self.peek(), TokenKind::Comma) {
-                    self.advance();
+                p.expect_kind(&TokenKind::Colon, "':' after a page modifier")?;
+                match key {
+                    "view" => view = Some(p.expect_ident()?),
+                    "entity" => primary_entity = Some(p.expect_ident()?),
+                    _ => p.parse_head_modifier(key, &mut head)?,
                 }
-            }
+                Ok(())
+            })?;
         }
+        let orbital_core::schema::PageModifiers {
+            access,
+            indexing,
+            title,
+            description,
+            translation_of,
+        } = head;
         // Trailing `@icon "..."` / `@label "..."` annotations (one or more
         // indented lines below the page declaration). Mirrors the config-knob
         // annotation reader (`parse_config_annotations`).
@@ -179,6 +176,11 @@ impl Parser {
             name,
             icon,
             label,
+            access,
+            indexing,
+            title,
+            description,
+            translation_of,
         })
     }
 }

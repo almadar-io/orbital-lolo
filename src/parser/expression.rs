@@ -90,7 +90,7 @@ impl Parser {
             Some("let") if has_let_bindings => Some(1),
             Some("if") => Some(3),
             Some("when") => Some(2),
-            Some("quote") => Some(1),
+            Some("quote") | Some("quasiquote") | Some("unquote") => Some(1),
             // `(fn (a b) body)` — parenthesized params aren't consumed by
             // `parse_lambda_params`, so they reach the loop as its first arg;
             // the budget then covers params + body.
@@ -99,6 +99,16 @@ impl Parser {
             }
             _ => None,
         };
+        let in_quasiquote = head.as_deref() == Some("quasiquote");
+        if in_quasiquote {
+            self.quasiquote_depth += 1;
+        }
+        if head.as_deref() == Some("unquote") && self.quasiquote_depth == 0 {
+            return Err(ParseError::InvalidSExpr {
+                message: "ELOLO_UNQUOTE_OUTSIDE_QUASIQUOTE: `(unquote e)` is legal only inside `(quasiquote …)`".to_string(),
+                span,
+            });
+        }
         let mut arg_spans: Vec<Span> = Vec::new();
         loop {
             self.skip_newlines();
@@ -133,6 +143,9 @@ impl Parser {
         }
         if opened_scope {
             self.binding_scopes.pop();
+        }
+        if in_quasiquote {
+            self.quasiquote_depth -= 1;
         }
         if let (Some(max), Some(h)) = (loop_arg_max, head.as_deref()) {
             if arg_spans.len() > max {
@@ -184,6 +197,22 @@ impl Parser {
                 SExpression::String("quote".to_string()),
                 SExpression::String(body),
             ]));
+        }
+        // `(quasiquote x)`: `x` becomes one encoded body with each `(unquote e)`
+        // replaced by a numbered marker; the `e`s stay live as trailing args.
+        if in_quasiquote {
+            let Some(template) = items.get(1) else {
+                return Err(ParseError::InvalidSExpr {
+                    message: "`(quasiquote x)` takes exactly one template".to_string(),
+                    span,
+                });
+            };
+            return orbital_core::schema::quote::quasiquote_expr(template).map_err(|e| {
+                ParseError::InvalidSExpr {
+                    message: format!("ELOLO_QUASIQUOTE_INVALID: {e}"),
+                    span,
+                }
+            });
         }
         // `(persist create|update|delete …)` — the action word (items[1])
         // is a `capabilities`-section word, canonicalized here rather than
@@ -442,6 +471,9 @@ impl Parser {
                 }
                 let span = self.peek_span();
                 self.advance();
+                if let Some(value) = self.take_trait_value_literal(&name) {
+                    return Ok(value);
+                }
                 if let Some(dotted) = self.take_dotted_event_ref(&name, span) {
                     return Ok(SExpression::String(dotted));
                 }
@@ -476,6 +508,15 @@ impl Parser {
                     _ => name,
                 };
                 Ok(SExpression::String(atom))
+            }
+            TokenKind::Dot => {
+                let span = self.peek_span();
+                self.take_relative_trait_value_literal().ok_or_else(|| {
+                    ParseError::InvalidSExpr {
+                        message: "unexpected token in s-expression: Dot".to_string(),
+                        span,
+                    }
+                })
             }
             TokenKind::Arrow | TokenKind::UnicodeArrow => Err(ParseError::InvalidSExpr {
                 message: "unexpected `->` inside an s-expression: transitions are written at state-block level as `EVENT -> target`, not inside parentheses; each effect under a transition is its own `(...)` line".to_string(),

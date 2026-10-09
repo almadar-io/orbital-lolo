@@ -490,7 +490,16 @@ fn check_one_set_value(
     let resolved = match value {
         SExpression::Number(_) => Some(("number".to_string(), "literal".to_string())),
         SExpression::Bool(_) => Some(("boolean".to_string(), "literal".to_string())),
-        SExpression::Object(_) => Some(("object".to_string(), "literal".to_string())),
+        SExpression::Object(_) => {
+            let kind = if orbital_core::schema::behavior_value::is_trait_value(
+                &orbital_core::evaluator::Value::from(value.clone()),
+            ) {
+                "trait"
+            } else {
+                "object"
+            };
+            Some((kind.to_string(), "literal".to_string()))
+        }
         SExpression::Array(_) => {
             // Could be an array literal OR an SExpression operator call.
             // Defer to L2 — distinguishing them at parse time without

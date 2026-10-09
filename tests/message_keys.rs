@@ -62,7 +62,7 @@ fn edge_a_key_with_the_reserved_separator_is_rejected() {
 #[test]
 fn the_formatter_keeps_the_locales_header_and_the_unqualified_key() {
     let formatted = format_program(&parse_str(HOME).expect("parse"));
-    assert!(formatted.contains("locales [en, ar, sl]"), "{formatted}");
+    assert!(formatted.contains("locales: [en, ar, sl]"), "{formatted}");
     assert!(formatted.contains(r#"(i18n/t "hero.title")"#), "{formatted}");
 }
 
@@ -78,7 +78,7 @@ fn the_public_header_lowers_to_public_dir() {
     let source = HOME.replace("locales [en, ar, sl]\n", "locales [en, ar, sl]\npublic \"./public\"\n");
     assert_eq!(parse_and_lower_str(&source).expect("lower").public_dir.as_deref(), Some("./public"));
     let formatted = format_program(&parse_str(&source).expect("parse"));
-    assert!(formatted.contains("public \"./public\""), "{formatted}");
+    assert!(formatted.contains("public: \"./public\""), "{formatted}");
 }
 
 #[test]

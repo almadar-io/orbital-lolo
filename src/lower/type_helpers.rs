@@ -56,6 +56,7 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::Object(_) => "object".to_string(),
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => "array".to_string(),
         TypeExpr::Trait => "trait".to_string(),
+        TypeExpr::Orbital => "orbital".to_string(),
         TypeExpr::EntityRef => "entity".to_string(),
         TypeExpr::EventRef => "event".to_string(),
         TypeExpr::EventAddress => "EventAddress".to_string(),
@@ -141,6 +142,7 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
         },
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => "array".to_string(),
         TypeExpr::Trait => "trait".to_string(),
+        TypeExpr::Orbital => "orbital".to_string(),
         // Entity/event refs are name strings at the bus-payload level.
         TypeExpr::EntityRef | TypeExpr::EventRef | TypeExpr::EventAddress => "string".to_string(),
         TypeExpr::Slot => "slot".to_string(),
@@ -228,6 +230,7 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::RelationMany(name) => format!("{name}*"),
         TypeExpr::RelationManyNonEmpty(name) => format!("{name}+"),
         TypeExpr::Trait => "trait".to_string(),
+        TypeExpr::Orbital => "orbital".to_string(),
         TypeExpr::EntityRef => "entity".to_string(),
         TypeExpr::EventRef => "event".to_string(),
         TypeExpr::EventAddress => "EventAddress".to_string(),
@@ -257,7 +260,7 @@ pub(crate) fn canonicalize_unbound_trait_default(
     default: Option<SExpression>,
 ) -> Option<SExpression> {
     match (type_expr, &default) {
-        (TypeExpr::Trait, Some(SExpression::String(s))) if s == "none" => Some(SExpression::Null),
+        (TypeExpr::Trait | TypeExpr::Orbital, Some(SExpression::String(s))) if s == "none" => Some(SExpression::Null),
         _ => default,
     }
 }

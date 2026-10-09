@@ -25,7 +25,9 @@ pub struct Vocabulary {
 /// `app orbital uses expects entity type derived trait initial state for
 /// page as theme emits listens ticks config when with from to every
 /// capabilities match external internal on name fields events event
-/// emitsScope identity pages omit only roles entities extend lazy locales public` — every
+/// emitsScope identity pages omit only roles entities extend lazy locales public
+/// access indexing title description origin icon siteName signIn authenticated
+/// index noindex version translationOf` (app/page modifier-bracket keys and values) — every
 /// `expect_keyword`/`check_ident` literal in `parser/*.rs` (`parser/mod.rs`,
 /// `parser/entity.rs`, `parser/trait.rs`, `parser/type.rs`, `parser/page.rs`,
 /// `parser/orbital.rs`) that is not itself a shape/tag/category/capability/
@@ -74,10 +76,26 @@ const KEYWORDS: &[&str] = &[
     "roles",
     "entities",
     "extend",
+    "retype",
+    "traits",
+    "mock",
     "lazy",
     "locales",
     "public",
     "instances",
+    "access",
+    "indexing",
+    "title",
+    "description",
+    "origin",
+    "icon",
+    "siteName",
+    "signIn",
+    "authenticated",
+    "index",
+    "noindex",
+    "version",
+    "translationOf",
 ];
 
 /// `Entity Trait Page Orbital Event` — `check_ident` in `parser/type.rs`
@@ -178,7 +196,7 @@ const SIGILS: &[&str] = &[
 ];
 
 /// `set fetch persist emit navigate navigate-back render-ui notify ref
-/// call-service cancel-call invoke do if let fn lambda quote match when` — s-expression
+/// call-service cancel-call invoke do if let fn lambda quote quasiquote unquote match when` — s-expression
 /// heads special-cased in `parser/expression.rs` (`parse_sexpr`'s
 /// `loop_arg_max` dispatch, the `let`/`fn`/`lambda`/`quote`/`match` sugar, the
 /// `set` post-check) plus effect heads read by `lower/*.rs`.
@@ -201,6 +219,8 @@ const EFFECTS: &[&str] = &[
     "fn",
     "lambda",
     "quote",
+    "quasiquote",
+    "unquote",
     "match",
     "when",
 ];
@@ -249,6 +269,7 @@ const TYPES: &[&str] = &[
     "null",
     "any",
     "trait",
+    "orbital",
     "entity",
     "event",
     "EventAddress",

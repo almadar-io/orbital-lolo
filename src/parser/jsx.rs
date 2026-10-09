@@ -558,7 +558,7 @@ fn listens_from_object(value: &SExpression, span: Span) -> Result<Vec<Listen>, P
 /// PascalCase / MixedCase → kebab-case (idempotent): insert `-` before each
 /// interior uppercase letter, then lowercase. `Stack` → `stack`,
 /// `DataGrid` → `data-grid`, `UiSpinner` → `ui-spinner`.
-fn kebab_case(name: &str) -> String {
+pub(crate) fn kebab_case(name: &str) -> String {
     let mut out = String::new();
     for (i, c) in name.chars().enumerate() {
         if c.is_ascii_uppercase() {

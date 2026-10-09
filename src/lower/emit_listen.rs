@@ -184,7 +184,7 @@ pub(crate) fn lower_emit(
                     field: f.name.clone(),
                 });
             }
-            fields.push(PayloadField {
+            fields.push(PayloadField { values: None,
                 name: f.name.clone(),
                 field_type: sentinel,
                 required: if f.required { Some(true) } else { None },
@@ -211,7 +211,7 @@ pub(crate) fn lower_emit(
                     field: f.name.clone(),
                 });
             }
-            fields.push(PayloadField {
+            fields.push(PayloadField { values: None,
                 name: f.name.clone(),
                 field_type: "object".to_string(),
                 required: if f.required { Some(true) } else { None },
@@ -233,7 +233,7 @@ pub(crate) fn lower_emit(
                     field: f.name.clone(),
                 });
             }
-            fields.push(PayloadField {
+            fields.push(PayloadField { values: None,
                 name: f.name.clone(),
                 field_type: "union".to_string(),
                 required: if f.required { Some(true) } else { None },
@@ -256,7 +256,7 @@ pub(crate) fn lower_emit(
                     field: f.name.clone(),
                 });
             }
-            fields.push(PayloadField {
+            fields.push(PayloadField { values: None,
                 name: f.name.clone(),
                 field_type: "object".to_string(),
                 required: if f.required { Some(true) } else { None },
@@ -279,7 +279,7 @@ pub(crate) fn lower_emit(
                             field: f.name.clone(),
                         });
                     }
-                    fields.push(PayloadField {
+                    fields.push(PayloadField { values: None,
                         name: f.name.clone(),
                         field_type: "[object]".to_string(),
                         required: if f.required { Some(true) } else { None },
@@ -299,7 +299,7 @@ pub(crate) fn lower_emit(
                 });
             }
             let (field_type, type_when) = lower_match_field_type(ty);
-            fields.push(PayloadField {
+            fields.push(PayloadField { values: payload_literal_values(ty, aliases),
                 name: f.name.clone(),
                 field_type,
                 required: if f.required { Some(true) } else { None },
@@ -317,7 +317,7 @@ pub(crate) fn lower_emit(
                 });
             }
             let (field_type, type_when) = lower_match_field_type(ty);
-            fields.push(PayloadField {
+            fields.push(PayloadField { values: payload_literal_values(ty, aliases),
                 name: f.name.clone(),
                 field_type,
                 required: if f.required { Some(true) } else { None },
@@ -458,7 +458,7 @@ pub(crate) fn payload_fields_mismatch_norm(
         entities_by_name.get(name).map(|fields| {
             fields
                 .iter()
-                .map(|(n, t, req)| PayloadField {
+                .map(|(n, t, req)| PayloadField { values: payload_literal_values(t, aliases),
                     name: n.clone(),
                     field_type: type_expr_to_string(t),
                     required: if *req { Some(true) } else { None },
@@ -481,7 +481,7 @@ pub(crate) fn payload_fields_mismatch_norm(
             };
             if let Some(props) = flatten_name(base) {
                 return (
-                    PayloadField {
+                    PayloadField { values: None,
                         name: f.name.clone(),
                         field_type: if is_array {
                             "[object]".to_string()
@@ -590,7 +590,7 @@ pub(crate) fn type_expr_to_payload_fields(
     // `Event [E]`) lowers to the `$E` sentinel directly — same contract as
     // the nested-field case below.
     if let Some(sentinel) = type_param_sentinel(payload, type_params) {
-        return Ok(vec![PayloadField {
+        return Ok(vec![PayloadField { values: None,
             name: "value".to_string(),
             field_type: sentinel,
             required: None,
@@ -641,7 +641,7 @@ pub(crate) fn type_expr_to_payload_fields(
                 } else if let Some(variants) = union_payload_variants(ftype, aliases, type_params) {
                     ("union".to_string(), Some(variants), None)
                 } else if let Some((entity_name, entity_fields, is_array)) =
-                    named_entity_fields(ftype, entities_by_name)
+                    named_entity_fields(ftype, entities_by_name, aliases)
                 {
                     // An ENTITY named in a field position (scalar OR array of
                     // the element entity) expands to `object`/`[object]` +
@@ -666,7 +666,7 @@ pub(crate) fn type_expr_to_payload_fields(
                 } else {
                     (type_expr_to_string(ftype), None, None)
                 };
-                flat.push(PayloadField {
+                flat.push(PayloadField { values: None,
                     name: fname.clone(),
                     field_type,
                     required: if *freq { Some(true) } else { None },
@@ -684,7 +684,7 @@ pub(crate) fn type_expr_to_payload_fields(
             // single `value` field carrying the primitive type string. Keeps
             // the `.orb` shape predictable; avoids empty payloads for
             // primitive-valued events.
-            Ok(vec![PayloadField {
+            Ok(vec![PayloadField { values: None,
                 name: "value".to_string(),
                 field_type: type_expr_to_string(other),
                 required: None,
@@ -713,6 +713,7 @@ pub(crate) fn type_expr_to_payload_fields(
 pub(crate) fn named_entity_fields(
     te: &TypeExpr,
     entities_by_name: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> Option<(String, Vec<PayloadField>, bool)> {
     let (name, is_array) = match te {
         TypeExpr::Named(n) => (n.as_str(), false),
@@ -727,7 +728,7 @@ pub(crate) fn named_entity_fields(
         name.to_string(),
         fields
             .iter()
-            .map(|(n, t, req)| PayloadField {
+            .map(|(n, t, req)| PayloadField { values: payload_literal_values(t, aliases),
                 name: n.clone(),
                 field_type: type_expr_to_string(t),
                 required: if *req { Some(true) } else { None },
@@ -829,7 +830,7 @@ pub(crate) fn union_payload_variants(
             TypeExpr::Primitive(n) => (n.clone(), type_expr_to_string(p), None),
             _ => return None,
         };
-        out.push(PayloadField {
+        out.push(PayloadField { values: None,
             name,
             field_type,
             required: None,
@@ -918,6 +919,8 @@ pub(crate) fn struct_payload_properties(
             ("object".to_string(), Some(nested))
         } else if let Some(variants) = union_payload_variants(ty, aliases, type_params) {
             ("union".to_string(), Some(variants))
+        } else if let Some(enum_ty) = enum_alias_payload_type(ty, aliases) {
+            (enum_ty, None)
         } else if is_cyclic_ref(ty) {
             // The by-name back-reference marker: `field_type` keeps the
             // bare/array name string, `properties` is Some-but-EMPTY (never
@@ -927,7 +930,7 @@ pub(crate) fn struct_payload_properties(
         } else {
             (type_expr_to_string(ty), None)
         };
-        props.push(PayloadField {
+        props.push(PayloadField { values: payload_literal_values(ty, aliases),
             name: name.clone(),
             field_type,
             required: if *req { Some(true) } else { None },
@@ -944,6 +947,69 @@ pub(crate) fn struct_payload_properties(
         });
     }
     Some(props)
+}
+
+/// A payload field's closed value set: a literal union (inline or via an alias), a single
+/// literal, or an enum alias — element-wise for an array.
+pub(crate) fn payload_literal_values(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Option<Vec<String>> {
+    // As on an entity field: a union of literals and bare words (not type aliases) is a closed set;
+    // a bare word may spell a primitive (`date | currency`), but an all-primitive union
+    // (`string | number`) is a type union.
+    let literals = |parts: &[TypeExpr]| -> Option<Vec<String>> {
+        let word = |p: &TypeExpr| matches!(p, TypeExpr::StringLiteral(_)) || matches!(p, TypeExpr::Named(n) if !aliases.contains_key(n));
+        if !parts.iter().any(word) {
+            return None;
+        }
+        parts
+            .iter()
+            .map(|p| match p {
+                TypeExpr::StringLiteral(s) => Some(s.clone()),
+                TypeExpr::Named(n) if !aliases.contains_key(n) => Some(n.clone()),
+                TypeExpr::Primitive(n) => Some(n.clone()),
+                _ => None,
+            })
+            .collect::<Option<Vec<String>>>()
+            .filter(|v| !v.is_empty())
+    };
+    match ty.peel() {
+        TypeExpr::StringLiteral(s) => Some(vec![s.clone()]),
+        TypeExpr::Union(parts) => literals(parts),
+        TypeExpr::Named(n) => match aliases.get(n) {
+            Some(TypeAliasResolved::Enum(values)) => Some(values.clone()),
+            Some(TypeAliasResolved::Type(TypeExpr::Union(parts))) => literals(parts),
+            _ => None,
+        },
+        TypeExpr::Array(inner) => payload_literal_values(inner, aliases),
+        _ => None,
+    }
+}
+
+/// In a payload an enum travels as its literal value — a `string`, as the entity path lowers
+/// it — so a field typed by a literal-union alias must not leave the alias name behind.
+fn enum_alias_payload_type(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Option<String> {
+    let literal_union = |parts: &[TypeExpr]| {
+        !parts.is_empty() && parts.iter().all(|p| matches!(p, TypeExpr::StringLiteral(_)))
+    };
+    match ty.peel() {
+        TypeExpr::Named(n) => match aliases.get(n) {
+            Some(TypeAliasResolved::Enum(_)) => Some("string".to_string()),
+            Some(TypeAliasResolved::Type(TypeExpr::Union(parts))) if literal_union(parts) => {
+                Some("string".to_string())
+            }
+            _ => None,
+        },
+        TypeExpr::Union(parts) if literal_union(parts) => Some("string".to_string()),
+        TypeExpr::Array(inner) => {
+            enum_alias_payload_type(inner, aliases).map(|elem| format!("[{elem}]"))
+        }
+        _ => None,
+    }
 }
 
 /// Resolve a named type referenced from an emit payload into a flat
@@ -1171,7 +1237,7 @@ mod recursive_struct_payload_tests {
         );
         let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
 
-        let side = vec![PayloadField {
+        let side = vec![PayloadField { values: None,
             name: "row".to_string(),
             field_type: "Tag".to_string(),
             required: Some(true),
@@ -1294,13 +1360,13 @@ mod recursive_struct_payload_tests {
             &[],
         )
         .expect("alias payload resolves");
-        let inline_fields_bare_at_depth2 = vec![PayloadField {
+        let inline_fields_bare_at_depth2 = vec![PayloadField { values: None,
             name: "containers".to_string(),
             field_type: "[object]".to_string(),
             required: Some(true),
             description: None,
             properties: Some(vec![
-                PayloadField {
+                PayloadField { values: None,
                     name: "id".to_string(),
                     field_type: "string".to_string(),
                     required: Some(true),
@@ -1310,7 +1376,7 @@ mod recursive_struct_payload_tests {
                     entity: None,
                     projected_from: None,
                 },
-                PayloadField {
+                PayloadField { values: None,
                     name: "ports".to_string(),
                     field_type: "[PortItem]".to_string(),
                     required: Some(true),
@@ -1710,5 +1776,156 @@ mod entity_payload_marker_tests {
         let row = fields.iter().find(|f| f.name == "row").expect("row field");
         assert_eq!(row.field_type, "object");
         assert_eq!(row.entity.as_deref(), Some("Note"));
+    }
+}
+
+#[cfg(test)]
+mod struct_payload_enum_alias_tests {
+    use super::*;
+
+    fn aliases() -> BTreeMap<String, TypeAliasResolved> {
+        let mut aliases = BTreeMap::new();
+        aliases.insert(
+            "ToolKind".to_string(),
+            TypeAliasResolved::Enum(vec!["input".to_string(), "read".to_string()]),
+        );
+        aliases.insert(
+            "QuotedKind".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Union(vec![
+                TypeExpr::StringLiteral("input".to_string()),
+                TypeExpr::StringLiteral("read".to_string()),
+            ])),
+        );
+        aliases.insert(
+            "Shape".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Union(vec![
+                TypeExpr::Named("Point".to_string()),
+                TypeExpr::Named("Other".to_string()),
+            ])),
+        );
+        aliases.insert(
+            "Other".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(vec![(
+                "y".to_string(),
+                TypeExpr::Primitive("number".to_string()),
+                true,
+            )])),
+        );
+        aliases.insert(
+            "Point".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(vec![(
+                "x".to_string(),
+                TypeExpr::Primitive("number".to_string()),
+                true,
+            )])),
+        );
+        aliases.insert(
+            "Activity".to_string(),
+            TypeAliasResolved::Type(TypeExpr::Object(vec![
+                ("kind".to_string(), TypeExpr::Named("ToolKind".to_string()), false),
+                (
+                    "kinds".to_string(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("ToolKind".to_string()))),
+                    false,
+                ),
+                ("at".to_string(), TypeExpr::Named("Point".to_string()), true),
+                ("label".to_string(), TypeExpr::Primitive("string".to_string()), true),
+                ("quoted".to_string(), TypeExpr::Named("QuotedKind".to_string()), false),
+                (
+                    "inline".to_string(),
+                    TypeExpr::Union(vec![
+                        TypeExpr::StringLiteral("a".to_string()),
+                        TypeExpr::StringLiteral("b".to_string()),
+                    ]),
+                    false,
+                ),
+                ("shape".to_string(), TypeExpr::Named("Shape".to_string()), false),
+            ])),
+        );
+        aliases
+    }
+
+    fn field(props: &[PayloadField], name: &str) -> PayloadField {
+        props.iter().find(|f| f.name == name).cloned().expect(name)
+    }
+
+    #[test]
+    fn an_enum_alias_struct_field_travels_as_string_not_a_dangling_name() {
+        let aliases = aliases();
+        let props = struct_payload_properties(&TypeExpr::Named("Activity".to_string()), &aliases, &[])
+            .expect("Activity is a struct alias");
+        assert_eq!(field(&props, "kind").field_type, "string");
+        assert_eq!(field(&props, "kind").properties, None);
+        assert_eq!(field(&props, "kinds").field_type, "[string]");
+        assert_eq!(field(&props, "quoted").field_type, "string");
+        assert_eq!(field(&props, "inline").field_type, "string");
+    }
+
+    #[test]
+    fn a_closed_payload_field_carries_its_values() {
+        let aliases = aliases();
+        let props = struct_payload_properties(&TypeExpr::Named("Activity".to_string()), &aliases, &[])
+            .expect("Activity is a struct alias");
+        let ab = Some(vec!["a".to_string(), "b".to_string()]);
+        let input_read = Some(vec!["input".to_string(), "read".to_string()]);
+        assert_eq!(field(&props, "inline").values, ab);
+        assert_eq!(field(&props, "kind").values, input_read);
+        assert_eq!(field(&props, "kinds").values, input_read);
+        assert_eq!(field(&props, "quoted").values, input_read);
+    }
+
+    #[test]
+    fn a_bare_word_union_is_a_closed_set_even_where_a_word_spells_a_primitive() {
+        let aliases = aliases();
+        let ty = TypeExpr::Union(vec![
+            TypeExpr::Primitive("date".to_string()),
+            TypeExpr::Named("currency".to_string()),
+            TypeExpr::Primitive("number".to_string()),
+        ]);
+        assert_eq!(
+            payload_literal_values(&ty, &aliases),
+            Some(vec!["date".to_string(), "currency".to_string(), "number".to_string()])
+        );
+    }
+
+    #[test]
+    fn control_an_all_primitive_union_is_a_type_union_not_a_set() {
+        let aliases = aliases();
+        let ty = TypeExpr::Union(vec![
+            TypeExpr::Primitive("string".to_string()),
+            TypeExpr::Primitive("number".to_string()),
+            TypeExpr::Primitive("boolean".to_string()),
+        ]);
+        assert_eq!(payload_literal_values(&ty, &aliases), None);
+        assert_eq!(payload_literal_values(&TypeExpr::Union(vec![TypeExpr::Named("Point".to_string()), TypeExpr::Named("Other".to_string())]), &aliases), None);
+    }
+
+    #[test]
+    fn control_an_open_payload_field_carries_no_values() {
+        let aliases = aliases();
+        let props = struct_payload_properties(&TypeExpr::Named("Activity".to_string()), &aliases, &[])
+            .expect("Activity is a struct alias");
+        assert_eq!(field(&props, "label").values, None);
+        assert_eq!(field(&props, "shape").values, None);
+        assert_eq!(field(&props, "at").values, None);
+    }
+
+    #[test]
+    fn control_a_union_of_struct_aliases_stays_a_union() {
+        let aliases = aliases();
+        let props = struct_payload_properties(&TypeExpr::Named("Activity".to_string()), &aliases, &[])
+            .expect("Activity is a struct alias");
+        assert_eq!(field(&props, "shape").field_type, "union");
+    }
+
+    #[test]
+    fn control_struct_alias_and_primitive_fields_are_unchanged() {
+        let aliases = aliases();
+        let props = struct_payload_properties(&TypeExpr::Named("Activity".to_string()), &aliases, &[])
+            .expect("Activity is a struct alias");
+        let at = field(&props, "at");
+        assert_eq!(at.field_type, "object");
+        assert_eq!(at.properties.map(|p| p.len()), Some(1));
+        assert_eq!(field(&props, "label").field_type, "string");
     }
 }

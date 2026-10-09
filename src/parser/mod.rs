@@ -23,9 +23,43 @@ use orbital_core::i18n::lang::{self, Lang};
 use orbital_core::schema::SExpression;
 use std::collections::HashMap;
 
+/// Keys of the `app … [ … ]` modifier bracket.
+pub(crate) const APP_MODIFIERS: &[&str] = &[
+    "version",
+    "description",
+    "theme",
+    "locales",
+    "public",
+    "origin",
+    "icon",
+    "siteName",
+    "signIn",
+];
+
+/// Keys of a `page … [ … ]` modifier bracket.
+pub(crate) const PAGE_MODIFIERS: &[&str] = &[
+    "view",
+    "entity",
+    "initial",
+    "access",
+    "indexing",
+    "title",
+    "description",
+    "translationOf",
+];
+
+/// Keys a `pages {}` remap entry's bracket takes — the page head modifiers.
+pub(crate) const REMAP_PAGE_MODIFIERS: &[&str] = &[
+    "access",
+    "indexing",
+    "title",
+    "description",
+    "translationOf",
+];
+
 mod entity;
 mod expression;
-mod jsx;
+pub(crate) mod jsx;
 mod orbital;
 mod page;
 mod r#trait;
@@ -94,6 +128,9 @@ struct Parser {
     /// string — both collapse to `SExpression::String` — so the bare-reference
     /// check has to live here.
     binding_scopes: Vec<Vec<String>>,
+    /// How many `(quasiquote …)` templates enclose the expression being parsed;
+    /// an `(unquote e)` is legal only when this is non-zero.
+    quasiquote_depth: usize,
     /// L2 source-map span capture, active only inside a
     /// [`Self::capture_expr_spans`] window (one per transition guard / effect
     /// / tick guard / tick effect). `None` outside a window — recording is a
@@ -131,6 +168,7 @@ impl Parser {
             current_hoist_producer: None,
             inline_ref_counter: 0,
             binding_scopes: Vec::new(),
+            quasiquote_depth: 0,
             expr_span_capture: None,
             expr_trail: String::new(),
             pattern_type_value: false,
@@ -205,6 +243,79 @@ impl Parser {
         let refs = self.event_ref_capture.take().unwrap_or_default();
         self.event_ref_capture = prev_capture;
         result.map(|v| (v, refs))
+    }
+
+    /// After a just-consumed identifier, take `.traits.<Pascal>` when the whole
+    /// run is a trait-value literal and return its `{behavior, trait}` object;
+    /// `None` (nothing consumed) otherwise.
+    pub(crate) fn take_trait_value_literal(&mut self, head: &str) -> Option<SExpression> {
+        let TokenKind::Identifier(traits) = self.peek_n(1).clone() else {
+            return None;
+        };
+        let TokenKind::Identifier(name) = self.peek_n(3).clone() else {
+            return None;
+        };
+        if !matches!(self.peek(), TokenKind::Dot)
+            || (traits != "traits" && traits != "orbitals")
+            || !matches!(self.peek_n(2), TokenKind::Dot)
+        {
+            return None;
+        }
+        let value = behavior_value_object(&format!("{head}.{traits}.{name}"))?;
+        for _ in 0..4 {
+            self.advance();
+        }
+        Some(value)
+    }
+
+    /// At a `.` opening a workspace-relative trait-value literal
+    /// (`./<dir>/<name>.traits.<Pascal>`), consume the run and return its
+    /// `{behavior, trait}` object; `None` (nothing consumed) otherwise. The
+    /// lexer splits the run into `.`, `/`, `<dir>/<name>`, `.`, `traits`, `.`,
+    /// `<Pascal>`, so the pieces must sit flush against one another.
+    pub(crate) fn take_relative_trait_value_literal(&mut self) -> Option<SExpression> {
+        let (TokenKind::Dot, TokenKind::Identifier(slash), TokenKind::Identifier(path)) =
+            (self.peek(), self.peek_n(1), self.peek_n(2))
+        else {
+            return None;
+        };
+        if slash != "/" {
+            return None;
+        }
+        let tail = (
+            self.peek_n(3),
+            self.peek_n(4),
+            self.peek_n(5),
+            self.peek_n(6),
+        );
+        let (
+            TokenKind::Dot,
+            TokenKind::Identifier(traits),
+            TokenKind::Dot,
+            TokenKind::Identifier(name),
+        ) = tail
+        else {
+            return None;
+        };
+        if traits != "traits" && traits != "orbitals" {
+            return None;
+        }
+        let end = (self.pos + 6).min(self.tokens.len() - 1);
+        if end != self.pos + 6 {
+            return None;
+        }
+        let flush = (self.pos..end).all(|i| {
+            let (a, b) = (self.tokens[i].span, self.tokens[i + 1].span);
+            a.line == b.line && a.col + u32::from(a.len) == b.col
+        });
+        if !flush {
+            return None;
+        }
+        let value = behavior_value_object(&format!("./{path}.{traits}.{name}"))?;
+        for _ in 0..7 {
+            self.advance();
+        }
+        Some(value)
     }
 
     /// Inside a config value, extend a just-consumed identifier into a dotted
@@ -426,6 +537,8 @@ impl Parser {
                 theme: None,
                 locales: Vec::new(),
                 public: None,
+                site: orbital_core::schema::SiteMeta::default(),
+                legacy_lines: false,
                 config: Vec::new(),
                 span: self.peek_span(),
             }
@@ -475,7 +588,9 @@ impl Parser {
         //   `v1` — a `vN` identifier (integer version, legacy).
         //   `"1.0.0"` — a string literal (canonical semver form; what the
         //                committed .orb files carry).
-        let version = match self.peek().clone() {
+        // A positional version is the pre-bracket form (reported as legacy);
+        // the bracket's `version:` is canonical.
+        let positional_version = match self.peek().clone() {
             TokenKind::Identifier(v)
                 if v.starts_with('v')
                     && v.len() > 1
@@ -490,53 +605,70 @@ impl Parser {
             }
             _ => None,
         };
-        // Optional newline-then-description string on the next line.
-        if matches!(self.peek(), TokenKind::Newline) {
-            self.advance();
-        }
-        let description = if let TokenKind::String(s) = self.peek().clone() {
-            self.advance();
+        let mut version = None;
+        let mut description = None;
+        let mut theme = None;
+        let mut locales = Vec::new();
+        let mut public = None;
+        let mut site = orbital_core::schema::SiteMeta::default();
+        let mut legacy_lines = positional_version.is_some();
+        if matches!(self.peek(), TokenKind::LBracket) {
+            self.parse_modifier_bracket("app", APP_MODIFIERS, |p, key| {
+                p.expect_kind(&TokenKind::Colon, "':' after an app modifier")?;
+                match key {
+                    "version" => version = Some(p.parse_option_string(key)?),
+                    "description" => description = Some(p.parse_option_string(key)?),
+                    "theme" => theme = Some(p.parse_theme_value()?),
+                    "locales" => locales = p.parse_locale_items()?,
+                    "public" => public = Some(p.parse_option_string(key)?),
+                    "origin" => site.origin = Some(p.parse_option_string(key)?),
+                    "icon" => site.icon = Some(p.parse_option_string(key)?),
+                    "siteName" => site.name = Some(p.parse_option_string(key)?),
+                    "signIn" => site.sign_in = Some(p.parse_option_string(key)?),
+                    _ => unreachable!("APP_MODIFIERS covers every key"),
+                }
+                Ok(())
+            })?;
             self.expect_newline_or_eof()?;
-            Some(s)
-        } else {
-            None
-        };
-        // Optional `theme "<key>"` line closing the header block — the
-        // app-level skin every orbital's `@currentTheme` seeds from. Must be
-        // consumed here: the top-level loop accepts only `type`/`orbital`.
-        self.skip_newlines();
-        let theme = if self.check_ident("theme") {
-            Some(self.parse_orbital_theme()?)
-        } else {
-            None
-        };
-        self.skip_newlines();
-        let locales = if self.check_ident("locales") {
-            self.advance();
-            self.parse_locale_list()?
-        } else {
-            Vec::new()
-        };
-        self.skip_newlines();
-        let public = if self.check_ident("public") {
-            self.advance();
-            match self.peek().clone() {
-                TokenKind::String(dir) => {
-                    self.advance();
-                    self.expect_newline_or_eof()?;
-                    Some(dir)
-                }
-                _ => {
-                    return Err(ParseError::UnexpectedToken {
-                        expected: "a quoted folder path after `public`".to_string(),
-                        got: format!("{:?}", self.peek()),
-                        span: self.peek_span(),
-                    })
-                }
+            if version.is_some() && positional_version.is_some() {
+                return Err(ParseError::DuplicateOption {
+                    key: "version".to_string(),
+                    context: "app",
+                    span,
+                });
             }
         } else {
-            None
-        };
+            // Pre-bracket form: description / theme / locales / public on
+            // their own lines. Still parsed; reported as legacy by validate.
+            if matches!(self.peek(), TokenKind::Newline) {
+                self.advance();
+            }
+            if let TokenKind::String(s) = self.peek().clone() {
+                self.advance();
+                self.expect_newline_or_eof()?;
+                description = Some(s);
+                legacy_lines = true;
+            }
+            self.skip_newlines();
+            if self.check_ident("theme") {
+                theme = Some(self.parse_orbital_theme()?);
+                legacy_lines = true;
+            }
+            self.skip_newlines();
+            if self.check_ident("locales") {
+                self.advance();
+                locales = self.parse_locale_items()?;
+                self.expect_newline_or_eof()?;
+                legacy_lines = true;
+            }
+            self.skip_newlines();
+            if self.check_ident("public") {
+                self.advance();
+                public = Some(self.parse_option_string("public")?);
+                self.expect_newline_or_eof()?;
+                legacy_lines = true;
+            }
+        }
         // Optional app-level `config { ... }` block (orbital-import Stage A,
         // `OrbitalSchema.config`) — ORGANISM-wide knobs declared once, beside
         // `theme`, that every orbital's traits may forward via
@@ -550,18 +682,20 @@ impl Parser {
         };
         Ok(AppHeader {
             name,
-            version,
+            version: version.or(positional_version),
             description,
             theme,
             locales,
             public,
+            site,
+            legacy_lines,
             config,
             span,
         })
     }
 
-    /// `[en, ar, sl]` after `locales`.
-    fn parse_locale_list(&mut self) -> Result<Vec<String>, ParseError> {
+    /// `[en, ar, sl]` — the `locales` value.
+    fn parse_locale_items(&mut self) -> Result<Vec<String>, ParseError> {
         self.expect_kind(&TokenKind::LBracket, "[")?;
         let mut locales = Vec::new();
         loop {
@@ -576,8 +710,175 @@ impl Parser {
                 self.advance();
             }
         }
-        self.expect_newline_or_eof()?;
         Ok(locales)
+    }
+
+    /// A modifier bracket `[key: value, flag, …]` shared by the `app` header
+    /// and `page` declarations. Entries are comma- or newline-separated and
+    /// may span lines. Keys are canonicalized through the language tables;
+    /// an unknown or repeated key is an error. `on_entry` consumes the
+    /// entry's `: value` (or nothing, for a flag).
+    pub(crate) fn parse_modifier_bracket(
+        &mut self,
+        context: &'static str,
+        keys: &[&str],
+        mut on_entry: impl FnMut(&mut Self, &str) -> Result<(), ParseError>,
+    ) -> Result<(), ParseError> {
+        self.expect_kind(&TokenKind::LBracket, "[")?;
+        let mut seen: Vec<String> = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBracket) {
+                self.advance();
+                return Ok(());
+            }
+            let span = self.peek_span();
+            let raw = self.expect_ident()?;
+            let key = self
+                .lang
+                .canon_any(&raw)
+                .filter(|k| keys.contains(k))
+                .map(str::to_string)
+                .unwrap_or(raw);
+            if !keys.contains(&key.as_str()) {
+                return Err(ParseError::UnknownOption {
+                    key,
+                    context,
+                    valid: keys.join(", "),
+                    span,
+                });
+            }
+            if seen.contains(&key) {
+                return Err(ParseError::DuplicateOption { key, context, span });
+            }
+            on_entry(self, &key)?;
+            seen.push(key);
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+    }
+
+    /// The value of one page head modifier (`access`, `indexing`, `title`,
+    /// `description`, `translationOf`) into `mods`; the `:` is already consumed.
+    pub(crate) fn parse_head_modifier(
+        &mut self,
+        key: &str,
+        mods: &mut orbital_core::schema::PageModifiers,
+    ) -> Result<(), ParseError> {
+        use orbital_core::schema::{PageAccess, PageIndexing};
+        match key {
+            "access" => {
+                mods.access = Some(
+                    match self.parse_option_word(
+                        key,
+                        "ORB_P_ACCESS_INVALID",
+                        &["public", "authenticated"],
+                    )? {
+                        "public" => PageAccess::Public,
+                        _ => PageAccess::Authenticated,
+                    },
+                )
+            }
+            "indexing" => {
+                mods.indexing = Some(
+                    match self.parse_option_word(
+                        key,
+                        "ORB_P_INDEXING_INVALID",
+                        &["index", "noindex"],
+                    )? {
+                        "index" => PageIndexing::Index,
+                        _ => PageIndexing::Noindex,
+                    },
+                )
+            }
+            "title" => mods.title = Some(self.parse_page_meta(key)?),
+            "description" => mods.description = Some(self.parse_page_meta(key)?),
+            "translationOf" => mods.translation_of = Some(self.parse_option_string(key)?),
+            _ => unreachable!("REMAP_PAGE_MODIFIERS covers every head key"),
+        }
+        Ok(())
+    }
+
+    pub(crate) fn parse_option_string(&mut self, key: &str) -> Result<String, ParseError> {
+        match self.peek().clone() {
+            TokenKind::String(s) => {
+                self.advance();
+                Ok(s)
+            }
+            other => Err(ParseError::InvalidOptionValue {
+                code: "ORB_L_OPTION_VALUE",
+                key: key.to_string(),
+                message: format!("expected a quoted string, got {other:?}"),
+                span: self.peek_span(),
+            }),
+        }
+    }
+
+    /// A canonical identifier value from `allowed` (e.g. `access: public`).
+    pub(crate) fn parse_option_word(
+        &mut self,
+        key: &str,
+        code: &'static str,
+        allowed: &[&'static str],
+    ) -> Result<&'static str, ParseError> {
+        let span = self.peek_span();
+        let raw = self.expect_ident()?;
+        let canon = self.lang.canon_any(&raw).unwrap_or(raw.as_str()).to_string();
+        allowed
+            .iter()
+            .find(|a| **a == canon)
+            .copied()
+            .ok_or(ParseError::InvalidOptionValue {
+                code,
+                key: key.to_string(),
+                message: format!("`{raw}` is not one of {}", allowed.join(" | ")),
+                span,
+            })
+    }
+
+    /// `title:` / `description:` — a string literal or `(i18n/t "key")`.
+    pub(crate) fn parse_page_meta(
+        &mut self,
+        key: &str,
+    ) -> Result<orbital_core::schema::PageMeta, ParseError> {
+        use orbital_core::schema::PageMeta;
+        let span = self.peek_span();
+        if let TokenKind::String(s) = self.peek().clone() {
+            self.advance();
+            return Ok(PageMeta::Literal(s));
+        }
+        let expr = self.parse_sexpr_or_value()?;
+        if let SExpression::Array(items) = &expr {
+            if let [SExpression::String(op), SExpression::String(k)] = items.as_slice() {
+                if op == "i18n/t" && !k.starts_with('@') {
+                    return Ok(PageMeta::message(k.clone()));
+                }
+            }
+        }
+        Err(ParseError::InvalidOptionValue {
+            code: "ORB_P_META_FRAME",
+            key: key.to_string(),
+            message: "page metadata is a string literal or `(i18n/t \"key\")` — no entity, config or viewer bindings".to_string(),
+            span,
+        })
+    }
+
+    /// `theme:` value — a registry key string or an inline `{ … }` block.
+    fn parse_theme_value(&mut self) -> Result<ThemeDecl, ParseError> {
+        match self.peek().clone() {
+            TokenKind::String(s) => {
+                self.advance();
+                Ok(ThemeDecl::Reference(s))
+            }
+            TokenKind::LBrace => self.parse_inline_theme(),
+            other => Err(ParseError::UnexpectedToken {
+                expected: "a quoted theme key, e.g. theme: \"linear-clean-light\", or an inline { … } block".to_string(),
+                got: format!("{:?}", other),
+                span: self.peek_span(),
+            }),
+        }
     }
 
     // ----- Orbital -----
@@ -749,8 +1050,10 @@ impl Parser {
             body,
             reference: None,
             entity_rebind: None,
+            entity_rebind_tags: None,
             fields_remap: Vec::new(),
             pages_remap: Vec::new(),
+            page_modifiers: Vec::new(),
             omit: Vec::new(),
             only: Vec::new(),
             config_overrides: Vec::new(),
@@ -760,6 +1063,9 @@ impl Parser {
             mounts: Vec::new(),
             config,
             extend_fields: Vec::new(),
+            mock_overrides: Vec::new(),
+            retype_fields: Vec::new(),
+            trait_overrides: Vec::new(),
             import_listens: Vec::new(),
             span,
         })
@@ -777,7 +1083,11 @@ impl Parser {
                 self.expect_newline_or_eof()?;
                 Ok(ThemeDecl::Reference(s))
             }
-            TokenKind::LBrace => self.parse_inline_theme(),
+            TokenKind::LBrace => {
+                let theme = self.parse_inline_theme()?;
+                self.expect_newline_or_eof()?;
+                Ok(theme)
+            }
             other => Err(ParseError::UnexpectedToken {
                 expected: "a quoted theme key, e.g. theme \"linear-clean-light\", or an inline theme { … } block".to_string(),
                 got: format!("{:?}", other),
@@ -867,7 +1177,6 @@ impl Parser {
                 }
             }
         }
-        self.expect_newline_or_eof()?;
         let name = name.ok_or(ParseError::UnexpectedToken {
             expected: "an inline theme requires name: \"…\"".to_string(),
             got: "end of theme block".to_string(),
@@ -1287,12 +1596,12 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
 }
 
 /// Return `Some(type_name)` when the type expression contains a config-only
-/// type (`TypeExpr::Trait`, `TypeExpr::Slot`, `TypeExpr::Pattern`) at any
+/// type (`TypeExpr::Slot`, `TypeExpr::Pattern`) at any
 /// nesting depth. Entity fields call this to reject these types — see
 /// `ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY`.
 pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
     match t {
-        TypeExpr::Trait => Some("trait"),
+        TypeExpr::Trait | TypeExpr::Orbital => None,
         // `@entity` self-reference: payload-positions-only, so an entity field
         // must reject it the same way it rejects the config-only brands.
         TypeExpr::BoundEntityRow => Some("@entity"),
@@ -2173,4 +2482,21 @@ mod tests {
     fn expects_is_block_keyword() {
         assert!(is_block_keyword("expects"));
     }
+}
+
+/// A behavior-value literal (`<spec>.traits.<T>` or `<spec>.orbitals.<O>`) as its
+/// wire object; `None` when the run is not one.
+fn behavior_value_object(raw: &str) -> Option<SExpression> {
+    use orbital_core::schema::behavior_value::{OrbitalValueRef, TraitValueRef};
+    if let Some(t) = TraitValueRef::parse(raw) {
+        return Some(SExpression::Object(std::collections::HashMap::from([
+            ("behavior".to_string(), SExpression::String(t.behavior)),
+            ("trait".to_string(), SExpression::String(t.trait_name)),
+        ])));
+    }
+    let o = OrbitalValueRef::parse(raw)?;
+    Some(SExpression::Object(std::collections::HashMap::from([
+        ("behavior".to_string(), SExpression::String(o.behavior)),
+        ("orbital".to_string(), SExpression::String(o.orbital)),
+    ])))
 }

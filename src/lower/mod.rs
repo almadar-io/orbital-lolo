@@ -47,7 +47,7 @@ pub(crate) use emit_listen::{
     type_expr_to_payload_fields,
 };
 pub(crate) use entity::{lower_entity, lower_field, lower_type_expr, primitive_field_type};
-pub(crate) use page::lower_page_decl;
+pub(crate) use page::{lower_page_decl, page_name_from_path};
 pub(crate) use r#trait::{
     desugar_expr_match, desugar_notify, expand_term_match, is_expr_match_array, lower_trait_decl,
 };
@@ -355,6 +355,7 @@ fn lower_to_orb_names_only(
     let mut schema = OrbitalSchema {
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
         public_dir: ast.app.public.clone(),
+        site: (!ast.app.site.is_empty()).then(|| ast.app.site.clone()),
         lazy_pages: None,
         name: if ast.app.name.is_empty() {
             ast.orbitals
@@ -1022,12 +1023,12 @@ mod tests {
             }
             other => panic!("expected app theme reference, got {:?}", other),
         }
-        // Formatter must re-emit the header theme line or `orb fmt` eats it.
+        // Formatter must re-emit the header theme modifier or `orb fmt` eats it.
         let ast = parse_str(src).expect("parse");
         let formatted = crate::format::format_program(&ast);
         assert!(
-            formatted.contains("theme \"linear-clean-light\""),
-            "formatted output lost the app theme line:\n{formatted}"
+            formatted.contains("theme: \"linear-clean-light\""),
+            "formatted output lost the app theme modifier:\n{formatted}"
         );
         let reparsed = parse_str(&formatted).expect("reparse formatted");
         assert_eq!(

@@ -653,3 +653,59 @@ fn orbital_ref_omit_page_path_round_trips_through_format() {
     assert!(printed.contains("\"/projects/:id\""), "{printed}");
     parse_str(&printed).expect("reparse");
 }
+
+// ---------------------------------------------------------------------
+// `mock { field: "a, b" }` — the import's own sample data for a field of the
+// imported primary entity (G-ORB-114).
+// ---------------------------------------------------------------------
+
+const IMPORT_MOCK: &str = r#"
+uses Identity from "almadar-behaviors/std-identity"
+
+orbital AccountPage = Identity.orbitals.IdentityOrbital {
+  entity Customer
+  mock {
+    role: "customer, customer, store-manager"
+    name: "Maya Chen, Diego Alvarez, Priya Nair"
+  }
+}
+"#;
+
+#[test]
+fn orbital_ref_mock_parses_lowers_and_round_trips() {
+    let program = parse_str(IMPORT_MOCK).expect("parse");
+    let orb = &program.orbitals[0];
+    assert_eq!(
+        strip_span2(&orb.mock_overrides),
+        vec![
+            ("role".to_string(), "customer, customer, store-manager".to_string()),
+            ("name".to_string(), "Maya Chen, Diego Alvarez, Priya Nair".to_string()),
+        ]
+    );
+    let schema = parse_and_lower_str(IMPORT_MOCK).expect("lower");
+    let mock = schema.orbitals[0]
+        .reference
+        .as_ref()
+        .and_then(|r| r.mock.as_ref())
+        .expect("mock lowered");
+    assert_eq!(mock.get("role").map(String::as_str), Some("customer, customer, store-manager"));
+    let printed = orbital_lolo::format_program(&program);
+    let reparsed = parse_str(&printed).expect("formatted source parses");
+    assert_eq!(strip_span2(&reparsed.orbitals[0].mock_overrides), strip_span2(&orb.mock_overrides));
+}
+
+#[test]
+fn control_an_import_without_mock_lowers_none() {
+    let schema = parse_and_lower_str(&IMPORT_MOCK.replace(
+        "  mock {\n    role: \"customer, customer, store-manager\"\n    name: \"Maya Chen, Diego Alvarez, Priya Nair\"\n  }\n",
+        "",
+    ))
+    .expect("lower");
+    assert!(schema.orbitals[0].reference.as_ref().and_then(|r| r.mock.as_ref()).is_none());
+}
+
+#[test]
+fn orbital_ref_mock_rejects_a_duplicate_field_and_a_non_string_value() {
+    assert!(parse_str(&IMPORT_MOCK.replace("    name: ", "    role: \"x\"\n    name: ")).is_err());
+    assert!(parse_str(&IMPORT_MOCK.replace("\"customer, customer, store-manager\"", "12")).is_err());
+}
