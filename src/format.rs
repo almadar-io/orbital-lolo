@@ -677,6 +677,9 @@ impl Formatter {
             TypeExpr::Orbital => {
                 self.output.push_str("orbital");
             }
+            TypeExpr::Behavior => {
+                self.output.push_str("behavior");
+            }
             TypeExpr::EntityRef => {
                 self.output.push_str("entity");
             }
@@ -2157,6 +2160,9 @@ impl Formatter {
                 title: page.title.clone(),
                 description: page.description.clone(),
                 translation_of: page.translation_of.clone(),
+                label: None,
+                icon: None,
+                roles: None,
             },
         ));
         let multiline = page.access.is_some()
@@ -2201,6 +2207,12 @@ impl Formatter {
             self.write_indent();
             self.output.push_str("  @label ");
             self.write_quoted_string(label);
+        }
+        if let Some(roles) = &page.roles {
+            self.write_newline();
+            self.write_indent();
+            self.output.push_str("  @roles ");
+            self.write_quoted_string(&roles.join(", "));
         }
     }
 
@@ -3130,6 +3142,15 @@ fn head_modifier_sources(mods: &orbital_core::schema::PageModifiers) -> Vec<Stri
     }
     if let Some(group) = &mods.translation_of {
         out.push(format!("translationOf: {}", quote_lolo(group)));
+    }
+    if let Some(label) = &mods.label {
+        out.push(format!("label: {}", quote_lolo(label)));
+    }
+    if let Some(icon) = &mods.icon {
+        out.push(format!("icon: {}", quote_lolo(icon)));
+    }
+    if let Some(roles) = &mods.roles {
+        out.push(format!("roles: {}", quote_lolo(&roles.join(", "))));
     }
     out
 }

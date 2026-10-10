@@ -67,6 +67,7 @@ pub(super) fn field_def_type(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerEr
         FieldType::SExpr => TypeExpr::SExpr,
         FieldType::Trait => TypeExpr::Trait,
         FieldType::Orbital => TypeExpr::Orbital,
+        FieldType::Behavior => TypeExpr::Behavior,
         FieldType::Slot => TypeExpr::Slot,
         FieldType::Pattern => TypeExpr::Pattern,
         FieldType::Event => TypeExpr::EventRef,
@@ -224,6 +225,7 @@ pub(super) fn parse_type_string(raw: &str) -> Result<TypeExpr, UnlowerError> {
         "@user" => TypeExpr::ExpectedIdentityRow,
         "trait" => TypeExpr::Trait,
         "orbital" => TypeExpr::Orbital,
+        "behavior" => TypeExpr::Behavior,
         "entity" => TypeExpr::EntityRef,
         "event" => TypeExpr::EventRef,
         "EventAddress" => TypeExpr::EventAddress,
@@ -342,8 +344,15 @@ pub(super) fn config_field(
     } else {
         parse_type_string(&cf.field_type)?
     };
-    let with_values = match (&cf.values, &base) {
-        (Some(values), TypeExpr::Primitive(p)) if p == "string" => values_union(values),
+    let item_values = cf.items.as_ref().and_then(|i| i.values.as_ref()).filter(|v| !v.is_empty());
+    let with_values = match (&cf.values, &base, item_values) {
+        (Some(values), TypeExpr::Primitive(p), _) if p == "string" => values_union(values),
+        // A list of a closed string set (`["a" | "b"]`) keeps the set on its items.
+        (_, TypeExpr::Array(inner), Some(values))
+            if matches!(inner.as_ref(), TypeExpr::Primitive(p) if p == "string") =>
+        {
+            TypeExpr::Array(Box::new(values_union(values)))
+        }
         _ => base,
     };
     let type_expr = match &cf.projected_from {

@@ -131,3 +131,63 @@ fn a_non_string_translation_group_is_rejected() {
         .unwrap_err();
     assert!(err.to_string().contains("ORB_L_OPTION_VALUE"), "{err}");
 }
+
+#[test]
+fn a_remap_entry_declares_the_pages_nav_entry() {
+    let r = reference(&import(
+        r#""/snake": "/play/snake" [label: "Snake", icon: "gamepad", roles: "player, admin"]"#,
+    ));
+    let m = r
+        .page_modifiers
+        .as_ref()
+        .and_then(|m| m.get("/snake"))
+        .expect("modifiers");
+    assert_eq!(m.label.as_deref(), Some("Snake"));
+    assert_eq!(m.icon.as_deref(), Some("gamepad"));
+    assert_eq!(
+        m.roles,
+        Some(vec!["player".to_string(), "admin".to_string()])
+    );
+}
+
+#[test]
+fn a_remap_nav_entry_survives_formatting() {
+    let source = import(r#""/snake": "/play/snake" [label: "Snake", roles: "player"]"#);
+    let formatted = format_program(&parse_str(&source).expect("parse"));
+    assert!(formatted.contains("roles: \"player\""), "{formatted}");
+    assert_eq!(
+        serde_json::to_value(reference(&formatted)).unwrap(),
+        serde_json::to_value(reference(&source)).unwrap()
+    );
+}
+
+#[test]
+fn edge_an_empty_roles_list_is_rejected() {
+    let err =
+        parse_and_lower_str(&import(r#""/snake": "/play/snake" [roles: " , "]"#)).unwrap_err();
+    assert!(err.to_string().contains("ORB_L_OPTION_VALUE"), "{err}");
+}
+
+#[test]
+fn edge_nav_keys_stay_off_an_inline_page_bracket() {
+    let source = r#"app blog [version: "1.0.0"]
+
+orbital Post {
+  entity PostState [runtime] {
+    id : string!
+  }
+
+  trait PostView -> PostState [interaction, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (render-ui main { type: typography, content: "Post" })
+    }
+  }
+
+  page "/blog" -> PostView [label: "Blog"]
+}
+"#;
+    let err = parse_and_lower_str(source).unwrap_err();
+    assert!(err.to_string().contains("ORB_L_OPTION_UNKNOWN"), "{err}");
+}

@@ -596,6 +596,44 @@ fn page_annotation_lands_in_orb() {
     assert_eq!(page["label"], serde_json::json!("Foo"));
 }
 
+#[test]
+fn page_roles_annotation_lands_in_orb_and_round_trips() {
+    let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" as FooPage -> T\n    @label \"Foo\"\n    @roles \"manager, owner\"\n}";
+    let schema = parse_and_lower_str(src).expect("lower");
+    let v = serde_json::to_value(&schema).unwrap();
+    assert_eq!(
+        v["orbitals"][0]["pages"][0]["roles"],
+        serde_json::json!(["manager", "owner"])
+    );
+    let formatted = format_program(&parse_str(src).expect("parse"));
+    assert!(
+        formatted.contains("@roles \"manager, owner\""),
+        "{formatted}"
+    );
+    let again = parse_and_lower_str(&formatted).expect("lower formatted");
+    assert_eq!(
+        canonicalize(strip_nulls(v)),
+        canonicalize(strip_nulls(serde_json::to_value(&again).unwrap()))
+    );
+}
+
+#[test]
+fn control_a_page_without_roles_carries_none() {
+    let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" as FooPage -> T\n    @label \"Foo\"\n}";
+    let v = serde_json::to_value(parse_and_lower_str(src).expect("lower")).unwrap();
+    assert!(v["orbitals"][0]["pages"][0].get("roles").is_none());
+}
+
+#[test]
+fn a_page_reference_carries_its_nav_annotations() {
+    let src = "uses Up from \"./up\"\norbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" = Up.pages.FooPage -> T\n    @label \"Foo\"\n    @icon \"star\"\n    @roles \"staff\"\n}";
+    let v = serde_json::to_value(parse_and_lower_str(src).expect("lower")).unwrap();
+    let page = &v["orbitals"][0]["pages"][0];
+    assert_eq!(page["label"], serde_json::json!("Foo"), "{page}");
+    assert_eq!(page["icon"], serde_json::json!("star"), "{page}");
+    assert_eq!(page["roles"], serde_json::json!(["staff"]), "{page}");
+}
+
 /// `expects` declarations survive a reformat with unchanged semantics, print
 /// after the `uses` group with one blank line between the groups, and re-format
 /// to a stable output (idempotent).

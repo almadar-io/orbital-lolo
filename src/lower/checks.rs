@@ -491,10 +491,11 @@ fn check_one_set_value(
         SExpression::Number(_) => Some(("number".to_string(), "literal".to_string())),
         SExpression::Bool(_) => Some(("boolean".to_string(), "literal".to_string())),
         SExpression::Object(_) => {
-            let kind = if orbital_core::schema::behavior_value::is_trait_value(
-                &orbital_core::evaluator::Value::from(value.clone()),
-            ) {
+            let as_value = orbital_core::evaluator::Value::from(value.clone());
+            let kind = if orbital_core::schema::behavior_value::is_trait_value(&as_value) {
                 "trait"
+            } else if orbital_core::schema::behavior_value::is_behavior_ref_value(&as_value) {
+                "behavior"
             } else {
                 "object"
             };

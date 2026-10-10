@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "exportedAt": "2026-10-08T14:50:23.918Z",
+  "exportedAt": "2026-10-10T10:46:56.752Z",
   "patterns": {
     "detail-panel": {
       "type": "detail-panel",
@@ -491,6 +491,7 @@
               "string",
               "object"
             ],
+            "nonAuthorable": true,
             "properties": {
               "name": {
                 "types": [
@@ -1022,8 +1023,10 @@
           "description": "Record fields shown as the document's totals, in order (ledger).",
           "items": {
             "types": [
+              "string",
               "object"
             ],
+            "nonAuthorable": true,
             "properties": {
               "name": {
                 "types": [
@@ -1102,6 +1105,48 @@
                     "string"
                   ]
                 }
+              },
+              "type": {
+                "types": [
+                  "string"
+                ]
+              },
+              "values": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "relation": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "entity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "cardinality": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "one",
+                      "many",
+                      "one-to-many",
+                      "many-to-one",
+                      "many-to-many"
+                    ]
+                  }
+                },
+                "required": [
+                  "entity"
+                ]
               }
             },
             "required": [
@@ -7995,6 +8040,7 @@
           ],
           "description": "Callback when step changes",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "stepIndex",
@@ -10291,6 +10337,7 @@
           ],
           "description": "Fires after the exit animation completes (the modal is about to unmount).",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": []
         },
         "title": {
@@ -10700,6 +10747,7 @@
           ],
           "description": "Fires after the exit animation completes (the drawer is about to unmount).",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": []
         },
         "contained": {
@@ -11107,6 +11155,7 @@
           ],
           "description": "Fires after the exit animation completes (the dialog is about to unmount).",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": []
         },
         "onConfirm": {
@@ -11774,6 +11823,7 @@
           ],
           "description": "Declarative hover event — emits UI:{hoverEvent} with { hovered: true/false } on mouseEnter/mouseLeave",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": [
             {
               "name": "hovered",
@@ -11853,6 +11903,13 @@
             "boolean"
           ],
           "description": "Lay the theme's texture over the band",
+          "default": false
+        },
+        "animateChanges": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Content that appears or changes inside the box eases in instead of switching in one frame (new rows, swapped views, changed text), played in presentation motion (the theme's dramatic duration, standard easing) so it can be watched. Off under reduced motion.",
           "default": false
         },
         "backdrop": {
@@ -13728,10 +13785,13 @@
         },
         "schema": {
           "types": [
-            "object"
+            "sexpr"
           ],
           "description": "Raw schema for EventDispatcherTab payload extraction",
-          "nonAuthorable": true
+          "decoder": {
+            "name": "parseOrbitalSchema",
+            "from": "@almadar/core"
+          }
         },
         "enter": {
           "types": [
@@ -17200,6 +17260,12 @@
             "number"
           ],
           "description": "Number of visible rows"
+        },
+        "value": {
+          "types": [
+            "string"
+          ],
+          "description": "Controlled value, for a field the program fills or clears."
         },
         "action": {
           "types": [
@@ -23587,6 +23653,7 @@
           ],
           "description": "Keyboard handler",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "e",
@@ -23954,6 +24021,7 @@
           ],
           "description": "Callback when highlight is hovered",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": []
         },
         "onMouseLeave": {
@@ -23962,6 +24030,7 @@
           ],
           "description": "Callback when hover ends",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": []
         },
         "annotationId": {
@@ -24003,6 +24072,7 @@
           ],
           "description": "Declarative hover event — emits UI:{hoverEvent} with { hovered, annotationId }",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": [
             {
               "name": "hovered",
@@ -31406,6 +31476,7 @@
           ],
           "description": "Event emitted when collapse state changes, payload: { collapsed: boolean }",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": [
             {
               "name": "collapsed",
@@ -33439,6 +33510,70 @@
             ]
           },
           "default": []
+        },
+        "userMenuItems": {
+          "types": [
+            "array"
+          ],
+          "description": "Account-menu entries listed above Sign out (Settings, a profile page), each `{icon, label, event?, navigatesTo?, variant?}` like `topBarActions`.",
+          "kind": "event-list",
+          "eventField": "event",
+          "items": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "icon": {
+                "types": [
+                  "icon",
+                  "string"
+                ]
+              },
+              "label": {
+                "types": [
+                  "string"
+                ]
+              },
+              "event": {
+                "types": [
+                  "string"
+                ],
+                "kind": "event"
+              },
+              "navigatesTo": {
+                "types": [
+                  "string"
+                ]
+              },
+              "badge": {
+                "types": [
+                  "number",
+                  "string"
+                ]
+              },
+              "variant": {
+                "types": [
+                  "string"
+                ],
+                "enumValues": [
+                  "default",
+                  "primary",
+                  "danger"
+                ]
+              }
+            },
+            "required": [
+              "icon"
+            ]
+          },
+          "default": []
+        },
+        "fullBleed": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Content fills the area edge to edge — no padding, no max width, full height (workspaces, canvases, maps).",
+          "default": false
         },
         "notifications": {
           "types": [
@@ -38939,6 +39074,7 @@
           ],
           "description": "Called when an error is caught (for logging/telemetry)",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "error",
@@ -40121,6 +40257,7 @@
           ],
           "description": "Declarative bus emit fired when this editor gains focus.",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": [
             {
               "name": "editorId",
@@ -40137,6 +40274,7 @@
           ],
           "description": "Declarative bus emit fired when this editor loses focus.",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": [
             {
               "name": "editorId",
@@ -41492,7 +41630,7 @@
                   },
                   "schema": {
                     "types": [
-                      "object"
+                      "sexpr"
                     ]
                   }
                 },
@@ -41894,10 +42032,13 @@
         },
         "schema": {
           "types": [
-            "object"
+            "sexpr"
           ],
           "description": "Full schema — extracts first trait's state machine",
-          "nonAuthorable": true
+          "decoder": {
+            "name": "parseOrbitalSchema",
+            "from": "@almadar/core"
+          }
         },
         "trait": {
           "types": [
@@ -44038,6 +44179,7 @@
           ],
           "description": "onPointerLeave prop",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": []
         },
         "data-testid": {
@@ -46047,6 +46189,7 @@
           ],
           "description": "Callback when a node is hovered (null on leave)",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "node",
@@ -47807,6 +47950,19 @@
             }
           ],
           "renderCallback": true
+        },
+        "itemEnter": {
+          "types": [
+            "string"
+          ],
+          "description": "Entrance animation each card plays when it mounts; a card that changes place glides there. Lists rendered inside the grid share its movement, so a card moved between them glides across",
+          "enumValues": [
+            "none",
+            "fade",
+            "rise",
+            "scale",
+            "slide"
+          ]
         },
         "pageSize": {
           "types": [
@@ -50965,6 +51121,7 @@
           ],
           "description": "Direct onIndexChange callback",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "index",
@@ -53556,6 +53713,7 @@
           ],
           "description": "Called when the entire text has been revealed",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": []
         },
         "enter": {
@@ -54003,6 +54161,7 @@
           ],
           "description": "Declarative event name for slide change",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": [
             {
               "name": "index",
@@ -54023,6 +54182,60 @@
             ],
             "jsonValueBrand": true
           }
+        },
+        "orientation": {
+          "types": [
+            "string"
+          ],
+          "description": "Scroll direction: a row of slides, or a column (a vertical feed).",
+          "enumValues": [
+            "horizontal",
+            "vertical"
+          ],
+          "default": "horizontal"
+        },
+        "fullHeight": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Each slide fills the carousel's height (pair with `orientation: vertical` for one card per screen).",
+          "default": false
+        },
+        "loadMoreEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Emitted when the viewer is `loadMoreAhead` slides from the end and `hasMore` is set.",
+          "kind": "event-ref",
+          "notification": true,
+          "emitPayloadSchema": [
+            {
+              "name": "index",
+              "type": "number",
+              "required": true
+            }
+          ]
+        },
+        "loadMoreAhead": {
+          "types": [
+            "number"
+          ],
+          "description": "How many slides before the end to ask for more (default 2).",
+          "default": 2
+        },
+        "hasMore": {
+          "types": [
+            "boolean"
+          ],
+          "description": "More slides can be loaded.",
+          "default": false
+        },
+        "isLoadingMore": {
+          "types": [
+            "boolean"
+          ],
+          "description": "A load is in flight; no further request until it lands.",
+          "default": false
         },
         "className": {
           "types": [
@@ -57916,7 +58129,24 @@
             "string"
           ],
           "description": "scroll trigger: event emitted once (as UI:{revealEvent}) the first time the element scrolls into view; never under reduced motion",
-          "kind": "event"
+          "kind": "event",
+          "notification": true
+        },
+        "enterEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "scroll trigger: event emitted (as UI:{enterEvent}) every time the element enters the view",
+          "kind": "event",
+          "notification": true
+        },
+        "leaveEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "scroll trigger: event emitted (as UI:{leaveEvent}) every time the element leaves the view after having entered it",
+          "kind": "event",
+          "notification": true
         },
         "once": {
           "types": [
@@ -60844,6 +61074,7 @@
           ],
           "description": "onError prop",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "error",
@@ -81837,6 +82068,7 @@
           ],
           "description": "Called with the new ratio while dragging. Providing this makes `ratio` controlled — the rendered split always tracks the prop instead of internal state, mirroring a controlled input. Omit for uncontrolled (self-tracked) behavior.",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "ratio",
@@ -87715,28 +87947,136 @@
           "types": [
             "boolean"
           ],
-          "description": "Whether the panel allows running (false = read-only code block)",
-          "default": true
-        },
-        "onRun": {
-          "types": [
-            "function"
-          ],
-          "description": "Simulate executing the code. Omit to render a read-only block. Real execution is a separate future track — this callback supplies deterministic simulated output for UI feedback.",
-          "callbackArgs": [
-            {
-              "name": "code",
-              "type": "string"
-            }
-          ],
-          "renderCallback": true
+          "description": "Whether the panel is editable and runnable (default false = read-only code block)",
+          "default": false
         },
         "runEvent": {
           "types": [
             "string"
           ],
-          "description": "Event name to emit on run (emitted as `UI:<runEvent>`). Defaults to 'RUN_CODE'.",
+          "description": "Event emitted on Run as `UI:<runEvent>` with `{ code, language, runId }`. Defaults to 'RUN_CODE'.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "code",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "language",
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "runId",
+              "type": "string",
+              "required": true
+            }
+          ],
           "default": "RUN_CODE"
+        },
+        "resetEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Event emitted on Reset as `UI:<resetEvent>` with `{ runId }`; Reset only restores the code when absent.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "runId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "runId": {
+          "types": [
+            "string"
+          ],
+          "description": "Identifies this panel in its run/reset payloads (e.g. a lesson segment); empty when one panel stands alone.",
+          "default": ""
+        },
+        "output": {
+          "types": [
+            "object"
+          ],
+          "description": "The program's result for the last run, bound back into the panel.",
+          "properties": {
+            "stdout": {
+              "types": [
+                "string"
+              ]
+            },
+            "stderr": {
+              "types": [
+                "string"
+              ]
+            },
+            "exitCode": {
+              "types": [
+                "number"
+              ]
+            },
+            "testResults": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "input": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "expectedOutput": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "actualOutput": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "passed": {
+                    "types": [
+                      "boolean"
+                    ]
+                  }
+                },
+                "required": [
+                  "input",
+                  "expectedOutput",
+                  "actualOutput",
+                  "passed"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "stdout",
+            "stderr",
+            "exitCode",
+            "testResults"
+          ],
+          "default": null
+        },
+        "running": {
+          "types": [
+            "boolean"
+          ],
+          "description": "True while the program is running the code.",
+          "default": false
+        },
+        "error": {
+          "types": [
+            "string"
+          ],
+          "description": "A run failure message from the program; replaces the output body.",
+          "default": null
         },
         "className": {
           "types": [
@@ -88502,22 +88842,121 @@
             }
           }
         },
-        "onRunCodeSimulation": {
+        "runCodeEvent": {
           "types": [
-            "function"
+            "string"
           ],
-          "description": "Simulate executing runnable code blocks. Omit to render runnable blocks as read-only. Real execution is a future track.",
-          "callbackArgs": [
+          "description": "Event a runnable code block emits on Run (`{ code, language, runId }`, runId = the segment index). Omit to render runnable blocks read-only.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
             {
               "name": "code",
-              "type": "string"
+              "type": "string",
+              "required": true
             },
             {
               "name": "language",
-              "type": "string"
+              "type": "string",
+              "required": true
+            },
+            {
+              "name": "runId",
+              "type": "string",
+              "required": true
             }
+          ]
+        },
+        "resetCodeEvent": {
+          "types": [
+            "string"
           ],
-          "renderCallback": true
+          "description": "Event a runnable code block emits on Reset (`{ runId }`).",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "runId",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "codeOutputs": {
+          "types": [
+            "object"
+          ],
+          "description": "The program's run results, keyed by segment runId.",
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "stdout": {
+                "types": [
+                  "string"
+                ]
+              },
+              "stderr": {
+                "types": [
+                  "string"
+                ]
+              },
+              "exitCode": {
+                "types": [
+                  "number"
+                ]
+              },
+              "testResults": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "input": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "expectedOutput": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "actualOutput": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "passed": {
+                      "types": [
+                        "boolean"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "input",
+                    "expectedOutput",
+                    "actualOutput",
+                    "passed"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "stdout",
+              "stderr",
+              "exitCode",
+              "testResults"
+            ]
+          }
+        },
+        "runningCode": {
+          "types": [
+            "string"
+          ],
+          "description": "The runId the program is currently running."
         },
         "onRenderVisualization": {
           "types": [
@@ -91485,6 +91924,7 @@
           ],
           "description": "Emits UI:{tileHoverEvent} with the unprojected scene { x, y } on hover.",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": [
             {
               "name": "x",
@@ -91504,6 +91944,7 @@
           ],
           "description": "Emits UI:{tileLeaveEvent} with {} on pointer leave.",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": []
         },
         "keyMap": {
@@ -93296,6 +93737,7 @@
           ],
           "description": "Keyboard handler",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "e",
@@ -93745,6 +94187,7 @@
           ],
           "description": "Keyboard handler",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "e",
@@ -95168,6 +95611,7 @@
           ],
           "description": "Hovered shape payload: { id?, type?, index }.",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "payload",
@@ -95712,6 +96156,11 @@
             "elevation": {
               "types": [
                 "number"
+              ]
+            },
+            "controls": {
+              "types": [
+                "boolean"
               ]
             }
           }
@@ -97491,6 +97940,11 @@
             "elevation": {
               "types": [
                 "number"
+              ]
+            },
+            "controls": {
+              "types": [
+                "boolean"
               ]
             }
           }
@@ -100765,6 +101219,11 @@
             "elevation": {
               "types": [
                 "number"
+              ]
+            },
+            "controls": {
+              "types": [
+                "boolean"
               ]
             }
           }
@@ -107370,6 +107829,11 @@
               "types": [
                 "number"
               ]
+            },
+            "controls": {
+              "types": [
+                "boolean"
+              ]
             }
           }
         },
@@ -107889,6 +108353,7 @@
           ],
           "description": "tileHoverEvent prop",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": [
             {
               "name": "x",
@@ -107918,6 +108383,7 @@
           ],
           "description": "tileLeaveEvent prop",
           "kind": "event-ref",
+          "notification": true,
           "emitPayloadSchema": []
         },
         "featureClickEvent": {
@@ -108398,6 +108864,7 @@
           ],
           "description": "Fired after the exit animation completes (before unmount).",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": []
         },
         "show": {
@@ -109939,7 +110406,7 @@
           "types": [
             "function"
           ],
-          "description": "Called with the chosen files when a 'file' option resolves",
+          "description": "Called with the chosen files, read as text, when a 'file' option resolves",
           "kind": "callback",
           "callbackArgs": [
             {
@@ -109952,12 +110419,39 @@
                 "items": {
                   "types": [
                     "object"
+                  ],
+                  "properties": {
+                    "name": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "size": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "type": {
+                      "types": [
+                        "string"
+                      ]
+                    },
+                    "text": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "name",
+                    "size",
+                    "type",
+                    "text"
                   ]
                 }
               }
             }
-          ],
-          "nonEmittable": true
+          ]
         },
         "title": {
           "types": [
@@ -114976,6 +115470,7 @@
           ],
           "description": "onSidebarCollapsedChange prop",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "collapsed",
@@ -114996,6 +115491,7 @@
           ],
           "description": "onSidebarWidthChange prop",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "width",
@@ -115022,6 +115518,7 @@
           ],
           "description": "onBottomPanelCollapsedChange prop",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "collapsed",
@@ -115042,6 +115539,7 @@
           ],
           "description": "onBottomPanelHeightChange prop",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "height",
@@ -115068,6 +115566,7 @@
           ],
           "description": "onSecondarySidebarCollapsedChange prop",
           "kind": "callback",
+          "notification": true,
           "callbackArgs": [
             {
               "name": "collapsed",
@@ -124522,6 +125021,4419 @@
             -1,
             0
           ]
+        }
+      }
+    },
+    "flow-canvas": {
+      "type": "flow-canvas",
+      "category": "display",
+      "sourceFile": "components/avl/organisms/FlowCanvas.tsx",
+      "tier": "organisms",
+      "family": "avl",
+      "description": "FlowCanvas component",
+      "suggestedFor": [
+        "flow",
+        "canvas",
+        "flow canvas"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "schema": {
+          "types": [
+            "sexpr",
+            "string"
+          ],
+          "description": "schema prop",
+          "required": true,
+          "decoder": {
+            "name": "parseOrbitalSchema",
+            "from": "@almadar/core",
+            "acceptsString": true
+          }
+        },
+        "mockData": {
+          "types": [
+            "object"
+          ],
+          "description": "mockData prop",
+          "nonAuthorable": true
+        },
+        "className": {
+          "types": [
+            "string"
+          ],
+          "description": "className prop"
+        },
+        "width": {
+          "types": [
+            "number",
+            "string"
+          ],
+          "description": "width prop",
+          "default": "100%"
+        },
+        "height": {
+          "types": [
+            "number",
+            "string"
+          ],
+          "description": "height prop",
+          "default": 500
+        },
+        "onNodeClick": {
+          "types": [
+            "function"
+          ],
+          "description": "onNodeClick prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "context",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "level": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "overview",
+                      "trait-expanded",
+                      "system",
+                      "code",
+                      "transition"
+                    ]
+                  },
+                  "orbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "trait": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "transition": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "transitionIndex": {
+                    "types": [
+                      "number"
+                    ]
+                  }
+                },
+                "required": [
+                  "level",
+                  "orbital"
+                ]
+              }
+            }
+          ]
+        },
+        "systemMap": {
+          "types": [
+            "object"
+          ],
+          "description": "With `initialLevel=\"system\"`: what an orbital chip does (drill in, hover preview, open code, preview).",
+          "properties": {
+            "openTraits": {
+              "types": [
+                "function"
+              ]
+            },
+            "renderPreview": {
+              "types": [
+                "function"
+              ]
+            },
+            "openCodeEvent": {
+              "types": [
+                "string"
+              ]
+            },
+            "previewEvent": {
+              "types": [
+                "string"
+              ]
+            },
+            "highlighted": {
+              "types": [
+                "string"
+              ]
+            },
+            "selectDependency": {
+              "types": [
+                "function"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "openTraits"
+          ]
+        },
+        "systemDependencies": {
+          "types": [
+            "object"
+          ],
+          "description": "With `initialLevel=\"system\"`: the app's imports, for the Dependencies lens (absent: Events only).",
+          "properties": {
+            "orbitals": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "array"
+                ],
+                "items": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            },
+            "behaviors": {
+              "types": [
+                "object"
+              ],
+              "mapValue": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "layer": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "io",
+                      "std",
+                      "primitive",
+                      "unknown"
+                    ]
+                  },
+                  "imports": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "layer",
+                  "imports"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "orbitals",
+            "behaviors"
+          ]
+        },
+        "traitView": {
+          "types": [
+            "object"
+          ],
+          "description": "Trait level: which lens (and trait filter) shows — pass with `onTraitViewChange` to keep it across remounts.",
+          "properties": {
+            "lens": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "flow",
+                "traits"
+              ]
+            },
+            "filter": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "unit": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "traits": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                }
+              },
+              "required": [
+                "unit",
+                "traits"
+              ],
+              "nullable": true
+            }
+          },
+          "propertyRequired": [
+            "lens"
+          ]
+        },
+        "onTraitViewChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onTraitViewChange prop",
+          "kind": "callback",
+          "notification": true,
+          "callbackArgs": [
+            {
+              "name": "view",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "lens": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "flow",
+                      "traits"
+                    ]
+                  },
+                  "filter": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "unit": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "traits": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "unit",
+                      "traits"
+                    ],
+                    "nullable": true
+                  }
+                },
+                "required": [
+                  "lens"
+                ]
+              }
+            }
+          ]
+        },
+        "openBehaviorEvent": {
+          "types": [
+            "string"
+          ],
+          "description": "Dependencies lens: emits UI:{openBehaviorEvent} with { name } to open a selected behavior's source.",
+          "kind": "event-ref",
+          "emitPayloadSchema": [
+            {
+              "name": "name",
+              "type": "string",
+              "required": true
+            }
+          ]
+        },
+        "scene": {
+          "types": [
+            "object"
+          ],
+          "description": "With `initialLevel=\"trait-expanded\"`: played steps lighting each trait card's state machine.",
+          "properties": {
+            "steps": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "orbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "trait": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "from": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "payload": {
+                    "types": [
+                      "object"
+                    ],
+                    "eventPayloadBrand": true
+                  },
+                  "result": {
+                    "types": [
+                      "object"
+                    ]
+                  }
+                },
+                "required": [
+                  "orbital",
+                  "trait",
+                  "from",
+                  "payload",
+                  "result"
+                ]
+              }
+            },
+            "cursor": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "steps",
+            "cursor"
+          ]
+        },
+        "onFocusChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired when the focused orbital, the scope, or the focused card's state changes.",
+          "kind": "callback",
+          "notification": true,
+          "callbackArgs": [
+            {
+              "name": "focus",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "orbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "scope": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "local",
+                      "world"
+                    ]
+                  },
+                  "state": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "orbital",
+                  "scope",
+                  "state"
+                ]
+              }
+            }
+          ]
+        },
+        "initialOrbital": {
+          "types": [
+            "string"
+          ],
+          "description": "The orbital cards open on (local view) — or, with `initialLevel=\"trait-expanded\"`, the orbital whose traits are shown."
+        },
+        "initialLevel": {
+          "types": [
+            "string"
+          ],
+          "description": "`trait-expanded`: one card per trait of `initialOrbital` (cosmic). Default: orbital cards.",
+          "enumValues": [
+            "overview",
+            "trait-expanded",
+            "system"
+          ]
+        },
+        "focusedOrbital": {
+          "types": [
+            "string"
+          ],
+          "description": "Focus this orbital (e.g. picked in a Layers panel); changing it moves the focus without remounting."
+        },
+        "initialSelectedNode": {
+          "types": [
+            "object"
+          ],
+          "description": "Pre-select a node on mount (opens OrbInspector).",
+          "decoder": {
+            "name": "decodePreviewNodeData",
+            "from": "@almadar/ui/avl"
+          },
+          "properties": {
+            "orbitalName": {
+              "types": [
+                "string"
+              ]
+            },
+            "traitName": {
+              "types": [
+                "string"
+              ]
+            },
+            "stateName": {
+              "types": [
+                "string"
+              ]
+            },
+            "transitionEvent": {
+              "types": [
+                "string"
+              ]
+            },
+            "fromState": {
+              "types": [
+                "string"
+              ]
+            },
+            "toState": {
+              "types": [
+                "string"
+              ]
+            },
+            "cardWidth": {
+              "types": [
+                "number"
+              ]
+            },
+            "cardLabel": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "screen"
+              ]
+            },
+            "enteredBy": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "patterns": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "slot": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "pattern": {
+                    "types": [
+                      "sexpr"
+                    ]
+                  }
+                },
+                "required": [
+                  "slot",
+                  "pattern"
+                ]
+              }
+            },
+            "eventSources": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "patternType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "path": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "positionHint": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "payloadFields": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "name": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "type": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "required": {
+                          "types": [
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "type"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "event",
+                  "patternType",
+                  "path",
+                  "positionHint"
+                ]
+              }
+            },
+            "layer": {
+              "types": [
+                "string"
+              ]
+            },
+            "stateRole": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "initial",
+                "terminal",
+                "hub",
+                "default"
+              ]
+            },
+            "effectTypes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "guard": {
+              "types": [
+                "sexpr"
+              ]
+            },
+            "entityName": {
+              "types": [
+                "string"
+              ]
+            },
+            "persistence": {
+              "types": [
+                "string"
+              ]
+            },
+            "fieldCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "traitCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "pageRoutes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "status": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "idle",
+                "running",
+                "success",
+                "error"
+              ]
+            },
+            "sourceSchemaName": {
+              "types": [
+                "string"
+              ]
+            },
+            "focused": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "kind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "trait-card",
+                "system-orbital",
+                "system-band",
+                "dependency",
+                "dependency-column"
+              ]
+            },
+            "dependencyColumn": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "app",
+                "own",
+                "io",
+                "std",
+                "primitive",
+                "unknown",
+                "client",
+                "host",
+                "service",
+                "store",
+                "external"
+              ]
+            },
+            "dependencyRole": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "selected",
+                "upstream",
+                "downstream",
+                "both",
+                "dim"
+              ]
+            },
+            "flowTraits": {
+              "types": [
+                "number"
+              ]
+            },
+            "flowRenderPieces": {
+              "types": [
+                "number"
+              ]
+            },
+            "unitStatus": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "ok",
+                "degraded",
+                "down",
+                "idle"
+              ]
+            },
+            "unitMetric": {
+              "types": [
+                "string"
+              ]
+            },
+            "bandKind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "connected",
+                "standalone"
+              ]
+            },
+            "bandCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "wireEvents": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "transitions": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "fromState": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "toState": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "event",
+                  "fromState",
+                  "toState"
+                ]
+              }
+            },
+            "emits": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "listens": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "linkedEntity": {
+              "types": [
+                "string"
+              ]
+            },
+            "_fullSchema": {
+              "types": [
+                "sexpr"
+              ]
+            },
+            "_mockData": {
+              "types": [
+                "object"
+              ],
+              "nonAuthorable": true
+            }
+          },
+          "propertyRequired": [
+            "orbitalName",
+            "patterns",
+            "eventSources"
+          ]
+        },
+        "editable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "Enable editing in the inspector. When true, fields become inputs."
+        },
+        "onSchemaChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when the user edits the schema via the inspector.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "schema",
+              "type": "sexpr"
+            }
+          ]
+        },
+        "onPatternDelete": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when the user presses Delete/Backspace with patterns selected (all of a multi-select).",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "context",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "patternIds": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "nodeData": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "orbitalName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "traitName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "stateName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "transitionEvent": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "fromState": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "toState": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "cardWidth": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "cardLabel": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "screen"
+                        ]
+                      },
+                      "enteredBy": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "patterns": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "slot": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "pattern": {
+                              "types": [
+                                "sexpr"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "slot",
+                            "pattern"
+                          ]
+                        }
+                      },
+                      "eventSources": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "event": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "patternType": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "label": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "path": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "positionHint": {
+                              "types": [
+                                "number"
+                              ]
+                            },
+                            "payloadFields": {
+                              "types": [
+                                "array"
+                              ],
+                              "items": {
+                                "types": [
+                                  "object"
+                                ],
+                                "properties": {
+                                  "name": {
+                                    "types": [
+                                      "string"
+                                    ]
+                                  },
+                                  "type": {
+                                    "types": [
+                                      "string"
+                                    ]
+                                  },
+                                  "required": {
+                                    "types": [
+                                      "boolean"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "type"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "event",
+                            "patternType",
+                            "path",
+                            "positionHint"
+                          ]
+                        }
+                      },
+                      "layer": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "stateRole": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "initial",
+                          "terminal",
+                          "hub",
+                          "default"
+                        ]
+                      },
+                      "effectTypes": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "guard": {
+                        "types": [
+                          "sexpr"
+                        ]
+                      },
+                      "entityName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "persistence": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "fieldCount": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "traitCount": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "pageRoutes": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "status": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "idle",
+                          "running",
+                          "success",
+                          "error"
+                        ]
+                      },
+                      "sourceSchemaName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "focused": {
+                        "types": [
+                          "boolean"
+                        ]
+                      },
+                      "kind": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "trait-card",
+                          "system-orbital",
+                          "system-band",
+                          "dependency",
+                          "dependency-column"
+                        ]
+                      },
+                      "dependencyColumn": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "app",
+                          "own",
+                          "io",
+                          "std",
+                          "primitive",
+                          "unknown",
+                          "client",
+                          "host",
+                          "service",
+                          "store",
+                          "external"
+                        ]
+                      },
+                      "dependencyRole": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "selected",
+                          "upstream",
+                          "downstream",
+                          "both",
+                          "dim"
+                        ]
+                      },
+                      "flowTraits": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "flowRenderPieces": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "unitStatus": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "ok",
+                          "degraded",
+                          "down",
+                          "idle"
+                        ]
+                      },
+                      "unitMetric": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "bandKind": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "connected",
+                          "standalone"
+                        ]
+                      },
+                      "bandCount": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "wireEvents": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "transitions": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "event": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "fromState": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "toState": {
+                              "types": [
+                                "string"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "event",
+                            "fromState",
+                            "toState"
+                          ]
+                        }
+                      },
+                      "emits": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "listens": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "linkedEntity": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "_fullSchema": {
+                        "types": [
+                          "sexpr"
+                        ]
+                      },
+                      "_mockData": {
+                        "types": [
+                          "object"
+                        ],
+                        "nonAuthorable": true
+                      }
+                    },
+                    "required": [
+                      "orbitalName",
+                      "patterns",
+                      "eventSources"
+                    ]
+                  },
+                  "elements": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "level": {
+                          "types": [
+                            "string"
+                          ],
+                          "enumValues": [
+                            "node",
+                            "slot",
+                            "field",
+                            "effect",
+                            "trait",
+                            "page",
+                            "orbital"
+                          ]
+                        },
+                        "orbital": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "trait": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "transition": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "state": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "slot": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "path": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "patternType": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "entity": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "source": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "label": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "level",
+                        "orbital",
+                        "label"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "patternIds",
+                  "nodeData"
+                ]
+              }
+            }
+          ]
+        },
+        "tools": {
+          "types": [
+            "array"
+          ],
+          "description": "Editing tools the canvas turns on (a persona's shell manifest declares them); all by default.",
+          "items": {
+            "types": [
+              "string"
+            ],
+            "enumValues": [
+              "multiSelect",
+              "clipboard",
+              "inlineText",
+              "zoomToSelection",
+              "designHandles",
+              "autoLayout",
+              "sizeLimits",
+              "absolute",
+              "guides",
+              "measure"
+            ]
+          }
+        },
+        "elementAccess": {
+          "types": [
+            "function"
+          ],
+          "description": "What each element lets the user change (knob, data-bound, fixed by a behavior); every prop is editable without it.",
+          "callbackArgs": [
+            {
+              "name": "focus",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "level": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "node",
+                      "slot",
+                      "field",
+                      "effect",
+                      "trait",
+                      "page",
+                      "orbital"
+                    ]
+                  },
+                  "orbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "trait": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "transition": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "state": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "slot": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "path": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "patternType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "entity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "source": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "level",
+                  "orbital",
+                  "label"
+                ]
+              }
+            }
+          ],
+          "renderCallback": true
+        },
+        "onEventWire": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when the user drags from a source handle to a target handle (event wiring).",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "wire",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "eventName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "sourceOrbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "targetOrbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "sourceTraitName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "targetTraitName": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "eventName",
+                  "sourceOrbital",
+                  "targetOrbital"
+                ]
+              }
+            }
+          ]
+        },
+        "behaviorMeta": {
+          "types": [
+            "object"
+          ],
+          "description": "Behavior layer metadata for node styling (layer color bands).",
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "layer": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "required": [
+              "layer"
+            ]
+          }
+        },
+        "orbitalStatus": {
+          "types": [
+            "object"
+          ],
+          "description": "Per-orbital generation status. Keyed by orbital name. Drives the spinner + accent border treatment on the overview node and (future) the hover trace surface. Defaults to `'idle'` for missing entries. Consumers derive this from agent subagent_start/complete SSE events.",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "onOrbitalHover": {
+          "types": [
+            "function"
+          ],
+          "description": "Hover handler for overview-level orbital nodes. Fires with the orbital name on enter and `null` on leave. Reserved for the upcoming trace tooltip: consumers will use it to anchor a popover that shows the subagent's live trace + reasoning for the hovered orbital.",
+          "kind": "callback",
+          "notification": true,
+          "callbackArgs": [
+            {
+              "name": "orbitalName",
+              "type": "string"
+            }
+          ]
+        },
+        "layoutHint": {
+          "types": [
+            "string"
+          ],
+          "description": "Layout hint: 'pipeline' renders nodes left-to-right, 'grid' (default) uses sqrt-based grid.",
+          "enumValues": [
+            "pipeline",
+            "grid"
+          ]
+        },
+        "onNodeSelect": {
+          "types": [
+            "function"
+          ],
+          "description": "Called when the user clicks a node in overview level (for composition hints).",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "orbitalName",
+              "type": "string"
+            }
+          ]
+        },
+        "onZoomChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onZoomChange prop",
+          "kind": "callback",
+          "notification": true,
+          "callbackArgs": [
+            {
+              "name": "level",
+              "type": "string"
+            },
+            {
+              "name": "context",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "focusTarget": {
+          "types": [
+            "object"
+          ],
+          "description": "focusTarget prop",
+          "properties": {
+            "type": {
+              "types": [
+                "string"
+              ]
+            },
+            "name": {
+              "types": [
+                "string"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "type",
+            "name"
+          ]
+        },
+        "color": {
+          "types": [
+            "string"
+          ],
+          "description": "color prop"
+        },
+        "animated": {
+          "types": [
+            "boolean"
+          ],
+          "description": "animated prop"
+        },
+        "initialTrait": {
+          "types": [
+            "string"
+          ],
+          "description": "initialTrait prop"
+        },
+        "stateCoverage": {
+          "types": [
+            "object"
+          ],
+          "description": "stateCoverage prop",
+          "mapValue": {
+            "types": [
+              "string"
+            ]
+          }
+        },
+        "userType": {
+          "types": [
+            "string"
+          ],
+          "description": "Studio persona viewing the canvas. Drives `OrbInspector` tab/section visibility — designers and builders hide the raw `code` tab and the architect-only Entity / raw-guard / raw-effects sections; architects see everything. Default `'builder'` preserves pre-Phase-2 behavior.",
+          "enumValues": [
+            "builder",
+            "designer",
+            "architect"
+          ],
+          "default": "builder"
+        },
+        "themeManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Project theme tokens (Design System tab only). Forwarded to `OrbInspector` so the Styles tab can render an editable token list when the selection originates from the synthesized `__design_system__` schema."
+        },
+        "nodePositions": {
+          "types": [
+            "object"
+          ],
+          "description": "Persisted node positions keyed by node id. When the node set changes (level/schema switch), any id present here overrides the computed layout position, restoring a user's manual drag arrangement. Node ids are unique per view level, so a single flat map covers overview + expanded. A saved `width` restores a card frame the designer resized.",
+          "decoder": {
+            "name": "decodeNodePlacements",
+            "from": "@almadar/ui/avl"
+          },
+          "mapValue": {
+            "types": [
+              "object"
+            ],
+            "properties": {
+              "x": {
+                "types": [
+                  "number"
+                ]
+              },
+              "y": {
+                "types": [
+                  "number"
+                ]
+              },
+              "width": {
+                "types": [
+                  "number"
+                ]
+              }
+            },
+            "required": [
+              "x",
+              "y"
+            ]
+          }
+        },
+        "onPositionsChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired on node drag-stop and card resize with the full {id → placement} map of the current node set, so the consumer can persist the arrangement.",
+          "kind": "callback",
+          "notification": true,
+          "callbackArgs": [
+            {
+              "name": "positions",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "mapValue": {
+                  "types": [
+                    "object"
+                  ],
+                  "properties": {
+                    "x": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "y": {
+                      "types": [
+                        "number"
+                      ]
+                    },
+                    "width": {
+                      "types": [
+                        "number"
+                      ]
+                    }
+                  },
+                  "required": [
+                    "x",
+                    "y"
+                  ]
+                }
+              }
+            }
+          ]
+        },
+        "onSelectedNodeChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired whenever the internal `selectedNode` changes — select, clear-on- escape, clear-on-level-change, and pattern-selection sync all route through this. Lets a consumer mirror selection into a persistent properties panel rendered outside the canvas (see `externalInspector`).",
+          "kind": "callback",
+          "notification": true,
+          "callbackArgs": [
+            {
+              "name": "node",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "orbitalName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "traitName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "stateName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "transitionEvent": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "fromState": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "toState": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "cardWidth": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "cardLabel": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "screen"
+                    ]
+                  },
+                  "enteredBy": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "patterns": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "slot": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "pattern": {
+                          "types": [
+                            "sexpr"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "slot",
+                        "pattern"
+                      ]
+                    }
+                  },
+                  "eventSources": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "event": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "patternType": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "label": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "path": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "positionHint": {
+                          "types": [
+                            "number"
+                          ]
+                        },
+                        "payloadFields": {
+                          "types": [
+                            "array"
+                          ],
+                          "items": {
+                            "types": [
+                              "object"
+                            ],
+                            "properties": {
+                              "name": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "type": {
+                                "types": [
+                                  "string"
+                                ]
+                              },
+                              "required": {
+                                "types": [
+                                  "boolean"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "name",
+                              "type"
+                            ]
+                          }
+                        }
+                      },
+                      "required": [
+                        "event",
+                        "patternType",
+                        "path",
+                        "positionHint"
+                      ]
+                    }
+                  },
+                  "layer": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "stateRole": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "initial",
+                      "terminal",
+                      "hub",
+                      "default"
+                    ]
+                  },
+                  "effectTypes": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "guard": {
+                    "types": [
+                      "sexpr"
+                    ]
+                  },
+                  "entityName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "persistence": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "fieldCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "traitCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "pageRoutes": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "status": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "idle",
+                      "running",
+                      "success",
+                      "error"
+                    ]
+                  },
+                  "sourceSchemaName": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "focused": {
+                    "types": [
+                      "boolean"
+                    ]
+                  },
+                  "kind": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "trait-card",
+                      "system-orbital",
+                      "system-band",
+                      "dependency",
+                      "dependency-column"
+                    ]
+                  },
+                  "dependencyColumn": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "app",
+                      "own",
+                      "io",
+                      "std",
+                      "primitive",
+                      "unknown",
+                      "client",
+                      "host",
+                      "service",
+                      "store",
+                      "external"
+                    ]
+                  },
+                  "dependencyRole": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "selected",
+                      "upstream",
+                      "downstream",
+                      "both",
+                      "dim"
+                    ]
+                  },
+                  "flowTraits": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "flowRenderPieces": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "unitStatus": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "ok",
+                      "degraded",
+                      "down",
+                      "idle"
+                    ]
+                  },
+                  "unitMetric": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "bandKind": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "connected",
+                      "standalone"
+                    ]
+                  },
+                  "bandCount": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "wireEvents": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "transitions": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "event": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "fromState": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "toState": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "event",
+                        "fromState",
+                        "toState"
+                      ]
+                    }
+                  },
+                  "emits": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "listens": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "linkedEntity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "_fullSchema": {
+                    "types": [
+                      "sexpr"
+                    ]
+                  },
+                  "_mockData": {
+                    "types": [
+                      "object"
+                    ],
+                    "nonAuthorable": true
+                  }
+                },
+                "required": [
+                  "orbitalName",
+                  "patterns",
+                  "eventSources"
+                ]
+              }
+            }
+          ]
+        },
+        "onSelectedPatternChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Fired whenever the in-node pattern selection changes (a pattern click inside `OrbPreviewNode`, cleared on background click / Escape / pattern delete). `PatternSelectionContext` is internal to this component's own render tree, so an externally-rendered `OrbInspector` (see `externalInspector`) has no other way to learn which pattern the user picked — pass this straight through to `OrbInspector`'s `selectedPattern` prop to keep Design-tab prop editing working outside the canvas.",
+          "kind": "callback",
+          "notification": true,
+          "callbackArgs": [
+            {
+              "name": "pattern",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "patternType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "patternId": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "nodeData": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "orbitalName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "traitName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "stateName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "transitionEvent": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "fromState": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "toState": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "cardWidth": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "cardLabel": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "screen"
+                        ]
+                      },
+                      "enteredBy": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "patterns": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "slot": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "pattern": {
+                              "types": [
+                                "sexpr"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "slot",
+                            "pattern"
+                          ]
+                        }
+                      },
+                      "eventSources": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "event": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "patternType": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "label": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "path": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "positionHint": {
+                              "types": [
+                                "number"
+                              ]
+                            },
+                            "payloadFields": {
+                              "types": [
+                                "array"
+                              ],
+                              "items": {
+                                "types": [
+                                  "object"
+                                ],
+                                "properties": {
+                                  "name": {
+                                    "types": [
+                                      "string"
+                                    ]
+                                  },
+                                  "type": {
+                                    "types": [
+                                      "string"
+                                    ]
+                                  },
+                                  "required": {
+                                    "types": [
+                                      "boolean"
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "name",
+                                  "type"
+                                ]
+                              }
+                            }
+                          },
+                          "required": [
+                            "event",
+                            "patternType",
+                            "path",
+                            "positionHint"
+                          ]
+                        }
+                      },
+                      "layer": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "stateRole": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "initial",
+                          "terminal",
+                          "hub",
+                          "default"
+                        ]
+                      },
+                      "effectTypes": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "guard": {
+                        "types": [
+                          "sexpr"
+                        ]
+                      },
+                      "entityName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "persistence": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "fieldCount": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "traitCount": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "pageRoutes": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "status": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "idle",
+                          "running",
+                          "success",
+                          "error"
+                        ]
+                      },
+                      "sourceSchemaName": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "focused": {
+                        "types": [
+                          "boolean"
+                        ]
+                      },
+                      "kind": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "trait-card",
+                          "system-orbital",
+                          "system-band",
+                          "dependency",
+                          "dependency-column"
+                        ]
+                      },
+                      "dependencyColumn": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "app",
+                          "own",
+                          "io",
+                          "std",
+                          "primitive",
+                          "unknown",
+                          "client",
+                          "host",
+                          "service",
+                          "store",
+                          "external"
+                        ]
+                      },
+                      "dependencyRole": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "selected",
+                          "upstream",
+                          "downstream",
+                          "both",
+                          "dim"
+                        ]
+                      },
+                      "flowTraits": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "flowRenderPieces": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "unitStatus": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "ok",
+                          "degraded",
+                          "down",
+                          "idle"
+                        ]
+                      },
+                      "unitMetric": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "bandKind": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "connected",
+                          "standalone"
+                        ]
+                      },
+                      "bandCount": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "wireEvents": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "transitions": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "event": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "fromState": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "toState": {
+                              "types": [
+                                "string"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "event",
+                            "fromState",
+                            "toState"
+                          ]
+                        }
+                      },
+                      "emits": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "listens": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "linkedEntity": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "_fullSchema": {
+                        "types": [
+                          "sexpr"
+                        ]
+                      },
+                      "_mockData": {
+                        "types": [
+                          "object"
+                        ],
+                        "nonAuthorable": true
+                      }
+                    },
+                    "required": [
+                      "orbitalName",
+                      "patterns",
+                      "eventSources"
+                    ]
+                  },
+                  "sourceTrait": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "rect": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "top": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "left": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "width": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "height": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "top",
+                      "left",
+                      "width",
+                      "height"
+                    ]
+                  },
+                  "selection": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "string"
+                      ]
+                    }
+                  },
+                  "offsetInParent": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "left": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "top": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "right": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "bottom": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "parentWidth": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "parentHeight": {
+                        "types": [
+                          "number"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "left",
+                      "top",
+                      "right",
+                      "bottom",
+                      "parentWidth",
+                      "parentHeight"
+                    ]
+                  },
+                  "focus": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "level": {
+                        "types": [
+                          "string"
+                        ],
+                        "enumValues": [
+                          "node",
+                          "slot",
+                          "field",
+                          "effect",
+                          "trait",
+                          "page",
+                          "orbital"
+                        ]
+                      },
+                      "orbital": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "trait": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "transition": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "state": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "slot": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "path": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "patternType": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "entity": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "source": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "label": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "level",
+                      "orbital",
+                      "label"
+                    ]
+                  },
+                  "elements": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "level": {
+                          "types": [
+                            "string"
+                          ],
+                          "enumValues": [
+                            "node",
+                            "slot",
+                            "field",
+                            "effect",
+                            "trait",
+                            "page",
+                            "orbital"
+                          ]
+                        },
+                        "orbital": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "trait": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "transition": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "state": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "slot": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "path": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "patternType": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "entity": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "source": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "label": {
+                          "types": [
+                            "string"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "level",
+                        "orbital",
+                        "label"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "patternType",
+                  "nodeData"
+                ]
+              }
+            }
+          ]
+        },
+        "externalInspector": {
+          "types": [
+            "boolean"
+          ],
+          "description": "When true, FlowCanvas does not render its inline `OrbInspector` — the consumer is expected to render one externally, fed by `onSelectedNodeChange` + `onSelectedPatternChange`. Selection highlighting, keyboard delete, and every other behavior is unchanged. Default `false` preserves the built-in inline panel.",
+          "default": false
+        },
+        "verify": {
+          "types": [
+            "object"
+          ],
+          "description": "A host that verifies from the canvas: cards show verify controls and the trait's verdict, and follow `UI:CANVAS_SHOW_STATE` to the states a run reaches.",
+          "properties": {
+            "verdictOf": {
+              "types": [
+                "function"
+              ]
+            },
+            "playing": {
+              "types": [
+                "function"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "verdictOf",
+            "playing"
+          ]
+        },
+        "enter": {
+          "types": [
+            "string"
+          ],
+          "description": "How this element animates in when it mounts (theme-styled); overrides the theme's default slot entry. `none` opts out.",
+          "enumValues": [
+            "none",
+            "fade",
+            "rise",
+            "scale",
+            "slide"
+          ],
+          "kind": "entry"
+        },
+        "enterDelay": {
+          "types": [
+            "number"
+          ],
+          "description": "Stagger step for the entry: waits this many `--motion-enter-stagger` steps before animating.",
+          "numericEnumValues": [
+            1,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+            8
+          ],
+          "kind": "entry"
+        },
+        "skeleton": {
+          "types": [
+            "string",
+            "object"
+          ],
+          "description": "Skeleton shown while this element's server render is in flight: a shape (`table`, `list`, …), `{ variant, rows?, columns?, fields? }`, or `none`.",
+          "enumValues": [
+            "header",
+            "table",
+            "list",
+            "grid",
+            "detail",
+            "stats",
+            "form",
+            "card",
+            "text",
+            "none"
+          ],
+          "properties": {
+            "variant": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "header",
+                "table",
+                "list",
+                "grid",
+                "detail",
+                "stats",
+                "form",
+                "card",
+                "text"
+              ]
+            },
+            "rows": {
+              "types": [
+                "number"
+              ]
+            },
+            "columns": {
+              "types": [
+                "number"
+              ]
+            },
+            "fields": {
+              "types": [
+                "number"
+              ]
+            }
+          },
+          "propertyRequired": [
+            "variant"
+          ],
+          "kind": "skeleton",
+          "tier": "presentation"
+        }
+      }
+    },
+    "layers-panel": {
+      "type": "layers-panel",
+      "category": "display",
+      "sourceFile": "components/avl/organisms/LayersPanel.tsx",
+      "tier": "organisms",
+      "family": "avl",
+      "description": "LayersPanel component",
+      "suggestedFor": [
+        "layers",
+        "panel",
+        "layers panel"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "schema": {
+          "types": [
+            "sexpr"
+          ],
+          "description": "schema prop",
+          "required": true,
+          "decoder": {
+            "name": "parseOrbitalSchema",
+            "from": "@almadar/core"
+          }
+        },
+        "selectedId": {
+          "types": [
+            "string"
+          ],
+          "description": "Currently selected node id (any level of the ID scheme above)."
+        },
+        "onSelect": {
+          "types": [
+            "function"
+          ],
+          "description": "onSelect prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            }
+          ]
+        },
+        "onReorder": {
+          "types": [
+            "function"
+          ],
+          "description": "Reorder a node within the tree. Threaded to FileTree's `onNodeReorder` seam — presence-gated there, so omitting it just means no dragging.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "id",
+              "type": "string"
+            },
+            {
+              "name": "newParentId",
+              "type": "string"
+            },
+            {
+              "name": "index",
+              "type": "number"
+            }
+          ]
+        }
+      }
+    },
+    "orb-inspector": {
+      "type": "orb-inspector",
+      "category": "debug",
+      "sourceFile": "components/avl/organisms/OrbInspector.tsx",
+      "tier": "organisms",
+      "family": "avl",
+      "description": "OrbInspector component",
+      "suggestedFor": [
+        "orb",
+        "inspector",
+        "orb inspector"
+      ],
+      "typicalSize": "large",
+      "propsSchema": {
+        "node": {
+          "types": [
+            "object"
+          ],
+          "description": "node prop",
+          "required": true,
+          "decoder": {
+            "name": "decodePreviewNodeData",
+            "from": "@almadar/ui/avl"
+          },
+          "properties": {
+            "orbitalName": {
+              "types": [
+                "string"
+              ]
+            },
+            "traitName": {
+              "types": [
+                "string"
+              ]
+            },
+            "stateName": {
+              "types": [
+                "string"
+              ]
+            },
+            "transitionEvent": {
+              "types": [
+                "string"
+              ]
+            },
+            "fromState": {
+              "types": [
+                "string"
+              ]
+            },
+            "toState": {
+              "types": [
+                "string"
+              ]
+            },
+            "cardWidth": {
+              "types": [
+                "number"
+              ]
+            },
+            "cardLabel": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "screen"
+              ]
+            },
+            "enteredBy": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "patterns": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "slot": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "pattern": {
+                    "types": [
+                      "sexpr"
+                    ]
+                  }
+                },
+                "required": [
+                  "slot",
+                  "pattern"
+                ]
+              }
+            },
+            "eventSources": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "patternType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "path": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "positionHint": {
+                    "types": [
+                      "number"
+                    ]
+                  },
+                  "payloadFields": {
+                    "types": [
+                      "array"
+                    ],
+                    "items": {
+                      "types": [
+                        "object"
+                      ],
+                      "properties": {
+                        "name": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "type": {
+                          "types": [
+                            "string"
+                          ]
+                        },
+                        "required": {
+                          "types": [
+                            "boolean"
+                          ]
+                        }
+                      },
+                      "required": [
+                        "name",
+                        "type"
+                      ]
+                    }
+                  }
+                },
+                "required": [
+                  "event",
+                  "patternType",
+                  "path",
+                  "positionHint"
+                ]
+              }
+            },
+            "layer": {
+              "types": [
+                "string"
+              ]
+            },
+            "stateRole": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "initial",
+                "terminal",
+                "hub",
+                "default"
+              ]
+            },
+            "effectTypes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "guard": {
+              "types": [
+                "sexpr"
+              ]
+            },
+            "entityName": {
+              "types": [
+                "string"
+              ]
+            },
+            "persistence": {
+              "types": [
+                "string"
+              ]
+            },
+            "fieldCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "traitCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "pageRoutes": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "status": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "idle",
+                "running",
+                "success",
+                "error"
+              ]
+            },
+            "sourceSchemaName": {
+              "types": [
+                "string"
+              ]
+            },
+            "focused": {
+              "types": [
+                "boolean"
+              ]
+            },
+            "kind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "trait-card",
+                "system-orbital",
+                "system-band",
+                "dependency",
+                "dependency-column"
+              ]
+            },
+            "dependencyColumn": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "app",
+                "own",
+                "io",
+                "std",
+                "primitive",
+                "unknown",
+                "client",
+                "host",
+                "service",
+                "store",
+                "external"
+              ]
+            },
+            "dependencyRole": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "selected",
+                "upstream",
+                "downstream",
+                "both",
+                "dim"
+              ]
+            },
+            "flowTraits": {
+              "types": [
+                "number"
+              ]
+            },
+            "flowRenderPieces": {
+              "types": [
+                "number"
+              ]
+            },
+            "unitStatus": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "ok",
+                "degraded",
+                "down",
+                "idle"
+              ]
+            },
+            "unitMetric": {
+              "types": [
+                "string"
+              ]
+            },
+            "bandKind": {
+              "types": [
+                "string"
+              ],
+              "enumValues": [
+                "connected",
+                "standalone"
+              ]
+            },
+            "bandCount": {
+              "types": [
+                "number"
+              ]
+            },
+            "wireEvents": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "transitions": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "event": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "fromState": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "toState": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "event",
+                  "fromState",
+                  "toState"
+                ]
+              }
+            },
+            "emits": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "listens": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "linkedEntity": {
+              "types": [
+                "string"
+              ]
+            },
+            "_fullSchema": {
+              "types": [
+                "sexpr"
+              ]
+            },
+            "_mockData": {
+              "types": [
+                "object"
+              ],
+              "nonAuthorable": true
+            }
+          },
+          "propertyRequired": [
+            "orbitalName",
+            "patterns",
+            "eventSources"
+          ]
+        },
+        "schema": {
+          "types": [
+            "sexpr"
+          ],
+          "description": "schema prop",
+          "required": true,
+          "decoder": {
+            "name": "parseOrbitalSchema",
+            "from": "@almadar/core"
+          }
+        },
+        "editable": {
+          "types": [
+            "boolean"
+          ],
+          "description": "editable prop",
+          "default": false
+        },
+        "userType": {
+          "types": [
+            "string"
+          ],
+          "description": "Studio persona viewing the inspector. Controls tab visibility (Code is architect-only, Styles is universal) and section visibility (Entity, raw guard, raw effects are architect-only). Default `'builder'` matches pre-Phase-2 behavior except for the new Styles tab, which every persona gets.",
+          "enumValues": [
+            "builder",
+            "designer",
+            "architect"
+          ],
+          "default": "builder"
+        },
+        "themeManifest": {
+          "types": [
+            "object"
+          ],
+          "description": "Project theme tokens. The Styles tab reads them for Global edits (and, on the synthesized `__design_system__` schema, lists them all); those edits emit `UI:PROP_CHANGE` with `scope: 'global'` + `tokenGroup`/`tokenKey`."
+        },
+        "defaultTab": {
+          "types": [
+            "string"
+          ],
+          "description": "Initial tab on mount. Local state still owns the active tab after that — this does not make the component controlled. Enables deep-linking into a specific tab (e.g. from a LayersPanel selection).",
+          "enumValues": [
+            "inspector",
+            "design",
+            "prototype",
+            "code"
+          ]
+        },
+        "onTabChange": {
+          "types": [
+            "function"
+          ],
+          "description": "Fires whenever the tab-bar selection changes.",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "tab",
+              "type": "string"
+            }
+          ]
+        },
+        "onSchemaChange": {
+          "types": [
+            "function"
+          ],
+          "description": "onSchemaChange prop",
+          "kind": "callback",
+          "callbackArgs": [
+            {
+              "name": "schema",
+              "type": "sexpr"
+            }
+          ]
+        },
+        "onClose": {
+          "types": [
+            "function"
+          ],
+          "description": "onClose prop",
+          "required": true,
+          "kind": "callback",
+          "callbackArgs": []
+        },
+        "selectedPattern": {
+          "types": [
+            "object"
+          ],
+          "description": "In-node pattern selection, when this inspector is rendered OUTSIDE `FlowCanvas` (see `FlowCanvas`'s `externalInspector` + `onSelectedPatternChange`). `PatternSelectionContext` only reaches descendants of `FlowCanvas`'s own render tree, so a standalone consumer has no other way to feed pattern-level selection in — pass `FlowCanvas`'s `onSelectedPatternChange` payload straight through here. When omitted (the inline, built-in-inspector usage), falls back to `PatternSelectionContext`, unchanged.",
+          "decoder": {
+            "name": "decodeSelectedPattern",
+            "from": "@almadar/ui/avl"
+          },
+          "properties": {
+            "patternType": {
+              "types": [
+                "string"
+              ]
+            },
+            "patternId": {
+              "types": [
+                "string"
+              ]
+            },
+            "nodeData": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "orbitalName": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "traitName": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "stateName": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "transitionEvent": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "fromState": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "toState": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "cardWidth": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "cardLabel": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "screen"
+                  ]
+                },
+                "enteredBy": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "patterns": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "slot": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "pattern": {
+                        "types": [
+                          "sexpr"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "slot",
+                      "pattern"
+                    ]
+                  }
+                },
+                "eventSources": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "event": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "patternType": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "label": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "path": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "positionHint": {
+                        "types": [
+                          "number"
+                        ]
+                      },
+                      "payloadFields": {
+                        "types": [
+                          "array"
+                        ],
+                        "items": {
+                          "types": [
+                            "object"
+                          ],
+                          "properties": {
+                            "name": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "type": {
+                              "types": [
+                                "string"
+                              ]
+                            },
+                            "required": {
+                              "types": [
+                                "boolean"
+                              ]
+                            }
+                          },
+                          "required": [
+                            "name",
+                            "type"
+                          ]
+                        }
+                      }
+                    },
+                    "required": [
+                      "event",
+                      "patternType",
+                      "path",
+                      "positionHint"
+                    ]
+                  }
+                },
+                "layer": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "stateRole": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "initial",
+                    "terminal",
+                    "hub",
+                    "default"
+                  ]
+                },
+                "effectTypes": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "guard": {
+                  "types": [
+                    "sexpr"
+                  ]
+                },
+                "entityName": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "persistence": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "fieldCount": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "traitCount": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "pageRoutes": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "status": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "idle",
+                    "running",
+                    "success",
+                    "error"
+                  ]
+                },
+                "sourceSchemaName": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "focused": {
+                  "types": [
+                    "boolean"
+                  ]
+                },
+                "kind": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "trait-card",
+                    "system-orbital",
+                    "system-band",
+                    "dependency",
+                    "dependency-column"
+                  ]
+                },
+                "dependencyColumn": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "app",
+                    "own",
+                    "io",
+                    "std",
+                    "primitive",
+                    "unknown",
+                    "client",
+                    "host",
+                    "service",
+                    "store",
+                    "external"
+                  ]
+                },
+                "dependencyRole": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "selected",
+                    "upstream",
+                    "downstream",
+                    "both",
+                    "dim"
+                  ]
+                },
+                "flowTraits": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "flowRenderPieces": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "unitStatus": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "ok",
+                    "degraded",
+                    "down",
+                    "idle"
+                  ]
+                },
+                "unitMetric": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "bandKind": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "connected",
+                    "standalone"
+                  ]
+                },
+                "bandCount": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "wireEvents": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "transitions": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "object"
+                    ],
+                    "properties": {
+                      "event": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "fromState": {
+                        "types": [
+                          "string"
+                        ]
+                      },
+                      "toState": {
+                        "types": [
+                          "string"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "event",
+                      "fromState",
+                      "toState"
+                    ]
+                  }
+                },
+                "emits": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "listens": {
+                  "types": [
+                    "array"
+                  ],
+                  "items": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "linkedEntity": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "_fullSchema": {
+                  "types": [
+                    "sexpr"
+                  ]
+                },
+                "_mockData": {
+                  "types": [
+                    "object"
+                  ],
+                  "nonAuthorable": true
+                }
+              },
+              "required": [
+                "orbitalName",
+                "patterns",
+                "eventSources"
+              ]
+            },
+            "sourceTrait": {
+              "types": [
+                "string"
+              ]
+            },
+            "rect": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "top": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "left": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "width": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "height": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "top",
+                "left",
+                "width",
+                "height"
+              ]
+            },
+            "selection": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "string"
+                ]
+              }
+            },
+            "offsetInParent": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "left": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "top": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "right": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "bottom": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "parentWidth": {
+                  "types": [
+                    "number"
+                  ]
+                },
+                "parentHeight": {
+                  "types": [
+                    "number"
+                  ]
+                }
+              },
+              "required": [
+                "left",
+                "top",
+                "right",
+                "bottom",
+                "parentWidth",
+                "parentHeight"
+              ]
+            },
+            "focus": {
+              "types": [
+                "object"
+              ],
+              "properties": {
+                "level": {
+                  "types": [
+                    "string"
+                  ],
+                  "enumValues": [
+                    "node",
+                    "slot",
+                    "field",
+                    "effect",
+                    "trait",
+                    "page",
+                    "orbital"
+                  ]
+                },
+                "orbital": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "trait": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "transition": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "state": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "slot": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "path": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "patternType": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "entity": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "source": {
+                  "types": [
+                    "string"
+                  ]
+                },
+                "label": {
+                  "types": [
+                    "string"
+                  ]
+                }
+              },
+              "required": [
+                "level",
+                "orbital",
+                "label"
+              ]
+            },
+            "elements": {
+              "types": [
+                "array"
+              ],
+              "items": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "level": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "node",
+                      "slot",
+                      "field",
+                      "effect",
+                      "trait",
+                      "page",
+                      "orbital"
+                    ]
+                  },
+                  "orbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "trait": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "transition": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "state": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "slot": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "path": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "patternType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "entity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "source": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "level",
+                  "orbital",
+                  "label"
+                ]
+              }
+            }
+          },
+          "propertyRequired": [
+            "patternType",
+            "nodeData"
+          ]
+        },
+        "elementAccess": {
+          "types": [
+            "function"
+          ],
+          "description": "What the selected element lets the user change; `ElementEditAccessContext` (inside a canvas) when omitted.",
+          "callbackArgs": [
+            {
+              "name": "focus",
+              "type": "object",
+              "schema": {
+                "types": [
+                  "object"
+                ],
+                "properties": {
+                  "level": {
+                    "types": [
+                      "string"
+                    ],
+                    "enumValues": [
+                      "node",
+                      "slot",
+                      "field",
+                      "effect",
+                      "trait",
+                      "page",
+                      "orbital"
+                    ]
+                  },
+                  "orbital": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "trait": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "transition": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "state": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "slot": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "path": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "patternType": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "entity": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "source": {
+                    "types": [
+                      "string"
+                    ]
+                  },
+                  "label": {
+                    "types": [
+                      "string"
+                    ]
+                  }
+                },
+                "required": [
+                  "level",
+                  "orbital",
+                  "label"
+                ]
+              }
+            }
+          ],
+          "renderCallback": true
         }
       }
     }

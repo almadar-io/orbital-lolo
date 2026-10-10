@@ -96,6 +96,7 @@ const KEYWORDS: &[&str] = &[
     "noindex",
     "version",
     "translationOf",
+    "label",
 ];
 
 /// `Entity Trait Page Orbital Event` — `check_ident` in `parser/type.rs`
@@ -170,6 +171,7 @@ const ANNOTATIONS: &[&str] = &[
     "update",
     "delete",
     "icon",
+    "roles",
 ];
 
 /// `entity payload state now config user trait event prevEvents prevStates
@@ -270,6 +272,7 @@ const TYPES: &[&str] = &[
     "any",
     "trait",
     "orbital",
+    "behavior",
     "entity",
     "event",
     "EventAddress",

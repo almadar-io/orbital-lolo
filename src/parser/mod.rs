@@ -48,13 +48,17 @@ pub(crate) const PAGE_MODIFIERS: &[&str] = &[
     "translationOf",
 ];
 
-/// Keys a `pages {}` remap entry's bracket takes — the page head modifiers.
+/// Keys a `pages {}` remap entry's bracket takes — the page head modifiers plus
+/// the page's nav entry (an inline page declares it with `@label`/`@icon`/`@roles`).
 pub(crate) const REMAP_PAGE_MODIFIERS: &[&str] = &[
     "access",
     "indexing",
     "title",
     "description",
     "translationOf",
+    "label",
+    "icon",
+    "roles",
 ];
 
 mod entity;
@@ -796,9 +800,33 @@ impl Parser {
             "title" => mods.title = Some(self.parse_page_meta(key)?),
             "description" => mods.description = Some(self.parse_page_meta(key)?),
             "translationOf" => mods.translation_of = Some(self.parse_option_string(key)?),
+            "label" => mods.label = Some(self.parse_option_string(key)?),
+            "icon" => mods.icon = Some(self.parse_option_string(key)?),
+            "roles" => mods.roles = Some(self.parse_role_list(key)?),
             _ => unreachable!("REMAP_PAGE_MODIFIERS covers every head key"),
         }
         Ok(())
+    }
+
+    /// A nav entry's roles: one quoted, comma-separated list of role words.
+    pub(crate) fn parse_role_list(&mut self, key: &str) -> Result<Vec<String>, ParseError> {
+        let span = self.peek_span();
+        let raw = self.parse_option_string(key)?;
+        let roles: Vec<String> = raw
+            .split(',')
+            .map(str::trim)
+            .filter(|r| !r.is_empty())
+            .map(str::to_string)
+            .collect();
+        if roles.is_empty() {
+            return Err(ParseError::InvalidOptionValue {
+                code: "ORB_L_OPTION_VALUE",
+                key: key.to_string(),
+                message: "expected at least one role, e.g. \"manager, owner\"".to_string(),
+                span,
+            });
+        }
+        Ok(roles)
     }
 
     pub(crate) fn parse_option_string(&mut self, key: &str) -> Result<String, ParseError> {
@@ -1601,7 +1629,7 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
 /// `ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY`.
 pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
     match t {
-        TypeExpr::Trait | TypeExpr::Orbital => None,
+        TypeExpr::Trait | TypeExpr::Orbital | TypeExpr::Behavior => None,
         // `@entity` self-reference: payload-positions-only, so an entity field
         // must reject it the same way it rejects the config-only brands.
         TypeExpr::BoundEntityRow => Some("@entity"),

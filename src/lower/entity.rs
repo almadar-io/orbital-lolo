@@ -132,6 +132,7 @@ pub(crate) fn lower_type_expr(
         }
         TypeExpr::Trait => (FieldType::Trait, None, None, None, None),
         TypeExpr::Orbital => (FieldType::Orbital, None, None, None, None),
+        TypeExpr::Behavior => (FieldType::Behavior, None, None, None, None),
         TypeExpr::Slot => (FieldType::Slot, None, None, None, None),
         TypeExpr::Pattern => (FieldType::Pattern, None, None, None, None),
         // Config-only (parser rejects it on entity fields); defensively a string ref.

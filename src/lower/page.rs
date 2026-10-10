@@ -42,6 +42,9 @@ pub(crate) fn lower_page_decl(p: &Page) -> PageRef {
             indexing: p.indexing,
             title: p.title.clone(),
             description: p.description.clone(),
+            label: p.label.clone(),
+            icon: p.icon.clone(),
+            roles: p.roles.clone(),
         })
     } else {
         lower_page(p)
@@ -84,6 +87,7 @@ pub(crate) fn lower_page(p: &Page) -> PageRef {
         sections: None,
         icon: p.icon.clone(),
         label: p.label.clone(),
+        roles: p.roles.clone(),
         id: None,
         access: p.access,
         indexing: p.indexing,

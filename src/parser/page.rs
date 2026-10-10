@@ -114,12 +114,16 @@ impl Parser {
             title,
             description,
             translation_of,
+            label: _,
+            icon: _,
+            roles: _,
         } = head;
         // Trailing `@icon "..."` / `@label "..."` annotations (one or more
         // indented lines below the page declaration). Mirrors the config-knob
         // annotation reader (`parse_config_annotations`).
         let mut icon = None;
         let mut label = None;
+        let mut roles = None;
         loop {
             self.skip_newlines();
             let annotation = match self.peek().clone() {
@@ -127,7 +131,7 @@ impl Parser {
                     if let Some(mounted) = raw.strip_prefix("trait.") {
                         return Err(ParseError::UnexpectedToken {
                             expected: format!(
-                                "@icon or @label — a page's traits follow `->`, comma-separated, \
+                                "@icon, @label or @roles — a page's traits follow `->`, comma-separated, \
                                  not `@trait.` lines: write `{}`",
                                 page_line(Some(mounted))
                             ),
@@ -136,7 +140,7 @@ impl Parser {
                         });
                     }
                     let s = self.canon_annotation_sigil(&raw);
-                    if s == "icon" || s == "label" {
+                    if s == "icon" || s == "label" || s == "roles" {
                         s
                     } else {
                         break;
@@ -145,6 +149,10 @@ impl Parser {
                 _ => break,
             };
             self.advance();
+            if annotation == "roles" {
+                roles = Some(self.parse_role_list("@roles")?);
+                continue;
+            }
             let value = match self.peek().clone() {
                 TokenKind::String(s) => {
                     self.advance();
@@ -176,6 +184,7 @@ impl Parser {
             name,
             icon,
             label,
+            roles,
             access,
             indexing,
             title,

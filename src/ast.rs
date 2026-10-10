@@ -746,6 +746,9 @@ pub enum TypeExpr {
     /// `orbital` — an orbital value held as data (`<spec>.orbitals.<O>` plus a
     /// recorded §8b import body), or `none`. Never rendered.
     Orbital,
+    /// `behavior` — a whole behavior held as data (`behavior/ref`), or `none`.
+    /// Embedded in a render tree, it runs the program in place.
+    Behavior,
     /// `entity` — value is an entity NAME reference (V4-W5). The stamp records
     /// the referenced entity's id on the config field so a declaration-only
     /// rename resolves the value by id. Allowed only in `config { ... }` blocks.
@@ -1295,6 +1298,8 @@ pub struct Page {
     pub icon: Option<String>,
     /// Human nav label — `@label "..."` annotation below the page line.
     pub label: Option<String>,
+    /// Nav entry roles — `@roles "a, b"` annotation below the page line.
+    pub roles: Option<Vec<String>>,
     pub access: Option<orbital_core::schema::PageAccess>,
     pub indexing: Option<orbital_core::schema::PageIndexing>,
     pub title: Option<orbital_core::schema::PageMeta>,

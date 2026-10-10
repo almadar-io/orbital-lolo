@@ -621,6 +621,9 @@ impl Parser {
         if name == "orbital" {
             return Ok(TypeExpr::Orbital);
         }
+        if name == "behavior" {
+            return Ok(TypeExpr::Behavior);
+        }
         // `entity` / `event` keywords as types — value is an entity/event NAME
         // reference (V4-W5). Allowed only inside config { ... } blocks; the stamp
         // id-carries the value so a rename resolves it by id.

@@ -397,6 +397,7 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::RelationManyNonEmpty(n) => format!("{n}+"),
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::Orbital => "orbital".to_string(),
+        TypeExpr::Behavior => "behavior".to_string(),
         TypeExpr::EntityRef => "entity".to_string(),
         TypeExpr::EventRef => "event".to_string(),
         TypeExpr::EventAddress => "EventAddress".to_string(),
@@ -599,6 +600,7 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         | TypeExpr::StringLiteral(_)
         | TypeExpr::Trait
         | TypeExpr::Orbital
+        | TypeExpr::Behavior
         | TypeExpr::EntityRef
         | TypeExpr::EventRef
         | TypeExpr::EventAddress
@@ -1222,6 +1224,20 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
     for o in &program.orbitals {
         entity_names.extend(expected_entity_names(o).into_iter().map(str::to_string));
     }
+    let file_ctx = ResolveCtx {
+        file: &file,
+        orbital: None,
+    };
+    for cf in &program.app.config {
+        reject_generic_types(&cf.type_expr, &format!("app config {:?}", cf.name), cf.span)?;
+        check_field_type_refs(
+            &cf.type_expr,
+            cf.span,
+            &file_ctx,
+            &entity_names,
+            &BTreeSet::new(),
+        )?;
+    }
 
     // Pre-build per-orbital scoped registries so cycle detection + annotation
     // checks see both scopes consistently.
@@ -1239,6 +1255,20 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
         detect_cycles(&ctx)?;
         if let Some(ann) = &orb.type_annotation {
             check_orbital_annotation(ann, orb, &ctx)?;
+        }
+        for cf in &orb.config {
+            reject_generic_types(
+                &cf.type_expr,
+                &format!("orbital {:?} config {:?}", orb.name, cf.name),
+                cf.span,
+            )?;
+            check_field_type_refs(
+                &cf.type_expr,
+                cf.span,
+                &ctx,
+                &entity_names,
+                &BTreeSet::new(),
+            )?;
         }
         for entity in orb.entity.iter().chain(orb.extra_entities.iter()) {
             if let Some(ann) = &entity.type_annotation {
@@ -1474,6 +1504,38 @@ orbital OrbG {{
                 matches!(err, TypeError::GenericTypeForbidden { .. }),
                 "{label}: got {err:?}"
             );
+        }
+    }
+
+    #[test]
+    fn app_and_orbital_config_type_names_must_resolve() {
+        let app = |decl: &str| {
+            format!(
+                "app Shop [version: \"1.0.0\"]\nconfig {{\n  navItems : [NavItem] = []\n}}\n{decl}\norbital OrbN {{\n  entity Rec [persistent: recs] {{ id : string! }}\n  trait RecTrait -> Rec [interaction] {{\n    config {{ size : number = 1 }}\n    state idle {{ INIT -> idle (ref Rec) }}\n  }}\n  page \"/recs\" -> RecTrait\n}}\n"
+            )
+        };
+        let orbital = |decl: &str, ty: &str| {
+            format!(
+                "{decl}\norbital OrbO {{\n  config {{\n    pick : {ty}\n  }}\n  entity Rec [persistent: recs] {{ id : string! }}\n  trait RecTrait -> Rec [interaction] {{\n    config {{ size : number = 1 }}\n    state idle {{ INIT -> idle (ref Rec) }}\n  }}\n  page \"/recs\" -> RecTrait\n}}\n"
+            )
+        };
+        let nav = "type NavItem = { label : string!, href : string! }";
+        for (label, src) in [
+            ("app undeclared", app("")),
+            ("orbital undeclared", orbital("", "[NavItem]")),
+        ] {
+            let err = check(&src).unwrap_err();
+            assert!(
+                matches!(&err, TypeError::UnknownType { name, .. } if name == "NavItem"),
+                "{label}: got {err:?}"
+            );
+        }
+        for (label, src) in [
+            ("app declared", app(nav)),
+            ("orbital declared", orbital(nav, "[NavItem]")),
+            ("orbital entity name", orbital("", "Rec")),
+        ] {
+            check(&src).unwrap_or_else(|e| panic!("{label}: {e:?}"));
         }
     }
 
