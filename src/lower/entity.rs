@@ -339,7 +339,7 @@ pub(crate) fn lower_type_expr(
             )
         }
         TypeExpr::Object(fields) => {
-            let mut props = HashMap::new();
+            let mut props = std::collections::HashMap::new();
             for (k, v, req) in fields {
                 let (ft, values, items, properties, relation) =
                     lower_type_expr(v, aliases, entity_names);

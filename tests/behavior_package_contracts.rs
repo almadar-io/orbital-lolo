@@ -65,12 +65,13 @@ fn fake_package(
         version: version.to_string(),
         prefix: prefix.to_string(),
         root,
-        registry,
+        registry: orbital_core::behavior_packages::RegistrySource::Materialized(registry),
         index,
         factory_signatures,
         lolo_contracts,
         signatures,
         embeddings: Vec::new(),
+        sidecars: Vec::new(),
         compiler_range: ">=0.0.0".to_string(),
         std_peer_range: None,
         core_range: None,
@@ -272,7 +273,7 @@ fn no_installed_std_package_reports_the_install_hint() {
     let message = err.to_string();
     assert!(
         message.contains("@almadar/std is not installed")
-            && message.contains("orb behaviors install @almadar/std")
+            && message.contains("run `orb update`")
             && message.contains("--global"),
         "expected the not-installed hint naming both install commands, got {message}"
     );

@@ -642,7 +642,7 @@ impl Parser {
     pub(crate) fn parse_object_literal(&mut self) -> Result<SExpression, ParseError> {
         let open_span = self.peek_span();
         self.expect_kind(&TokenKind::LBrace, "{")?;
-        let mut map: HashMap<String, SExpression> = HashMap::new();
+        let mut map: orbital_core::schema::SObject = orbital_core::schema::SObject::new();
         loop {
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::RBrace) {

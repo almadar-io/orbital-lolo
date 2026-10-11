@@ -128,7 +128,7 @@ pub(crate) fn desugar_notify(expr: &SExpression) -> Result<SExpression, LowerErr
                     return Err(LowerError::NotifyInvalidLevel { level: s.clone() });
                 }
             }
-            let mut props = HashMap::new();
+            let mut props = orbital_core::schema::SObject::new();
             props.insert("type".to_string(), SExpression::String("alert".to_string()));
             props.insert("variant".to_string(), level);
             props.insert("message".to_string(), message);
@@ -736,6 +736,12 @@ pub(crate) fn lower_trait(
         .filter(|l| l.external)
         .map(|l| l.event.clone())
         .collect();
+    let declared_inputs: HashSet<String> = t
+        .listens
+        .iter()
+        .filter(|l| !l.event.contains('.'))
+        .map(|l| l.event.clone())
+        .collect();
 
     let events: Option<Vec<EventDefinition>> = if event_keys.is_empty() {
         None
@@ -745,6 +751,7 @@ pub(crate) fn lower_trait(
                 .into_iter()
                 .map(|k| -> Result<EventDefinition, LowerError> {
                     let is_external = external_inputs.contains(&k);
+                    let is_listened = declared_inputs.contains(&k);
                     let name = humanize_event_key(&k, entity_hint);
                     let (description, synonyms, tier) = event_annotations
                         .get(&k)
@@ -836,6 +843,7 @@ pub(crate) fn lower_trait(
                         payload_schema: payload,
                         payload_entity,
                         external: is_external.then_some(true),
+                        listened: is_listened.then_some(true),
                     })
                 })
                 .collect::<Result<Vec<_>, _>>()?,

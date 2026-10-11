@@ -1,6 +1,6 @@
 //! `.lolo` completion: what is valid at a cursor position, from the language's
 //! own tables — keywords and effect operators ([`crate::keywords`]), pattern
-//! tags and props (the baked pattern registry), and installed behaviors with
+//! tags and props (the installed pattern registry), and installed behaviors with
 //! their traits, orbitals and typed config keys ([`LoloContracts`]).
 //!
 //! Text-context driven so it works on the partial, unparseable source a person
@@ -14,8 +14,6 @@ use serde::Serialize;
 
 use crate::keywords::vocabulary;
 use crate::registry::{behavior_key_from_path, LoloContracts};
-
-const PATTERNS_JSON: &str = include_str!("baked/patterns-registry.json");
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "kebab-case")]
@@ -49,16 +47,17 @@ pub struct CompletionResult {
     pub candidates: Vec<Completion>,
 }
 
-/// Pattern type → its prop names, from the baked registry.
+/// Pattern type → its prop names, from the installed registry.
 fn pattern_props() -> &'static BTreeMap<String, Vec<String>> {
     static PROPS: OnceLock<BTreeMap<String, Vec<String>>> = OnceLock::new();
     PROPS.get_or_init(|| {
         let mut out = BTreeMap::new();
-        let Ok(parsed) = serde_json::from_str::<serde_json::Value>(PATTERNS_JSON) else {
-            return out;
-        };
+        let parsed: serde_json::Value = serde_json::from_str(crate::patterns_meta::patterns_json())
+            .unwrap_or_else(|e| {
+                panic!("installed patterns-registry.json is corrupt ({e}) — reinstall @almadar/core")
+            });
         let Some(patterns) = parsed.get("patterns").and_then(|v| v.as_object()) else {
-            return out;
+            panic!("installed patterns-registry.json has no `patterns` object — reinstall @almadar/core");
         };
         for (name, def) in patterns {
             let props = def
@@ -378,7 +377,7 @@ pub fn complete(
             let alias = trailing_word(alias_part);
             let Some(behavior) = contracts
                 .zip(uses_aliases(source).get(alias).cloned())
-                .and_then(|(c, key)| c.get_behavior(&key).ok().flatten().cloned())
+                .and_then(|(c, key)| c.get_behavior(&key).ok().flatten())
             else {
                 return none(word);
             };

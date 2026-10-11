@@ -373,6 +373,7 @@ pub(super) fn trait_definition(
         let aliased = emit.is_some_and(|e| e.payload_entity.is_some())
             && ev.payload_entity == emit.and_then(|e| e.payload_entity.clone());
         if ev.external == Some(true)
+            || ev.listened == Some(true)
             || sole_source
             || (payload_differs && !aliased)
             || annotations_differ

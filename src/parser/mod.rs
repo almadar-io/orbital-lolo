@@ -21,7 +21,6 @@ use crate::error::ParseError;
 use crate::lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
 use orbital_core::i18n::lang::{self, Lang};
 use orbital_core::schema::SExpression;
-use std::collections::HashMap;
 
 /// Keys of the `app … [ … ]` modifier bracket.
 pub(crate) const APP_MODIFIERS: &[&str] = &[
@@ -2517,13 +2516,13 @@ mod tests {
 fn behavior_value_object(raw: &str) -> Option<SExpression> {
     use orbital_core::schema::behavior_value::{OrbitalValueRef, TraitValueRef};
     if let Some(t) = TraitValueRef::parse(raw) {
-        return Some(SExpression::Object(std::collections::HashMap::from([
+        return Some(SExpression::Object(orbital_core::schema::SObject::from([
             ("behavior".to_string(), SExpression::String(t.behavior)),
             ("trait".to_string(), SExpression::String(t.trait_name)),
         ])));
     }
     let o = OrbitalValueRef::parse(raw)?;
-    Some(SExpression::Object(std::collections::HashMap::from([
+    Some(SExpression::Object(orbital_core::schema::SObject::from([
         ("behavior".to_string(), SExpression::String(o.behavior)),
         ("orbital".to_string(), SExpression::String(o.orbital)),
     ])))

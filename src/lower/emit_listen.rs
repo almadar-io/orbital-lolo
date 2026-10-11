@@ -298,6 +298,20 @@ pub(crate) fn lower_emit(
                     field: f.name.clone(),
                 });
             }
+            // An array of structs keeps its element shape, as the same line in `listens` does.
+            if let Some(elem) = struct_payload_properties(inner, aliases, trait_type_params) {
+                fields.push(PayloadField { values: None,
+                    name: f.name.clone(),
+                    field_type: "[object]".to_string(),
+                    required: if f.required { Some(true) } else { None },
+                    description: None,
+                    properties: Some(elem),
+                    type_when: None,
+                    entity: None,
+                    projected_from: projected.clone(),
+                });
+                continue;
+            }
             let (field_type, type_when) = lower_match_field_type(ty);
             fields.push(PayloadField { values: payload_literal_values(ty, aliases),
                 name: f.name.clone(),
@@ -1056,7 +1070,7 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
             l.payload_mapping
                 .iter()
                 .map(|(k, v)| (k.clone(), desugar_expr_match(v)))
-                .collect::<HashMap<String, SExpression>>(),
+                .collect::<orbital_core::schema::SObject>(),
         )
     };
 

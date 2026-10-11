@@ -1418,7 +1418,7 @@ impl Formatter {
     fn fmt_instance_block(
         &mut self,
         locale: Option<&String>,
-        rows: &[std::collections::HashMap<String, SExpression>],
+        rows: &[orbital_core::schema::SObject],
     ) {
         self.write_indent();
         match locale {
@@ -2576,7 +2576,7 @@ impl Formatter {
     /// (or `<Type attrs />` when childless). The `type` key becomes the tag
     /// name (PascalCased); `children` becomes nested JSX; every other key is
     /// a sorted attribute.
-    fn fmt_jsx_pattern(&mut self, map: &std::collections::HashMap<String, SExpression>) {
+    fn fmt_jsx_pattern(&mut self, map: &orbital_core::schema::SObject) {
         let type_str = match map.get("type") {
             Some(SExpression::String(s)) => s.clone(),
             _ => return self.fmt_sexpr_object(map),
@@ -2892,7 +2892,7 @@ impl Formatter {
         }
     }
 
-    fn fmt_sexpr_object(&mut self, map: &std::collections::HashMap<String, SExpression>) {
+    fn fmt_sexpr_object(&mut self, map: &orbital_core::schema::SObject) {
         if map.is_empty() {
             self.output.push_str("{}");
             return;

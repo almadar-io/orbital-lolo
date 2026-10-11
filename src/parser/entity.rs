@@ -47,10 +47,10 @@ impl Parser {
         let mut update_policy = None;
         let mut delete_policy = None;
         let mut access_waivers: Vec<(String, String)> = Vec::new();
-        let mut instances: Vec<std::collections::HashMap<String, SExpression>> = Vec::new();
+        let mut instances: Vec<orbital_core::schema::SObject> = Vec::new();
         let mut locale_instances: std::collections::BTreeMap<
             String,
-            Vec<std::collections::HashMap<String, SExpression>>,
+            Vec<orbital_core::schema::SObject>,
         > = std::collections::BTreeMap::new();
         loop {
             self.skip_newlines();
@@ -324,7 +324,7 @@ impl Parser {
     fn parse_instance_rows(
         &mut self,
         span: Span,
-    ) -> Result<Vec<std::collections::HashMap<String, SExpression>>, ParseError> {
+    ) -> Result<Vec<orbital_core::schema::SObject>, ParseError> {
         let SExpression::Array(rows) = self.parse_sexpr_or_value()? else {
             return Err(ParseError::InvalidType {
                 span,

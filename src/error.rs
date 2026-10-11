@@ -888,6 +888,12 @@ pub enum LowerError {
     #[error("{}", orbital_core::behavior_packages::not_installed_message(package))]
     BehaviorPackageNotInstalled { package: String },
 
+    /// The installed `@almadar/core` language data (the pattern vocabulary)
+    /// is missing, incompatible with this binary, or unreadable. Structured
+    /// so the CLI reports `ORB_LANGUAGE_DATA_*` and `needs_install`.
+    #[error("{0}")]
+    LanguageData(orbital_core::language_data::LanguageDataError),
+
     /// The same behavior name was found in two different installed (non-std)
     /// packages on the walk — never a precedence rule (ruling 3).
     #[error("behavior {name:?} is declared by both {package_a} and {package_b}")]

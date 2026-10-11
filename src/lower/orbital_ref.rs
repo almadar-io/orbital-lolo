@@ -206,7 +206,7 @@ pub(crate) fn lower_orbital_reference(
         if orb.trait_overrides.is_empty() {
             None
         } else {
-            let mut map = HashMap::new();
+            let mut map = std::collections::HashMap::new();
             for t in &orb.trait_overrides {
                 let ref_data = TraitRefData {
                     reference: t.trait_name.clone(),

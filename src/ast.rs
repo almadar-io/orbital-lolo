@@ -577,10 +577,10 @@ pub struct Entity {
     /// `mock` header tag — seed an empty browser store from the shared mock seeder.
     pub seed_mock: bool,
     /// `instances [ { … }, … ]` — written-out rows the entity starts with.
-    pub instances: Vec<std::collections::HashMap<String, SExpression>>,
+    pub instances: Vec<orbital_core::schema::SObject>,
     /// `instances <lang> [ … ]` — the written-out rows for one declared locale.
     pub locale_instances:
-        std::collections::BTreeMap<String, Vec<std::collections::HashMap<String, SExpression>>>,
+        std::collections::BTreeMap<String, Vec<orbital_core::schema::SObject>>,
     /// `@read <sexpr>` — a per-row predicate evaluated with `@entity` bound to
     /// the candidate row and `@user` to the viewer. ANDed with any call-site
     /// `filter:`; enforced once, for every trait that fetches this entity —

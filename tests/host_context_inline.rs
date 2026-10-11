@@ -22,6 +22,7 @@ use orbital_lolo::parse_and_lower_str;
 use std::path::Path;
 
 fn compile_and_inline(src: &str) -> Result<OrbitalSchema, InlineError> {
+    orbital_compiler::loader::register_source_lowerer(orbital_test_support::lower_lolo_file);
     let mut schema = parse_and_lower_str(src).expect("parse+lower must succeed");
     let std_pkg = orbital_test_support::installed_package(
         "almadar-std",

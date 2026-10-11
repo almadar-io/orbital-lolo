@@ -2,8 +2,8 @@
 //!
 //! orbital-lolo runs BEFORE orbital-compiler, so it can't import from the
 //! compiler's `embedded.rs` (would be a circular dep). This module reads
-//! the same `packages/almadar-patterns/src/patterns-registry.json` via
-//! `include_str!` and exposes the slice of metadata the L1 lolo checks
+//! the same patterns registry L2 does, through the one loader in
+//! `orbital_core::language_data` (the installed `@almadar/core`), and exposes the slice of metadata the L1 lolo checks
 //! actually need — currently just "is this prop name an event-bearing
 //! prop somewhere in the registry?".
 //!
@@ -16,7 +16,19 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
-const PATTERNS_JSON: &str = include_str!("baked/patterns-registry.json");
+/// The installed patterns registry. Lowering preflights
+/// `language_data()` and returns a structured error before any accessor here
+/// runs; see `orbital_core::language_data::language_data_after_preflight`.
+pub(crate) fn patterns_json() -> &'static str {
+    orbital_core::language_data::language_data_after_preflight()
+        .patterns
+        .as_str()
+}
+
+fn parse_registry() -> serde_json::Value {
+    serde_json::from_str(patterns_json())
+        .unwrap_or_else(|e| panic!("installed patterns-registry.json is corrupt ({e}) — reinstall @almadar/core"))
+}
 
 /// Set of object-key names that, per the registry, identify a string
 /// value as a bus event-name reference. Two sources contribute:
@@ -47,16 +59,9 @@ pub fn event_prop_names() -> &'static HashSet<String> {
     EVENT_PROP_NAMES.get_or_init(|| {
         let mut names: HashSet<String> = HashSet::new();
 
-        let Ok(parsed) = serde_json::from_str::<serde_json::Value>(PATTERNS_JSON) else {
-            // Registry malformed at compile-time-embedded path. The set
-            // stays empty; lolo's existing reachability check then
-            // collects no event-name literals at all (regress to a
-            // permissive null check rather than emit false errors). A
-            // separate sanity test below catches this in CI.
-            return names;
-        };
+        let parsed = parse_registry();
         let Some(patterns) = parsed.get("patterns").and_then(|v| v.as_object()) else {
-            return names;
+            panic!("installed patterns-registry.json has no `patterns` object — reinstall @almadar/core");
         };
         for (_pattern_name, pattern_value) in patterns {
             let Some(props_schema) = pattern_value.get("propsSchema").and_then(|v| v.as_object())
@@ -96,11 +101,9 @@ pub fn record_prop(pattern: &str, prop: &str) -> Option<bool> {
     RECORD_PROPS
         .get_or_init(|| {
             let mut out = HashMap::new();
-            let Ok(parsed) = serde_json::from_str::<serde_json::Value>(PATTERNS_JSON) else {
-                return out;
-            };
+            let parsed = parse_registry();
             let Some(patterns) = parsed.get("patterns").and_then(|v| v.as_object()) else {
-                return out;
+                panic!("installed patterns-registry.json has no `patterns` object — reinstall @almadar/core");
             };
             for (pattern_name, pattern_value) in patterns {
                 let Some(props) = pattern_value.get("propsSchema").and_then(|v| v.as_object()) else {

@@ -25,7 +25,6 @@
 use super::*;
 use crate::ast::{ConfigField, Listen, Trait, TraitRefData, TypeExpr};
 use orbital_core::schema::SExpression;
-use std::collections::HashMap;
 
 /// The three JSX tag kinds, distinguished by tag shape after the first
 /// identifier segment is read.
@@ -481,7 +480,7 @@ fn desugar_pattern(
     children: Vec<SExpression>,
     explicit_closing: bool,
 ) -> SExpression {
-    let mut map: HashMap<String, SExpression> = HashMap::new();
+    let mut map: orbital_core::schema::SObject = orbital_core::schema::SObject::new();
     // `type` — explicit `type=` override wins; otherwise kebab-normalize the
     // PascalCase tag name. A non-string `type=` is passed through verbatim.
     let type_value = attrs

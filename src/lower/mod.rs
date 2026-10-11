@@ -145,7 +145,8 @@ pub fn lower_to_orb_with_prior_and_map_with(
     prior: Option<&OrbitalSchema>,
     options: &LowerOptions,
 ) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
-    let contracts = LoloContracts::load(&options.packages).map_err(|e| match e {
+    orbital_core::language_data::language_data().map_err(LowerError::LanguageData)?;
+    let contracts = LoloContracts::load_shared(&options.packages).map_err(|e| match e {
         crate::registry::LoadError::StdNotInstalled => LowerError::BehaviorPackageNotInstalled {
             package: orbital_core::behavior_packages::STD_PACKAGE.to_string(),
         },
@@ -353,6 +354,7 @@ fn lower_to_orb_names_only(
     )?;
 
     let mut schema = OrbitalSchema {
+        theme_definitions: None,
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
         public_dir: ast.app.public.clone(),
         site: (!ast.app.site.is_empty()).then(|| ast.app.site.clone()),
@@ -427,7 +429,7 @@ fn lower_theme_decl(decl: &ThemeDecl) -> ThemeRef {
     }
 }
 
-fn theme_map(entries: &[(String, String)]) -> Option<HashMap<String, String>> {
+fn theme_map(entries: &[(String, String)]) -> Option<orbital_core::schema::ThemeMap> {
     if entries.is_empty() {
         None
     } else {
@@ -457,6 +459,9 @@ fn motion_shapes(entries: &[(String, String)]) -> Option<MotionTokens> {
         easings: None,
         intents: None,
         shapes: Some(shapes),
+        entry: None,
+        busy_delay: None,
+        awaiting_skeleton: None,
     })
 }
 
@@ -904,6 +909,7 @@ fn lower_orbital(
                     payload_schema: None,
                     payload_entity: None,
                     external: None,
+                    listened: None,
                 }]),
                 transitions: vec![TransitionDefinition {
                     from: StringOrArray::Single("init".to_string()),
