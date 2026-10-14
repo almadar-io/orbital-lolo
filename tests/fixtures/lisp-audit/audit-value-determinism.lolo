@@ -8,7 +8,7 @@ orbital ValueDeterminismOrbital {
     n : number = 0
     s : string = ""
     arr : [number] = [1, 2, 3, 6, 8, 10]
-    obj : Map string scalar = {}
+    obj : Map string string = {}
   }
 
   trait ValueDeterminism -> ValueRecord [interaction, instance] {

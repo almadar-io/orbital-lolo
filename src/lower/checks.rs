@@ -593,7 +593,15 @@ fn check_one_set_value(
         return Ok(());
     };
 
-    if !orbital_core::set_value_type_compatible(&declared_str, &actual_str) {
+    let union_members = type_union_member_strs(declared, aliases);
+    let accepted = match &union_members {
+        _ if declared_str == actual_str => true,
+        Some(members) => members
+            .iter()
+            .any(|m| orbital_core::set_value_type_compatible(m, &actual_str)),
+        None => orbital_core::set_value_type_compatible(&declared_str, &actual_str),
+    };
+    if !accepted {
         return Err(LowerError::SetValueTypeMismatch {
             orbital: t.name.clone(), // diagnostic context: trait carries its parent orbital name in error path
             trait_name: t.name.clone(),
@@ -604,6 +612,26 @@ fn check_one_set_value(
         });
     }
     Ok(())
+}
+
+/// The member types (as compat strings) of a field typed by a TYPE union — an inline
+/// `string | number` or a named alias of one — or `None` for anything else. A value is
+/// assignable to the field when it fits any one member.
+fn type_union_member_strs(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Option<Vec<String>> {
+    match ty {
+        TypeExpr::Union(parts) if crate::lower::entity::is_type_union(parts, aliases) => {
+            Some(parts.iter().map(type_expr_to_compat_str).collect())
+        }
+        TypeExpr::Named(n) => match aliases.get(n) {
+            Some(TypeAliasResolved::Type(inner)) => type_union_member_strs(inner, aliases),
+            _ => None,
+        },
+        TypeExpr::Optional(inner) => type_union_member_strs(inner, aliases),
+        _ => None,
+    }
 }
 
 /// The declared enum members of a field type, or `None` when it is not a

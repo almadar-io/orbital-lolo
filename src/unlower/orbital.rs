@@ -481,6 +481,14 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
     let mut enums: BTreeMap<String, TypeExpr> = BTreeMap::new();
     if let Some(types) = &o.types {
         for (name, fields) in types {
+            // A dictionary, list or union alias is one entry with the empty name: the alias's value is its type.
+            if let [only] = fields.as_slice() {
+                if only.name.is_empty() {
+                    let value = event_fields(fields)?.remove(0).type_expr;
+                    out.type_aliases.push(type_alias(name, TypeBody::Alias(value)));
+                    continue;
+                }
+            }
             let richer = global.structs.get(name).cloned().unwrap_or_default();
             let members = event_fields(fields)?
                 .into_iter()

@@ -141,8 +141,8 @@ orbital OpDivergenceProbesOrbital {
       PROBE_STARTS_WITH { prefix : string! }
       PROBE_ENDS_WITH { suffix : string! }
       PROBE_PAD_START { targetLen : number!, padChar : string! }
-      PROBE_DEEP_MERGE { overrides : Map string scalar! }
-      PROBE_MAP_VALUES { obj : Map string scalar! }
+      PROBE_DEEP_MERGE { overrides : Map string string! }
+      PROBE_MAP_VALUES { obj : Map string string! }
       PROBE_AABB_OVERLAP { rectA : Rect!, rectB : Rect! }
       PROBE_POINT_IN_RECT { point : { x : number!, y : number! }!, rect : Rect! }
       PROBE_IS_BEFORE { compareDate : string! }

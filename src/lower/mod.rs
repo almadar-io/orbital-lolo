@@ -668,7 +668,7 @@ pub(crate) fn lower_expects_decl(
             .map(|fields| {
                 fields
                     .iter()
-                    .map(|f| lower_field(f, aliases, entity_names))
+                    .map(|f| lower_field(f, aliases, entity_names, &[]))
                     .collect::<Result<Vec<_>, _>>()
             })
             .transpose()
@@ -950,10 +950,53 @@ fn lower_orbital(
     // aliases are not legal `::` args and are excluded.
     let mut types_map: BTreeMap<String, Vec<PayloadField>> = BTreeMap::new();
     for (name, resolved) in aliases {
-        if let TypeAliasResolved::Type(te @ TypeExpr::Object(_)) = resolved {
-            if let Some(props) = struct_payload_properties(te, aliases, &[]) {
-                types_map.insert(name.clone(), props);
+        match resolved {
+            TypeAliasResolved::Type(te @ TypeExpr::Object(_)) => {
+                if let Some(props) = struct_payload_properties(te, aliases, &[]) {
+                    types_map.insert(name.clone(), props);
+                }
             }
+            // A dictionary or list alias is not a struct: it is recorded as ONE entry with the empty name (no field
+            // has one) whose type string is the alias's value, so `json/parse x Row` can name it as a shape.
+            TypeAliasResolved::Type(
+                te @ (TypeExpr::Map(..) | TypeExpr::Array(_) | TypeExpr::SExpr),
+            ) => {
+                types_map.insert(
+                    name.clone(),
+                    vec![PayloadField {
+                        values: None,
+                        name: String::new(),
+                        field_type: type_expr_to_string(te),
+                        required: None,
+                        description: None,
+                        properties: None,
+                        type_when: None,
+                        entity: None,
+                        projected_from: None,
+                    }],
+                );
+            }
+            // A tagged union is recorded as ONE entry with the empty name, typed `union`, whose properties are its
+            // variants: a payload field named by the alias resolves to that union and its members can be read.
+            TypeAliasResolved::Type(te @ TypeExpr::Union(_)) => {
+                if let Some(variants) = crate::lower::emit_listen::union_payload_variants(te, aliases, &[]) {
+                    types_map.insert(
+                        name.clone(),
+                        vec![PayloadField {
+                            values: None,
+                            name: String::new(),
+                            field_type: "union".to_string(),
+                            required: None,
+                            description: None,
+                            properties: Some(variants),
+                            type_when: None,
+                            entity: None,
+                            projected_from: None,
+                        }],
+                    );
+                }
+            }
+            _ => {}
         }
     }
     let types = if types_map.is_empty() {
@@ -1765,6 +1808,57 @@ mod tests {
     }
 
     #[test]
+    fn emit_struct_literal_into_a_tagged_union_payload_passes() {
+        let src = r#"
+            orbital ContactOrbital {
+                type ByName = { type : "name", name : string! }
+                type ByIndex = { type : "index", index : int! }
+                type Pick = ByName | ByIndex
+                entity Contact { id : string! }
+                trait ContactDelete -> Contact [interaction] {
+                    initial: idle
+                    state idle {
+                        DELETE -> idle
+                            (emit PICKED { pick: { type: "name", name: "x" } })
+                    }
+                    emits {
+                        PICKED { pick : Pick! }
+                    }
+                }
+            }
+        "#;
+        let ast = parse_str(src).expect("parse");
+        assert!(lower_to_orb(&ast).is_ok());
+    }
+
+    #[test]
+    fn emit_scalar_literal_into_a_tagged_union_payload_errors() {
+        let src = r#"
+            orbital ContactOrbital {
+                type ByName = { type : "name", name : string! }
+                type ByIndex = { type : "index", index : int! }
+                type Pick = ByName | ByIndex
+                entity Contact { id : string! }
+                trait ContactDelete -> Contact [interaction] {
+                    initial: idle
+                    state idle {
+                        DELETE -> idle
+                            (emit PICKED { pick: 42 })
+                    }
+                    emits {
+                        PICKED { pick : Pick! }
+                    }
+                }
+            }
+        "#;
+        let ast = parse_str(src).expect("parse");
+        match lower_to_orb(&ast).map_err(|e| e.innermost().clone()) {
+            Err(LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => assert_eq!(actual, "number"),
+            other => panic!("expected EmitPayloadFieldTypeMismatch, got {:?}", other),
+        }
+    }
+
+    #[test]
     fn emit_with_binding_skips_type_check() {
         // `id: "@payload.id"` is a binding — type comes from the F3
         // resolver at L2, not from the literal. The L1 mirror skips
@@ -1862,6 +1956,84 @@ mod tests {
             }
             other => panic!("expected SetValueTypeMismatch, got {:?}", other),
         }
+    }
+
+    #[test]
+    fn set_a_member_of_a_primitive_union_alias_is_accepted_and_a_non_member_is_not() {
+        let src = |value: &str| {
+            format!(
+                r#"
+            orbital ArticleOrbital {{
+                type Frame = string | number
+                entity Article {{
+                    id : string!
+                    frame : Frame
+                }}
+                trait ArticleEditor -> Article [interaction] {{
+                    initial: idle
+                    state idle {{
+                        INIT -> idle
+                            (set @entity.frame {value})
+                    }}
+                }}
+            }}
+        "#
+            )
+        };
+        for ok in ["42", "\"front\""] {
+            let ast = parse_str(&src(ok)).expect("parse");
+            assert!(lower_to_orb(&ast).is_ok(), "{ok} is a member of Frame");
+        }
+        let ast = parse_str(&src("true")).expect("parse");
+        match lower_to_orb(&ast).map_err(|e| e.innermost().clone()) {
+            Err(LowerError::SetValueTypeMismatch { actual_type, .. }) => assert_eq!(actual_type, "boolean"),
+            other => panic!("expected SetValueTypeMismatch, got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn a_local_listens_payload_typed_by_a_primitive_union_alias_lowers_to_a_union() {
+        let src = r#"
+            orbital ArticleOrbital {
+                type Frame = string | number
+                entity Article {
+                    id : string!
+                    frame : Frame
+                }
+                trait ArticleEditor -> Article [interaction] {
+                    initial: idle
+                    state idle {
+                        FRAMED -> idle
+                            (set @entity.frame ?frame)
+                    }
+                    listens {
+                        FRAMED { frame : Frame! }
+                    }
+                }
+            }
+        "#;
+        let ast = parse_str(src).expect("parse");
+        let schema = lower_to_orb(&ast).expect("lowers");
+        let orbital_core::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
+            panic!("inline trait");
+        };
+        let events = trait_def.state_machine.events.as_ref().expect("events");
+        let framed = events.iter().find(|e| e.key == "FRAMED").expect("FRAMED event");
+        let frame = framed
+            .payload_schema
+            .as_ref()
+            .and_then(|p| p.iter().find(|f| f.name == "frame"))
+            .expect("frame payload field");
+        assert_eq!(frame.field_type, "union");
+        assert_eq!(frame.values, None);
+        let variants: Vec<&str> = frame
+            .properties
+            .as_ref()
+            .expect("variants")
+            .iter()
+            .map(|v| v.name.as_str())
+            .collect();
+        assert_eq!(variants, vec!["string", "number"]);
     }
 
     #[test]

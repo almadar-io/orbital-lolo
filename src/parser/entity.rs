@@ -176,8 +176,13 @@ impl Parser {
         // Entity rows hold per-row domain data; mixing these reference
         // semantics into entity fields would explode edge cases. Reject
         // here so authors get a clear error at parse time.
+        let allow: &[&str] = if matches!(persistence, Some(Persistence::Runtime)) {
+            RUNTIME_ENTITY_ALLOWED
+        } else {
+            &[]
+        };
         for f in &fields {
-            if let Some(ty_name) = type_expr_config_only_type(&f.type_expr) {
+            if let Some(ty_name) = type_expr_config_only_type_allowing(&f.type_expr, allow) {
                 return Err(ParseError::InvalidType {
                     span: f.span,
                     message: format!(

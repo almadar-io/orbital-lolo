@@ -37,6 +37,67 @@ fn theme_maps_empty(maps: &ThemeTokenMaps) -> bool {
         && maps.scene.is_empty()
 }
 
+/// One AST node, printed on its own (the language reference's examples).
+pub enum Node<'a> {
+    Orbital(&'a Orbital),
+    UseDecl(&'a UseDecl),
+    ExpectsDecl(&'a ExpectsDecl),
+    TypeAlias(&'a TypeAlias),
+    Entity(&'a Entity),
+    EntityField(&'a EntityField),
+    Trait(&'a Trait),
+    State(&'a State),
+    Transition(&'a Transition),
+    Emit(&'a Emit),
+    Listen(&'a Listen),
+    Tick(&'a Tick),
+    ConfigField(&'a ConfigField),
+    Page(&'a Page),
+}
+
+/// Format one AST node as canonical `.lolo` source, without comments.
+pub fn format_node(node: Node<'_>) -> String {
+    let mut f = Formatter::new(Vec::new());
+    match node {
+        Node::Orbital(n) => f.fmt_orbital(n),
+        Node::UseDecl(n) => f.fmt_use_decl(n),
+        Node::ExpectsDecl(n) => f.fmt_expects_decl(n),
+        Node::TypeAlias(n) => f.fmt_type_alias(n),
+        Node::Entity(n) => f.fmt_entity(n),
+        Node::EntityField(n) => f.fmt_entity_field(n),
+        Node::Trait(n) => f.fmt_trait(n),
+        Node::State(n) => f.fmt_state(n),
+        Node::Transition(n) => f.fmt_transition(n),
+        Node::Emit(n) => f.fmt_emit(n),
+        Node::Listen(n) => f.fmt_listen(n),
+        Node::Tick(n) => f.fmt_tick(n),
+        Node::ConfigField(n) => f.fmt_config_field(n),
+        Node::Page(n) => f.fmt_page(n),
+    }
+    f.finish().trim().to_string()
+}
+
+/// [`format_node`], plus the 1-based first and last line of every transition it printed, in
+/// print order.
+pub fn format_node_with_transition_lines(node: Node<'_>) -> (String, Vec<(usize, usize)>) {
+    let mut f = Formatter::new(Vec::new());
+    match node {
+        Node::Trait(n) => f.fmt_trait(n),
+        Node::State(n) => f.fmt_state(n),
+        Node::Transition(n) => f.fmt_transition(n),
+        other => return (format_node(other), Vec::new()),
+    }
+    let ranges = std::mem::take(&mut f.transition_ranges);
+    let raw = f.finish();
+    let lead = raw.len() - raw.trim_start().len();
+    let line_at = |offset: usize| raw[lead..offset.max(lead)].matches('\n').count() + 1;
+    let lines = ranges
+        .into_iter()
+        .map(|(start, end)| (line_at(start), line_at(end)))
+        .collect();
+    (raw.trim().to_string(), lines)
+}
+
 /// One `key: value` entry of a modifier bracket; the closure writes the value.
 type ModifierEntry<'a> = (&'a str, Box<dyn Fn(&mut Formatter) + 'a>);
 
@@ -50,6 +111,8 @@ struct Formatter {
     /// reconstruct `@(...)` sugar and to suppress the desugared top-level
     /// `trait` declarations.
     inline_traits: HashMap<String, Trait>,
+    /// The output byte range of every transition printed, in print order.
+    transition_ranges: Vec<(usize, usize)>,
     /// Lexical bindings opened by enclosing `let` / `fn` forms. A bare atom
     /// naming one of these must print quoted: the parser rejects the bare
     /// spelling, and re-reading our own output has to succeed. Quoting is
@@ -65,6 +128,7 @@ impl Formatter {
             comments,
             next_comment: 0,
             inline_traits: HashMap::new(),
+            transition_ranges: Vec::new(),
             binding_scopes: Vec::new(),
         }
     }
@@ -97,9 +161,11 @@ impl Formatter {
                     }
                     SExpression::Array(items.into_iter().map(|i| restore(i, holes)).collect())
                 }
-                SExpression::Object(map) => {
-                    SExpression::Object(map.into_iter().map(|(k, v)| (k, restore(v, holes))).collect())
-                }
+                SExpression::Object(map) => SExpression::Object(
+                    map.into_iter()
+                        .map(|(k, v)| (k, restore(v, holes)))
+                        .collect(),
+                ),
                 other => other,
             }
         }
@@ -586,6 +652,17 @@ impl Formatter {
         }
     }
 
+    /// A type in a position that takes one atom: a union is parenthesized.
+    fn fmt_grouped_type_expr(&mut self, ty: &TypeExpr) {
+        if matches!(ty, TypeExpr::Union(_)) {
+            self.output.push('(');
+            self.fmt_type_expr(ty);
+            self.output.push(')');
+        } else {
+            self.fmt_type_expr(ty);
+        }
+    }
+
     fn fmt_type_expr(&mut self, ty: &TypeExpr) {
         match ty {
             TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(knob)) => {
@@ -611,7 +688,7 @@ impl Formatter {
             }
             TypeExpr::Array(inner) => {
                 self.output.push('[');
-                self.fmt_type_expr(inner);
+                self.fmt_grouped_type_expr(inner);
                 self.output.push(']');
             }
             TypeExpr::Tuple(slots) => {
@@ -627,9 +704,9 @@ impl Formatter {
             TypeExpr::Map(key, value) => {
                 // Surface syntax: `Map K V` (juxtaposition).
                 self.output.push_str("Map ");
-                self.fmt_type_expr(key);
+                self.fmt_grouped_type_expr(key);
                 self.output.push(' ');
-                self.fmt_type_expr(value);
+                self.fmt_grouped_type_expr(value);
             }
             TypeExpr::Object(fields) => {
                 self.output.push_str("{ ");
@@ -655,7 +732,7 @@ impl Formatter {
                 }
             }
             TypeExpr::Optional(inner) => {
-                self.fmt_type_expr(inner);
+                self.fmt_grouped_type_expr(inner);
                 self.output.push('?');
             }
             TypeExpr::FieldOf { ty, field, .. } => {
@@ -1854,6 +1931,12 @@ impl Formatter {
     }
 
     fn fmt_transition(&mut self, tr: &Transition) {
+        let start = self.output.len();
+        self.fmt_transition_body(tr);
+        self.transition_ranges.push((start, self.output.len()));
+    }
+
+    fn fmt_transition_body(&mut self, tr: &Transition) {
         self.output.push_str(&tr.event);
         self.output.push_str(" -> ");
         self.output.push_str(&tr.target);
@@ -2006,6 +2089,9 @@ impl Formatter {
         }
         if tick.background {
             self.output.push_str(" [background]");
+        }
+        if tick.visible {
+            self.output.push_str(" [visible]");
         }
         if let Some(guard) = &tick.guard {
             self.output.push_str(" when ");
@@ -2292,8 +2378,7 @@ impl Formatter {
         // heads (`==`, `+`, `<=`, …) print unquoted. Anything else — including
         // a sigil with an array index like `@config.x[0].y`, which the sigil
         // reader can't consume bare — must be quoted to round-trip.
-        if (is_bare_sigil(s) || is_bare_atom(s)) && !self.is_lexically_bound(s)
-        {
+        if (is_bare_sigil(s) || is_bare_atom(s)) && !self.is_lexically_bound(s) {
             self.output.push_str(s);
             return;
         }
@@ -2883,8 +2968,12 @@ impl Formatter {
     /// An object key prints bare when it re-lexes as a key, quoted otherwise
     /// (a route like `"/dash"`), so every object round-trips.
     fn write_object_key(&mut self, k: &str) {
-        let bare = k.chars().next().is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
-            && k.chars().all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
+        let bare = k
+            .chars()
+            .next()
+            .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+            && k.chars()
+                .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
         if bare {
             self.output.push_str(k);
         } else {

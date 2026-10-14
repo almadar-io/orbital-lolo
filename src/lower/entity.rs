@@ -18,8 +18,13 @@ pub(crate) fn lower_entity(
 ) -> Result<EntityDefinition, LowerError> {
     check_shared_entity_has_persistence_mode(entity)?;
     let mut fields = Vec::with_capacity(entity.fields.len());
+    let allow: &[&str] = if matches!(entity.persistence, Some(Persistence::Runtime)) {
+        crate::parser::RUNTIME_ENTITY_ALLOWED
+    } else {
+        &[]
+    };
     for f in &entity.fields {
-        fields.push(lower_field(f, aliases, entity_names)?);
+        fields.push(lower_field(f, aliases, entity_names, allow)?);
     }
     let persistence = match &entity.persistence {
         Some(Persistence::Persistent) => Some(CorePersistence::Persistent),
@@ -61,17 +66,51 @@ pub(crate) fn lower_entity(
     })
 }
 
+/// The config-only type an entity field reaches, following record aliases: the parser's own list
+/// (`type_expr_config_only_type`) checks a field's written type, and a record alias can carry one
+/// in. Returns the type and the alias it came through.
+fn config_only_through_aliases(
+    t: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    allow: &[&str],
+    seen: &mut HashSet<String>,
+) -> Option<(&'static str, String)> {
+    match t {
+        TypeExpr::Named(name) => match aliases.get(name) {
+            Some(TypeAliasResolved::Type(inner)) if seen.insert(name.clone()) => {
+                config_only_through_aliases(inner, aliases, allow, seen)
+                    .map(|(ty, via)| (ty, if via.is_empty() { name.clone() } else { via }))
+            }
+            _ => None,
+        },
+        TypeExpr::Array(inner) | TypeExpr::Optional(inner) => {
+            config_only_through_aliases(inner, aliases, allow, seen)
+        }
+        TypeExpr::Tuple(parts) | TypeExpr::Union(parts) => parts
+            .iter()
+            .find_map(|p| config_only_through_aliases(p, aliases, allow, seen)),
+        TypeExpr::Map(key, value) => config_only_through_aliases(key, aliases, allow, seen)
+            .or_else(|| config_only_through_aliases(value, aliases, allow, seen)),
+        TypeExpr::Object(fields) => fields
+            .iter()
+            .find_map(|(_, ty, _)| config_only_through_aliases(ty, aliases, allow, seen)),
+        other => crate::parser::type_expr_config_only_type_allowing(other, allow)
+            .map(|ty| (ty, String::new())),
+    }
+}
+
 pub(crate) fn lower_field(
     f: &EntityField,
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,
+    allow: &[&str],
 ) -> Result<FieldDefinition, LowerError> {
     // Resolve the type expression. Named types may be enum aliases (lower to
     // string + values list), entity references (lower to a Relation field with
     // cardinality), or struct aliases (lower to inline object schema).
     let (field_type, values, items, properties, relation) =
         lower_type_expr(&f.type_expr, aliases, entity_names);
-    Ok(FieldDefinition {
+    let field = FieldDefinition {
         merged_from: None,
         name: Some(f.name.clone()),
         field_type,
@@ -88,7 +127,17 @@ pub(crate) fn lower_field(
         synonyms: f.synonyms.clone(),
         mock: f.mock.clone(),
         projected_from: f.type_expr.projection(),
-    })
+    };
+    if let Some((ty, via)) =
+        config_only_through_aliases(&f.type_expr, aliases, allow, &mut HashSet::new())
+    {
+        return Err(LowerError::ConfigTypeInEntity {
+            field: f.name.clone(),
+            path: via,
+            ty: ty.to_string(),
+        });
+    }
+    Ok(field)
 }
 
 type LoweredType = (
@@ -150,8 +199,8 @@ pub(crate) fn lower_type_expr(
         // keeps its type tag through lowering instead of erasing to `string` —
         // `check_field_def_shape`'s closed-circuit-parity acceptance check
         // (`config_type.rs`) needs the tag to fire. Entity-field positions stay
-        // protected by the parser gate (`ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY`);
-        // this arm is reached only for struct aliases consumed by config knobs.
+        // protected by the parser gate (`ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY`) and,
+        // through record aliases, by `config_only_through_aliases` in `lower_field`.
         TypeExpr::EventRef => (FieldType::Event, None, None, None, None),
         TypeExpr::EventAddress => (FieldType::EventAddress, None, None, None, None),
         TypeExpr::FieldOf {
@@ -461,10 +510,6 @@ pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
         "datetime" => FieldType::Datetime,
         "timestamp" => FieldType::Timestamp,
         "object" => FieldType::Object,
-        // The honest replacement for `json` on a dynamic-key value bag. Unlike
-        // the `json` line above (which ERASES to String and is being
-        // eliminated), this keeps its own tag all the way to codegen.
-        "scalar" => FieldType::Scalar,
         _ => return None,
     })
 }
@@ -768,7 +813,7 @@ fn struct_union_variants(
                 Some(TypeAliasResolved::Type(inner @ TypeExpr::Object(_))) => {
                     (name.clone(), inner.clone())
                 }
-                // A named PRIMITIVE (`string`, `scalar`, `node`, …).
+                // A named PRIMITIVE (`string`, `number`, `node`, …).
                 None if primitive_field_type(name).is_some() => {
                     (name.clone(), TypeExpr::Primitive(name.clone()))
                 }

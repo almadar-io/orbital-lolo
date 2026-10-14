@@ -192,6 +192,9 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
         // Money is numeric at rest; file is the canonical struct value.
         "money" => actual == "number",
         "file" => actual == "object",
+        // A tagged union of struct variants takes a struct literal; which
+        // variant it satisfies is the L2 emit-payload backstop's check.
+        "union" => actual == "object",
         "entity" | "relation" => actual == "object" || actual == "string",
         _ => false,
     }

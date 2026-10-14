@@ -1450,10 +1450,10 @@ impl Parser {
                 self.advance();
                 self.expect_keyword("every")?;
                 let interval = self.parse_tick_interval()?;
-                let background = if matches!(self.peek(), TokenKind::LBracket) {
+                let (background, visible) = if matches!(self.peek(), TokenKind::LBracket) {
                     self.parse_tick_tags()?
                 } else {
-                    false
+                    (false, false)
                 };
                 if matches!(self.peek(), TokenKind::Newline) {
                     self.advance();
@@ -1492,6 +1492,7 @@ impl Parser {
                     guard,
                     effects,
                     background,
+                    visible,
                     span,
                     guard_spans,
                     effect_spans,
@@ -1503,16 +1504,19 @@ impl Parser {
         Ok(out)
     }
 
-    /// `[background]` after a tick's interval; any other tag is rejected.
-    fn parse_tick_tags(&mut self) -> Result<bool, ParseError> {
+    /// `[background]` / `[visible]` after a tick's interval; any other tag is rejected.
+    fn parse_tick_tags(&mut self) -> Result<(bool, bool), ParseError> {
+        let open_span = self.peek_span();
         self.expect_kind(&TokenKind::LBracket, "[")?;
         let mut background = false;
+        let mut visible = false;
         loop {
             let tag_span = self.peek_span();
             let tag = self.expect_ident()?;
             let tag = self.lang.canon_tag(&tag).map(str::to_string).unwrap_or(tag);
             match tag.as_str() {
                 "background" => background = true,
+                "visible" => visible = true,
                 _ => {
                     return Err(ParseError::InvalidTickTag {
                         value: tag,
@@ -1527,7 +1531,10 @@ impl Parser {
             break;
         }
         self.expect_kind(&TokenKind::RBracket, "]")?;
-        Ok(background)
+        if background && visible {
+            return Err(ParseError::ConflictingTickTags { span: open_span });
+        }
+        Ok((background, visible))
     }
 
     pub(crate) fn parse_tick_interval(&mut self) -> Result<TickInterval, ParseError> {

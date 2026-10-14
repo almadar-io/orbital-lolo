@@ -13,6 +13,10 @@ thiserror.workspace = true
 sha2 = "0.10"
 tracing.workspace = true
 
+[build-dependencies]
+syn = { version = "2", features = ["full"] }
+quote = "1"
+
 [dev-dependencies]
 pretty_assertions.workspace = true
 orbital-compiler = { path = "../orbital-compiler" }

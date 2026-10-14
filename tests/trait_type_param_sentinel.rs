@@ -291,7 +291,7 @@ orbital MLRungsDefaulted {
     id : string!
   }
 
-  trait LookupRun (v : Type = ApprovalDemoPayload, r : Type = scalar) -> KeyLookup [lifecycle, instance] {
+  trait LookupRun (v : Type = ApprovalDemoPayload, r : Type = string) -> KeyLookup [lifecycle, instance] {
     state idle {
       INIT -> idle (ref KeyLookup)
     }
@@ -316,7 +316,7 @@ fn declaration_default_parses_and_lowers_onto_type_param_def() {
         trait_decl.type_params[0].default.as_deref(),
         Some("ApprovalDemoPayload")
     );
-    assert_eq!(trait_decl.type_params[1].default.as_deref(), Some("scalar"));
+    assert_eq!(trait_decl.type_params[1].default.as_deref(), Some("string"));
 
     let schema = parse_and_lower_str(PARAM_DEFAULT_SRC).expect("parse_and_lower must succeed");
     let TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
@@ -330,7 +330,7 @@ fn declaration_default_parses_and_lowers_onto_type_param_def() {
         type_params[0].default.as_deref(),
         Some("ApprovalDemoPayload")
     );
-    assert_eq!(type_params[1].default.as_deref(), Some("scalar"));
+    assert_eq!(type_params[1].default.as_deref(), Some("string"));
 }
 
 #[test]

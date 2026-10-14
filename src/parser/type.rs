@@ -473,6 +473,14 @@ impl Parser {
     }
 
     pub(crate) fn parse_type_atom(&mut self) -> Result<TypeExpr, ParseError> {
+        // `(T | U)` — a grouped type: how a union is written where only one atom fits
+        // (`Map string (string | number)`, `[(string | number)]`).
+        if matches!(self.peek(), TokenKind::LParen) {
+            self.advance();
+            let inner = self.parse_type_expr()?;
+            self.expect_kind(&TokenKind::RParen, ")")?;
+            return Ok(inner);
+        }
         // `[T]` — an array; `[T1, T2, …]` — a tuple.
         if matches!(self.peek(), TokenKind::LBracket) {
             self.advance();

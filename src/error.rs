@@ -139,8 +139,11 @@ pub enum ParseError {
     #[error("invalid persistence mode {value:?} at {}:{}: expected 'persistent', 'runtime', or 'shared'", span.line, span.col)]
     InvalidPersistenceMode { value: String, span: Span },
 
-    #[error("invalid tick tag {value:?} at {}:{}: expected 'background'", span.line, span.col)]
+    #[error("invalid tick tag {value:?} at {}:{}: expected 'background' or 'visible'", span.line, span.col)]
     InvalidTickTag { value: String, span: Span },
+
+    #[error("tick tags at {}:{} combine 'background' and 'visible': a background tick runs on the server, where nothing is on screen", span.line, span.col)]
+    ConflictingTickTags { span: Span },
 
     #[error("`@{annotation}` at {}:{} can't annotate a sourced listen `Source.EVENT -> TRIGGER`; only the local form `EVENT {{ fields }}` takes @description/@synonyms/@tier", span.line, span.col)]
     SourcedListenAnnotation { annotation: String, span: Span },
@@ -199,6 +202,7 @@ impl ParseError {
             | ParseError::UnknownKeyword { span, .. }
             | ParseError::InvalidPersistenceMode { span, .. }
             | ParseError::InvalidTickTag { span, .. }
+            | ParseError::ConflictingTickTags { span }
             | ParseError::SourcedListenAnnotation { span, .. }
             | ParseError::InvalidType { span, .. }
             | ParseError::InvalidSExpr { span, .. }
@@ -457,6 +461,13 @@ impl ParseError {
 pub enum LowerError {
     #[error("unknown type alias {name:?}")]
     UnknownTypeAlias { name: String },
+
+    #[error("ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY: entity field '{field}' reaches the `{ty}` type through the record `{path}` — `{ty}` is for config blocks only")]
+    ConfigTypeInEntity {
+        field: String,
+        path: String,
+        ty: String,
+    },
 
     #[error("orbital must define an entity")]
     MissingEntity,
@@ -786,7 +797,7 @@ pub enum LowerError {
     /// ref-resolution error.
     #[error(
         "trait reference {reference:?} names trait {member:?}, but behavior {behavior:?} \
-         does not declare it — check the name against `signatures.lolo`"
+         does not declare it — check the name with `orb reference`"
     )]
     UnknownTraitRef {
         reference: String,
@@ -815,7 +826,7 @@ pub enum LowerError {
     /// the live registries.
     #[error(
         "orbital reference {reference:?} names orbital {member:?}, but behavior {behavior:?} \
-         does not declare it — check the name against `signatures.lolo`"
+         does not declare it — check the name with `orb reference`"
     )]
     UnknownOrbitalRef {
         reference: String,
@@ -1139,10 +1150,12 @@ pub enum TypeError {
 
     #[error(
         "ELOLO_T_GENERIC_TYPE: {position} declares the generic type `{name}` — `json`, bare \
-         `object`, bare `array`, and `any` are not allowed in a declaration position. Replace \
+         `object`, bare `array`, `any`, and `scalar` are not allowed in a declaration position. Replace \
          it: renderable content → `node`; structured data → an inline `{{ k: T }}` shape, a \
          named `type` alias, or `Map K V`; a list → its element type, `[T]` (e.g. `[string]`); \
-         a single primitive of unknown kind → `scalar`"
+         a value of several kinds → a named tagged-union `type` alias, or the concrete \
+         primitive (`string`, `number`, `boolean`, `date`); the row of an entity → \
+         `@entity` / `@entity @config.<knob>`"
     )]
     GenericTypeForbidden {
         name: String,

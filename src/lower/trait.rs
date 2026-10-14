@@ -645,12 +645,22 @@ pub(crate) fn lower_trait(
                             None,
                             Some(entity_name),
                         )
+                    } else if let Some(variants) =
+                        emit_listen::union_payload_variants(ty, aliases, &trait_type_params)
+                            .filter(|v| v.iter().all(|m| m.properties.is_none()))
+                    {
+                        // A union of primitive kinds lowers as on the `emits` side: the
+                        // parent is tagged `union`, the member kinds ride in `properties`.
+                        // A union with a struct variant keeps the alias-named field its
+                        // member reads (`?shape.width`) are checked against.
+                        ("union".to_string(), Some(variants), None, None)
                     } else {
                         let (field_type, type_when) =
                             emit_listen::lower_match_field_type(ty);
                         (field_type, None, type_when, None)
                     };
-                    PayloadField { values: emit_listen::payload_literal_values(ty, aliases),
+                    let is_union = field_type == "union";
+                    PayloadField { values: if is_union { None } else { emit_listen::payload_literal_values(ty, aliases) },
                         name: f.name.clone(),
                         field_type,
                         required: if f.required { Some(true) } else { None },

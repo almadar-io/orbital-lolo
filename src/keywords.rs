@@ -107,7 +107,7 @@ const SHAPES: &[&str] = &["Entity", "Trait", "Page", "Orbital", "Event"];
 /// entity `[...]` persistence-tag list (`parser/entity.rs
 /// parse_persistence_tag`) plus the trait `[category, scope, ...]` modifier
 /// list's `instance`/`collection` scope markers and `local` client-only-
-/// dispatch flag (`parser/trait.rs parse_trait`), and the tick `[background]` flag
+/// dispatch flag (`parser/trait.rs parse_trait`), and the tick `[background]` / `[visible]` flags
 /// (`parser/trait.rs parse_tick_tags`). `identity` is shared with
 /// `KEYWORDS` (same English word, same translation, B1 rule 3).
 const TAGS: &[&str] = &[
@@ -119,6 +119,7 @@ const TAGS: &[&str] = &[
     "collection",
     "local",
     "background",
+    "visible",
     "mock",
 ];
 
@@ -228,7 +229,7 @@ const EFFECTS: &[&str] = &[
 ];
 
 /// `string number int float bool boolean timestamp date datetime duration
-/// money scalar file email url phone uuid image icon asset
+/// money file email url phone uuid image icon asset
 /// component object void null any` (`parser/mod.rs is_primitive_type`) plus
 /// `trait entity event EventAddress slot pattern Map secret SExpr` (`parser/type.rs`
 /// special type names). `entity`/`event`/`trait` are shared with
@@ -245,7 +246,6 @@ const TYPES: &[&str] = &[
     "datetime",
     "duration",
     "money",
-    "scalar",
     "file",
     "email",
     "url",

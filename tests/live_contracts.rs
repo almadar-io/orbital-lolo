@@ -61,7 +61,7 @@ fn package(tmp: &Path, live: bool, lolo: &str) -> BehaviorPackage {
     fs::write(source.join("zz-chrome.lolo"), lolo).unwrap();
     let contracts = root.join("behaviors/lolo-behavior-contracts.json");
     fs::write(&contracts, r#"{"behaviors":{"zz-chrome":{"traits":{"OldBar":{"requires":[],"config":{}}}}}}"#).unwrap();
-    for f in ["behaviors/behaviors-registry.json", "behaviors/factory-signatures.json", "behaviors/signatures.lolo"] {
+    for f in ["behaviors/behaviors-registry.json"] {
         fs::write(root.join(f), "{}").unwrap();
     }
     BehaviorPackage {
@@ -71,9 +71,7 @@ fn package(tmp: &Path, live: bool, lolo: &str) -> BehaviorPackage {
         root: root.clone(),
         registry: if live { RegistrySource::Live(root.join("behaviors/lolo")) } else { RegistrySource::Materialized(root.join("behaviors/registry")) },
         index: root.join("behaviors/behaviors-registry.json"),
-        factory_signatures: root.join("behaviors/factory-signatures.json"),
         lolo_contracts: contracts,
-        signatures: root.join("behaviors/signatures.lolo"),
         embeddings: Vec::new(),
         sidecars: Vec::new(),
         compiler_range: ">=0.0.0".into(),

@@ -1627,7 +1627,19 @@ pub(crate) fn is_primitive_type(name: &str) -> bool {
 /// nesting depth. Entity fields call this to reject these types — see
 /// `ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY`.
 pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
-    match t {
+    type_expr_config_only_type_allowing(t, &[])
+}
+
+/// Config-only types that a runtime (never persisted) entity may hold: `SExpr` (owner ruling
+/// 2026-10-13 — a played scene records `EffectTrace.args : SExpr[]`).
+pub(crate) const RUNTIME_ENTITY_ALLOWED: &[&str] = &["SExpr"];
+
+/// [`type_expr_config_only_type`] with some brands allowed.
+pub(crate) fn type_expr_config_only_type_allowing(
+    t: &TypeExpr,
+    allow: &[&str],
+) -> Option<&'static str> {
+    let found = match t {
         TypeExpr::Trait | TypeExpr::Orbital | TypeExpr::Behavior => None,
         // `@entity` self-reference: payload-positions-only, so an entity field
         // must reject it the same way it rejects the config-only brands.
@@ -1646,25 +1658,26 @@ pub(crate) fn type_expr_config_only_type(t: &TypeExpr) -> Option<&'static str> {
         // entity fields and `expects` shapes reject it the same way they
         // reject the other payload-only sigils above.
         TypeExpr::Match { .. } => Some("match"),
-        TypeExpr::Array(inner) => type_expr_config_only_type(inner),
-        TypeExpr::Tuple(slots) => slots.iter().find_map(type_expr_config_only_type),
+        TypeExpr::Array(inner) => type_expr_config_only_type_allowing(inner, allow),
+        TypeExpr::Tuple(slots) => slots.iter().find_map(|p| type_expr_config_only_type_allowing(p, allow)),
         TypeExpr::Map(key, value) => {
-            type_expr_config_only_type(key).or_else(|| type_expr_config_only_type(value))
+            type_expr_config_only_type_allowing(key, allow).or_else(|| type_expr_config_only_type_allowing(value, allow))
         }
-        TypeExpr::Optional(inner) => type_expr_config_only_type(inner),
-        TypeExpr::Union(parts) => parts.iter().find_map(type_expr_config_only_type),
+        TypeExpr::Optional(inner) => type_expr_config_only_type_allowing(inner, allow),
+        TypeExpr::Union(parts) => parts.iter().find_map(|p| type_expr_config_only_type_allowing(p, allow)),
         TypeExpr::Object(fields) => fields
             .iter()
-            .find_map(|(_, ty, _)| type_expr_config_only_type(ty)),
+            .find_map(|(_, ty, _)| type_expr_config_only_type_allowing(ty, allow)),
         TypeExpr::Primitive(_)
         | TypeExpr::Named(_)
         | TypeExpr::StringLiteral(_)
         | TypeExpr::RelationMany(_)
         | TypeExpr::RelationManyNonEmpty(_) => None,
         TypeExpr::FieldOf { resolved, .. } => {
-            resolved.as_deref().and_then(type_expr_config_only_type)
+            resolved.as_deref().and_then(|r| type_expr_config_only_type_allowing(r, allow))
         }
-    }
+    };
+    found.filter(|ty| !allow.contains(ty))
 }
 
 /// True when `t` is (or nests, at any depth) a `TypeExpr::Match`. Does NOT

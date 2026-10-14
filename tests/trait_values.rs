@@ -121,7 +121,8 @@ fn control_a_string_literal_stays_a_string() {
 
 #[test]
 fn control_other_config_only_types_stay_forbidden_in_entities() {
-    for ty in ["slot", "pattern", "secret", "SExpr", "entity", "event"] {
+    // `SExpr` is allowed in a [runtime] entity (owner ruling 2026-10-13); see entity_config_type_through_alias.rs.
+    for ty in ["slot", "pattern", "secret", "entity", "event"] {
         let msg = parse_err(&program(&format!("x : {ty}"), "(set @entity.id \"x\")"));
         assert!(
             msg.contains("ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY"),

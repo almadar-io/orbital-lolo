@@ -187,7 +187,7 @@ pub(crate) fn lower_orbital_reference(
     } else {
         let mut fields = Vec::with_capacity(orb.extend_fields.len());
         for f in &orb.extend_fields {
-            fields.push(lower_field(f, aliases, entity_names)?);
+            fields.push(lower_field(f, aliases, entity_names, &[])?);
         }
         Some(fields)
     };
@@ -197,7 +197,7 @@ pub(crate) fn lower_orbital_reference(
     } else {
         let mut fields = Vec::with_capacity(orb.retype_fields.len());
         for f in &orb.retype_fields {
-            fields.push(lower_field(f, aliases, entity_names)?);
+            fields.push(lower_field(f, aliases, entity_names, &[])?);
         }
         Some(fields)
     };

@@ -757,3 +757,32 @@ fn jsx_empty_children_round_trips() {
 fn fixture_34_cancel_call() {
     assert_round_trip("34-cancel-call");
 }
+
+/// A union nested in a `Map` value or an array element is written with parentheses:
+/// without them `Map string string | number` re-reads as a union of a map and a number.
+#[test]
+fn a_union_nested_in_a_map_or_list_keeps_its_grouping_through_the_formatter() {
+    let src = r#"
+orbital OrbG {
+  entity Rec [persistent: recs] {
+    id : string!
+    bag : Map string (string | number)
+    list : [(string | number)]
+  }
+  trait RecTrait -> Rec [interaction] { state idle { INIT -> idle (ref Rec) } }
+  page "/recs" -> RecTrait
+}
+"#;
+    let program = parse_str(src).expect("parenthesized types parse");
+    let formatted = format_program(&program);
+    assert!(formatted.contains("Map string (string | number)"), "{formatted}");
+    assert!(formatted.contains("[(string | number)]"), "{formatted}");
+    let again = parse_str(&formatted).expect("the formatted text parses");
+    assert_eq!(format_program(&again), formatted);
+    let before = parse_and_lower_str(src).expect("lowers");
+    let after = parse_and_lower_str(&formatted).expect("lowers again");
+    assert_eq!(
+        strip_identity_keys(serde_json::to_value(&before).unwrap()),
+        strip_identity_keys(serde_json::to_value(&after).unwrap())
+    );
+}

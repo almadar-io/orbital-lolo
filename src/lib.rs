@@ -23,6 +23,7 @@ pub mod lexer;
 pub mod lower;
 pub mod parser;
 pub mod patterns_meta;
+pub mod reference;
 pub mod registry;
 pub mod types;
 pub mod unlower;

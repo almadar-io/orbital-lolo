@@ -20,6 +20,7 @@ fn a_prop_only_in_the_installed_json_is_visible_to_l1_and_l2() {
             "eventContracts":"dist/patterns/event-contracts.json",
             "services":"dist/patterns/services-registry.json",
             "bindingRules":"dist/language/binding-rules.json",
+            "programTypes":"dist/language/program-types.json",
             "themes":"themes"}}"#,
     )
     .unwrap();
@@ -43,6 +44,7 @@ fn a_prop_only_in_the_installed_json_is_visible_to_l1_and_l2() {
         r#"{"guard":{"allowed":["zzRoot"]},"effect":{"allowed":["entity"]},"tick":{"allowed":[]}}"#,
     )
     .unwrap();
+    fs::write(core.join("dist/language/program-types.json"), "{}").unwrap();
     fs::create_dir_all(core.join("themes")).unwrap();
     fs::write(core.join("themes/zz.json"), r#"{"name":"zz","tokens":{}}"#).unwrap();
 

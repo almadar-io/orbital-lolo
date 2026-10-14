@@ -32,14 +32,9 @@ fn fake_package(
     let index = root.join("behaviors/behaviors-registry.json");
     fs::write(&index, "{}").expect("write index");
 
-    let factory_signatures = registry.join("factory-signatures.json");
-    fs::write(&factory_signatures, "{}").expect("write factory signatures");
-
     let lolo_contracts = root.join("behaviors/lolo-behavior-contracts.json");
     fs::write(&lolo_contracts, contracts_json).expect("write lolo contracts");
 
-    let signatures = root.join("behaviors/signatures.lolo");
-    fs::write(&signatures, "").expect("write signatures");
 
     let package_json = serde_json::json!({
         "name": name,
@@ -48,9 +43,7 @@ fn fake_package(
             "prefix": prefix,
             "registry": "behaviors/registry",
             "index": "behaviors/behaviors-registry.json",
-            "factorySignatures": "behaviors/registry/factory-signatures.json",
             "loloContracts": "behaviors/lolo-behavior-contracts.json",
-            "signatures": "behaviors/signatures.lolo",
             "compiler": ">=0.0.0",
         },
     });
@@ -67,9 +60,7 @@ fn fake_package(
         root,
         registry: orbital_core::behavior_packages::RegistrySource::Materialized(registry),
         index,
-        factory_signatures,
         lolo_contracts,
-        signatures,
         embeddings: Vec::new(),
         sidecars: Vec::new(),
         compiler_range: ">=0.0.0".to_string(),

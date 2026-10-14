@@ -206,6 +206,7 @@ fn tick_of(t: &TickDefinition) -> Result<Tick, UnlowerError> {
         guard: t.guard.clone(),
         effects: t.effects.clone(),
         background: t.background,
+        visible: t.while_visible,
         span: Span::dummy(),
         guard_spans: Vec::new(),
         effect_spans: Vec::new(),
@@ -265,6 +266,27 @@ fn declaration_order(td: &TraitDefinition) -> Result<(Vec<String>, Option<String
     Ok((order, initial_state))
 }
 
+/// The IR indices of `state`'s transitions, in the order the trait prints them.
+fn state_transitions(td: &TraitDefinition, state: &str) -> Result<Vec<usize>, UnlowerError> {
+    let mut out = Vec::new();
+    for (i, t) in td.state_machine.transitions.iter().enumerate() {
+        if single_from(t)? == state {
+            out.push(i);
+        }
+    }
+    Ok(out)
+}
+
+/// Every IR transition index, in the order the unlowered trait prints them.
+pub(super) fn transition_print_order(td: &TraitDefinition) -> Result<Vec<usize>, UnlowerError> {
+    let (order, _) = declaration_order(td)?;
+    let mut out = Vec::new();
+    for name in &order {
+        out.extend(state_transitions(td, name)?);
+    }
+    Ok(out)
+}
+
 pub(super) fn trait_definition(
     td: &TraitDefinition,
 ) -> Result<(Trait, Vec<EventAlias>), UnlowerError> {
@@ -309,10 +331,8 @@ pub(super) fn trait_definition(
             .find(|s| &s.name == name)
             .ok_or_else(|| UnlowerError::new(format!("state `{name}` vanished")))?;
         let mut transitions = Vec::new();
-        for t in &sm.transitions {
-            if &single_from(t)? != name {
-                continue;
-            }
+        for i in state_transitions(td, name)? {
+            let t = &sm.transitions[i];
             transitions.push(Transition {
                 event: t.event.clone(),
                 target: t.to.clone(),

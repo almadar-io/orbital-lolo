@@ -2,8 +2,8 @@
 //! (`orb.source`) publishes its contracts from its own `.lolo` files, lowered on
 //! demand; a materialized one from its declared contracts file.
 //!
-//! orbital-lolo runs BEFORE orbital-compiler and can't import the compiler's
-//! embedded `factory-signatures-*.json` (circular dep). Each behavior package
+//! orbital-lolo runs BEFORE orbital-compiler and can't import the
+//! compiler's data (circular dep). Each behavior package
 //! ships a slim slice — per behavior (`organism`), each trait's
 //! `entityContract.requires` + overridable config-key types, and the page
 //! names — at the path its `package.json` `orb.loloContracts` block declares.

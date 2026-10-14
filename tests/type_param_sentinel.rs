@@ -439,12 +439,12 @@ fn payload_of_sibling_literal_shape_match_passes() {
 }
 
 // ---------------------------------------------------------------------------
-// Primitive-variant unions (`scalar | FileItem`)
+// Primitive-variant unions (`string | FileItem`)
 // ---------------------------------------------------------------------------
 
 /// A union alias whose members are all KNOWN TYPES lowers to a real union, not
-/// to a string enum of the members' own names. Before this, `scalar | FileItem`
-/// declared a field whose only legal values were the literal words "scalar" and
+/// to a string enum of the members' own names. Before this, `string | FileItem`
+/// declared a field whose only legal values were the literal words "string" and
 /// "FileItem" — it accepted the variant's NAME and rejected the variant's VALUE.
 #[test]
 fn union_of_primitive_and_struct_variants_lowers_to_a_union() {
@@ -453,7 +453,7 @@ app u "1.0.0"
 "probe"
 orbital P {
   type FileItem = { name : string!, url : string! }
-  type Ctl = scalar | FileItem
+  type Ctl = string | FileItem
   entity Item [runtime] {
     id : string!
     v : Ctl
@@ -486,7 +486,7 @@ orbital P {
     );
     let props = v.properties.as_ref().expect("union carries its variants");
     assert!(
-        props.contains_key("scalar") && props.contains_key("FileItem"),
+        props.contains_key("string") && props.contains_key("FileItem"),
         "both variants must be carried, got {:?}",
         props.keys().collect::<Vec<_>>()
     );

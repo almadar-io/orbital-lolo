@@ -741,7 +741,7 @@ fn check_named_payload_ref(
     let resolved = resolve_named(name, &[], ctx, span)?;
     match resolved {
         TypeBody::Entity { .. } | TypeBody::Struct(_) => Ok(()),
-        // A named TYPE union (`type DecisionMatch = scalar | [float]`) is
+        // A named TYPE union (`type DecisionMatch = string | [float]`) is
         // legal in payload position: the same union authored inline lowers
         // there already (`union_payload_variants`), and an alias must stay
         // transparent to it. A vocabulary (`up | down`) is not a type union
@@ -938,12 +938,13 @@ pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
 /// position the `.orb` carries — but the L1 lowerer ERASES an authored scalar
 /// `json`/`any` entity field to `string` before that gate can see it, so the
 /// authoring site was accepted-and-lying. Rejecting the SPELLING here (rung 1
-/// of the prevention ladder) closes that loophole at its source; `scalar`,
-/// `node`, and shaped types are the sanctioned vocabulary.
+/// of the prevention ladder) closes that loophole at its source; `node`
+/// and shaped types are the sanctioned vocabulary. `scalar` (a primitive of
+/// unspecified kind) is rejected the same way.
 fn reject_generic_types(te: &TypeExpr, position: &str, span: Span) -> Result<(), TypeError> {
     match te.peel() {
         TypeExpr::Primitive(n) | TypeExpr::Named(n)
-            if n == "json" || n == "any" || n == "object" || n == "array" =>
+            if n == "json" || n == "any" || n == "object" || n == "array" || n == "scalar" =>
         {
             Err(TypeError::GenericTypeForbidden {
                 name: n.clone(),
@@ -1507,6 +1508,36 @@ orbital OrbG {{
         }
     }
 
+    /// `scalar` (a primitive of unspecified kind) is a catch-all like `json`
+    /// and `any`: rejected as a generic type in every authoring position,
+    /// including as a `Map` value, a list element and a union member.
+    #[test]
+    fn err_scalar_rejected_in_every_position() {
+        let positions = [
+            ("entity field", "entity Order [persistent: orders] {\n    id : string!\n    v : scalar\n  }"),
+            ("map value", "entity Order [persistent: orders] {\n    id : string!\n    v : Map string scalar\n  }"),
+            ("list element", "entity Order [persistent: orders] {\n    id : string!\n    v : [scalar]\n  }"),
+            ("alias member", "entity Order [persistent: orders] { id : string! }\n  type Pair = { key : scalar!, n : number }"),
+            ("union member", "entity Order [persistent: orders] { id : string! }\n  type Mixed = scalar | [float]"),
+        ];
+        for (label, body) in positions {
+            let src = format!(
+                r#"
+orbital OrbS {{
+  {body}
+  trait OrderTrait -> Order [interaction] {{ state idle {{ INIT -> idle (ref Order) }} }}
+  page "/orders" -> OrderTrait
+}}
+"#
+            );
+            let err = check(&src).unwrap_err();
+            assert!(
+                matches!(&err, TypeError::GenericTypeForbidden { name, .. } if name == "scalar"),
+                "{label}: got {err:?}"
+            );
+        }
+    }
+
     #[test]
     fn app_and_orbital_config_type_names_must_resolve() {
         let app = |decl: &str| {
@@ -1640,17 +1671,17 @@ orbital OrbArrOk {
         assert!(check(src).is_ok());
     }
 
-    /// The sanctioned vocabulary must keep passing: `scalar` (bounded
-    /// primitive) and shaped types. `opaque` is REMOVED from the language
+    /// The sanctioned vocabulary must keep passing: shaped types and typed
+    /// dictionaries. `scalar` is gone — see `err_scalar_rejected_in_every_position`. `opaque` is REMOVED from the language
     /// (L-8 closure) — see `err_opaque_is_unknown_type_in_every_position`.
     #[test]
-    fn ok_scalar_and_shaped_types_pass() {
+    fn ok_shaped_types_pass() {
         let src = r#"
 orbital OrbJ {
   entity Rec [persistent: recs] {
     id : string!
-    value : scalar
-    meta : Map string scalar
+    value : string
+    meta : Map string number
     point : { x : number!, y : number! }
   }
   trait RecTrait -> Rec [interaction] { state idle { INIT -> idle (ref Rec) } }
@@ -1843,7 +1874,7 @@ orbital OrbZ {
     fn ok_type_union_alias_in_payload_position() {
         let src = r#"
 orbital OrbU {
-  type DecisionMatch = scalar | [float]
+  type DecisionMatch = string | [float]
   entity Rec { id : string! }
   trait R -> Rec [interaction] {
     state s { INIT -> s (ref Rec) }

@@ -894,8 +894,8 @@ impl MatchPattern {
 pub struct TraitTypeParam {
     pub name: String,
     pub kind: String,
-    /// Gap C: optional `= <ident>` declaration default — a primitive name
-    /// (incl. `scalar`), an entity name, or a struct-alias name, all
+    /// Gap C: optional `= <ident>` declaration default — a primitive name,
+    /// an entity name, or a struct-alias name, all
     /// resolved in the atom's own file.
     pub default: Option<String>,
 }
@@ -912,6 +912,8 @@ pub enum TraitScope {
     Collection,
 }
 
+/// A `trait` declaration: an inline state machine bound to an entity, or a
+/// reference to an imported trait with call-site overrides.
 #[derive(Debug, Clone)]
 pub struct Trait {
     pub name: String,
@@ -1206,6 +1208,8 @@ pub struct Tick {
     pub effects: Vec<SExpression>,
     /// `[background]`: runs with no client mounted.
     pub background: bool,
+    /// `[visible]`: a browser tick that pauses while its trait's output is off screen.
+    pub visible: bool,
     pub span: Span,
     /// L2 source-map spans captured while parsing `guard`. See
     /// [`Transition::guard_spans`].
@@ -1214,9 +1218,12 @@ pub struct Tick {
     pub effect_spans: Vec<Vec<(String, Span)>>,
 }
 
+/// How often a tick fires: a fixed interval or a cron expression.
 #[derive(Debug, Clone)]
 pub enum TickInterval {
+    /// A fixed interval in milliseconds (`every 5s`).
     Millis(u64),
+    /// A quoted cron expression (`every "0 9 * * *"`).
     Cron(String),
 }
 

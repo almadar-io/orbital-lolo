@@ -61,6 +61,46 @@ fn without_namespace(schema: &OrbitalSchema) -> Result<OrbitalSchema, UnlowerErr
 }
 
 /// Rebuild the surface AST for `schema`.
+/// One IR transition's place in a printed trait: its index in the state machine and the 1-based
+/// lines it spans.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct TransitionLines {
+    pub index: usize,
+    pub start: usize,
+    pub end: usize,
+}
+
+/// A trait printed as `.lolo`, with where each of its transitions sits.
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize)]
+pub struct PrintedTrait {
+    pub text: String,
+    pub transitions: Vec<TransitionLines>,
+}
+
+/// Print one trait as orb's formatter writes it, with the lines each IR transition occupies.
+pub fn print_trait(
+    td: &orbital_core::schema::TraitDefinition,
+) -> Result<PrintedTrait, UnlowerError> {
+    let (ast, _) = trait_::trait_definition(td)?;
+    let order = trait_::transition_print_order(td)?;
+    let (text, lines) =
+        crate::format::format_node_with_transition_lines(crate::format::Node::Trait(&ast));
+    if lines.len() != order.len() {
+        return Err(UnlowerError::new(format!(
+            "printed {} transitions of `{}`, which has {}",
+            lines.len(),
+            td.name,
+            order.len()
+        )));
+    }
+    let transitions = order
+        .into_iter()
+        .zip(lines)
+        .map(|(index, (start, end))| TransitionLines { index, start, end })
+        .collect();
+    Ok(PrintedTrait { text, transitions })
+}
+
 pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
     let schema = &without_namespace(schema)?;
     let app = AppHeader {
