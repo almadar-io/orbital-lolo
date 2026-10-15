@@ -28,6 +28,7 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "description",
     "theme",
     "locales",
+    "egress",
     "public",
     "origin",
     "icon",
@@ -539,6 +540,7 @@ impl Parser {
                 description: None,
                 theme: None,
                 locales: Vec::new(),
+                egress: Vec::new(),
                 public: None,
                 site: orbital_core::schema::SiteMeta::default(),
                 legacy_lines: false,
@@ -612,6 +614,7 @@ impl Parser {
         let mut description = None;
         let mut theme = None;
         let mut locales = Vec::new();
+        let mut egress = Vec::new();
         let mut public = None;
         let mut site = orbital_core::schema::SiteMeta::default();
         let mut legacy_lines = positional_version.is_some();
@@ -623,6 +626,7 @@ impl Parser {
                     "description" => description = Some(p.parse_option_string(key)?),
                     "theme" => theme = Some(p.parse_theme_value()?),
                     "locales" => locales = p.parse_locale_items()?,
+                    "egress" => egress = p.parse_egress_items()?,
                     "public" => public = Some(p.parse_option_string(key)?),
                     "origin" => site.origin = Some(p.parse_option_string(key)?),
                     "icon" => site.icon = Some(p.parse_option_string(key)?),
@@ -689,12 +693,32 @@ impl Parser {
             description,
             theme,
             locales,
+            egress,
             public,
             site,
             legacy_lines,
             config,
             span,
         })
+    }
+
+    /// `["https://a.test", …]` — the `egress` value.
+    fn parse_egress_items(&mut self) -> Result<Vec<String>, ParseError> {
+        self.expect_kind(&TokenKind::LBracket, "[")?;
+        let mut origins = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBracket) {
+                self.advance();
+                break;
+            }
+            origins.push(self.parse_option_string("egress")?);
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+        Ok(origins)
     }
 
     /// `[en, ar, sl]` — the `locales` value.

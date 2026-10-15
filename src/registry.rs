@@ -1,12 +1,11 @@
-//! Behavior-contract registry slice for the lolo resolver. A live package
-//! (`orb.source`) publishes its contracts from its own `.lolo` files, lowered on
-//! demand; a materialized one from its declared contracts file.
+//! Behavior-contract registry slice for the lolo resolver. Every package
+//! publishes its contracts from its own `.lolo` files (`orb.source`), lowered on
+//! demand and cached by content hash; there is no contracts sidecar.
 //!
 //! orbital-lolo runs BEFORE orbital-compiler and can't import the
-//! compiler's data (circular dep). Each behavior package
-//! ships a slim slice — per behavior (`organism`), each trait's
-//! `entityContract.requires` + overridable config-key types, and the page
-//! names — at the path its `package.json` `orb.loloContracts` block declares.
+//! compiler's data (circular dep). Each behavior's slim slice — per behavior
+//! (`organism`), each trait's `entityContract.requires` + overridable
+//! config-key types, and the page names — is derived from its `.lolo`.
 //! `@almadar/std` is an installed behavior package like any other (no
 //! embedded fallback, Phase 2) — `LoloContracts::load` errors when none is
 //! found on the walk.
@@ -22,17 +21,11 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::SystemTime;
 use thiserror::Error;
 
 /// The prefix `@almadar/std`'s `orb` block declares — the std source on the
 /// walk, ruling 3.
 const STD_PREFIX: &str = "almadar-std";
-
-#[derive(Deserialize, Clone)]
-struct Contracts {
-    behaviors: HashMap<String, Behavior>,
-}
 
 /// One behavior (`std-modal`, `std-browse`, …) and its trait/page/orbital
 /// contracts.
@@ -108,10 +101,14 @@ pub struct Ambiguity {
 
 #[derive(Debug, Error)]
 pub enum LoadError {
-    #[error("io error reading behavior contracts at {path}: {message}")]
-    Io { path: String, message: String },
-    #[error("invalid behavior contracts JSON at {path}: {message}")]
-    Parse { path: String, message: String },
+    /// The package declares no `orb.source`: its contracts are derived from its
+    /// `.lolo` files, so it has none to read.
+    #[error(
+        "ORB_BEHAVIOR_PACKAGE_NO_SOURCE: behavior package {package} declares no `orb.source` \
+         (its `.lolo` tree), so its behavior contracts cannot be derived; reinstall a version \
+         that ships `behaviors/lolo` and declares `orb.source`"
+    )]
+    NoLoloSource { package: String },
     /// No `almadar-std`-prefixed package was found among `packages` — the
     /// std contracts have no embedded fallback (Phase 2).
     #[error(
@@ -123,9 +120,8 @@ pub enum LoadError {
     StdNotInstalled,
 }
 
-/// Where one package's contracts come from, decided by its manifest
-/// ([`RegistrySource`]): a materialized package's declared contracts file, or
-/// a live package's own `.lolo` files, lowered on demand.
+/// Where one package's contracts come from: its own `.lolo` files, lowered on
+/// demand (`Live`), or an in-memory map (tests, [`LoloContracts::from_parts`]).
 enum Slice {
     Declared(HashMap<String, Arc<Behavior>>),
     Live(LiveSlice),
@@ -140,7 +136,10 @@ struct LiveSlice {
 
 impl LiveSlice {
     fn new(root: PathBuf) -> Self {
-        Self { root, index: Mutex::new(None) }
+        Self {
+            root,
+            index: Mutex::new(None),
+        }
     }
 
     fn scan(&self) -> HashMap<String, PathBuf> {
@@ -172,7 +171,11 @@ impl LiveSlice {
 
     fn keys(&self) -> Vec<String> {
         let mut index = self.index.lock().expect("live contract index poisoned");
-        index.get_or_insert_with(|| self.scan()).keys().cloned().collect()
+        index
+            .get_or_insert_with(|| self.scan())
+            .keys()
+            .cloned()
+            .collect()
     }
 }
 
@@ -199,7 +202,11 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
     let source = std::fs::read_to_string(path).ok()?;
     let hash: [u8; 32] = Sha256::digest(source.as_bytes()).into();
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Some((h, hit)) = cache.lock().expect("live contract cache poisoned").get(path) {
+    if let Some((h, hit)) = cache
+        .lock()
+        .expect("live contract cache poisoned")
+        .get(path)
+    {
         if *h == hash {
             return Some(Arc::clone(hit));
         }
@@ -212,8 +219,13 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
     let lowered = crate::parse_str(&source)
         .map_err(|e| e.to_string())
         .and_then(|ast| {
-            crate::lower::lower_to_orb_with(&ast, &crate::LowerOptions { packages: packages.to_vec() })
-                .map_err(|e| e.to_string())
+            crate::lower::lower_to_orb_with(
+                &ast,
+                &crate::LowerOptions {
+                    packages: packages.to_vec(),
+                },
+            )
+            .map_err(|e| e.to_string())
         });
     LOWERING.with(|l| l.borrow_mut().remove(path));
     let schema = match lowered {
@@ -233,19 +245,16 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
 
 impl Slice {
     fn load(pkg: &BehaviorPackage) -> Result<Slice, LoadError> {
-        if let RegistrySource::Live(root) = &pkg.registry {
-            return Ok(Slice::Live(LiveSlice::new(root.clone())));
-        }
-        let path = pkg.lolo_contracts.display().to_string();
-        let raw = std::fs::read_to_string(&pkg.lolo_contracts).map_err(|e| LoadError::Io {
-            path: path.clone(),
-            message: e.to_string(),
-        })?;
-        let parsed: Contracts = serde_json::from_str(&raw).map_err(|e| LoadError::Parse {
-            path,
-            message: e.to_string(),
-        })?;
-        Ok(Slice::Declared(parsed.behaviors.into_iter().map(|(k, v)| (k, Arc::new(v))).collect()))
+        let root = match (&pkg.registry, &pkg.lolo_source) {
+            (RegistrySource::Live(root), _) => root.clone(),
+            (_, Some(source)) => source.clone(),
+            (_, None) => {
+                return Err(LoadError::NoLoloSource {
+                    package: format!("{}@{}", pkg.name, pkg.version),
+                })
+            }
+        };
+        Ok(Slice::Live(LiveSlice::new(root)))
     }
 
     fn get(&self, key: &str, packages: &[BehaviorPackage]) -> Option<Arc<Behavior>> {
@@ -264,27 +273,25 @@ impl Slice {
 }
 
 impl LoloContracts {
-    /// Load every package's contracts once: a materialized package's declared
-    /// `lolo_contracts` file, a live package's `.lolo` tree (read per behavior
-    /// on demand). A package whose `orb.prefix` is `almadar-std` supplies the
+    /// Load every package's contracts once: its `.lolo` tree, read per behavior
+    /// on demand. A package whose `orb.prefix` is `almadar-std` supplies the
     /// std slice; every other package is searched in walk order on a std miss.
     /// No `almadar-std` package among `packages` → [`LoadError::StdNotInstalled`].
     /// Parsed once per process for one set of contracts files: the cache key is
     /// each file's path, size and modified time, so an edited file is read again.
     pub fn load_shared(packages: &[BehaviorPackage]) -> Result<Arc<LoloContracts>, LoadError> {
-        type Key = Vec<(PathBuf, String, String, String, u64, Option<SystemTime>)>;
+        type Key = Vec<(PathBuf, String, String, String, PathBuf, Option<PathBuf>)>;
         static CACHE: OnceLock<Mutex<HashMap<Key, Arc<LoloContracts>>>> = OnceLock::new();
         let key: Key = packages
             .iter()
             .map(|pkg| {
-                let meta = std::fs::metadata(&pkg.lolo_contracts).ok();
                 (
-                    pkg.lolo_contracts.clone(),
+                    pkg.root.clone(),
                     pkg.prefix.clone(),
                     pkg.name.clone(),
                     pkg.version.clone(),
-                    meta.as_ref().map_or(0, |m| m.len()),
-                    meta.and_then(|m| m.modified().ok()),
+                    pkg.registry.root().to_path_buf(),
+                    pkg.lolo_source.clone(),
                 )
             })
             .collect();
@@ -307,7 +314,11 @@ impl LoloContracts {
             if pkg.prefix == STD_PREFIX {
                 std_source = Some(slice);
             } else {
-                others.push((format!("{}@{}", pkg.name, pkg.version), pkg.prefix.clone(), slice));
+                others.push((
+                    format!("{}@{}", pkg.name, pkg.version),
+                    pkg.prefix.clone(),
+                    slice,
+                ));
             }
         }
         Ok(LoloContracts {
@@ -350,10 +361,15 @@ impl LoloContracts {
         std: HashMap<String, Behavior>,
         others: Vec<(String, String, HashMap<String, Behavior>)>,
     ) -> LoloContracts {
-        let declared = |m: HashMap<String, Behavior>| Slice::Declared(m.into_iter().map(|(k, v)| (k, Arc::new(v))).collect());
+        let declared = |m: HashMap<String, Behavior>| {
+            Slice::Declared(m.into_iter().map(|(k, v)| (k, Arc::new(v))).collect())
+        };
         LoloContracts {
             std: declared(std),
-            others: others.into_iter().map(|(n, p, m)| (n, p, declared(m))).collect(),
+            others: others
+                .into_iter()
+                .map(|(n, p, m)| (n, p, declared(m)))
+                .collect(),
             packages: Vec::new(),
         }
     }
@@ -369,7 +385,12 @@ impl LoloContracts {
             .map(|k| (format!("std/behaviors/{k}"), k))
             .collect();
         for (_, prefix, slice) in &self.others {
-            out.extend(slice.keys().into_iter().map(|k| (format!("{prefix}/{k}"), k)));
+            out.extend(
+                slice
+                    .keys()
+                    .into_iter()
+                    .map(|k| (format!("{prefix}/{k}"), k)),
+            );
         }
         out.sort();
         out
@@ -388,7 +409,9 @@ fn js_to_lolo(t: &str) -> String {
 
 /// `@almadar/core`'s `inferConfigType`: the knob's declared type, else its
 /// default's runtime type; then [`js_to_lolo`].
-fn config_types(config: Option<&HashMap<String, orbital_core::schema::ConfigField>>) -> HashMap<String, String> {
+fn config_types(
+    config: Option<&HashMap<String, orbital_core::schema::ConfigField>>,
+) -> HashMap<String, String> {
     use orbital_core::schema::SExpression;
     config
         .into_iter()
@@ -411,6 +434,35 @@ fn config_types(config: Option<&HashMap<String, orbital_core::schema::ConfigFiel
         .collect()
 }
 
+/// A composed trait's config: a knob it only wires (`knob: @config.X`, tagged
+/// `unknown` — it declares no type) takes the type of the orbital's or app's
+/// own declared knob `X`; an unresolved wiring stays `unknown` (unchecked).
+fn wired_config_types(
+    config: Option<&HashMap<String, orbital_core::schema::ConfigField>>,
+    orbital: Option<&HashMap<String, orbital_core::schema::ConfigField>>,
+    app: Option<&HashMap<String, orbital_core::schema::ConfigField>>,
+) -> HashMap<String, String> {
+    use orbital_core::schema::SExpression;
+    let mut types = config_types(config);
+    let own = config_types(orbital);
+    let shared = config_types(app);
+    for (key, field) in config.into_iter().flatten() {
+        if field.field_type != "unknown" {
+            continue;
+        }
+        let Some(SExpression::String(binding)) = &field.default else {
+            continue;
+        };
+        let Some(source) = binding.strip_prefix("@config.") else {
+            continue;
+        };
+        if let Some(t) = own.get(source).or_else(|| shared.get(source)) {
+            types.insert(key.clone(), t.clone());
+        }
+    }
+    types
+}
+
 impl Behavior {
     /// The contract a lowered program publishes — `@almadar/core`'s
     /// `buildLoloBehaviorContracts` rule for a behavior read from its own
@@ -428,15 +480,39 @@ impl Behavior {
                     TraitReference::Inline(def) => (
                         def.name.clone(),
                         TraitContract {
-                            requires: def.entity_contract.as_ref().map(|c| c.requires.clone()).unwrap_or_default(),
+                            requires: def
+                                .entity_contract
+                                .as_ref()
+                                .map(|c| c.requires.clone())
+                                .unwrap_or_default(),
                             config: config_types(def.config.as_ref()),
                         },
                     ),
-                    TraitReference::Reference { name, reference, config, .. } => {
-                        let Some(name) = name.clone().or_else(|| reference.as_deref().and_then(|r| r.rsplit('.').next()).map(str::to_string)) else {
+                    TraitReference::Reference {
+                        name,
+                        reference,
+                        config,
+                        ..
+                    } => {
+                        let Some(name) = name.clone().or_else(|| {
+                            reference
+                                .as_deref()
+                                .and_then(|r| r.rsplit('.').next())
+                                .map(str::to_string)
+                        }) else {
                             continue;
                         };
-                        (name, TraitContract { requires: Vec::new(), config: config_types(config.as_ref()) })
+                        (
+                            name,
+                            TraitContract {
+                                requires: Vec::new(),
+                                config: wired_config_types(
+                                    config.as_ref(),
+                                    orbital.config.as_ref(),
+                                    schema.config.as_ref(),
+                                ),
+                            },
+                        )
                     }
                 };
                 traits.entry(name).or_insert(contract);
@@ -444,16 +520,29 @@ impl Behavior {
             for p in orbital.pages.iter().flatten() {
                 let name = match p {
                     PageRef::Inline(def) => Some(def.name.clone()),
-                    other => other.reference_string().and_then(|r| r.rsplit('.').next()).map(str::to_string),
+                    other => other
+                        .reference_string()
+                        .and_then(|r| r.rsplit('.').next())
+                        .map(str::to_string),
                 };
                 if let Some(name) = name.filter(|n| !n.is_empty() && !pages.contains(n)) {
                     pages.push(name);
                 }
             }
-            orbitals.insert(orbital.name.clone(), OrbitalContract { config: config_types(orbital.config.as_ref()) });
+            orbitals.insert(
+                orbital.name.clone(),
+                OrbitalContract {
+                    config: config_types(orbital.config.as_ref()),
+                },
+            );
         }
         pages.sort();
-        Behavior { traits, pages, orbitals, app_config: config_types(schema.config.as_ref()) }
+        Behavior {
+            traits,
+            pages,
+            orbitals,
+            app_config: config_types(schema.config.as_ref()),
+        }
     }
 }
 

@@ -786,3 +786,30 @@ orbital OrbG {
         strip_identity_keys(serde_json::to_value(&after).unwrap())
     );
 }
+
+#[test]
+fn fetch_deliver_and_total_lower_to_the_ir_and_survive_the_formatter() {
+    let src = r#"
+orbital T {
+  entity Item [runtime] { id : string! }
+  trait R -> Item [interaction] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (fetch Item { deliver: ids, total: none, emit: { success: Loaded } })
+    }
+  }
+  page "/" -> R
+}
+"#;
+    let lowered = serde_json::to_value(parse_and_lower_str(src).expect("lowers")).unwrap();
+    let fetch = &lowered["orbitals"][0]["traits"][0]["stateMachine"]["transitions"][0]["effects"][0];
+    assert_eq!(fetch[2]["deliver"], "ids", "{fetch}");
+    assert_eq!(fetch[2]["total"], "none", "{fetch}");
+
+    let formatted = format_program(&parse_str(src).expect("parses"));
+    assert!(formatted.contains("deliver: ids"), "{formatted}");
+    assert!(formatted.contains("total: none"), "{formatted}");
+    let again = serde_json::to_value(parse_and_lower_str(&formatted).expect("lowers again")).unwrap();
+    assert_eq!(canonicalize(strip_nulls(lowered)), canonicalize(strip_nulls(again)));
+}

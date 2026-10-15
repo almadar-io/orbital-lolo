@@ -135,15 +135,15 @@ const CATEGORIES: &[&str] = &[
     "game-ui",
 ];
 
-/// `read write browse create update delete notify schedule invoke batch` — the
+/// `read write browse create upsert update delete notify schedule invoke batch` — the
 /// trait `[category, scope, ...capabilities]` modifier's trailing words
-/// (`parser/trait.rs parse_trait`), and the `(persist create|update|delete|batch
+/// (`parser/trait.rs parse_trait`), and the `(persist create|upsert|update|delete|batch
 /// …)` effect's action argument. `read`/`create`/`update`/`delete` are
 /// shared with `ANNOTATIONS` (the `@read`/`@create`/`@update`/`@delete`
 /// entity access-policy directives) — same English word, same translation.
 const CAPABILITIES: &[&str] = &[
-    "read", "write", "browse", "create", "update", "delete", "notify", "schedule", "invoke",
-    "batch",
+    "read", "write", "browse", "create", "upsert", "update", "delete", "notify", "schedule",
+    "invoke", "batch",
 ];
 
 /// `key unique intrinsic label description synonyms tier rebindable read
@@ -199,7 +199,7 @@ const SIGILS: &[&str] = &[
 ];
 
 /// `set fetch persist emit navigate navigate-back render-ui notify ref
-/// call-service cancel-call invoke do if let fn lambda quote quasiquote unquote match when` — s-expression
+/// call-service http cancel-call invoke do if let fn lambda quote quasiquote unquote match when` — s-expression
 /// heads special-cased in `parser/expression.rs` (`parse_sexpr`'s
 /// `loop_arg_max` dispatch, the `let`/`fn`/`lambda`/`quote`/`match` sugar, the
 /// `set` post-check) plus effect heads read by `lower/*.rs`.
@@ -214,6 +214,7 @@ const EFFECTS: &[&str] = &[
     "notify",
     "ref",
     "call-service",
+    "http",
     "cancel-call",
     "invoke",
     "do",

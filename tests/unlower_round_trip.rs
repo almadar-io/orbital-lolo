@@ -256,3 +256,51 @@ fn control_empty_import_round_trips() {
     };
     round_trip(&import(""), &options).unwrap();
 }
+
+fn recursive_alias_program(payload_field: &str) -> String {
+    format!(
+        r#"app Probe
+type ToolField = {{
+  name : string!
+  properties : [ToolField]
+}}
+type ToolInput = {{
+  event : string!
+  payload : [ToolField]
+}}
+orbital TaskOrbital {{
+  entity Task [persistent: tasks] {{
+    id : string!
+  }}
+  trait TaskBrowse -> Task [interaction] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+    }}
+    emits {{
+      CONVERSE -> external {{
+        {payload_field}
+      }}
+        @tier "internal"
+    }}
+  }}
+  page "/" -> TaskBrowse [initial]
+}}"#
+    )
+}
+
+#[test]
+fn recursive_alias_nested_in_alias_payload_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&recursive_alias_program("tools : [ToolInput]"), &options).unwrap();
+}
+
+#[test]
+fn control_recursive_alias_direct_payload_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&recursive_alias_program("fields : [ToolField]"), &options).unwrap();
+}

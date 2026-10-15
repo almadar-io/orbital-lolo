@@ -237,6 +237,26 @@ pub(super) fn parse_type_string(raw: &str) -> Result<TypeExpr, UnlowerError> {
     })
 }
 
+/// A payload struct holding the lowerer's by-name back-reference (`properties:
+/// Some([])` under a bare alias type) is that alias's own body: print the alias,
+/// since an inline body would let a re-lower expand it one level deeper.
+fn struct_or_alias(props: &[PayloadField]) -> Result<TypeExpr, UnlowerError> {
+    for p in props {
+        if p.properties.as_ref().is_some_and(Vec::is_empty) && p.projected_from.is_none() {
+            match parse_type_string(&p.field_type)? {
+                TypeExpr::Named(n) => return Ok(TypeExpr::Named(n)),
+                TypeExpr::Array(inner) => {
+                    if let TypeExpr::Named(n) = *inner {
+                        return Ok(TypeExpr::Named(n));
+                    }
+                }
+                _ => {}
+            }
+        }
+    }
+    Ok(TypeExpr::Object(payload_members(props)?))
+}
+
 fn payload_members(props: &[PayloadField]) -> Result<Vec<(String, TypeExpr, bool)>, UnlowerError> {
     props
         .iter()
@@ -257,10 +277,8 @@ pub(super) fn payload_type(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> 
         ("[object]", Some(_), Some(entity)) => {
             TypeExpr::Array(Box::new(TypeExpr::Named(entity.clone())))
         }
-        ("object", Some(props), None) => TypeExpr::Object(payload_members(props)?),
-        ("[object]", Some(props), None) => {
-            TypeExpr::Array(Box::new(TypeExpr::Object(payload_members(props)?)))
-        }
+        ("object", Some(props), None) => struct_or_alias(props)?,
+        ("[object]", Some(props), None) => TypeExpr::Array(Box::new(struct_or_alias(props)?)),
         ("union", Some(variants), _) => TypeExpr::Union(
             variants
                 .iter()

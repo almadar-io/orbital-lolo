@@ -308,6 +308,21 @@ impl Formatter {
                 }),
             ));
         }
+        if !app.egress.is_empty() {
+            entries.push((
+                "egress",
+                Box::new(move |f: &mut Self| {
+                    f.output.push('[');
+                    for (i, origin) in app.egress.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(origin);
+                    }
+                    f.output.push(']');
+                }),
+            ));
+        }
         if let Some(public) = &app.public {
             entries.push((
                 "public",

@@ -1,7 +1,8 @@
 //! Behavior-package contract resolution (ruling 3, `Almadar_Behavior_Packages.md`
 //! §5): the loader finds a `uses`-imported behavior's parse-time contract in
-//! an INSTALLED package's `lolo_contracts` file — `@almadar/std` included, no
-//! embedded fallback (Phase 2).
+//! an INSTALLED package's `.lolo` sources (`orb.source`) — `@almadar/std`
+//! included, no embedded fallback (Phase 2). A package declaring no source has
+//! no contracts and is an error.
 //!
 //! No chdir, no env: every case builds a `BehaviorPackage` fixture pointing at
 //! a temp dir and passes it through `LowerOptions`, so filesystem discovery
@@ -14,27 +15,42 @@ use std::fs;
 use std::path::Path;
 use tempfile::TempDir;
 
-/// Writes a minimal installed-package layout (`package.json` + the `orb`
-/// block's declared sidecar files) under `tmp`, and returns the
+/// A behavior `.lolo` publishing one trait per name in `traits`.
+fn behavior_lolo(key: &str, traits: &[&str]) -> String {
+    let mut out = format!("app {key} [version: \"1.0.0\", description: \"fixture\"]\norbital FixtureOrbital {{\n  entity FixtureView [runtime] {{\n    id : string!\n  }}\n");
+    for t in traits {
+        out.push_str(&format!(
+            "  trait {t} -> @rebindable FixtureView [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (render-ui main {{ type: typography, content: \"x\" }})\n    }}\n  }}\n  page \"/{t}\" as {t}Page -> {t}\n"
+        ));
+    }
+    out.push_str("}\n");
+    out
+}
+
+/// Writes a minimal installed-package layout (`package.json` + a `.lolo` tree
+/// publishing `behaviors`, each `(key, traits)`) under `tmp`, and returns the
 /// `BehaviorPackage` L1 resolves against — bypassing `discover()` entirely,
-/// per this file's no-chdir/no-env rule.
-fn fake_package(
+/// per this file's no-chdir/no-env rule. `with_source: false` declares only a
+/// materialized registry.
+fn package(
     tmp: &Path,
     name: &str,
     prefix: &str,
     version: &str,
-    contracts_json: &str,
+    behaviors: &[(&str, &[&str])],
+    with_source: bool,
 ) -> BehaviorPackage {
     let root = tmp.join(name.replace(['/', '@'], "_"));
     let registry = root.join("behaviors/registry");
+    let source = root.join("behaviors/lolo");
     fs::create_dir_all(&registry).expect("mkdir registry");
+    fs::create_dir_all(&source).expect("mkdir source");
+    for (key, traits) in behaviors {
+        fs::write(source.join(format!("{key}.lolo")), behavior_lolo(key, traits)).expect("write lolo");
+    }
 
     let index = root.join("behaviors/behaviors-registry.json");
     fs::write(&index, "{}").expect("write index");
-
-    let lolo_contracts = root.join("behaviors/lolo-behavior-contracts.json");
-    fs::write(&lolo_contracts, contracts_json).expect("write lolo contracts");
-
 
     let package_json = serde_json::json!({
         "name": name,
@@ -43,7 +59,6 @@ fn fake_package(
             "prefix": prefix,
             "registry": "behaviors/registry",
             "index": "behaviors/behaviors-registry.json",
-            "loloContracts": "behaviors/lolo-behavior-contracts.json",
             "compiler": ">=0.0.0",
         },
     });
@@ -60,8 +75,8 @@ fn fake_package(
         root,
         registry: orbital_core::behavior_packages::RegistrySource::Materialized(registry),
         index,
-        lolo_contracts,
-        embeddings: Vec::new(),
+        lolo_source: with_source.then_some(source),
+        vectors: None,
         sidecars: Vec::new(),
         compiler_range: ">=0.0.0".to_string(),
         std_peer_range: None,
@@ -93,13 +108,7 @@ orbital FixtureOrbital {{
 /// `LoloContracts::load` errors otherwise) even when a test's source only
 /// exercises a non-std package's contracts.
 fn minimal_std_package(tmp: &Path) -> BehaviorPackage {
-    fake_package(
-        tmp,
-        "@almadar/std",
-        "almadar-std",
-        "0.0.1",
-        r#"{"behaviors":{}}"#,
-    )
+    package(tmp, "@almadar/std", "almadar-std", "0.0.1", &[], true)
 }
 
 fn lower_error(source: &str, options: &LowerOptions) -> LowerError {
@@ -120,24 +129,8 @@ fn behavior_key_from_path_strips_the_prefix_segment() {
 #[test]
 fn a_behavior_only_in_an_installed_io_package_is_found_and_validates() {
     let tmp = TempDir::new().unwrap();
-    let contracts = serde_json::json!({
-        "behaviors": {
-            "fake-test-widget": {
-                "traits": { "Basic": { "requires": [], "config": {} } },
-                "pages": [],
-                "orbitals": {},
-                "appConfig": {},
-            }
-        }
-    })
-    .to_string();
-    let pkg = fake_package(
-        tmp.path(),
-        "@almadar-io/behaviors",
-        "almadar-behaviors",
-        "0.0.1",
-        &contracts,
-    );
+    let behaviors: &[(&str, &[&str])] = &[("fake-test-widget", &["Basic"])];
+    let pkg = package(tmp.path(), "@almadar-io/behaviors", "almadar-behaviors", "0.0.1", behaviors, true);
     let options = LowerOptions {
         packages: vec![minimal_std_package(tmp.path()), pkg],
     };
@@ -150,24 +143,8 @@ fn a_behavior_only_in_an_installed_io_package_is_found_and_validates() {
 #[test]
 fn an_unknown_member_on_a_live_package_behavior_is_a_hard_error() {
     let tmp = TempDir::new().unwrap();
-    let contracts = serde_json::json!({
-        "behaviors": {
-            "fake-test-widget": {
-                "traits": { "Basic": { "requires": [], "config": {} } },
-                "pages": [],
-                "orbitals": {},
-                "appConfig": {},
-            }
-        }
-    })
-    .to_string();
-    let pkg = fake_package(
-        tmp.path(),
-        "@almadar-io/behaviors",
-        "almadar-behaviors",
-        "0.0.1",
-        &contracts,
-    );
+    let behaviors: &[(&str, &[&str])] = &[("fake-test-widget", &["Basic"])];
+    let pkg = package(tmp.path(), "@almadar-io/behaviors", "almadar-behaviors", "0.0.1", behaviors, true);
     let options = LowerOptions {
         packages: vec![minimal_std_package(tmp.path()), pkg],
     };
@@ -183,19 +160,9 @@ fn an_unknown_member_on_a_live_package_behavior_is_a_hard_error() {
 #[test]
 fn the_same_behavior_name_in_two_non_std_packages_is_ambiguous() {
     let tmp = TempDir::new().unwrap();
-    let contracts = serde_json::json!({
-        "behaviors": {
-            "shared-widget": {
-                "traits": { "Basic": { "requires": [], "config": {} } },
-                "pages": [],
-                "orbitals": {},
-                "appConfig": {},
-            }
-        }
-    })
-    .to_string();
-    let pkg_a = fake_package(tmp.path(), "@fixture/pkg-a", "pkg-a", "1.0.0", &contracts);
-    let pkg_b = fake_package(tmp.path(), "@fixture/pkg-b", "pkg-b", "1.0.0", &contracts);
+    let behaviors: &[(&str, &[&str])] = &[("shared-widget", &["Basic"])];
+    let pkg_a = package(tmp.path(), "@fixture/pkg-a", "pkg-a", "1.0.0", behaviors, true);
+    let pkg_b = package(tmp.path(), "@fixture/pkg-b", "pkg-b", "1.0.0", behaviors, true);
     let options = LowerOptions {
         packages: vec![minimal_std_package(tmp.path()), pkg_a, pkg_b],
     };
@@ -217,24 +184,8 @@ fn an_installed_std_package_is_authoritative_with_no_fallback() {
     // std-modal IS declared here (so the lookup doesn't skip as "unknown
     // import"), but WITHOUT `ModalRecordModal`. There is no embedded slice to
     // fall back to (Phase 2) — a miss on the installed std is simply a miss.
-    let contracts = serde_json::json!({
-        "behaviors": {
-            "std-modal": {
-                "traits": {},
-                "pages": [],
-                "orbitals": {},
-                "appConfig": {},
-            }
-        }
-    })
-    .to_string();
-    let pkg = fake_package(
-        tmp.path(),
-        "@almadar/std",
-        "almadar-std",
-        "0.0.1",
-        &contracts,
-    );
+    let behaviors: &[(&str, &[&str])] = &[("std-modal", &["Other"])];
+    let pkg = package(tmp.path(), "@almadar/std", "almadar-std", "0.0.1", behaviors, true);
     let options = LowerOptions {
         packages: vec![pkg],
     };
@@ -267,5 +218,21 @@ fn no_installed_std_package_reports_the_install_hint() {
             && message.contains("run `orb update`")
             && message.contains("--global"),
         "expected the not-installed hint naming both install commands, got {message}"
+    );
+}
+
+#[test]
+fn a_package_declaring_no_source_has_no_contracts_and_is_an_error() {
+    let tmp = TempDir::new().unwrap();
+    let bare = package(tmp.path(), "@almadar-io/behaviors", "almadar-behaviors", "0.0.1", &[], false);
+    let options = LowerOptions { packages: vec![minimal_std_package(tmp.path()), bare] };
+    let source = using_lolo("almadar-behaviors/fake-test-widget", "Basic");
+    let err = match parse_and_lower_str_with(&source, &options).expect_err("must fail") {
+        LoloError::Lower { inner, .. } => inner.innermost().to_string(),
+        other => other.to_string(),
+    };
+    assert!(
+        err.contains("ORB_BEHAVIOR_PACKAGE_NO_SOURCE") && err.contains("@almadar-io/behaviors@0.0.1"),
+        "{err}"
     );
 }

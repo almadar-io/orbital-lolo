@@ -69,6 +69,8 @@ pub struct AppHeader {
     pub theme: Option<ThemeDecl>,
     /// `locales [en, ar, sl]` — the locales this program ships.
     pub locales: Vec<String>,
+    /// `egress: ["https://host", …]` — the origins `http` may reach.
+    pub egress: Vec<String>,
     /// `public: "./public"` — a folder copied verbatim to the built site's root.
     pub public: Option<String>,
     /// `origin:` / `icon:` / `siteName:` / `signIn:` site modifiers.
