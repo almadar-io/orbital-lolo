@@ -17,7 +17,7 @@
 //! tolerates, the runtime is untyped — the same trust chain every other
 //! L1-typed construct rides).
 
-use orbital_compiler::validate_comprehensive;
+use orbital_compiler::validate_comprehensive_without_services;
 use orbital_lolo::{parse_and_lower_str, LoloError};
 
 /// The tagged-union fixture: `DrawItem = DrawShape | DrawText`,
@@ -206,7 +206,7 @@ fn the_same_read_outside_a_match_keeps_todays_behavior() {
 fn lowered_destructuring_match_passes_full_l2_validation() {
     let source = wrap_draw_trait(HAPPY_BODY);
     let schema = parse_and_lower_str(&source).expect("lowers clean");
-    let result = validate_comprehensive(&schema);
+    let result = validate_comprehensive_without_services(&schema);
     let issues: Vec<String> = result
         .all_issues()
         .map(|e| format!("{}: {}", e.code, e.message))

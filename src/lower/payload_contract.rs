@@ -27,7 +27,7 @@
 //! (`tests/emit_contract_drift.rs`) asserts that table still agrees with
 //! `canonical-operators.json`.
 
-use orbital_core::effects::{success_payload, undeclared_reads, ProducedPayload};
+use orbital_core::effects::{success_payload, undeclared_reads, CallVariant, ProducedPayload};
 use orbital_core::schema::{SExpression, TraitDefinition, TraitReference};
 use std::collections::BTreeMap;
 
@@ -119,7 +119,7 @@ fn check_effect(
     let SExpression::String(action) = arr.get(1)? else {
         return None;
     };
-    let produced = success_payload(op, Some(action.as_str()));
+    let produced = success_payload(op, CallVariant::PersistAction(action.as_str()));
     if !matches!(produced, ProducedPayload::EntityRow) {
         return None;
     }

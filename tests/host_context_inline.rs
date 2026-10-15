@@ -40,7 +40,7 @@ fn compile_and_inline(src: &str) -> Result<OrbitalSchema, InlineError> {
 }
 
 fn validate(schema: &OrbitalSchema) -> ValidationResult {
-    orbital_compiler::validate_comprehensive(schema)
+    orbital_compiler::validate_comprehensive_without_services(schema)
 }
 
 fn assert_no_issue(result: &ValidationResult, code: ErrorCode, ctx: &str) {

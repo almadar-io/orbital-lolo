@@ -2,7 +2,7 @@
 //! stamping validates clean under the `ORB_ID_*` rule family, and corrupting a
 //! single dual-carry edge makes the matching rule fire.
 
-use orbital_compiler::validate_comprehensive;
+use orbital_compiler::validate_comprehensive_without_services;
 use orbital_core::schema::{OrbitalSchema, TraitReference};
 use orbital_lolo::parse_and_lower_str;
 
@@ -28,7 +28,7 @@ const FIXTURE: &str = r#"
 "#;
 
 fn id_diagnostics(schema: &OrbitalSchema) -> Vec<String> {
-    validate_comprehensive(schema)
+    validate_comprehensive_without_services(schema)
         .all_issues()
         .filter(|e| e.code.category() == "identity")
         .map(|e| format!("{}: {}", e.code, e.message))

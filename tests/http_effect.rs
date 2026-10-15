@@ -31,7 +31,7 @@ fn effects_of(src: &str, event: &str) -> Vec<Value> {
     let TraitReference::Inline(td) = &schema.orbitals[0].traits[0] else {
         panic!("expected an inline trait");
     };
-    let sm = serde_json::to_value(td.state_machine.as_ref().expect("state machine")).unwrap();
+    let sm = serde_json::to_value(&td.state_machine).unwrap();
     let transitions = sm["transitions"].as_array().expect("transitions").clone();
     transitions
         .into_iter()

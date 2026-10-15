@@ -199,7 +199,7 @@ const SIGILS: &[&str] = &[
 ];
 
 /// `set fetch persist emit navigate navigate-back render-ui notify ref
-/// call-service http cancel-call invoke do if let fn lambda quote quasiquote unquote match when` — s-expression
+/// call-service http cancel-call random-bytes credential-status credential-forget invoke do if let fn lambda quote quasiquote unquote match when` — s-expression
 /// heads special-cased in `parser/expression.rs` (`parse_sexpr`'s
 /// `loop_arg_max` dispatch, the `let`/`fn`/`lambda`/`quote`/`match` sugar, the
 /// `set` post-check) plus effect heads read by `lower/*.rs`.
@@ -216,6 +216,9 @@ const EFFECTS: &[&str] = &[
     "call-service",
     "http",
     "cancel-call",
+    "random-bytes",
+    "credential-status",
+    "credential-forget",
     "invoke",
     "do",
     "if",
