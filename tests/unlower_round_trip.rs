@@ -304,3 +304,42 @@ fn control_recursive_alias_direct_payload_round_trips() {
     };
     round_trip(&recursive_alias_program("fields : [ToolField]"), &options).unwrap();
 }
+
+fn bytes_program(field_type: &str) -> String {
+    format!(
+        r#"app Probe
+orbital BlobOrbital {{
+  entity Blob [persistent: blobs] {{
+    id : string!
+    payload : {field_type}
+  }}
+  trait BlobBrowse -> Blob [interaction] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+    }}
+  }}
+  page "/" -> BlobBrowse [initial]
+}}"#
+    )
+}
+
+#[test]
+fn bytes_entity_field_lowers_to_bytes_and_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let schema = parse_and_lower_str_with(&bytes_program("bytes"), &options).unwrap();
+    let json = serde_json::to_string(&schema).unwrap();
+    assert!(json.contains(r#""type":"bytes""#), "bytes field must keep its tag: {json}");
+    round_trip(&bytes_program("bytes"), &options).unwrap();
+}
+
+#[test]
+fn control_string_entity_field_does_not_lower_to_bytes() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let schema = parse_and_lower_str_with(&bytes_program("string"), &options).unwrap();
+    assert!(!serde_json::to_string(&schema).unwrap().contains(r#""type":"bytes""#));
+}

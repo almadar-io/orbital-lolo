@@ -484,6 +484,7 @@ pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
         // upload dropzone + download-chip rendering on both paths.
         "money" => FieldType::Money,
         "file" => FieldType::File,
+        "bytes" => FieldType::Bytes,
         // Semantic string domains, now first-class field types rather than
         // subtypes that erased to `string`. Closes the "no format validation yet"
         // half of Gap G-LOLO-TYPENAME-SILENT-FALLBACK: the declared domain

@@ -358,6 +358,7 @@ fn lower_to_orb_names_only(
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
         egress: (!ast.app.egress.is_empty()).then(|| ast.app.egress.clone()),
         public_dir: ast.app.public.clone(),
+        os_grants: None,
         site: (!ast.app.site.is_empty()).then(|| ast.app.site.clone()),
         lazy_pages: None,
         name: if ast.app.name.is_empty() {

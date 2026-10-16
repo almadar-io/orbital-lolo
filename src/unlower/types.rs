@@ -62,6 +62,7 @@ pub(super) fn field_def_type(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerEr
         FieldType::Image => primitive("image"),
         FieldType::Money => primitive("money"),
         FieldType::File => primitive("file"),
+        FieldType::Bytes => primitive("bytes"),
         FieldType::Node => TypeExpr::Named("node".to_string()),
         FieldType::SExpr => TypeExpr::SExpr,
         FieldType::Trait => TypeExpr::Trait,

@@ -254,6 +254,7 @@ const TYPES: &[&str] = &[
     "duration",
     "money",
     "file",
+    "bytes",
     "email",
     "url",
     "phone",
