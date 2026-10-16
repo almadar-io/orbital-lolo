@@ -881,8 +881,7 @@ pub enum LowerError {
     },
 
     /// Behavior-package discovery or contract loading failed (an installed
-    /// package's `package.json` conflicts on `prefix`, or its declared
-    /// `loloContracts` path is missing/unparsable). Message is the source
+    /// package's `package.json` conflicts on `prefix`, or a package fails to lower). Message is the source
     /// `DiscoverError`/`LoadError`'s `Display`. Genuine discovery errors only
     /// — a missing `@almadar/std` is the structured
     /// `BehaviorPackageNotInstalled` variant instead, so `orb validate --json`

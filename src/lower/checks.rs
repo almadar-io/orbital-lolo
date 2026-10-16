@@ -2477,7 +2477,7 @@ orbital PfMemory = Memory.orbitals.AgentMemoryOrbital {
 /// `config_type_compatible` is the same lenient scalar-only comparator both
 /// the trait arm and the new orbital arm call — proven directly because the
 /// corpus has zero orbitals declaring `config {}` today (verified: every
-/// `OrbitalContract.config` in `baked/lolo-behavior-contracts.json` is
+/// `OrbitalContract.config` derived from the installed `.lolo` is
 /// empty), so an end-to-end `orbital X = Alias.orbitals.Y { config { ... } }`
 /// mismatch fixture has no real upstream knob to target yet.
 #[cfg(test)]

@@ -813,3 +813,106 @@ orbital T {
     let again = serde_json::to_value(parse_and_lower_str(&formatted).expect("lowers again")).unwrap();
     assert_eq!(canonicalize(strip_nulls(lowered)), canonicalize(strip_nulls(again)));
 }
+
+/// A shape field name may be a quoted string (`"@href"`, `"#text"`): the keys `xml/parse` writes.
+mod quoted_field_names {
+    use super::*;
+
+    const BASE: &str = r#"app qf [
+      version: "1.0.0",
+      description: "x"
+    ]
+    "#;
+
+    fn program(types: &str) -> String {
+        format!(
+            "{BASE}{types}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    link : Link\n  }}\n  trait T -> E [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
+        )
+    }
+
+    fn lowered_link_names(source: &str) -> Vec<String> {
+        let schema = parse_and_lower_str(source).expect("lowers");
+        let value = serde_json::to_value(&schema).unwrap();
+        let fields = value["orbitals"][0]["entity"]["fields"].as_array().unwrap();
+        let link = fields.iter().find(|f| f["name"] == "link").unwrap();
+        link["properties"]
+            .as_object()
+            .unwrap()
+            .keys()
+            .cloned()
+            .collect()
+    }
+
+    #[test]
+    fn a_quoted_field_name_is_stored_verbatim() {
+        let src = program(r##"type Link = { "@href" : string, "@rel" : string, "#text" : string }"##);
+        let mut names = lowered_link_names(&src);
+        names.sort();
+        assert_eq!(names, vec!["#text", "@href", "@rel"]);
+    }
+
+    #[test]
+    fn a_quoted_name_and_a_bare_name_mix_in_one_shape() {
+        let src = program(r##"type Link = { "@href" : string!, title : string }"##);
+        let mut names = lowered_link_names(&src);
+        names.sort();
+        assert_eq!(names, vec!["@href", "title"]);
+    }
+
+    #[test]
+    fn a_quoted_name_may_hold_characters_no_identifier_can() {
+        let src = program(r##"type Link = { "xlink:href" : string, "a b" : string }"##);
+        let mut names = lowered_link_names(&src);
+        names.sort();
+        assert_eq!(names, vec!["a b", "xlink:href"]);
+    }
+
+    #[test]
+    fn an_inline_object_type_accepts_a_quoted_name() {
+        let src = format!(
+            "{BASE}orbital O {{\n  entity E [runtime] {{\n    id : string!\n    link : {{ \"@href\" : string }}\n  }}\n  trait T -> E [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
+        );
+        assert_eq!(lowered_link_names(&src), vec!["@href"]);
+    }
+
+    #[test]
+    fn the_formatter_prints_a_quoted_name_back_quoted_and_round_trips() {
+        let src = program(r##"type Link = { "@href" : string, rel : string, "#text" : string }"##);
+        let formatted = format_program(&parse_str(&src).expect("parse"));
+        assert!(formatted.contains(r#""@href" : string"#), "{formatted}");
+        assert!(formatted.contains(r##""#text" : string"##), "{formatted}");
+        assert!(formatted.contains("rel : string"), "bare names stay bare: {formatted}");
+        let mut first = lowered_link_names(&src);
+        let mut second = lowered_link_names(&formatted);
+        first.sort();
+        second.sort();
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn an_empty_quoted_name_is_an_error() {
+        let src = program(r#"type Link = { "" : string }"#);
+        let err = parse_str(&src).expect_err("empty name");
+        assert!(format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_EMPTY"), "{err}");
+    }
+
+    #[test]
+    fn a_duplicate_quoted_name_is_an_error() {
+        let src = program(r#"type Link = { "@href" : string, "@href" : string }"#);
+        let err = parse_str(&src).expect_err("duplicate");
+        assert!(format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_DUPLICATE"), "{err}");
+    }
+
+    #[test]
+    fn a_quoted_name_that_repeats_a_bare_name_is_an_error() {
+        let src = program(r#"type Link = { href : string, "href" : string }"#);
+        let err = parse_str(&src).expect_err("duplicate");
+        assert!(format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_DUPLICATE"), "{err}");
+    }
+
+    #[test]
+    fn control_distinct_quoted_names_are_accepted() {
+        let src = program(r#"type Link = { "@href" : string, "@rel" : string }"#);
+        assert!(parse_str(&src).is_ok());
+    }
+}

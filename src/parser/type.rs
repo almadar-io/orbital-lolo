@@ -34,6 +34,60 @@ pub(crate) fn type_param_name_error(name: &str, span: crate::ast::Span) -> Optio
 }
 
 impl Parser {
+    /// `{ name : T[!], "@quoted" : T, ... }` — the field list of a shape (struct body or inline object type).
+    /// A bare name follows the identifier rule; a quoted name is any non-empty string, stored verbatim, so a
+    /// shape can declare the keys `xml/parse` writes (`"@href"`, `"#text"`).
+    pub(crate) fn parse_shape_fields(&mut self) -> Result<Vec<(String, TypeExpr, bool)>, ParseError> {
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut fields: Vec<(String, TypeExpr, bool)> = Vec::new();
+        let mut quoted: Vec<String> = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            let name_span = self.peek_span();
+            let name = if let TokenKind::String(s) = self.peek().clone() {
+                self.advance();
+                if s.is_empty() {
+                    return Err(ParseError::InvalidType {
+                        span: name_span,
+                        message: "ELOLO_SHAPE_FIELD_NAME_EMPTY: a quoted shape field name must be a non-empty string".to_string(),
+                    });
+                }
+                quoted.push(s.clone());
+                s
+            } else {
+                self.expect_ident()?
+            };
+            if quoted.contains(&name) && fields.iter().any(|(n, _, _)| *n == name) {
+                return Err(ParseError::InvalidType {
+                    span: name_span,
+                    message: format!(
+                        "ELOLO_SHAPE_FIELD_NAME_DUPLICATE: the shape declares the field \"{name}\" more than once"
+                    ),
+                });
+            }
+            self.expect_kind(&TokenKind::Colon, ":")?;
+            let ty = self.parse_type_expr()?;
+            let required = if matches!(self.peek(), TokenKind::Bang) {
+                self.advance();
+                true
+            } else {
+                false
+            };
+            fields.push((name, ty, required));
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+            self.skip_newlines();
+        }
+        Ok(fields)
+    }
+}
+
+impl Parser {
     pub(crate) fn parse_type_alias(&mut self) -> Result<TypeAlias, ParseError> {
         let span = self.peek_span();
         self.expect_keyword("type")?;
@@ -148,30 +202,7 @@ impl Parser {
         // lowerer can stamp `FieldDefinition.required = Some(true)` —
         // matching lolo's authoring intent (unmarked = optional in TS).
         if matches!(self.peek(), TokenKind::LBrace) {
-            self.advance();
-            let mut fields = Vec::new();
-            loop {
-                self.skip_newlines();
-                if matches!(self.peek(), TokenKind::RBrace) {
-                    self.advance();
-                    break;
-                }
-                let name = self.expect_ident()?;
-                self.expect_kind(&TokenKind::Colon, ":")?;
-                let ty = self.parse_type_expr()?;
-                let required = if matches!(self.peek(), TokenKind::Bang) {
-                    self.advance();
-                    true
-                } else {
-                    false
-                };
-                fields.push((name, ty, required));
-                if matches!(self.peek(), TokenKind::Comma) {
-                    self.advance();
-                }
-                self.skip_newlines();
-            }
-            return Ok(TypeBody::Struct(fields));
+            return Ok(TypeBody::Struct(self.parse_shape_fields()?));
         }
 
         // Everything else is an ordinary TYPE EXPRESSION. Delegating to
@@ -509,30 +540,7 @@ impl Parser {
         // inline object passed into a config slot carries per-field
         // requiredness through to FieldDefinition + OirType::Struct.
         if matches!(self.peek(), TokenKind::LBrace) {
-            self.advance();
-            let mut fields = Vec::new();
-            loop {
-                self.skip_newlines();
-                if matches!(self.peek(), TokenKind::RBrace) {
-                    self.advance();
-                    break;
-                }
-                let name = self.expect_ident()?;
-                self.expect_kind(&TokenKind::Colon, ":")?;
-                let ty = self.parse_type_expr()?;
-                let required = if matches!(self.peek(), TokenKind::Bang) {
-                    self.advance();
-                    true
-                } else {
-                    false
-                };
-                fields.push((name, ty, required));
-                if matches!(self.peek(), TokenKind::Comma) {
-                    self.advance();
-                }
-                self.skip_newlines();
-            }
-            return Ok(TypeExpr::Object(fields));
+            return Ok(TypeExpr::Object(self.parse_shape_fields()?));
         }
         // Sigil type constructors. In TYPE position a sigil denotes the TYPE of
         // the thing it names, taking arguments by juxtaposition exactly like

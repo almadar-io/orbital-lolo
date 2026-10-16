@@ -534,7 +534,7 @@ impl Formatter {
                     if i > 0 {
                         self.output.push_str(", ");
                     }
-                    self.output.push_str(name);
+                    self.output.push_str(&shape_field_name(name));
                     self.output.push_str(" : ");
                     self.fmt_type_expr(ty);
                     if *req {
@@ -729,7 +729,7 @@ impl Formatter {
                     if i > 0 {
                         self.output.push_str(", ");
                     }
-                    self.output.push_str(name);
+                    self.output.push_str(&shape_field_name(name));
                     self.output.push_str(" : ");
                     self.fmt_type_expr(fty);
                     if *req {
@@ -3267,6 +3267,25 @@ fn page_meta_source(meta: &orbital_core::schema::PageMeta) -> String {
         orbital_core::schema::PageMeta::Message(orbital_core::schema::PageMessage(_, key)) => {
             format!("(i18n/t {})", quote(key))
         }
+    }
+}
+
+/// A shape field name as written: bare when the lexer reads it back as one identifier, quoted otherwise.
+fn shape_field_name(name: &str) -> String {
+    use crate::lexer::{tokenize, TokenKind};
+    let bare = match tokenize(name) {
+        Ok(tokens) => {
+            let mut words = tokens
+                .iter()
+                .filter(|t| !matches!(t.kind, TokenKind::Newline | TokenKind::Eof));
+            matches!((words.next(), words.next()), (Some(t), None) if t.kind == TokenKind::Identifier(name.to_string()))
+        }
+        Err(_) => false,
+    };
+    if bare {
+        name.to_string()
+    } else {
+        quote_lolo(name)
     }
 }
 

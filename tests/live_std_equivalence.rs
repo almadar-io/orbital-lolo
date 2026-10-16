@@ -1,6 +1,6 @@
 //! The installed `@almadar/std` publishes no contracts sidecar: its contracts are
-//! derived from its `.lolo`. The derivation equals what the generated
-//! `lolo-behavior-contracts.json` held, pinned here for two behaviors.
+//! derived from its `.lolo`. The derivation equals what the retired generated
+//! contracts file held, pinned here for two behaviors.
 
 use orbital_lolo::registry::LoloContracts;
 use std::path::Path;

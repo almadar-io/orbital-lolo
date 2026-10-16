@@ -104,3 +104,29 @@ fn an_unknown_app_key_still_errors() {
         .expect_err("unknown key");
     assert!(err.to_string().contains("ORB_L_OPTION_UNKNOWN"), "{err}");
 }
+
+#[test]
+fn page_facts_and_beacon_lower_to_the_contract_forms() {
+    let facts = effects_of(
+        &program("[ egress: [\"https://x.test\"] ]", r#"(browser/page-facts [referrer, screenWidth] { emit: { success: S, failure: F } })"#),
+        "GO",
+    );
+    assert_eq!(facts, vec![json!(["browser/page-facts", ["referrer", "screenWidth"], { "emit": { "success": "S", "failure": "F" } }])]);
+
+    let beacon = effects_of(
+        &program(
+            "[ egress: [\"https://x.test\"] ]",
+            r#"(browser/beacon "https://x.test/e" { text: @entity.id, key: @entity.id } { emit: { success: S, failure: F, cancelled: C } })"#,
+        ),
+        "GO",
+    );
+    assert_eq!(
+        beacon,
+        vec![json!([
+            "browser/beacon",
+            "https://x.test/e",
+            { "text": "@entity.id", "key": "@entity.id" },
+            { "emit": { "success": "S", "failure": "F", "cancelled": "C" } }
+        ])]
+    );
+}

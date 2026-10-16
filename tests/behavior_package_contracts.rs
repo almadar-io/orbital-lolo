@@ -49,16 +49,12 @@ fn package(
         fs::write(source.join(format!("{key}.lolo")), behavior_lolo(key, traits)).expect("write lolo");
     }
 
-    let index = root.join("behaviors/behaviors-registry.json");
-    fs::write(&index, "{}").expect("write index");
-
     let package_json = serde_json::json!({
         "name": name,
         "version": version,
         "orb": {
             "prefix": prefix,
             "registry": "behaviors/registry",
-            "index": "behaviors/behaviors-registry.json",
             "compiler": ">=0.0.0",
         },
     });
@@ -74,7 +70,7 @@ fn package(
         prefix: prefix.to_string(),
         root,
         registry: orbital_core::behavior_packages::RegistrySource::Materialized(registry),
-        index,
+        files: Vec::new(),
         lolo_source: with_source.then_some(source),
         vectors: None,
         sidecars: Vec::new(),
