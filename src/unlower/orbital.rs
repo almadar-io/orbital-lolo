@@ -11,7 +11,7 @@ use crate::ast::{
     Entity, ExpectsDecl, ExpectsKind, Orbital, Page, Persistence, Span, TypeAlias, TypeBody,
     TypeExpr, UseDecl,
 };
-use orbital_core::schema::{
+use orbital_core_base::schema::{
     EntityDefinition, EntityRef, ExpectDeclaration, FieldDefinition, Orbital as CoreOrbital,
     PageRef, Persistence as CorePersistence, TraitReference, UseDeclaration,
 };
@@ -61,7 +61,7 @@ fn payload_named<'a>(
     if crate::lower::primitive_field_type(&alias).is_some() || hints.entities.contains(&alias) {
         return None;
     }
-    use orbital_core::schema::FieldType as Ft;
+    use orbital_core_base::schema::FieldType as Ft;
     match (&element.field_type, &element.values, &element.properties) {
         (Ft::Object, _, Some(_)) if hints.known_structs.contains(&alias) => {
             Some((te, alias, element))
@@ -78,7 +78,7 @@ fn named_by_payload(
     unions: &mut Vec<(String, Vec<String>)>,
 ) -> Option<TypeExpr> {
     let (te, alias, element) = payload_named(entity, fd, hints)?;
-    if element.field_type == orbital_core::schema::FieldType::Union {
+    if element.field_type == orbital_core_base::schema::FieldType::Union {
         unions.push((alias, element.values.clone().unwrap_or_default()));
     }
     Some(te)
@@ -305,7 +305,7 @@ pub(super) fn alias_shapes(
                 collect_field_shapes(f, &mut shapes)?;
                 if let Some((_, alias, element)) = payload_named(&def.name, f, hints) {
                     if let (false, Some(props)) = (
-                        element.field_type == orbital_core::schema::FieldType::Union,
+                        element.field_type == orbital_core_base::schema::FieldType::Union,
                         &element.properties,
                     ) {
                         shapes
@@ -316,7 +316,7 @@ pub(super) fn alias_shapes(
             }
         }
     }
-    let mut knobs: Vec<&HashMap<String, orbital_core::schema::ConfigField>> = Vec::new();
+    let mut knobs: Vec<&HashMap<String, orbital_core_base::schema::ConfigField>> = Vec::new();
     knobs.extend(o.config.iter());
     for t in &o.traits {
         if let TraitReference::Inline(td) = t {
@@ -424,8 +424,8 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
                     config: config_fields(&o.config)?,
                     listens: o.listens.iter().flatten().map(cross_listen).collect(),
                     emits_scope: o.emits_scope.as_ref().map(|s| match s {
-                        orbital_core::schema::EventScope::Internal => "internal".to_string(),
-                        orbital_core::schema::EventScope::External => "external".to_string(),
+                        orbital_core_base::schema::EventScope::Internal => "internal".to_string(),
+                        orbital_core_base::schema::EventScope::External => "external".to_string(),
                     }),
                     name_override: None,
                 },

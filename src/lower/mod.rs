@@ -9,9 +9,9 @@ use crate::error::{Located, LowerError};
 use crate::patterns_meta::event_prop_names;
 use crate::registry::LoloContracts;
 use crate::types::check_program;
-use orbital_core::behavior_packages::BehaviorPackage;
-use orbital_core::effects::{EffectRow, EffectRowBuilder, EffectSite};
-use orbital_core::schema::{
+use orbital_core_base::behavior_packages::BehaviorPackage;
+use orbital_core_base::effect_row::{EffectRow, EffectRowBuilder, EffectSite};
+use orbital_core_base::schema::{
     Cardinality, ConfigField as SchemaConfigField, EmitDefinition, EntityDefinition,
     EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration,
     FieldDefinition, FieldType, ListenDefinition, ListenSource, Orbital as CoreOrbital,
@@ -145,10 +145,10 @@ pub fn lower_to_orb_with_prior_and_map_with(
     prior: Option<&OrbitalSchema>,
     options: &LowerOptions,
 ) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
-    orbital_core::language_data::language_data().map_err(LowerError::LanguageData)?;
+    orbital_core_base::language_data::language_data().map_err(LowerError::LanguageData)?;
     let contracts = LoloContracts::load_shared(&options.packages).map_err(|e| match e {
         crate::registry::LoadError::StdNotInstalled => LowerError::BehaviorPackageNotInstalled {
-            package: orbital_core::behavior_packages::STD_PACKAGE.to_string(),
+            package: orbital_core_base::behavior_packages::STD_PACKAGE.to_string(),
         },
         other => LowerError::BehaviorPackages(other.to_string()),
     })?;
@@ -163,8 +163,8 @@ pub fn lower_to_orb_with_prior_and_map_with(
 fn discovered_options() -> Result<LowerOptions, LowerError> {
     let cwd = std::env::current_dir().map_err(|e| LowerError::BehaviorPackages(e.to_string()))?;
     let user_store =
-        orbital_core::behavior_packages::user_store_dir().unwrap_or_else(|| cwd.clone());
-    let packages = orbital_core::behavior_packages::discover(&cwd, &user_store)
+        orbital_core_base::behavior_packages::user_store_dir().unwrap_or_else(|| cwd.clone());
+    let packages = orbital_core_base::behavior_packages::discover(&cwd, &user_store)
         .map_err(|e| LowerError::BehaviorPackages(e.to_string()))?;
     Ok(LowerOptions { packages })
 }
@@ -180,7 +180,7 @@ fn lower_impl(
     let mut source_map = crate::source_map::LoloSourceMap::new();
     let ast = &projection::resolve_field_projections(ast)?;
     let mut schema = lower_to_orb_names_only(ast, &mut source_map, contracts)?;
-    orbital_core::evaluator::bake_list_shapes(&mut schema)
+    orbital_core_eval::evaluator::bake_list_shapes(&mut schema)
         .expect("an orbital serializes to JSON and back");
     let synthetic_traits: HashSet<String> = ast
         .orbitals
@@ -189,7 +189,7 @@ fn lower_impl(
         .filter(|t| t.is_inline_synthetic)
         .map(|t| t.name.clone())
         .collect();
-    orbital_core::stamp::stamp_schema_identity(&mut schema, prior, &synthetic_traits);
+    orbital_core_base::stamp::stamp_schema_identity(&mut schema, prior, &synthetic_traits);
     Ok((schema, source_map))
 }
 
@@ -206,7 +206,7 @@ pub fn stamp_schema_identity(
     prior: Option<&OrbitalSchema>,
     synthetic_traits: &HashSet<String>,
 ) {
-    orbital_core::stamp::stamp_schema_identity(schema, prior, synthetic_traits);
+    orbital_core_base::stamp::stamp_schema_identity(schema, prior, synthetic_traits);
 }
 
 /// The name-only lowering (pre-identity). Kept private; the public entry
@@ -383,7 +383,7 @@ fn lower_to_orb_names_only(
 
     // Canonicalize flat `fn` lambdas to the grouped form so the emitted/baked
     // `.orb` carries one shape (see `orbital_core::schema::normalize_fn_shapes`).
-    orbital_core::schema::normalize_fn_shapes(&mut schema);
+    orbital_core_base::schema::normalize_fn_shapes(&mut schema);
 
     for orbital in &schema.orbitals {
         config_knob_read::check_orbital_config_knobs_read(orbital)?;
@@ -395,7 +395,7 @@ fn lower_to_orb_names_only(
 /// Qualifies every `(i18n/t "key")` with this program's name — see
 /// `orbital_core::messages`.
 fn qualify_message_keys(schema: OrbitalSchema) -> Result<OrbitalSchema, LowerError> {
-    use orbital_core::messages::{qualify_message_keys, MessageKeyIssue};
+    use orbital_core_base::messages::{qualify_message_keys, MessageKeyIssue};
     let mut value = serde_json::to_value(&schema).map_err(|e| LowerError::MessageKeys {
         detail: e.to_string(),
     })?;
@@ -433,7 +433,7 @@ fn lower_theme_decl(decl: &ThemeDecl) -> ThemeRef {
     }
 }
 
-fn theme_map(entries: &[(String, String)]) -> Option<orbital_core::schema::ThemeMap> {
+fn theme_map(entries: &[(String, String)]) -> Option<orbital_core_base::schema::ThemeMap> {
     if entries.is_empty() {
         None
     } else {
@@ -1071,7 +1071,7 @@ mod tests {
         let src = "app MyApp \"1.0.0\"\n\"Desc\"\ntheme \"linear-clean-light\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}";
         let s = lower(src);
         match &s.theme {
-            Some(orbital_core::schema::ThemeRef::Reference(k)) => {
+            Some(orbital_core_base::schema::ThemeRef::Reference(k)) => {
                 assert_eq!(k, "linear-clean-light")
             }
             other => panic!("expected app theme reference, got {:?}", other),
@@ -1098,7 +1098,7 @@ mod tests {
         let s = lower(src);
         let theme = s.orbitals[0].theme.as_ref().expect("orbital theme lowered");
         match theme {
-            orbital_core::schema::ThemeRef::Inline(def) => {
+            orbital_core_base::schema::ThemeRef::Inline(def) => {
                 assert_eq!(def.name, "riya-graph-paper");
                 assert_eq!(
                     def.tokens.colors.as_ref().unwrap().get("primary"),
@@ -1131,13 +1131,13 @@ mod tests {
             "      diagram {\n        strokeNormal: \"3px\"\n        lineCap: \"round\"\n        fillStyle: \"hatch\"\n      }\n      scene {\n        materialFlat: \"1\"\n      }\n      surface {\n        diagram: \"#1f3a2e\"\n      }",
         );
         let s = lower(&src);
-        let orbital_core::schema::ThemeRef::Inline(def) = s.orbitals[0].theme.as_ref().unwrap() else {
+        let orbital_core_base::schema::ThemeRef::Inline(def) = s.orbitals[0].theme.as_ref().unwrap() else {
             panic!("expected inline theme");
         };
         let diagram = def.tokens.diagram.as_ref().expect("diagram axis lowered");
         assert_eq!(diagram.stroke_normal.as_deref(), Some("3px"));
-        assert_eq!(diagram.line_cap, Some(orbital_core::schema::DiagramLineCap::Round));
-        assert_eq!(diagram.fill_style, Some(orbital_core::schema::DiagramFillStyle::Hatch));
+        assert_eq!(diagram.line_cap, Some(orbital_core_base::schema::DiagramLineCap::Round));
+        assert_eq!(diagram.fill_style, Some(orbital_core_base::schema::DiagramFillStyle::Hatch));
         assert_eq!(def.tokens.scene.as_ref().unwrap().material_flat.as_deref(), Some("1"));
         assert_eq!(def.tokens.surface.as_ref().unwrap().diagram.as_deref(), Some("#1f3a2e"));
         let ast = parse_str(&src).expect("parse");
@@ -1160,7 +1160,7 @@ mod tests {
     #[test]
     fn control_inline_theme_without_drawing_axes_lowers_none() {
         let s = lower(&inline_theme("      colors {\n        primary: \"#000\"\n      }"));
-        let orbital_core::schema::ThemeRef::Inline(def) = s.orbitals[0].theme.as_ref().unwrap() else {
+        let orbital_core_base::schema::ThemeRef::Inline(def) = s.orbitals[0].theme.as_ref().unwrap() else {
             panic!("expected inline theme");
         };
         assert!(def.tokens.diagram.is_none() && def.tokens.scene.is_none());
@@ -2018,7 +2018,7 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         let schema = lower_to_orb(&ast).expect("lowers");
-        let orbital_core::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
+        let orbital_core_base::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
             panic!("inline trait");
         };
         let events = trait_def.state_machine.events.as_ref().expect("events");

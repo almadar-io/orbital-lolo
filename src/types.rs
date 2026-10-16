@@ -30,7 +30,7 @@ use crate::ast::{
     Persistence, Program, Span, Trait, TypeAlias, TypeAnnotation, TypeBody, TypeExpr,
 };
 use crate::error::{TypeError, TypeKindName};
-use orbital_core::schema::SExpression;
+use orbital_core_base::schema::SExpression;
 
 /// Per-scope alias table. Two of these are built during `Program` resolution:
 /// one from `program.type_aliases` (file scope) and one from each orbital's
@@ -1087,7 +1087,7 @@ fn struct_alias_fields<'a>(
     }
 }
 
-fn sexpr_as_object(e: &SExpression) -> Option<&orbital_core::schema::SObject> {
+fn sexpr_as_object(e: &SExpression) -> Option<&orbital_core_base::schema::SObject> {
     match e {
         SExpression::Object(o) => Some(o),
         _ => None,
@@ -1116,7 +1116,7 @@ fn check_payload_sibling_literals(
     let Some(default) = &cf.default else {
         return Ok(());
     };
-    let items: Vec<&orbital_core::schema::SObject> = match default {
+    let items: Vec<&orbital_core_base::schema::SObject> = match default {
         SExpression::Array(items) => items.iter().filter_map(sexpr_as_object).collect(),
         SExpression::Object(obj) => vec![obj],
         _ => Vec::new(),

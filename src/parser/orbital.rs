@@ -20,7 +20,7 @@ struct OrbitalRefBody {
     fields_remap: Vec<(String, String, Span)>,
     roles_remap: Vec<(String, Vec<String>, Span)>,
     pages_remap: Vec<(String, String, Span)>,
-    page_modifiers: Vec<(String, orbital_core::schema::PageModifiers)>,
+    page_modifiers: Vec<(String, orbital_core_base::schema::PageModifiers)>,
     mounts: Vec<(String, Vec<String>, Span)>,
     omit: Vec<(String, Span)>,
     only: Vec<String>,
@@ -393,7 +393,7 @@ impl Parser {
         (
             Vec<(String, String, Span)>,
             Vec<(String, Vec<String>, Span)>,
-            Vec<(String, orbital_core::schema::PageModifiers)>,
+            Vec<(String, orbital_core_base::schema::PageModifiers)>,
         ),
         ParseError,
     > {
@@ -438,7 +438,7 @@ impl Parser {
                 mounts.push((from.clone(), mount_traits, key_span));
             }
             if matches!(self.peek(), TokenKind::LBracket) {
-                let mut mods = orbital_core::schema::PageModifiers::default();
+                let mut mods = orbital_core_base::schema::PageModifiers::default();
                 self.parse_modifier_bracket(
                     "pages remap entry",
                     super::REMAP_PAGE_MODIFIERS,

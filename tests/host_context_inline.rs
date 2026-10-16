@@ -17,7 +17,7 @@ use orbital_compiler::loader::LoaderConfig;
 use orbital_compiler::phases::inline::{inline_schema, InlineConfig, InlineError};
 use orbital_compiler::phases::resolve_to_oir;
 use orbital_compiler::phases::validation::{ErrorCode, ValidationResult};
-use orbital_core::schema::{OrbitalSchema, TraitReference};
+use orbital_core_base::schema::{OrbitalSchema, TraitReference};
 use orbital_lolo::parse_and_lower_str;
 use std::path::Path;
 

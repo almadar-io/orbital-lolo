@@ -2,7 +2,7 @@
 //! `app NAME "VER" [description: …, theme: …, locales: […], …]` and
 //! `page "/p" -> A, B [view: …, access: …, title: …]`.
 
-use orbital_core::schema::{PageAccess, PageIndexing, PageMeta, PageRef};
+use orbital_core_base::schema::{PageAccess, PageIndexing, PageMeta, PageRef};
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 
 const BODY: &str = r#"
@@ -80,7 +80,7 @@ fn with_page(options: &str) -> String {
     )
 }
 
-fn inline_page(source: &str) -> orbital_core::schema::PageDefinition {
+fn inline_page(source: &str) -> orbital_core_base::schema::PageDefinition {
     let schema = parse_and_lower_str(source).expect("lower");
     match &schema.orbitals[0].pages.as_ref().expect("pages")[0] {
         PageRef::Inline(p) => p.clone(),
@@ -158,7 +158,7 @@ fn an_inline_theme_block_is_a_bracket_value() {
     let schema = parse_and_lower_str(&program(header)).expect("lower");
     assert!(matches!(
         schema.theme,
-        Some(orbital_core::schema::ThemeRef::Inline(_))
+        Some(orbital_core_base::schema::ThemeRef::Inline(_))
     ));
     assert_eq!(schema.locales, Some(vec!["en".to_string()]));
 }

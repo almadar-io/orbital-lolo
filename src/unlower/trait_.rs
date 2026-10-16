@@ -6,7 +6,7 @@ use crate::ast::{
     Emit, Listen, Span, State, Tick, TickInterval, Trait, TraitRefData, TraitScope, TraitTypeParam,
     Transition, TypeAnnotation, TypeExpr,
 };
-use orbital_core::schema::{
+use orbital_core_base::schema::{
     join_event_address, EmitDefinition, EventScope, ListenDefinition, PayloadField, StringOrArray,
     StringOrNumber, TickDefinition, TraitCategory, TraitDefinition, TraitReference,
     TraitScope as CoreScope,
@@ -213,7 +213,7 @@ fn tick_of(t: &TickDefinition) -> Result<Tick, UnlowerError> {
     })
 }
 
-fn single_from(tr: &orbital_core::schema::TransitionDefinition) -> Result<String, UnlowerError> {
+fn single_from(tr: &orbital_core_base::schema::TransitionDefinition) -> Result<String, UnlowerError> {
     match &tr.from {
         StringOrArray::Single(s) => Ok(s.clone()),
         StringOrArray::Multiple(_) => Err(UnlowerError::new(

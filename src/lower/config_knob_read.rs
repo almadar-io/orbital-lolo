@@ -4,7 +4,7 @@
 //! declared knob nothing reads is dead surface: a call site sets it and nothing
 //! changes. Judged on the lowered orbital, before inline substitutes `@config.X`.
 
-use orbital_core::schema::{Orbital, TraitReference};
+use orbital_core_base::schema::{Orbital, TraitReference};
 
 use crate::error::LowerError;
 

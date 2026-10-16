@@ -15,7 +15,7 @@
 //! and typed config overrides. The compiler re-verifies post-inline as a
 //! backstop; this surfaces the error at the call site instead.
 
-use orbital_core::behavior_packages::{BehaviorPackage, RegistrySource};
+use orbital_core_base::behavior_packages::{BehaviorPackage, RegistrySource};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::collections::HashMap;
@@ -113,8 +113,8 @@ pub enum LoadError {
     /// std contracts have no embedded fallback (Phase 2).
     #[error(
         "{}",
-        orbital_core::behavior_packages::not_installed_message(
-            orbital_core::behavior_packages::STD_PACKAGE
+        orbital_core_base::behavior_packages::not_installed_message(
+            orbital_core_base::behavior_packages::STD_PACKAGE
         )
     )]
     StdNotInstalled,
@@ -410,9 +410,9 @@ fn js_to_lolo(t: &str) -> String {
 /// `@almadar/core`'s `inferConfigType`: the knob's declared type, else its
 /// default's runtime type; then [`js_to_lolo`].
 fn config_types(
-    config: Option<&HashMap<String, orbital_core::schema::ConfigField>>,
+    config: Option<&HashMap<String, orbital_core_base::schema::ConfigField>>,
 ) -> HashMap<String, String> {
-    use orbital_core::schema::SExpression;
+    use orbital_core_base::schema::SExpression;
     config
         .into_iter()
         .flatten()
@@ -438,11 +438,11 @@ fn config_types(
 /// `unknown` — it declares no type) takes the type of the orbital's or app's
 /// own declared knob `X`; an unresolved wiring stays `unknown` (unchecked).
 fn wired_config_types(
-    config: Option<&HashMap<String, orbital_core::schema::ConfigField>>,
-    orbital: Option<&HashMap<String, orbital_core::schema::ConfigField>>,
-    app: Option<&HashMap<String, orbital_core::schema::ConfigField>>,
+    config: Option<&HashMap<String, orbital_core_base::schema::ConfigField>>,
+    orbital: Option<&HashMap<String, orbital_core_base::schema::ConfigField>>,
+    app: Option<&HashMap<String, orbital_core_base::schema::ConfigField>>,
 ) -> HashMap<String, String> {
-    use orbital_core::schema::SExpression;
+    use orbital_core_base::schema::SExpression;
     let mut types = config_types(config);
     let own = config_types(orbital);
     let shared = config_types(app);
@@ -469,8 +469,8 @@ impl Behavior {
     /// program: each trait's `entityContract.requires` and config types (a
     /// composed trait by its local name), the page names, each orbital's
     /// config and the app config.
-    pub fn from_program(schema: &orbital_core::OrbitalSchema) -> Behavior {
-        use orbital_core::schema::{PageRef, TraitReference};
+    pub fn from_program(schema: &orbital_core_base::schema::types::OrbitalSchema) -> Behavior {
+        use orbital_core_base::schema::{PageRef, TraitReference};
         let mut traits = HashMap::new();
         let mut pages = Vec::new();
         let mut orbitals = HashMap::new();

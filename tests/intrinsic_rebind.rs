@@ -7,7 +7,7 @@
 //!   intrinsic) absent from the bound entity is rejected at lower time with
 //!   `LowerError::RebindMissingDataField` (test d).
 
-use orbital_core::schema::TraitReference;
+use orbital_core_base::schema::TraitReference;
 use orbital_lolo::parse_and_lower_str;
 
 /// (Fix 1) `@intrinsic` parses, lowers onto the field, and the intrinsic field
@@ -39,7 +39,7 @@ orbital WidgetOrbital {
 
     // Field carries intrinsic flag.
     let entity = match &orbital.entity {
-        orbital_core::schema::EntityRef::Inline(e) => e,
+        orbital_core_base::schema::EntityRef::Inline(e) => e,
         _ => panic!("expected inline entity"),
     };
     let vs = entity
@@ -95,7 +95,7 @@ orbital ApptOrbital {
 
     let schema = parse_and_lower_str(src).expect("lolo with @description/@synonyms must lower");
     let entity = match &schema.orbitals[0].entity {
-        orbital_core::schema::EntityRef::Inline(e) => e,
+        orbital_core_base::schema::EntityRef::Inline(e) => e,
         _ => panic!("expected inline entity"),
     };
     let field = |n: &str| {
@@ -143,7 +143,7 @@ orbital ClientOrbital {
 
     let schema = parse_and_lower_str(src).expect("lolo with @mock must lower");
     let entity = match &schema.orbitals[0].entity {
-        orbital_core::schema::EntityRef::Inline(e) => e,
+        orbital_core_base::schema::EntityRef::Inline(e) => e,
         _ => panic!("expected inline entity"),
     };
     let field = |n: &str| {
@@ -204,7 +204,7 @@ orbital EvtOrbital {
 
     let schema = parse_and_lower_str(src).expect("lolo with event annotations must lower");
     let trait_def = match &schema.orbitals[0].traits[0] {
-        orbital_core::schema::TraitReference::Inline(t) => t,
+        orbital_core_base::schema::TraitReference::Inline(t) => t,
         _ => panic!("expected inline trait"),
     };
 

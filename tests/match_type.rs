@@ -5,7 +5,7 @@
 //! format round-trip, and the lowered wire-JSON equivalence to the unchanged
 //! `PayloadTypeWhen` IR.
 
-use orbital_core::schema::TraitReference;
+use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str, LoloError};
 
 /// Wrap a `trait` body (emits/config/listens blocks) in a minimal orbital —
@@ -31,9 +31,9 @@ fn wrap(trait_body: &str) -> String {
 }
 
 fn trait_named<'a>(
-    schema: &'a orbital_core::schema::OrbitalSchema,
+    schema: &'a orbital_core_base::schema::OrbitalSchema,
     name: &str,
-) -> &'a orbital_core::schema::TraitDefinition {
+) -> &'a orbital_core_base::schema::TraitDefinition {
     schema.orbitals[0]
         .traits
         .iter()
@@ -152,7 +152,7 @@ fn match_lowers_local_listen_payload_field_identically_to_emit() {
     assert_eq!(conditions.len(), 1);
     assert_eq!(
         conditions[0],
-        orbital_core::schema::PayloadTypeWhen {
+        orbital_core_base::schema::PayloadTypeWhen {
             knob: "inputType".to_string(),
             equals: "number".to_string(),
             ty: "number".to_string(),

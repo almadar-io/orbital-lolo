@@ -92,7 +92,7 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>, accept: &dyn Fn(&Path) -> bool) {
 
 fn run_corpus(root: &Path, files: &[PathBuf]) {
     let packages =
-        orbital_core::behavior_packages::discover(root, root).expect("discover packages");
+        orbital_core_base::behavior_packages::discover(root, root).expect("discover packages");
     let options = LowerOptions { packages };
     let mut failures = Vec::new();
     for f in files {
@@ -186,7 +186,7 @@ fn dump_printed() {
         return;
     };
     let root = monorepo_root().expect("monorepo checkout");
-    let packages = orbital_core::behavior_packages::discover(&root, &root).expect("discover");
+    let packages = orbital_core_base::behavior_packages::discover(&root, &root).expect("discover");
     let options = LowerOptions { packages };
     let src = fs::read_to_string(file).unwrap();
     let schema = parse_and_lower_str_with(&src, &options).unwrap();
@@ -195,7 +195,7 @@ fn dump_printed() {
 
 fn monorepo_options() -> Option<LowerOptions> {
     let root = monorepo_root()?;
-    let packages = orbital_core::behavior_packages::discover(&root, &root).ok()?;
+    let packages = orbital_core_base::behavior_packages::discover(&root, &root).ok()?;
     Some(LowerOptions { packages })
 }
 

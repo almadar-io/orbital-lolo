@@ -43,7 +43,7 @@ pub use source_map::LoloSourceMap;
 
 pub mod source_map;
 
-use orbital_core::schema::OrbitalSchema;
+use orbital_core_base::schema::OrbitalSchema;
 use std::path::Path;
 
 /// Convenience: read a `.lolo` file from disk, parse it, and lower it to an

@@ -6,7 +6,7 @@
 //! spelling's lowering. NO corpus `.lolo` edits — this file's fixtures are
 //! self-contained.
 
-use orbital_core::schema::TraitReference;
+use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str, LoloError};
 
 /// One entity (`op`/`key` fields, closed 3-member `op` vocabulary) shared by
@@ -48,9 +48,9 @@ fn wrap_payload_trait(trait_body: &str) -> String {
 }
 
 fn trait_named<'a>(
-    schema: &'a orbital_core::schema::OrbitalSchema,
+    schema: &'a orbital_core_base::schema::OrbitalSchema,
     name: &str,
-) -> &'a orbital_core::schema::TraitDefinition {
+) -> &'a orbital_core_base::schema::TraitDefinition {
     schema.orbitals[0]
         .traits
         .iter()

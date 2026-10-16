@@ -4,7 +4,7 @@
 //! `do`/`if` bodies, a dynamic (`@config.*`) level binding, and both
 //! lowering errors (unknown level, wrong arity).
 
-use orbital_core::schema::TraitReference;
+use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{parse_and_lower_str, LoloError};
 
 fn wrap(trait_body: &str) -> String {

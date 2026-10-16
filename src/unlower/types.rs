@@ -4,7 +4,7 @@ use super::UnlowerError;
 use crate::ast::{
     ConfigField, EntityField, EventField, MatchArm, MatchPattern, PayloadOfTarget, Span, TypeExpr,
 };
-use orbital_core::schema::{
+use orbital_core_base::schema::{
     Cardinality, ConfigField as SchemaConfigField, FieldDefinition, FieldType, PayloadField,
 };
 use std::collections::HashMap;
@@ -547,7 +547,7 @@ fn collect_payload_hints(fields: &[PayloadField], out: &mut AliasShapes) {
 }
 
 pub(super) fn collect_trait_hints(
-    td: &orbital_core::schema::TraitDefinition,
+    td: &orbital_core_base::schema::TraitDefinition,
     out: &mut AliasShapes,
 ) {
     for e in td.emits.iter().flatten() {

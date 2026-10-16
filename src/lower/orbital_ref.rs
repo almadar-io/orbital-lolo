@@ -202,7 +202,7 @@ pub(crate) fn lower_orbital_reference(
         Some(fields)
     };
 
-    let traits: Option<HashMap<String, orbital_core::schema::OrbitalRefTraitOverride>> =
+    let traits: Option<HashMap<String, orbital_core_base::schema::OrbitalRefTraitOverride>> =
         if orb.trait_overrides.is_empty() {
             None
         } else {
@@ -224,7 +224,7 @@ pub(crate) fn lower_orbital_reference(
                 );
                 map.insert(
                     t.trait_name.clone(),
-                    orbital_core::schema::OrbitalRefTraitOverride {
+                    orbital_core_base::schema::OrbitalRefTraitOverride {
                         linked_entity: t.linked_entity.clone(),
                         config: lowered.config,
                         events: lowered.events,
@@ -265,8 +265,8 @@ pub(crate) fn lower_orbital_reference(
         mock: pairs_to_map(&orb.mock_overrides),
         retype,
         persistence: rebind_tags.persistence.as_ref().map(|p| match p {
-            crate::ast::Persistence::Persistent => orbital_core::schema::Persistence::Persistent,
-            crate::ast::Persistence::Runtime => orbital_core::schema::Persistence::Runtime,
+            crate::ast::Persistence::Persistent => orbital_core_base::schema::Persistence::Persistent,
+            crate::ast::Persistence::Runtime => orbital_core_base::schema::Persistence::Runtime,
         }),
         collection: rebind_tags.collection.clone(),
         shared: rebind_tags.shared,
@@ -280,7 +280,7 @@ pub(crate) fn lower_orbital_reference(
             Some(
                 orb.import_listens
                     .iter()
-                    .map(|l| orbital_core::schema::OrbitalRefListen {
+                    .map(|l| orbital_core_base::schema::OrbitalRefListen {
                         trait_name: l.target_trait.clone().unwrap_or_default(),
                         listen: crate::lower::emit_listen::lower_listen(l),
                     })

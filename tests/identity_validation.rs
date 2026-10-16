@@ -3,7 +3,7 @@
 //! single dual-carry edge makes the matching rule fire.
 
 use orbital_compiler::validate_comprehensive_without_services;
-use orbital_core::schema::{OrbitalSchema, TraitReference};
+use orbital_core_base::schema::{OrbitalSchema, TraitReference};
 use orbital_lolo::parse_and_lower_str;
 
 const FIXTURE: &str = r#"

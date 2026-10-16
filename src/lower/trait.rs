@@ -128,7 +128,7 @@ pub(crate) fn desugar_notify(expr: &SExpression) -> Result<SExpression, LowerErr
                     return Err(LowerError::NotifyInvalidLevel { level: s.clone() });
                 }
             }
-            let mut props = orbital_core::schema::SObject::new();
+            let mut props = orbital_core_base::schema::SObject::new();
             props.insert("type".to_string(), SExpression::String("alert".to_string()));
             props.insert("variant".to_string(), level);
             props.insert("message".to_string(), message);
@@ -927,8 +927,8 @@ pub(crate) fn lower_trait(
     // `scope` is required in the .orb schema (V2 Phase 6); an undeclared
     // marker defaults to `instance` per the language spec.
     let scope = Some(match t.scope.as_ref() {
-        Some(crate::ast::TraitScope::Collection) => orbital_core::schema::TraitScope::Collection,
-        Some(crate::ast::TraitScope::Instance) | None => orbital_core::schema::TraitScope::Instance,
+        Some(crate::ast::TraitScope::Collection) => orbital_core_base::schema::TraitScope::Collection,
+        Some(crate::ast::TraitScope::Instance) | None => orbital_core_base::schema::TraitScope::Instance,
     });
 
     // Lower the trait's declared `config { ... }` block into the schema's
@@ -1033,7 +1033,7 @@ pub(crate) fn lower_trait(
             Some(
                 t.type_params
                     .iter()
-                    .map(|p| orbital_core::schema::TraitTypeParamDef {
+                    .map(|p| orbital_core_base::schema::TraitTypeParamDef {
                         name: p.name.clone(),
                         kind: p.kind.clone(),
                         default: p.default.clone(),

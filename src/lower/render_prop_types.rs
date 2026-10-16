@@ -9,8 +9,8 @@
 
 use std::collections::HashSet;
 
-use orbital_core::schema::{PayloadField, SExpression, TraitDefinition, TraitReference};
-use orbital_core::type_compat::{bound_shape_of_payload_field, record_prop_binding_mismatch, RecordBindingMismatch};
+use orbital_core_base::schema::{PayloadField, SExpression, TraitDefinition, TraitReference};
+use orbital_core_base::type_compat::{bound_shape_of_payload_field, record_prop_binding_mismatch, RecordBindingMismatch};
 
 use crate::error::LowerError;
 use crate::patterns_meta::record_prop;

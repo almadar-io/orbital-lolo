@@ -192,7 +192,7 @@ impl Parser {
                     span,
                 });
             };
-            let body = orbital_core::schema::quote::encode_quote_body(quoted);
+            let body = orbital_core_base::schema::quote::encode_quote_body(quoted);
             return Ok(SExpression::Array(vec![
                 SExpression::String("quote".to_string()),
                 SExpression::String(body),
@@ -207,7 +207,7 @@ impl Parser {
                     span,
                 });
             };
-            return orbital_core::schema::quote::quasiquote_expr(template).map_err(|e| {
+            return orbital_core_base::schema::quote::quasiquote_expr(template).map_err(|e| {
                 ParseError::InvalidSExpr {
                     message: format!("ELOLO_QUASIQUOTE_INVALID: {e}"),
                     span,
@@ -565,7 +565,7 @@ impl Parser {
         // `@callsitePayload.<field>` so it is resolved at the call site.
         for field in body.config.iter_mut() {
             if let Some(default) = field.default.as_mut() {
-                orbital_core::schema::capture_callsite_payload(default);
+                orbital_core_base::schema::capture_callsite_payload(default);
             }
         }
 
@@ -642,7 +642,7 @@ impl Parser {
     pub(crate) fn parse_object_literal(&mut self) -> Result<SExpression, ParseError> {
         let open_span = self.peek_span();
         self.expect_kind(&TokenKind::LBrace, "{")?;
-        let mut map: orbital_core::schema::SObject = orbital_core::schema::SObject::new();
+        let mut map: orbital_core_base::schema::SObject = orbital_core_base::schema::SObject::new();
         loop {
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::RBrace) {

@@ -9,7 +9,7 @@
 //! (`orbital_core::behavior_packages::discover`) is never exercised here —
 //! that's Wave 1's `orbital-core` test suite.
 
-use orbital_core::behavior_packages::BehaviorPackage;
+use orbital_core_base::behavior_packages::BehaviorPackage;
 use orbital_lolo::{parse_and_lower_str_with, LoloError, LowerError, LowerOptions};
 use std::fs;
 use std::path::Path;
@@ -69,7 +69,7 @@ fn package(
         version: version.to_string(),
         prefix: prefix.to_string(),
         root,
-        registry: orbital_core::behavior_packages::RegistrySource::Materialized(registry),
+        registry: orbital_core_base::behavior_packages::RegistrySource::Materialized(registry),
         files: Vec::new(),
         lolo_source: with_source.then_some(source),
         vectors: None,

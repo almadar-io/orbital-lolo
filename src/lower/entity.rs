@@ -50,7 +50,7 @@ pub(crate) fn lower_entity(
         access_waivers: if entity.access_waivers.is_empty() {
             None
         } else {
-            let mut waivers = orbital_core::schema::AccessWaivers::default();
+            let mut waivers = orbital_core_base::schema::AccessWaivers::default();
             for (op, reason) in &entity.access_waivers {
                 match op.as_str() {
                     "read" => waivers.read = Some(reason.clone()),

@@ -3,8 +3,8 @@
 //! inliner or binding interpolator ever sees inside it, and the formatter
 //! prints it back as `(quote x)`.
 
-use orbital_core::schema::quote::{decode_quote_body, encode_quote_body, quote_body_of};
-use orbital_core::schema::SExpression;
+use orbital_core_base::schema::quote::{decode_quote_body, encode_quote_body, quote_body_of};
+use orbital_core_base::schema::SExpression;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use serde_json::Value;
 
@@ -111,7 +111,7 @@ fn control_unquoted_guard_stays_a_call() {
 
 #[test]
 fn arabic_and_slovenian_heads_canonicalize_to_quote() {
-    for lang in orbital_core::i18n::lang::all() {
+    for lang in orbital_core_base::i18n::lang::all() {
         let native = lang.def.effects.get("quote").expect("quote in every effects table");
         assert_eq!(lang.canon_head(native), Some("quote"), "{}", lang.code);
     }

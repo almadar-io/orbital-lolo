@@ -5,8 +5,8 @@
 //! emit-only data trait and a rendering play trait. Inferred, never authored, the
 //! way `entityContract` is.
 
-use orbital_core::effects::EffectSite;
-use orbital_core::schema::{TraitDefinition, TraitReference};
+use orbital_core_base::effect_row::EffectSite;
+use orbital_core_base::schema::{TraitDefinition, TraitReference};
 use orbital_lolo::parse_and_lower_str;
 
 fn lower_one(src: &str) -> TraitDefinition {

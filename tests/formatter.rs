@@ -41,7 +41,7 @@ fn strip_identity_keys(value: Value) -> Value {
 /// `orbital_core::util::canonical_json` (the one production owner) so two
 /// independently-lowered values compare deterministically.
 fn canonicalize(value: Value) -> Value {
-    orbital_core::util::canonical_json(&strip_identity_keys(value))
+    orbital_core_eval::util::canonical_json(&strip_identity_keys(value))
 }
 
 fn strip_nulls(value: Value) -> Value {

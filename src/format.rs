@@ -5,7 +5,7 @@
 //! lexer captures them as trivia and the formatter re-interleaves them by source
 //! line before the node that follows them (re-indented to the output).
 
-use orbital_core::schema::SExpression;
+use orbital_core_base::schema::SExpression;
 use std::collections::HashMap;
 
 use crate::ast::{
@@ -144,13 +144,13 @@ impl Formatter {
     /// with each marker `["unquote", i]` put back as `(unquote <hole i>)`.
     fn quasiquote_template(arr: &[SExpression]) -> Option<SExpression> {
         let call = SExpression::Array(arr.to_vec());
-        let (body, holes) = orbital_core::schema::quote::quasiquote_of(&call)?;
-        let template = orbital_core::schema::quote::decode_quote_body(body)?;
+        let (body, holes) = orbital_core_base::schema::quote::quasiquote_of(&call)?;
+        let template = orbital_core_base::schema::quote::decode_quote_body(body)?;
         fn restore(e: SExpression, holes: &[SExpression]) -> SExpression {
             match e {
                 SExpression::Array(items) => {
                     if let [SExpression::String(h), SExpression::Number(n)] = items.as_slice() {
-                        if h == orbital_core::schema::quote::UNQUOTE_HEAD && n.fract() == 0.0 {
+                        if h == orbital_core_base::schema::quote::UNQUOTE_HEAD && n.fract() == 0.0 {
                             if let Some(hole) = holes.get(*n as usize) {
                                 return SExpression::Array(vec![
                                     SExpression::String(h.clone()),
@@ -1510,7 +1510,7 @@ impl Formatter {
     fn fmt_instance_block(
         &mut self,
         locale: Option<&String>,
-        rows: &[orbital_core::schema::SObject],
+        rows: &[orbital_core_base::schema::SObject],
     ) {
         self.write_indent();
         match locale {
@@ -2255,7 +2255,7 @@ impl Formatter {
             opts.push("initial".to_string());
         }
         opts.extend(head_modifier_sources(
-            &orbital_core::schema::PageModifiers {
+            &orbital_core_base::schema::PageModifiers {
                 access: page.access,
                 indexing: page.indexing,
                 title: page.title.clone(),
@@ -2676,7 +2676,7 @@ impl Formatter {
     /// (or `<Type attrs />` when childless). The `type` key becomes the tag
     /// name (PascalCased); `children` becomes nested JSX; every other key is
     /// a sorted attribute.
-    fn fmt_jsx_pattern(&mut self, map: &orbital_core::schema::SObject) {
+    fn fmt_jsx_pattern(&mut self, map: &orbital_core_base::schema::SObject) {
         let type_str = match map.get("type") {
             Some(SExpression::String(s)) => s.clone(),
             _ => return self.fmt_sexpr_object(map),
@@ -2881,8 +2881,8 @@ impl Formatter {
         }
 
         if let Some(quoted) =
-            orbital_core::schema::quote::quote_body_of(&SExpression::Array(arr.to_vec()))
-                .and_then(orbital_core::schema::quote::decode_quote_body)
+            orbital_core_base::schema::quote::quote_body_of(&SExpression::Array(arr.to_vec()))
+                .and_then(orbital_core_base::schema::quote::decode_quote_body)
         {
             self.output.push_str("(quote ");
             self.fmt_sexpr_inner(&quoted, false);
@@ -2996,7 +2996,7 @@ impl Formatter {
         }
     }
 
-    fn fmt_sexpr_object(&mut self, map: &orbital_core::schema::SObject) {
+    fn fmt_sexpr_object(&mut self, map: &orbital_core_base::schema::SObject) {
         if map.is_empty() {
             self.output.push_str("{}");
             return;
@@ -3217,8 +3217,8 @@ fn fmt_duration(ms: u64) -> String {
 }
 
 /// A page's head modifiers as `key: value` bracket entries, in canonical order.
-fn head_modifier_sources(mods: &orbital_core::schema::PageModifiers) -> Vec<String> {
-    use orbital_core::schema::{PageAccess, PageIndexing};
+fn head_modifier_sources(mods: &orbital_core_base::schema::PageModifiers) -> Vec<String> {
+    use orbital_core_base::schema::{PageAccess, PageIndexing};
     let mut out = Vec::new();
     if let Some(access) = mods.access {
         out.push(format!(
@@ -3260,11 +3260,11 @@ fn head_modifier_sources(mods: &orbital_core::schema::PageModifiers) -> Vec<Stri
 }
 
 /// A page metadata value as `.lolo` source.
-fn page_meta_source(meta: &orbital_core::schema::PageMeta) -> String {
+fn page_meta_source(meta: &orbital_core_base::schema::PageMeta) -> String {
     let quote = quote_lolo;
     match meta {
-        orbital_core::schema::PageMeta::Literal(s) => quote(s),
-        orbital_core::schema::PageMeta::Message(orbital_core::schema::PageMessage(_, key)) => {
+        orbital_core_base::schema::PageMeta::Literal(s) => quote(s),
+        orbital_core_base::schema::PageMeta::Message(orbital_core_base::schema::PageMessage(_, key)) => {
             format!("(i18n/t {})", quote(key))
         }
     }

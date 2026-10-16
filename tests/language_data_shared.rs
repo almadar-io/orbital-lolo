@@ -3,7 +3,7 @@
 //! and prop that exist only in the installed JSON are visible to both, with no
 //! rebuild. Own test binary: the language data is process-wide and installed once.
 
-use orbital_core::language_data::{install_language_data, load_language_data};
+use orbital_core_base::language_data::{install_language_data, load_language_data};
 use std::fs;
 
 #[test]

@@ -9,7 +9,7 @@ mod trait_;
 mod types;
 
 use crate::ast::{AppHeader, Program, Span};
-use orbital_core::schema::OrbitalSchema;
+use orbital_core_base::schema::OrbitalSchema;
 
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 #[error("cannot print as .lolo: {0}")]
@@ -22,7 +22,7 @@ impl UnlowerError {
 }
 
 fn strip_namespace(value: &mut serde_json::Value, prefix: &str) {
-    use orbital_core::messages::TRANSLATE_OP;
+    use orbital_core_base::messages::TRANSLATE_OP;
     match value {
         serde_json::Value::Array(items) => {
             if let [serde_json::Value::String(op), serde_json::Value::String(key), ..] =
@@ -75,7 +75,7 @@ fn without_namespace(schema: &OrbitalSchema) -> Result<OrbitalSchema, UnlowerErr
     let prefix = format!(
         "{}{}",
         schema.name,
-        orbital_core::messages::NAMESPACE_SEPARATOR
+        orbital_core_base::messages::NAMESPACE_SEPARATOR
     );
     strip_namespace(&mut value, &prefix);
     strip_baked_list_paths(&mut value);
@@ -101,7 +101,7 @@ pub struct PrintedTrait {
 
 /// Print one trait as orb's formatter writes it, with the lines each IR transition occupies.
 pub fn print_trait(
-    td: &orbital_core::schema::TraitDefinition,
+    td: &orbital_core_base::schema::TraitDefinition,
 ) -> Result<PrintedTrait, UnlowerError> {
     let (ast, _) = trait_::trait_definition(td)?;
     let order = trait_::transition_print_order(td)?;
@@ -146,7 +146,7 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
     }
     for o in &schema.orbitals {
         for t in &o.traits {
-            if let orbital_core::schema::TraitReference::Inline(td) = t {
+            if let orbital_core_base::schema::TraitReference::Inline(td) = t {
                 types::collect_trait_hints(td, &mut global);
             }
         }
@@ -154,7 +154,7 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
             .known_structs
             .extend(o.types.iter().flat_map(|t| t.keys().cloned()));
         for e in std::iter::once(&o.entity).chain(o.auxiliary_entities.iter().flatten()) {
-            if let orbital_core::schema::EntityRef::Inline(def) = e {
+            if let orbital_core_base::schema::EntityRef::Inline(def) = e {
                 global.entities.insert(def.name.clone());
             }
         }
@@ -185,7 +185,7 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
 /// orbital (`orbital X = A.orbitals.Y`) has for imports.
 fn hoist_common_uses(
     orbitals: &mut [crate::ast::Orbital],
-    core: &[orbital_core::schema::Orbital],
+    core: &[orbital_core_base::schema::Orbital],
 ) -> Result<Vec<crate::ast::UseDecl>, UnlowerError> {
     let keys: Vec<Vec<String>> = core
         .iter()
@@ -195,7 +195,7 @@ fn hoist_common_uses(
                 .flatten()
                 .map(|u| {
                     serde_json::to_value(u)
-                        .map(|v| orbital_core::util::canonical_json(&strip_ids(v)).to_string())
+                        .map(|v| orbital_core_eval::util::canonical_json(&strip_ids(v)).to_string())
                         .unwrap_or_default()
                 })
                 .collect()

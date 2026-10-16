@@ -468,7 +468,7 @@ fn check_one_set_value(
     if let SExpression::String(s) = value {
         if !s.starts_with('@') && !s.starts_with('?') {
             if let Some(members) = enum_members_of(declared, aliases) {
-                if !members.is_empty() && !orbital_core::enum_value_is_member(s, &members) {
+                if !members.is_empty() && !orbital_core_base::type_compat::enum_value_is_member(s, &members) {
                     return Err(LowerError::EnumValueNotMember {
                         orbital: t.name.clone(),
                         trait_name: t.name.clone(),
@@ -491,10 +491,10 @@ fn check_one_set_value(
         SExpression::Number(_) => Some(("number".to_string(), "literal".to_string())),
         SExpression::Bool(_) => Some(("boolean".to_string(), "literal".to_string())),
         SExpression::Object(_) => {
-            let as_value = orbital_core::evaluator::Value::from(value.clone());
-            let kind = if orbital_core::schema::behavior_value::is_trait_value(&as_value) {
+            let as_value = orbital_core_base::value::Value::from(value.clone());
+            let kind = if orbital_core_base::schema::behavior_value::is_trait_value(&as_value) {
                 "trait"
-            } else if orbital_core::schema::behavior_value::is_behavior_ref_value(&as_value) {
+            } else if orbital_core_base::schema::behavior_value::is_behavior_ref_value(&as_value) {
                 "behavior"
             } else {
                 "object"
@@ -598,8 +598,8 @@ fn check_one_set_value(
         _ if declared_str == actual_str => true,
         Some(members) => members
             .iter()
-            .any(|m| orbital_core::set_value_type_compatible(m, &actual_str)),
-        None => orbital_core::set_value_type_compatible(&declared_str, &actual_str),
+            .any(|m| orbital_core_base::type_compat::set_value_type_compatible(m, &actual_str)),
+        None => orbital_core_base::type_compat::set_value_type_compatible(&declared_str, &actual_str),
     };
     if !accepted {
         return Err(LowerError::SetValueTypeMismatch {
@@ -1723,7 +1723,7 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
                 TraitReference::Inline(td) => {
                     embeds.insert(
                         (orbital.name.clone(), td.name.clone()),
-                        orbital_core::schema::trait_embed_children(td),
+                        orbital_core_base::schema::trait_embed_children(td),
                     );
                     let entry = trait_transitions
                         .entry((orbital.name.clone(), td.name.clone()))
@@ -2028,7 +2028,7 @@ fn check_one_emit_literal(
                 });
             }
             Some(expected) => {
-                if let Some(actual) = orbital_core::literal_value_type(value) {
+                if let Some(actual) = orbital_core_eval::literal_type::literal_value_type(value) {
                     if !emit_primitive_compatible(expected, actual) {
                         return Err(LowerError::EmitPayloadFieldTypeMismatch {
                             orbital: orbital_name.to_string(),
@@ -2197,7 +2197,7 @@ pub(crate) fn check_behavior_contracts(
                                 // number-typed knob wired to a string-typed prop
                                 // validated clean and only surfaced when
                                 // something RESOLVED the reference downstream.
-                                let got = orbital_core::literal_value_type(v)
+                                let got = orbital_core_eval::literal_type::literal_value_type(v)
                                     .or_else(|| config_ref_knob_type(v, &knob_types));
                                 if let (Some(expected), Some(got)) = (tc.config.get(k), got) {
                                     if !config_type_compatible(got, expected) {
@@ -2263,7 +2263,7 @@ pub(crate) fn check_behavior_contracts(
                             if let Some(cfg) = &ref_object.config {
                                 for (k, cf) in cfg {
                                     if let Some(v) = cf.default.as_ref() {
-                                        let got = orbital_core::literal_value_type(v)
+                                        let got = orbital_core_eval::literal_type::literal_value_type(v)
                                             .or_else(|| config_ref_knob_type(v, &knob_types));
                                         if let (Some(expected), Some(got)) = (oc.config.get(k), got)
                                         {

@@ -1,6 +1,6 @@
 //! `random-bytes`, `credential-status` and `credential-forget` lower to the contract form and survive the formatter.
 
-use orbital_core::schema::TraitReference;
+use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use serde_json::{json, Value};
 

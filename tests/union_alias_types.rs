@@ -5,7 +5,7 @@ use orbital_lolo::parse_and_lower_str;
 
 fn types_of(
     source: &str,
-) -> std::collections::BTreeMap<String, Vec<orbital_core::schema::PayloadField>> {
+) -> std::collections::BTreeMap<String, Vec<orbital_core_base::schema::PayloadField>> {
     let schema = parse_and_lower_str(source).expect("lowers");
     schema.orbitals[0].types.clone().unwrap_or_default()
 }

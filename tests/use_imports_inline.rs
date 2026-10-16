@@ -11,7 +11,7 @@
 
 use orbital_compiler::loader::LoaderConfig;
 use orbital_compiler::phases::inline::{inline_schema, InlineConfig};
-use orbital_core::{PageRef, TraitReference};
+use orbital_core_base::schema::types::{PageRef, TraitReference};
 use orbital_lolo::parse_and_lower_str;
 use std::path::Path;
 

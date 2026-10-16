@@ -3,8 +3,8 @@
 //! argument, so binding interpolation and renames still reach the holes. A
 //! stray `(unquote e)` is a parse error; the formatter prints the template back.
 
-use orbital_core::schema::quote::{decode_quote_body, quasiquote_of};
-use orbital_core::schema::SExpression;
+use orbital_core_base::schema::quote::{decode_quote_body, quasiquote_of};
+use orbital_core_base::schema::SExpression;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 
 fn program(effect: &str) -> String {
@@ -93,7 +93,7 @@ fn a_nested_quasiquote_is_a_parse_error() {
 
 #[test]
 fn arabic_and_slovenian_heads_canonicalize() {
-    for lang in orbital_core::i18n::lang::all() {
+    for lang in orbital_core_base::i18n::lang::all() {
         for head in ["quasiquote", "unquote"] {
             let native = lang.def.effects.get(head).expect("head in every effects table");
             assert_eq!(lang.canon_head(native), Some(head), "{} {head}", lang.code);

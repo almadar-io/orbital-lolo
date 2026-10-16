@@ -24,7 +24,7 @@
 
 use super::*;
 use crate::ast::{ConfigField, Listen, Trait, TraitRefData, TypeExpr};
-use orbital_core::schema::SExpression;
+use orbital_core_base::schema::SExpression;
 
 /// The three JSX tag kinds, distinguished by tag shape after the first
 /// identifier segment is read.
@@ -409,7 +409,7 @@ impl Parser {
         // at the call site and never in the child's own INIT scope.
         for field in config.iter_mut() {
             if let Some(default) = field.default.as_mut() {
-                orbital_core::schema::capture_callsite_payload(default);
+                orbital_core_base::schema::capture_callsite_payload(default);
             }
         }
         let short = reference
@@ -480,7 +480,7 @@ fn desugar_pattern(
     children: Vec<SExpression>,
     explicit_closing: bool,
 ) -> SExpression {
-    let mut map: orbital_core::schema::SObject = orbital_core::schema::SObject::new();
+    let mut map: orbital_core_base::schema::SObject = orbital_core_base::schema::SObject::new();
     // `type` — explicit `type=` override wins; otherwise kebab-normalize the
     // PascalCase tag name. A non-string `type=` is passed through verbatim.
     let type_value = attrs
@@ -579,7 +579,7 @@ mod tests {
     fn parse_value(src: &str) -> SExpression {
         let mut p = Parser::new(
             crate::lexer::tokenize(src).unwrap(),
-            orbital_core::i18n::lang::english(),
+            orbital_core_base::i18n::lang::english(),
         );
         p.skip_newlines();
         p.parse_sexpr_or_value().expect("parse value")
@@ -641,7 +641,7 @@ mod tests {
     fn named_trait_ref_rejects_props() {
         let mut p = Parser::new(
             crate::lexer::tokenize("<trait.FileTextIcon label=\"x\" />").unwrap(),
-            orbital_core::i18n::lang::english(),
+            orbital_core_base::i18n::lang::english(),
         );
         assert!(p.parse_jsx_element().is_err());
     }
@@ -690,7 +690,7 @@ mod tests {
             .traits
             .iter()
             .find_map(|t| match t {
-                orbital_core::schema::TraitReference::Reference {
+                orbital_core_base::schema::TraitReference::Reference {
                     reference: Some(r),
                     name,
                     linked_entity,
@@ -764,7 +764,7 @@ mod tests {
             .traits
             .iter()
             .find_map(|t| match t {
-                orbital_core::schema::TraitReference::Reference {
+                orbital_core_base::schema::TraitReference::Reference {
                     reference: Some(r),
                     name: Some(n),
                     config,
@@ -823,7 +823,7 @@ mod tests {
     fn raw_text_child_rejected() {
         let mut p = Parser::new(
             crate::lexer::tokenize("<Stack>raw text</Stack>").unwrap(),
-            orbital_core::i18n::lang::english(),
+            orbital_core_base::i18n::lang::english(),
         );
         assert!(p.parse_jsx_element().is_err());
     }
@@ -832,7 +832,7 @@ mod tests {
     fn mismatched_closing_tag() {
         let mut p = Parser::new(
             crate::lexer::tokenize("<Stack>\n  <Badge />\n</Badge>").unwrap(),
-            orbital_core::i18n::lang::english(),
+            orbital_core_base::i18n::lang::english(),
         );
         assert!(p.parse_jsx_element().is_err());
     }

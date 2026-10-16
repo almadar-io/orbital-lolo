@@ -4,8 +4,8 @@
 //! `prior` reuses every id verbatim (zero churn); adding a node mints only that
 //! node's ids fresh and leaves every pre-existing id untouched.
 
-use orbital_core::identity::IdKind;
-use orbital_core::schema::{EntityRef, OrbitalSchema, PageRef, TraitReference};
+use orbital_core_base::identity::IdKind;
+use orbital_core_base::schema::{EntityRef, OrbitalSchema, PageRef, TraitReference};
 use orbital_lolo::{lower_to_orb_with_prior, parse_str};
 use std::collections::BTreeMap;
 
@@ -384,7 +384,7 @@ fn reference_form_declarations_mint_local_ids_and_page_refs_resolve() {
         }]
     });
     let mut schema: OrbitalSchema = serde_json::from_value(raw).expect("schema parses");
-    orbital_core::stamp::stamp_schema_identity(
+    orbital_core_base::stamp::stamp_schema_identity(
         &mut schema,
         None,
         &std::collections::HashSet::new(),
@@ -433,7 +433,7 @@ fn reference_form_declarations_mint_local_ids_and_page_refs_resolve() {
     let prior = schema.clone();
     let mut restamped: OrbitalSchema =
         serde_json::from_value(serde_json::to_value(&schema).unwrap()).unwrap();
-    orbital_core::stamp::stamp_schema_identity(
+    orbital_core_base::stamp::stamp_schema_identity(
         &mut restamped,
         Some(&prior),
         &std::collections::HashSet::new(),

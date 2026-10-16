@@ -28,7 +28,7 @@ orbital TaskOrbital {{
     )
 }
 
-fn event(schema: &orbital_core::schema::OrbitalSchema, key: &str) -> Value {
+fn event(schema: &orbital_core_base::schema::OrbitalSchema, key: &str) -> Value {
     let json = serde_json::to_value(schema).expect("schema serializes");
     let events = json["orbitals"][0]["traits"][0]["stateMachine"]["events"]
         .as_array()

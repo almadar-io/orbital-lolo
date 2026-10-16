@@ -6,7 +6,8 @@ license.workspace = true
 description = "Lexer, parser, and lowering for the .lolo surface language to OrbitalSchema (.orb JSON)"
 
 [dependencies]
-orbital-core = { path = "../orbital-core" }
+orbital-core-base = { path = "../orbital-core/crates/base" }
+orbital-core-eval = { path = "../orbital-core/crates/eval" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true

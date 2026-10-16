@@ -1,6 +1,6 @@
 //! The `http` effect surface and the `app` header `egress` key.
 
-use orbital_core::schema::TraitReference;
+use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str, schema_to_lolo, unlower};
 use serde_json::{json, Value};
 

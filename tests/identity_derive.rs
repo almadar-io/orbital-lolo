@@ -3,7 +3,7 @@
 //! `.lolo` twice gives the same ids with nothing stored, while a prior ledger
 //! is still honored first.
 
-use orbital_core::schema::{EntityRef, OrbitalSchema, TraitReference};
+use orbital_core_base::schema::{EntityRef, OrbitalSchema, TraitReference};
 use orbital_lolo::{lower_to_orb_with_prior, parse_str};
 
 fn program(app: &str, trait_name: &str) -> String {
@@ -118,7 +118,7 @@ fn control_a_prior_ledger_is_still_honored_first() {
     let pinned = "trt_01J0000000000000000000PINN".to_string();
     ledger.entries.insert(
         pinned.clone(),
-        orbital_core::identity::LedgerEntry {
+        orbital_core_base::identity::LedgerEntry {
             id: pinned.clone(),
             ..entry
         },

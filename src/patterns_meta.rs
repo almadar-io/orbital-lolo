@@ -20,7 +20,7 @@ use std::sync::OnceLock;
 /// `language_data()` and returns a structured error before any accessor here
 /// runs; see `orbital_core::language_data::language_data_after_preflight`.
 pub(crate) fn patterns_json() -> &'static str {
-    orbital_core::language_data::language_data_after_preflight()
+    orbital_core_base::language_data::language_data_after_preflight()
         .patterns
         .as_str()
 }

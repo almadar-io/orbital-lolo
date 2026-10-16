@@ -3,7 +3,7 @@
 //! lowers to `reference.pageModifiers`, keyed by the upstream path. A page
 //! takes `translationOf:` to name its translation group.
 
-use orbital_core::schema::{PageAccess, PageIndexing, PageMeta, PageRef};
+use orbital_core_base::schema::{PageAccess, PageIndexing, PageMeta, PageRef};
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 
 fn import(entry: &str) -> String {
@@ -21,7 +21,7 @@ orbital PlaySnake = Snake.orbitals.SnakeOrbital {{
     )
 }
 
-fn reference(source: &str) -> orbital_core::schema::OrbitalRefObject {
+fn reference(source: &str) -> orbital_core_base::schema::OrbitalRefObject {
     let schema = parse_and_lower_str(source).expect("lower");
     schema.orbitals[0].reference.clone().expect("reference")
 }

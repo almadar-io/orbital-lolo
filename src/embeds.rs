@@ -102,8 +102,8 @@ orbital TagOrbital {
             .iter()
             .flat_map(|o| {
                 o.traits.iter().filter_map(|t| match t {
-                    orbital_core::TraitReference::Inline(d) => Some(d.name.clone()),
-                    orbital_core::TraitReference::Reference { name, .. } => name.clone(),
+                    orbital_core_base::schema::types::TraitReference::Inline(d) => Some(d.name.clone()),
+                    orbital_core_base::schema::types::TraitReference::Reference { name, .. } => name.clone(),
                 })
             })
             .collect();

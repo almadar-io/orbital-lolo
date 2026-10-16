@@ -2,7 +2,7 @@
 //! the entity-header bracket on the `entity` line (persistence + collection),
 //! `retype { … }`, and per-imported-trait `traits { Up { … } }` overrides.
 
-use orbital_core::schema::{EventScope, Persistence};
+use orbital_core_base::schema::{EventScope, Persistence};
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 
 const HEAD: &str = r#"uses Notes from "almadar-behaviors/std-notes"
@@ -13,7 +13,7 @@ fn import(body: &str) -> String {
     format!("{HEAD}orbital NoteImport = Notes.orbitals.NoteOrbital {{\n{body}}}\n")
 }
 
-fn reference(source: &str) -> orbital_core::schema::OrbitalRefObject {
+fn reference(source: &str) -> orbital_core_base::schema::OrbitalRefObject {
     parse_and_lower_str(source).expect("lower").orbitals[0]
         .reference
         .clone()

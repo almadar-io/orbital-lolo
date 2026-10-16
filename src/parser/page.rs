@@ -92,7 +92,7 @@ impl Parser {
         let mut view = None;
         let mut primary_entity = None;
         let mut is_initial = false;
-        let mut head = orbital_core::schema::PageModifiers::default();
+        let mut head = orbital_core_base::schema::PageModifiers::default();
         if matches!(self.peek(), TokenKind::LBracket) {
             self.parse_modifier_bracket("page", PAGE_MODIFIERS, |p, key| {
                 if key == "initial" {
@@ -108,7 +108,7 @@ impl Parser {
                 Ok(())
             })?;
         }
-        let orbital_core::schema::PageModifiers {
+        let orbital_core_base::schema::PageModifiers {
             access,
             indexing,
             title,

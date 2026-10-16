@@ -339,7 +339,7 @@ pub fn is_known_keyword(word: &str) -> bool {
 }
 
 fn section_by_name<'a>(
-    def: &'a orbital_core::i18n::tables::I18nDefinition,
+    def: &'a orbital_core_base::i18n::tables::I18nDefinition,
     name: &str,
 ) -> &'a std::collections::BTreeMap<String, String> {
     match name {
@@ -382,7 +382,7 @@ fn vocab_sections() -> [(&'static str, &'static [&'static str]); 12] {
 /// when they agree exactly. Shared by the `keywords_match_tables` test and
 /// `orb i18n check`.
 pub fn vocabulary_vs_en_problems() -> Vec<String> {
-    let en = &orbital_core::i18n::tables::definitions()["en"];
+    let en = &orbital_core_base::i18n::tables::definitions()["en"];
     let mut problems = Vec::new();
     for (name, vocab) in vocab_sections() {
         let en_map = section_by_name(en, name);
@@ -409,7 +409,7 @@ pub fn vocabulary_vs_en_problems() -> Vec<String> {
 /// entry. Shared by `non_english_langs_cover_parser_vocabulary` and
 /// `orb i18n check`.
 pub fn non_english_coverage_problems() -> Vec<String> {
-    let defs = orbital_core::i18n::tables::definitions();
+    let defs = orbital_core_base::i18n::tables::definitions();
     let mut problems = Vec::new();
     for (code, def) in defs {
         if code == "en" {

@@ -8,7 +8,7 @@ use super::*;
 /// provenance is gone. Downstream, a `Some(knob)` marks the emit as an atom's
 /// OFFER rather than an authored obligation.
 fn definer_knob_of(event: &str) -> Option<String> {
-    orbital_core::schema::config_ref_event_knob(event).map(str::to_string)
+    orbital_core_base::schema::config_ref_event_knob(event).map(str::to_string)
 }
 
 /// `EmitDefinition.payload_entity` / `EventDefinition.payload_entity` (G4,
@@ -49,17 +49,17 @@ pub(crate) fn bare_entity_alias_name(
 /// lowering in `lower/trait.rs` — one conversion, not two copies.
 pub(crate) fn lower_match_field_type(
     te: &TypeExpr,
-) -> (String, Option<Vec<orbital_core::schema::PayloadTypeWhen>>) {
+) -> (String, Option<Vec<orbital_core_base::schema::PayloadTypeWhen>>) {
     let base = type_expr_to_string(te);
     let TypeExpr::Match { knob, arms } = te else {
         return (base, None);
     };
-    let conditions: Vec<orbital_core::schema::PayloadTypeWhen> = arms
+    let conditions: Vec<orbital_core_base::schema::PayloadTypeWhen> = arms
         .iter()
         .filter_map(|arm| {
             arm.pattern
                 .spelling()
-                .map(|equals| orbital_core::schema::PayloadTypeWhen {
+                .map(|equals| orbital_core_base::schema::PayloadTypeWhen {
                     knob: knob.clone(),
                     equals,
                     ty: type_expr_to_string(&arm.ty),
@@ -1090,7 +1090,7 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
             l.payload_mapping
                 .iter()
                 .map(|(k, v)| (k.clone(), desugar_expr_match(v)))
-                .collect::<orbital_core::schema::SObject>(),
+                .collect::<orbital_core_base::schema::SObject>(),
         )
     };
 
@@ -1122,8 +1122,8 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
 /// Split the parser's concatenated event string into (bare_event, source).
 pub(crate) fn split_listen_source(
     raw: &str,
-) -> (String, Option<orbital_core::schema::ListenSource>) {
-    orbital_core::schema::split_event_address(raw)
+) -> (String, Option<orbital_core_base::schema::ListenSource>) {
+    orbital_core_base::schema::split_event_address(raw)
 }
 
 pub(crate) fn lower_tick(t: &Tick) -> Result<TickDefinition, LowerError> {

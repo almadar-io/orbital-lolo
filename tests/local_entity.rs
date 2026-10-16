@@ -2,7 +2,7 @@
 //! the browser, `mock` opts an empty store into the shared mock seeder, and
 //! `instances [ … ]` writes out the rows the entity starts with.
 
-use orbital_core::schema::{EntityDefinition, EntityRef, OrbitalSchema, SExpression};
+use orbital_core_base::schema::{EntityDefinition, EntityRef, OrbitalSchema, SExpression};
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 
 fn primary(schema: &OrbitalSchema) -> &EntityDefinition {

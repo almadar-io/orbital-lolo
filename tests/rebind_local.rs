@@ -2,7 +2,7 @@
 //! client-held game traits are rebinds of std atoms onto a `[runtime]` entity;
 //! a rebind marks itself client-only the same way an authored trait does.
 
-use orbital_core::schema::TraitReference;
+use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{parse_and_lower_str, parse_str};
 
 const SOURCE: &str = r#"

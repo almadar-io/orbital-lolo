@@ -8,7 +8,7 @@
 //! The reason is mandatory, so the waiver can never become a quiet way to
 //! silence a policy that IS expressible.
 
-use orbital_core::schema::EntityRef;
+use orbital_core_base::schema::EntityRef;
 use orbital_lolo::parse_and_lower_str;
 
 fn entity_source(directives: &str) -> String {
@@ -36,8 +36,8 @@ orbital PersonOrbital {{
 
 /// The inline `TicketReply` definition, wherever it is declared.
 fn ticket_reply(
-    schema: &orbital_core::schema::OrbitalSchema,
-) -> &orbital_core::schema::EntityDefinition {
+    schema: &orbital_core_base::schema::OrbitalSchema,
+) -> &orbital_core_base::schema::EntityDefinition {
     schema
         .orbitals
         .iter()

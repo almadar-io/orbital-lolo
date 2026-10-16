@@ -3,7 +3,7 @@
 //! to the alias, never a shapeless carrier. The std draw-item vocabulary (`DrawGroupItem.items : [DrawItem]`
 //! where `DrawItem` includes `DrawGroupItem`) is the case this pins.
 
-use orbital_core::schema::FieldDefinition;
+use orbital_core_base::schema::FieldDefinition;
 use orbital_lolo::parse_and_lower_str;
 use serde_json::Value;
 

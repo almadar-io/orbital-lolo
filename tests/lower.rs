@@ -43,7 +43,7 @@ fn strip_identity_keys(value: Value) -> Value {
 /// `orbital_core::util::canonical_json` (the one production owner) so two
 /// values produced from `HashMap`-backed structs compare deterministically.
 fn canonicalize(value: Value) -> Value {
-    orbital_core::util::canonical_json(&strip_identity_keys(value))
+    orbital_core_eval::util::canonical_json(&strip_identity_keys(value))
 }
 
 /// Strip serde_json `null` values from objects so that the goldens don't
@@ -392,7 +392,7 @@ orbital W {
 }
 "#;
     let schema = parse_and_lower_str(source).expect("lower");
-    let orbital_core::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
+    let orbital_core_base::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
     else {
         panic!("expected inline trait");
     };
@@ -426,7 +426,7 @@ orbital W {
 }
 "#;
     let schema = parse_and_lower_str(source).expect("lower");
-    let orbital_core::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
+    let orbital_core_base::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
     else {
         panic!("expected inline trait");
     };
@@ -469,7 +469,7 @@ orbital Demo {
 // relations validator's license for expects-named relation targets.
 #[test]
 fn expects_entity_name_lowers_to_relation_field() {
-    use orbital_core::schema::{Cardinality, EntityRef, FieldType};
+    use orbital_core_base::schema::{Cardinality, EntityRef, FieldType};
 
     let source = r#"
 orbital OrbE {
@@ -593,7 +593,7 @@ fn inline_theme_motion_category_rejects_non_shape_keys() {
 /// shapeless `Object` that rejects every atom.
 #[test]
 fn sexpr_struct_member_lowers_to_sexpr_field_type() {
-    use orbital_core::schema::FieldType;
+    use orbital_core_base::schema::FieldType;
     let source = r#"
 orbital W {
   type Step = {
@@ -619,7 +619,7 @@ orbital W {
 }
 "#;
     let schema = parse_and_lower_str(source).expect("lower");
-    let orbital_core::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
+    let orbital_core_base::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0]
     else {
         panic!("expected inline trait");
     };

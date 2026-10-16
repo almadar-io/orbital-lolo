@@ -9,7 +9,7 @@
 //! the using trait's bound entity — see
 //! `orbital-compiler/tests/type_param_sentinel_inline.rs`.
 
-use orbital_core::TraitReference;
+use orbital_core_base::schema::types::TraitReference;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 
 const SRC: &str = r#"
@@ -347,7 +347,7 @@ orbital SiblingOrbital {
 }
 "#;
 
-fn toolbar_item_member(src: &str, member: &str) -> orbital_core::schema::FieldDefinition {
+fn toolbar_item_member(src: &str, member: &str) -> orbital_core_base::schema::FieldDefinition {
     let schema = parse_and_lower_str(src).expect("must lower");
     let TraitReference::Inline(t) = &schema.orbitals[0].traits[0] else {
         panic!("inline trait expected")
@@ -375,7 +375,7 @@ fn payload_of_sibling_lowers_to_a_shapeless_object() {
     // `resolve_field_shape` collapses to `OirType::Json` (-> the generic
     // `EventPayload` TS type), never a named struct.
     let member = toolbar_item_member(SIBLING_SRC, "actionPayload");
-    assert_eq!(member.field_type, orbital_core::schema::FieldType::Object);
+    assert_eq!(member.field_type, orbital_core_base::schema::FieldType::Object);
     assert!(member.properties.is_none());
     assert!(member.items.is_none());
 }
@@ -470,7 +470,7 @@ orbital P {
 "#;
     let schema = parse_and_lower_str(src).expect("union alias must lower");
     let ent = match &schema.orbitals[0].entity {
-        orbital_core::schema::EntityRef::Inline(e) => e,
+        orbital_core_base::schema::EntityRef::Inline(e) => e,
         _ => panic!("inline entity expected"),
     };
     let v = ent
@@ -480,7 +480,7 @@ orbital P {
         .expect("field v");
     assert_eq!(
         v.field_type,
-        orbital_core::schema::FieldType::Union,
+        orbital_core_base::schema::FieldType::Union,
         "all-known-type members must lower to Union, got {:?}",
         v.field_type
     );
@@ -518,7 +518,7 @@ orbital P {
 "#;
     let schema = parse_and_lower_str(src).expect("enum alias must lower");
     let ent = match &schema.orbitals[0].entity {
-        orbital_core::schema::EntityRef::Inline(e) => e,
+        orbital_core_base::schema::EntityRef::Inline(e) => e,
         _ => panic!("inline entity expected"),
     };
     let f = ent
@@ -528,7 +528,7 @@ orbital P {
         .expect("field f");
     assert_ne!(
         f.field_type,
-        orbital_core::schema::FieldType::Union,
+        orbital_core_base::schema::FieldType::Union,
         "`currency` names no type, so this must stay a string enum"
     );
     assert_eq!(

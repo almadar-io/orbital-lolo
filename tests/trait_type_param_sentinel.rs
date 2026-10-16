@@ -16,7 +16,7 @@
 //! Type-kind sweep) is covered end-to-end in
 //! `orbital-compiler/tests/trait_type_param_inline.rs`.
 
-use orbital_core::TraitReference;
+use orbital_core_base::schema::types::TraitReference;
 use orbital_lolo::{parse_and_lower_str, parse_str, LoloError, LowerError, TypeError};
 
 // ---------------------------------------------------------------------------

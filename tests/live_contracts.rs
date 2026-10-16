@@ -4,7 +4,7 @@
 //! from another with no regeneration step. A materialized package declaring
 //! `orb.source` takes the same path; the sidecar is ignored.
 
-use orbital_core::behavior_packages::{BehaviorPackage, RegistrySource};
+use orbital_core_base::behavior_packages::{BehaviorPackage, RegistrySource};
 use orbital_lolo::{parse_and_lower_str_with, LowerOptions};
 use std::fs;
 use std::path::Path;

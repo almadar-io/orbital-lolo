@@ -27,8 +27,8 @@
 //! (`tests/emit_contract_drift.rs`) asserts that table still agrees with
 //! `canonical-operators.json`.
 
-use orbital_core::effects::{success_payload, undeclared_reads, CallVariant, ProducedPayload};
-use orbital_core::schema::{SExpression, TraitDefinition, TraitReference};
+use orbital_core_base::emit_contract::{success_payload, undeclared_reads, CallVariant, ProducedPayload};
+use orbital_core_base::schema::{SExpression, TraitDefinition, TraitReference};
 use std::collections::BTreeMap;
 
 use crate::ast::TypeExpr;

@@ -2,8 +2,8 @@
 //! with its provenance kept (`projectedFrom`) so a value can be drawn from `T`'s own `f`.
 
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
-use orbital_core::schema::TraitReference;
-use orbital_core::{EntityRef, FieldProjection, FieldType, OrbitalSchema, PayloadField, TraitDefinition};
+use orbital_core_base::schema::TraitReference;
+use orbital_core_base::schema::types::{EntityRef, FieldProjection, FieldType, OrbitalSchema, PayloadField, TraitDefinition};
 
 const APP: &str = r#"app projection-app "1.0.0"
 "Projection"
@@ -64,7 +64,7 @@ fn lowered() -> OrbitalSchema {
     parse_and_lower_str(APP).expect("lower")
 }
 
-fn note_field(schema: &OrbitalSchema, name: &str) -> orbital_core::FieldDefinition {
+fn note_field(schema: &OrbitalSchema, name: &str) -> orbital_core_base::schema::types::FieldDefinition {
     let EntityRef::Inline(note) = &schema.orbitals[0].entity else { panic!("Note is the inline primary entity") };
     note.fields.iter().find(|f| f.name.as_deref() == Some(name)).cloned().expect(name)
 }

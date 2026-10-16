@@ -157,7 +157,7 @@ fn scan(relative: &str) -> Option<(Vec<String>, Vec<String>, usize)> {
     if !base.is_dir() {
         return None;
     }
-    let packages = orbital_core::behavior_packages::discover(&root, &root).expect("discover packages");
+    let packages = orbital_core_base::behavior_packages::discover(&root, &root).expect("discover packages");
     let options = LowerOptions { packages };
     let mut files = Vec::new();
     collect(&base, &mut files);

@@ -2,7 +2,7 @@
 
 use super::UnlowerError;
 use crate::ast::{InlineTheme, ThemeDecl, ThemeTokenMaps, THEME_TYPED_AXIS_KEYS};
-use orbital_core::schema::ThemeRef;
+use orbital_core_base::schema::ThemeRef;
 use serde_json::Value;
 
 fn string_map(v: Option<&Value>) -> Vec<(String, String)> {

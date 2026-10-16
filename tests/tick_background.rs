@@ -25,7 +25,7 @@ orbital ClockOrbital {{
     )
 }
 
-fn first_tick(orb: &orbital_core::OrbitalSchema) -> Value {
+fn first_tick(orb: &orbital_core_base::schema::types::OrbitalSchema) -> Value {
     let json = serde_json::to_value(orb).unwrap();
     json["orbitals"][0]["traits"][0]["ticks"][0].clone()
 }

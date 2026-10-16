@@ -7,7 +7,7 @@
 //! scrutinee purity, effect-head gating, the format round-trip, and nested
 //! expression-match. NO corpus `.lolo` edits — self-contained fixtures.
 
-use orbital_core::schema::TraitReference;
+use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str, LoloError};
 
 /// One entity with a closed 3-member string field (`op`), a boolean field
@@ -34,9 +34,9 @@ fn wrap_entity_trait(trait_body: &str) -> String {
 }
 
 fn trait_named<'a>(
-    schema: &'a orbital_core::schema::OrbitalSchema,
+    schema: &'a orbital_core_base::schema::OrbitalSchema,
     name: &str,
-) -> &'a orbital_core::schema::TraitDefinition {
+) -> &'a orbital_core_base::schema::TraitDefinition {
     schema.orbitals[0]
         .traits
         .iter()
@@ -92,8 +92,8 @@ fn strip_ids(value: serde_json::Value) -> serde_json::Value {
 }
 
 fn exec_transitions(
-    schema: &orbital_core::schema::OrbitalSchema,
-) -> Vec<orbital_core::schema::TransitionDefinition> {
+    schema: &orbital_core_base::schema::OrbitalSchema,
+) -> Vec<orbital_core_base::schema::TransitionDefinition> {
     trait_named(schema, "Exec")
         .state_machine
         .transitions

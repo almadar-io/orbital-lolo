@@ -3,7 +3,7 @@
 //! `uses`, and the two `config {}` declaration sites (app-level, orbital-
 //! level). See `docs/Almadar_Orbital_Import.md` §4 and the W2-R work item.
 
-use orbital_core::schema::{
+use orbital_core_base::schema::{
     ConfigField as SchemaConfigField, EntityRef, SExpression, TraitReference,
 };
 use orbital_lolo::ast::TypeExpr;
@@ -538,7 +538,7 @@ fn orbital_ref_listens_lowers_a_route_into_an_imported_trait() {
     assert_eq!(listens[0].listen.event, "PROJECT_CREATE_REQUESTED");
     assert_eq!(listens[0].listen.triggers.as_deref(), Some("PROJECT_CREATE_REQUESTED"));
     match &listens[0].listen.source {
-        Some(orbital_core::schema::ListenSource::Trait { trait_name, .. }) => {
+        Some(orbital_core_base::schema::ListenSource::Trait { trait_name, .. }) => {
             assert_eq!(trait_name, "ProjectLifecycle")
         }
         other => panic!("expected a trait source, got {other:?}"),

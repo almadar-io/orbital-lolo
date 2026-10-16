@@ -3,7 +3,7 @@
 //! files, so the contracts are loaded once per process per set of packages, and
 //! an edited `.lolo` is seen on the next lookup.
 
-use orbital_core::behavior_packages::discover;
+use orbital_core_base::behavior_packages::discover;
 use orbital_lolo::registry::LoloContracts;
 use std::sync::Arc;
 

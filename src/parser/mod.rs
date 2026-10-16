@@ -19,8 +19,8 @@
 use crate::ast::*;
 use crate::error::ParseError;
 use crate::lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
-use orbital_core::i18n::lang::{self, Lang};
-use orbital_core::schema::SExpression;
+use orbital_core_base::i18n::lang::{self, Lang};
+use orbital_core_base::schema::SExpression;
 
 /// Keys of the `app … [ … ]` modifier bracket.
 pub(crate) const APP_MODIFIERS: &[&str] = &[
@@ -542,7 +542,7 @@ impl Parser {
                 locales: Vec::new(),
                 egress: Vec::new(),
                 public: None,
-                site: orbital_core::schema::SiteMeta::default(),
+                site: orbital_core_base::schema::SiteMeta::default(),
                 legacy_lines: false,
                 config: Vec::new(),
                 span: self.peek_span(),
@@ -616,7 +616,7 @@ impl Parser {
         let mut locales = Vec::new();
         let mut egress = Vec::new();
         let mut public = None;
-        let mut site = orbital_core::schema::SiteMeta::default();
+        let mut site = orbital_core_base::schema::SiteMeta::default();
         let mut legacy_lines = positional_version.is_some();
         if matches!(self.peek(), TokenKind::LBracket) {
             self.parse_modifier_bracket("app", APP_MODIFIERS, |p, key| {
@@ -792,9 +792,9 @@ impl Parser {
     pub(crate) fn parse_head_modifier(
         &mut self,
         key: &str,
-        mods: &mut orbital_core::schema::PageModifiers,
+        mods: &mut orbital_core_base::schema::PageModifiers,
     ) -> Result<(), ParseError> {
-        use orbital_core::schema::{PageAccess, PageIndexing};
+        use orbital_core_base::schema::{PageAccess, PageIndexing};
         match key {
             "access" => {
                 mods.access = Some(
@@ -893,8 +893,8 @@ impl Parser {
     pub(crate) fn parse_page_meta(
         &mut self,
         key: &str,
-    ) -> Result<orbital_core::schema::PageMeta, ParseError> {
-        use orbital_core::schema::PageMeta;
+    ) -> Result<orbital_core_base::schema::PageMeta, ParseError> {
+        use orbital_core_base::schema::PageMeta;
         let span = self.peek_span();
         if let TokenKind::String(s) = self.peek().clone() {
             self.advance();
@@ -2551,15 +2551,15 @@ mod tests {
 /// A behavior-value literal (`<spec>.traits.<T>` or `<spec>.orbitals.<O>`) as its
 /// wire object; `None` when the run is not one.
 fn behavior_value_object(raw: &str) -> Option<SExpression> {
-    use orbital_core::schema::behavior_value::{OrbitalValueRef, TraitValueRef};
+    use orbital_core_base::schema::behavior_value::{OrbitalValueRef, TraitValueRef};
     if let Some(t) = TraitValueRef::parse(raw) {
-        return Some(SExpression::Object(orbital_core::schema::SObject::from([
+        return Some(SExpression::Object(orbital_core_base::schema::SObject::from([
             ("behavior".to_string(), SExpression::String(t.behavior)),
             ("trait".to_string(), SExpression::String(t.trait_name)),
         ])));
     }
     let o = OrbitalValueRef::parse(raw)?;
-    Some(SExpression::Object(orbital_core::schema::SObject::from([
+    Some(SExpression::Object(orbital_core_base::schema::SObject::from([
         ("behavior".to_string(), SExpression::String(o.behavior)),
         ("orbital".to_string(), SExpression::String(o.orbital)),
     ])))

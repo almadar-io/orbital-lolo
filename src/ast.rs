@@ -4,7 +4,7 @@
 //! mirrors the v3 spec in `docs/Lolo_Language_Spec_v3.md` Section "Top-level
 //! structure" and the EBNF grammar at the bottom of that document.
 
-use orbital_core::schema::SExpression;
+use orbital_core_base::schema::SExpression;
 
 /// Source span for error reporting.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -74,7 +74,7 @@ pub struct AppHeader {
     /// `public: "./public"` — a folder copied verbatim to the built site's root.
     pub public: Option<String>,
     /// `origin:` / `icon:` / `siteName:` / `signIn:` site modifiers.
-    pub site: orbital_core::schema::SiteMeta,
+    pub site: orbital_core_base::schema::SiteMeta,
     /// The modifiers were written as loose lines after `app` (the pre-bracket
     /// form) — still parsed, reported as `ORB_L_APP_HEADER_LEGACY`.
     pub legacy_lines: bool,
@@ -434,7 +434,7 @@ pub struct Orbital {
     pub pages_remap: Vec<(String, String, Span)>,
     /// `pages { "/up": "/local" [access: …] }` — page modifiers per remap
     /// entry, keyed by the UPSTREAM path, in source order.
-    pub page_modifiers: Vec<(String, orbital_core::schema::PageModifiers)>,
+    pub page_modifiers: Vec<(String, orbital_core_base::schema::PageModifiers)>,
     /// `omit { A B }` — trait/aux-entity names to drop from the imported set.
     /// Omitting a trait some other imported trait embeds is an error, not a
     /// silent drop (checked post-inline). Second element: the name token's
@@ -579,10 +579,10 @@ pub struct Entity {
     /// `mock` header tag — seed an empty browser store from the shared mock seeder.
     pub seed_mock: bool,
     /// `instances [ { … }, … ]` — written-out rows the entity starts with.
-    pub instances: Vec<orbital_core::schema::SObject>,
+    pub instances: Vec<orbital_core_base::schema::SObject>,
     /// `instances <lang> [ … ]` — the written-out rows for one declared locale.
     pub locale_instances:
-        std::collections::BTreeMap<String, Vec<orbital_core::schema::SObject>>,
+        std::collections::BTreeMap<String, Vec<orbital_core_base::schema::SObject>>,
     /// `@read <sexpr>` — a per-row predicate evaluated with `@entity` bound to
     /// the candidate row and `@user` to the viewer. ANDed with any call-site
     /// `filter:`; enforced once, for every trait that fetches this entity —
@@ -804,7 +804,7 @@ impl TypeExpr {
     }
 
     /// A payload field's provenance: `T.f` itself, or for `[T.f]` each element's.
-    pub fn payload_projection(&self) -> Option<orbital_core::FieldProjection> {
+    pub fn payload_projection(&self) -> Option<orbital_core_base::schema::types::FieldProjection> {
         self.projection().or_else(|| match self.peel() {
             TypeExpr::Array(inner) => inner.projection(),
             _ => None,
@@ -812,9 +812,9 @@ impl TypeExpr {
     }
 
     /// `T.f`'s provenance, for the field a projection types.
-    pub fn projection(&self) -> Option<orbital_core::FieldProjection> {
+    pub fn projection(&self) -> Option<orbital_core_base::schema::types::FieldProjection> {
         match self {
-            TypeExpr::FieldOf { ty, field, .. } => Some(orbital_core::FieldProjection {
+            TypeExpr::FieldOf { ty, field, .. } => Some(orbital_core_base::schema::types::FieldProjection {
                 type_name: ty.clone(),
                 field: field.clone(),
             }),
@@ -1309,10 +1309,10 @@ pub struct Page {
     pub label: Option<String>,
     /// Nav entry roles — `@roles "a, b"` annotation below the page line.
     pub roles: Option<Vec<String>>,
-    pub access: Option<orbital_core::schema::PageAccess>,
-    pub indexing: Option<orbital_core::schema::PageIndexing>,
-    pub title: Option<orbital_core::schema::PageMeta>,
-    pub description: Option<orbital_core::schema::PageMeta>,
+    pub access: Option<orbital_core_base::schema::PageAccess>,
+    pub indexing: Option<orbital_core_base::schema::PageIndexing>,
+    pub title: Option<orbital_core_base::schema::PageMeta>,
+    pub description: Option<orbital_core_base::schema::PageMeta>,
     /// `translationOf:` — the translation group this page belongs to.
     pub translation_of: Option<String>,
 }
