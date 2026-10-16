@@ -775,7 +775,10 @@ orbital OrbG {
 "#;
     let program = parse_str(src).expect("parenthesized types parse");
     let formatted = format_program(&program);
-    assert!(formatted.contains("Map string (string | number)"), "{formatted}");
+    assert!(
+        formatted.contains("Map string (string | number)"),
+        "{formatted}"
+    );
     assert!(formatted.contains("[(string | number)]"), "{formatted}");
     let again = parse_str(&formatted).expect("the formatted text parses");
     assert_eq!(format_program(&again), formatted);
@@ -803,15 +806,20 @@ orbital T {
 }
 "#;
     let lowered = serde_json::to_value(parse_and_lower_str(src).expect("lowers")).unwrap();
-    let fetch = &lowered["orbitals"][0]["traits"][0]["stateMachine"]["transitions"][0]["effects"][0];
+    let fetch =
+        &lowered["orbitals"][0]["traits"][0]["stateMachine"]["transitions"][0]["effects"][0];
     assert_eq!(fetch[2]["deliver"], "ids", "{fetch}");
     assert_eq!(fetch[2]["total"], "none", "{fetch}");
 
     let formatted = format_program(&parse_str(src).expect("parses"));
     assert!(formatted.contains("deliver: ids"), "{formatted}");
     assert!(formatted.contains("total: none"), "{formatted}");
-    let again = serde_json::to_value(parse_and_lower_str(&formatted).expect("lowers again")).unwrap();
-    assert_eq!(canonicalize(strip_nulls(lowered)), canonicalize(strip_nulls(again)));
+    let again =
+        serde_json::to_value(parse_and_lower_str(&formatted).expect("lowers again")).unwrap();
+    assert_eq!(
+        canonicalize(strip_nulls(lowered)),
+        canonicalize(strip_nulls(again))
+    );
 }
 
 /// A shape field name may be a quoted string (`"@href"`, `"#text"`): the keys `xml/parse` writes.
@@ -845,7 +853,8 @@ mod quoted_field_names {
 
     #[test]
     fn a_quoted_field_name_is_stored_verbatim() {
-        let src = program(r##"type Link = { "@href" : string, "@rel" : string, "#text" : string }"##);
+        let src =
+            program(r##"type Link = { "@href" : string, "@rel" : string, "#text" : string }"##);
         let mut names = lowered_link_names(&src);
         names.sort();
         assert_eq!(names, vec!["#text", "@href", "@rel"]);
@@ -881,7 +890,10 @@ mod quoted_field_names {
         let formatted = format_program(&parse_str(&src).expect("parse"));
         assert!(formatted.contains(r#""@href" : string"#), "{formatted}");
         assert!(formatted.contains(r##""#text" : string"##), "{formatted}");
-        assert!(formatted.contains("rel : string"), "bare names stay bare: {formatted}");
+        assert!(
+            formatted.contains("rel : string"),
+            "bare names stay bare: {formatted}"
+        );
         let mut first = lowered_link_names(&src);
         let mut second = lowered_link_names(&formatted);
         first.sort();
@@ -893,26 +905,83 @@ mod quoted_field_names {
     fn an_empty_quoted_name_is_an_error() {
         let src = program(r#"type Link = { "" : string }"#);
         let err = parse_str(&src).expect_err("empty name");
-        assert!(format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_EMPTY"), "{err}");
+        assert!(
+            format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_EMPTY"),
+            "{err}"
+        );
     }
 
     #[test]
     fn a_duplicate_quoted_name_is_an_error() {
         let src = program(r#"type Link = { "@href" : string, "@href" : string }"#);
         let err = parse_str(&src).expect_err("duplicate");
-        assert!(format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_DUPLICATE"), "{err}");
+        assert!(
+            format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_DUPLICATE"),
+            "{err}"
+        );
     }
 
     #[test]
     fn a_quoted_name_that_repeats_a_bare_name_is_an_error() {
         let src = program(r#"type Link = { href : string, "href" : string }"#);
         let err = parse_str(&src).expect_err("duplicate");
-        assert!(format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_DUPLICATE"), "{err}");
+        assert!(
+            format!("{err}").contains("ELOLO_SHAPE_FIELD_NAME_DUPLICATE"),
+            "{err}"
+        );
     }
 
     #[test]
     fn control_distinct_quoted_names_are_accepted() {
         let src = program(r#"type Link = { "@href" : string, "@rel" : string }"#);
         assert!(parse_str(&src).is_ok());
+    }
+}
+
+/// `xml/parse` over a shape that declares list fields lowers with the list paths as its third argument.
+mod xml_parse_list_paths {
+    use super::*;
+
+    fn program(shape: &str) -> String {
+        format!(
+            "app xl [\n  version: \"1.0.0\",\n  description: \"x\"\n]\ntype Author = {{ name : string }}\ntype Entry = {{ id : string, author : [Author] }}\ntype Feed = {{ title : string, entry : [Entry] }}\ntype Row = {{ id : string, title : string }}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    body : string\n    out : string\n  }}\n  trait T -> E [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (set @entity.out (object/get (xml/parse \"<a/>\" {shape}) title \"\"))\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
+        )
+    }
+
+    fn parse_call(shape: &str) -> Value {
+        let lowered =
+            serde_json::to_value(parse_and_lower_str(&program(shape)).expect("lowers")).unwrap();
+        lowered["orbitals"][0]["traits"][0]["stateMachine"]["transitions"][0]["effects"][0][2][1]
+            .clone()
+    }
+
+    #[test]
+    fn a_shape_with_list_fields_carries_every_list_path() {
+        assert_eq!(
+            parse_call("Feed"),
+            serde_json::json!([
+                "xml/parse",
+                "<a/>",
+                "Feed",
+                ["list", ["list", "entry"], ["list", "entry", "author"]]
+            ])
+        );
+    }
+
+    #[test]
+    fn unlowering_drops_the_baked_paths_and_relowering_bakes_them_again() {
+        let schema = parse_and_lower_str(&program("Feed")).expect("lowers");
+        let lolo = orbital_lolo::schema_to_lolo(&schema).expect("unlowers");
+        assert!(lolo.contains("(xml/parse \"<a/>\" Feed)"), "{lolo}");
+        let relowered = serde_json::to_value(parse_and_lower_str(&lolo).expect("relowers")).unwrap();
+        assert_eq!(relowered, serde_json::to_value(&schema).unwrap());
+    }
+
+    #[test]
+    fn control_a_shape_without_list_fields_stays_two_arguments() {
+        assert_eq!(
+            parse_call("Row"),
+            serde_json::json!(["xml/parse", "<a/>", "Row"])
+        );
     }
 }

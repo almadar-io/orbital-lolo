@@ -47,6 +47,27 @@ fn strip_namespace(value: &mut serde_json::Value, prefix: &str) {
     }
 }
 
+/// The lowerer bakes each `(xml/parse s Shape)` call's list paths from the shape; the source
+/// spelling has only the shape.
+fn strip_baked_list_paths(value: &mut serde_json::Value) {
+    match value {
+        serde_json::Value::Array(items) => {
+            if items.len() == 4 && items[0].as_str() == Some("xml/parse") {
+                items.truncate(3);
+            }
+            for item in items {
+                strip_baked_list_paths(item);
+            }
+        }
+        serde_json::Value::Object(map) => {
+            for v in map.values_mut() {
+                strip_baked_list_paths(v);
+            }
+        }
+        _ => {}
+    }
+}
+
 /// The lowerer qualifies every `(i18n/t "key")` with the program name; the
 /// source spelling is the bare key.
 fn without_namespace(schema: &OrbitalSchema) -> Result<OrbitalSchema, UnlowerError> {
@@ -57,6 +78,7 @@ fn without_namespace(schema: &OrbitalSchema) -> Result<OrbitalSchema, UnlowerErr
         orbital_core::messages::NAMESPACE_SEPARATOR
     );
     strip_namespace(&mut value, &prefix);
+    strip_baked_list_paths(&mut value);
     serde_json::from_value(value).map_err(|e| UnlowerError::new(e.to_string()))
 }
 

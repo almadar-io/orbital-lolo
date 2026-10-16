@@ -180,6 +180,8 @@ fn lower_impl(
     let mut source_map = crate::source_map::LoloSourceMap::new();
     let ast = &projection::resolve_field_projections(ast)?;
     let mut schema = lower_to_orb_names_only(ast, &mut source_map, contracts)?;
+    orbital_core::evaluator::bake_list_shapes(&mut schema)
+        .expect("an orbital serializes to JSON and back");
     let synthetic_traits: HashSet<String> = ast
         .orbitals
         .iter()
