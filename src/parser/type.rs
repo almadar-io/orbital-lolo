@@ -37,7 +37,9 @@ impl Parser {
     /// `{ name : T[!], "@quoted" : T, ... }` — the field list of a shape (struct body or inline object type).
     /// A bare name follows the identifier rule; a quoted name is any non-empty string, stored verbatim, so a
     /// shape can declare the keys `xml/parse` writes (`"@href"`, `"#text"`).
-    pub(crate) fn parse_shape_fields(&mut self) -> Result<Vec<(String, TypeExpr, bool)>, ParseError> {
+    pub(crate) fn parse_shape_fields(
+        &mut self,
+    ) -> Result<Vec<(String, TypeExpr, bool)>, ParseError> {
         self.expect_kind(&TokenKind::LBrace, "{")?;
         let mut fields: Vec<(String, TypeExpr, bool)> = Vec::new();
         let mut quoted: Vec<String> = Vec::new();
@@ -504,6 +506,27 @@ impl Parser {
     }
 
     pub(crate) fn parse_type_atom(&mut self) -> Result<TypeExpr, ParseError> {
+        let base = self.parse_type_atom_base()?;
+        // `T?` — nullable. The lexer reads `?` as the bare payload sigil; only a `?` written directly against the
+        // type it follows (no space) is the nullable marker, so `value: ?` keeps its payload meaning.
+        if matches!(self.peek(), TokenKind::PayloadSigil(name) if name.is_empty())
+            && self.peek_is_adjacent_to_previous()
+        {
+            self.advance();
+            return Ok(TypeExpr::Optional(Box::new(base)));
+        }
+        Ok(base)
+    }
+
+    fn peek_is_adjacent_to_previous(&self) -> bool {
+        let Some(previous) = self.pos.checked_sub(1).map(|i| self.tokens[i].span) else {
+            return false;
+        };
+        let next = self.tokens[self.pos].span;
+        previous.line == next.line && previous.col + u32::from(previous.len) == next.col
+    }
+
+    fn parse_type_atom_base(&mut self) -> Result<TypeExpr, ParseError> {
         // `(T | U)` — a grouped type: how a union is written where only one atom fits
         // (`Map string (string | number)`, `[(string | number)]`).
         if matches!(self.peek(), TokenKind::LParen) {

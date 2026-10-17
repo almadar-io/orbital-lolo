@@ -2462,6 +2462,28 @@ mod tests {
     }
 
     #[test]
+    fn a_question_mark_after_a_type_makes_it_nullable() {
+        let src = "type Seen = { lastSeen : number?, tags : [string]? , name : string }\norbital O {\n  entity E { id : string!\n    due : number? }\n}";
+        let prog = p(src);
+        let TypeBody::Struct(fields) = &prog.type_aliases[0].body else {
+            panic!("expected a struct");
+        };
+        assert!(matches!(&fields[0].1, TypeExpr::Optional(inner) if matches!(**inner, TypeExpr::Primitive(ref n) if n == "number")));
+        assert!(matches!(&fields[1].1, TypeExpr::Optional(inner) if matches!(**inner, TypeExpr::Array(_))));
+        assert!(matches!(&fields[2].1, TypeExpr::Primitive(n) if n == "string"), "control: no question mark, not nullable");
+        let entity = prog.orbitals[0].entity.as_ref().unwrap();
+        assert!(entity.fields[1].nullable);
+        assert!(!entity.fields[0].nullable, "control: a required field is not nullable");
+    }
+
+    #[test]
+    fn a_payload_sigil_after_whitespace_is_not_a_nullable_marker() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      GO -> idle\n        (emit DONE { value: ? })\n    }\n  }\n}";
+        let prog = p(src);
+        assert_eq!(prog.orbitals.len(), 1);
+    }
+
+    #[test]
     fn parse_type_alias_mixed_union_is_a_type_union() {
         // A union carrying a member that could never be a vocabulary word (an
         // array here) is unambiguously a TYPE union, so it must not collapse to

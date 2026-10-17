@@ -1332,6 +1332,15 @@ mod tests {
     }
 
     #[test]
+    fn lower_nullable_field_is_its_inner_type_and_not_required() {
+        let ent = lowered_entity("orbital Foo {\n  entity Bar {\n    id : string!\n    due : number?\n    kept : number!\n  }\n}");
+        let field = |name: &str| ent.fields.iter().find(|f| f.name.as_deref() == Some(name)).unwrap();
+        assert_eq!(field("due").field_type, orbital_core_base::schema::FieldType::Number);
+        assert_ne!(field("due").required, Some(true));
+        assert_eq!(field("kept").required, Some(true), "control: `!` still requires");
+    }
+
+    #[test]
     fn lower_shared_with_runtime() {
         let ent = lowered_entity("orbital Foo { entity Bar [runtime, shared] { id : string! } }");
         assert!(ent.shared);
