@@ -248,7 +248,7 @@ fn lower_to_orb_names_only(
     // Phase 9.6.A: collect the set of names that designate ENTITIES (relation
     // targets) — distinct from type aliases that happen to be record-shaped.
     // Members: every orbital's primary `entity` block in the program, any
-    // `expects entity`/`expects identity` name (supplied by a sibling at
+    // `expects entity`/`expects entity [identity]` name (supplied by a sibling at
     // compose time), plus any type alias whose body is `TypeBody::Entity`
     // (declared with the `entity` keyword). `lower_type_expr` uses this to
     // decide whether `[Name]` lowers to a `cardinality: Many` Relation field
@@ -274,7 +274,7 @@ fn lower_to_orb_names_only(
                 file_shared_entity_names.insert(e.name.clone());
             }
         }
-        // `expects entity`/`expects identity` names are legal relation
+        // `expects entity`/`expects entity [identity]` names are legal relation
         // targets too — the sibling orbital supplies the declaration at
         // compose time (the L2 relations validator licenses the same names).
         file_entity_names.extend(
@@ -666,7 +666,9 @@ fn resolve_type_alias(body: &TypeBody) -> TypeAliasResolved {
 
 pub(crate) fn lower_expects_decl(
     decl: &ExpectsDecl,
+    strict: bool,
     aliases: &BTreeMap<String, TypeAliasResolved>,
+    entities: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
     entity_names: &HashSet<String>,
 ) -> Result<ExpectDeclaration, LowerError> {
     let lower_shape = |shape: &Option<Vec<EntityField>>| {
@@ -684,19 +686,155 @@ pub(crate) fn lower_expects_decl(
         ExpectsKind::Identity { name, shape } => ExpectDeclaration::Identity {
             name: name.clone(),
             shape: lower_shape(shape)?,
+            strict,
         },
-        ExpectsKind::Entity { name, shape } => ExpectDeclaration::Entity {
+        ExpectsKind::Entity {
+            name,
+            shape,
+            persistence,
+            shared,
+            local,
+            access,
+        } => ExpectDeclaration::Entity {
             name: name.clone(),
             shape: lower_shape(shape)?,
+            persistence: persistence.as_ref().map(|p| match p {
+                Persistence::Persistent => CorePersistence::Persistent,
+                Persistence::Runtime => CorePersistence::Runtime,
+            }),
+            shared: *shared,
+            local: *local,
+            read_policy: access.read_policy.clone(),
+            create_policy: access.create_policy.clone(),
+            update_policy: access.update_policy.clone(),
+            delete_policy: access.delete_policy.clone(),
+            access_waivers: entity::access_waivers_of(&access.access_waivers),
+            strict,
         },
         // Trait and event names pass through verbatim — no case-folding.
-        ExpectsKind::Event { trait_name, event } => ExpectDeclaration::Event {
-            trait_name: trait_name.clone(),
-            event: event.clone(),
-        },
+        ExpectsKind::Event {
+            trait_name,
+            event,
+            payload,
+        } => {
+            let payload = if payload.is_empty() {
+                None
+            } else {
+                let emit = Emit {
+                    event: event.clone(),
+                    scope: None,
+                    payload: payload.clone(),
+                    description: None,
+                    synonyms: None,
+                    tier: None,
+                    span: decl.span,
+                };
+                emit_listen::lower_emit(&emit, aliases, entities, &BTreeMap::new(), &[])
+                    .located(decl.span)?
+                    .payload_schema
+            };
+            ExpectDeclaration::Event {
+                trait_name: trait_name.clone(),
+                event: event.clone(),
+                payload,
+                strict,
+            }
+        }
         // A route pattern is a path, not an identifier — verbatim likewise.
-        ExpectsKind::Page { path } => ExpectDeclaration::Page { path: path.clone() },
+        ExpectsKind::Page { path, traits } => ExpectDeclaration::Page {
+            path: path.clone(),
+            traits: (!traits.is_empty()).then(|| traits.clone()),
+            strict,
+        },
+        ExpectsKind::State { trait_name, state } => ExpectDeclaration::State {
+            trait_name: trait_name.clone(),
+            state: state.clone(),
+            strict,
+        },
+        ExpectsKind::Transition {
+            trait_name,
+            from,
+            event,
+            to,
+        } => ExpectDeclaration::Transition {
+            trait_name: trait_name.clone(),
+            from: from.clone(),
+            event: event.clone(),
+            to: to.clone(),
+            strict,
+        },
     })
+}
+
+/// An orbital of only `expects` lines: a spec. It owns no entity, trait or page, so it can never
+/// provide what it asks for; every declaration it lowers is a strict obligation.
+pub(crate) fn is_spec_orbital(orb: &Orbital) -> bool {
+    orb.reference.is_none()
+        && orb.entity.is_none()
+        && orb.extra_entities.is_empty()
+        && orb.traits.is_empty()
+        && orb.pages.is_empty()
+        && !orb.expects.is_empty()
+}
+
+fn lower_spec_orbital(
+    orb: &Orbital,
+    file_uses: &[UseDecl],
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entities: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
+    entity_names: &HashSet<String>,
+) -> Result<CoreOrbital, LowerError> {
+    let expects = orb
+        .expects
+        .iter()
+        .map(|e| lower_expects_decl(e, true, aliases, entities, entity_names))
+        .collect::<Result<Vec<_>, _>>()?;
+    let merged_uses = merge_uses(file_uses, &orb.uses, aliases, entity_names)?;
+    Ok(CoreOrbital {
+        name: orb.name.clone(),
+        uses: (!merged_uses.is_empty()).then_some(merged_uses),
+        expects: Some(expects),
+        spec: true,
+        theme: None,
+        services: None,
+        entity: EntityRef::Inline(spec_placeholder_entity(&orb.name)),
+        auxiliary_entities: None,
+        traits: Vec::new(),
+        pages: None,
+        emits: None,
+        listens: None,
+        exposes: None,
+        domain_context: None,
+        os_grants: None,
+        design: None,
+        id: None,
+        types: None,
+        reference: None,
+        config: None,
+    })
+}
+
+/// The IR requires an entity on every orbital; a spec's is an empty, field-less shell named after
+/// the spec, never matched by a real expectation.
+fn spec_placeholder_entity(name: &str) -> EntityDefinition {
+    EntityDefinition {
+        shared: false,
+        identity: false,
+        local: false,
+        seed_mock: false,
+        locale_instances: None,
+        read_policy: None,
+        create_policy: None,
+        update_policy: None,
+        delete_policy: None,
+        access_waivers: None,
+        name: name.to_string(),
+        collection: None,
+        persistence: None,
+        fields: Vec::new(),
+        instances: None,
+        id: None,
+    }
 }
 
 /// Merge file-scoped `uses` (declared above any `orbital` block,
@@ -766,6 +904,9 @@ fn lower_orbital(
         );
     }
     source_map.insert(base.to_string(), orb.span);
+    if is_spec_orbital(orb) {
+        return lower_spec_orbital(orb, file_uses, aliases, entities, entity_names);
+    }
     let entity = orb.entity.as_ref().ok_or(LowerError::MissingEntity)?;
     source_map.insert(format!("{base}.entity"), entity.span);
     for (j, f) in entity.fields.iter().enumerate() {
@@ -824,7 +965,7 @@ fn lower_orbital(
     } else {
         orb.expects
             .iter()
-            .map(|e| lower_expects_decl(e, aliases, entity_names))
+            .map(|e| lower_expects_decl(e, false, aliases, entities, entity_names))
             .collect::<Result<Vec<_>, _>>()
             .map(Some)?
     };
@@ -1017,6 +1158,7 @@ fn lower_orbital(
         name: orb.name.clone(),
         uses,
         expects,
+        spec: false,
         theme: orb.theme.as_ref().map(lower_theme_decl),
         services: None,
         entity: EntityRef::Inline(entity_def),
@@ -1968,6 +2110,41 @@ mod tests {
     }
 
     #[test]
+    fn set_a_call_key_field_takes_a_cast_and_refuses_a_bare_string_literal() {
+        let src = |value: &str| {
+            format!(
+                r#"
+            orbital ArticleOrbital {{
+                entity Article {{
+                    id : string!
+                    callKey : CallKey
+                }}
+                trait ArticleEditor -> Article [interaction] {{
+                    initial: idle
+                    state idle {{
+                        INIT -> idle
+                            (set @entity.callKey {value})
+                    }}
+                }}
+            }}
+        "#
+            )
+        };
+        let ast = parse_str(&src("(as \"search\" CallKey)")).expect("parse");
+        assert!(lower_to_orb(&ast).is_ok(), "a cast makes a CallKey");
+        let ast = parse_str(&src("\"search\"")).expect("parse");
+        match lower_to_orb(&ast).map_err(|e| e.innermost().clone()) {
+            Err(LowerError::SetValueTypeMismatch { expected_type, actual_type, .. }) => {
+                assert_eq!(expected_type, "CallKey");
+                assert_eq!(actual_type, "string");
+            }
+            other => panic!("expected SetValueTypeMismatch, got {:?}", other),
+        }
+        let ast = parse_str(&src("7")).expect("parse");
+        assert!(lower_to_orb(&ast).is_err(), "control: a number is no CallKey either");
+    }
+
+    #[test]
     fn set_a_member_of_a_primitive_union_alias_is_accepted_and_a_non_member_is_not() {
         let src = |value: &str| {
             format!(
@@ -2282,12 +2459,12 @@ mod tests {
     #[test]
     fn lower_expects_all_forms() {
         let s = lower(
-            "orbital O {\n  expects identity Customer {\n    role : \"store-manager\" | \"operations-director\"\n  }\n  expects entity OrderRecord {\n    totalAmount : number\n  }\n  expects entity CartItem\n  expects event Checkout.ORDER_PLACED\n  expects page \"/articles/:slug\"\n  entity E { id : string! }\n}",
+            "orbital O {\n  expects entity Customer [identity] {\n    role : \"store-manager\" | \"operations-director\"\n  }\n  expects entity OrderRecord {\n    totalAmount : number\n  }\n  expects entity CartItem\n  expects trait Checkout { emits { ORDER_PLACED } }\n  expects page \"/articles/:slug\"\n  entity E { id : string! }\n}",
         );
         let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
         assert_eq!(expects.len(), 5);
         match &expects[0] {
-            ExpectDeclaration::Identity { name, shape } => {
+            ExpectDeclaration::Identity { name, shape, .. } => {
                 assert_eq!(name.as_deref(), Some("Customer"));
                 let shape = shape.as_ref().expect("identity shape");
                 assert_eq!(shape.len(), 1);
@@ -2305,7 +2482,7 @@ mod tests {
             other => panic!("expected identity, got {other:?}"),
         }
         match &expects[1] {
-            ExpectDeclaration::Entity { name, shape } => {
+            ExpectDeclaration::Entity { name, shape, .. } => {
                 assert_eq!(name, "OrderRecord");
                 let shape = shape.as_ref().expect("entity shape");
                 assert_eq!(shape.len(), 1);
@@ -2315,14 +2492,14 @@ mod tests {
             other => panic!("expected entity, got {other:?}"),
         }
         match &expects[2] {
-            ExpectDeclaration::Entity { name, shape } => {
+            ExpectDeclaration::Entity { name, shape, .. } => {
                 assert_eq!(name, "CartItem");
                 assert!(shape.is_none());
             }
             other => panic!("expected entity, got {other:?}"),
         }
         match &expects[3] {
-            ExpectDeclaration::Event { trait_name, event } => {
+            ExpectDeclaration::Event { trait_name, event, .. } => {
                 // Verbatim passthrough — no case-folding on either segment.
                 assert_eq!(trait_name, "Checkout");
                 assert_eq!(event, "ORDER_PLACED");
@@ -2331,7 +2508,7 @@ mod tests {
         }
         match &expects[4] {
             // A route pattern, verbatim — `:slug` must survive lowering.
-            ExpectDeclaration::Page { path } => assert_eq!(path, "/articles/:slug"),
+            ExpectDeclaration::Page { path, .. } => assert_eq!(path, "/articles/:slug"),
             other => panic!("expected page, got {other:?}"),
         }
     }
@@ -2340,6 +2517,102 @@ mod tests {
     fn lower_expects_absent_is_none() {
         let s = lower("orbital Foo { entity Bar { id : string! } }");
         assert!(s.orbitals[0].expects.is_none());
+    }
+    #[test]
+    fn an_expects_only_orbital_lowers_to_strict_obligations_and_provides_nothing() {
+        let s = lower("orbital ShopSpec {\n  expects entity Order { total : number }\n  expects trait Checkout { emits { PLACED } }\n  expects page \"/orders\"\n}");
+        let orb = &s.orbitals[0];
+        let expects = orb.expects.as_ref().expect("expects lowered");
+        assert_eq!(expects.len(), 3);
+        assert!(expects.iter().all(|e| e.is_strict()), "{expects:?}");
+        assert!(orb.is_spec());
+        assert!(orb.traits.is_empty());
+        assert!(orb.pages.as_ref().map_or(true, Vec::is_empty));
+    }
+
+    #[test]
+    fn control_expects_beside_a_real_entity_stay_lenient() {
+        let s = lower("orbital O {\n  expects entity Order\n  entity E { id : string! }\n}");
+        let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
+        assert!(expects.iter().all(|e| !e.is_strict()));
+        assert!(!s.orbitals[0].is_spec());
+    }
+
+    #[test]
+    fn an_orbital_with_neither_entity_nor_expects_still_needs_an_entity() {
+        let ast = parse_str("orbital O {\n}").expect("an empty orbital parses");
+        let err = lower_to_orb(&ast).expect_err("an orbital with nothing is not a spec");
+        assert!(err.to_string().contains("must define an entity"), "{err}");
+    }
+
+    #[test]
+    fn an_expects_trait_payload_lowers_to_the_event_expectation_payload() {
+        let s = lower("orbital ShopSpec {\n  expects trait Checkout { emits {\n    PLACED { orderId : string!, note : string }\n    CANCELLED\n  } }\n}");
+        let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
+        match &expects[0] {
+            ExpectDeclaration::Event { payload: Some(p), .. } => {
+                assert_eq!(p.len(), 2);
+                assert_eq!(p[0].name, "orderId");
+                assert_eq!(p[0].field_type, "string");
+                assert_eq!(p[0].required, Some(true));
+                assert_ne!(p[1].required, Some(true));
+            }
+            other => panic!("expected an event with a payload, got {other:?}"),
+        }
+        assert!(matches!(&expects[1], ExpectDeclaration::Event { payload: None, .. }), "control: a bare event has no payload");
+    }
+
+    #[test]
+    fn an_expects_entity_lowers_its_storage_marks_and_access() {
+        let s = lower("orbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  expects page \"/orders\" -> Checkout\n  expects trait Checkout { state idle { PAY -> paid } state refunded }\n}");
+        let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
+        match &expects[0] {
+            ExpectDeclaration::Entity { persistence, shared, read_policy, access_waivers, shape, .. } => {
+                assert_eq!(*persistence, Some(CorePersistence::Persistent));
+                assert!(*shared);
+                assert!(read_policy.is_some());
+                assert_eq!(access_waivers.as_ref().and_then(|w| w.update.as_deref()), Some("joins another entity"));
+                let fields = shape.as_ref().expect("shape");
+                assert_eq!(fields[0].primary_key, Some(true));
+                assert_eq!(fields[1].unique, Some(true));
+            }
+            other => panic!("expected an entity, got {other:?}"),
+        }
+        assert!(matches!(&expects[1], ExpectDeclaration::Page { traits: Some(t), .. } if t == &vec!["Checkout".to_string()]));
+        assert!(matches!(&expects[2], ExpectDeclaration::Transition { from, event, to, .. } if from == "idle" && event == "PAY" && to == "paid"));
+        assert!(matches!(&expects[3], ExpectDeclaration::State { state, .. } if state == "refunded"));
+        assert!(expects.iter().all(ExpectDeclaration::is_strict), "a spec's declarations are strict");
+    }
+
+    #[test]
+    fn a_spec_names_an_entity_of_a_spec_it_uses_through_the_alias() {
+        let s = lower("uses Inner from \"./inner.lolo\"\n\norbital OuterSpec {\n  expects entity Order {\n    id : string!\n    owner : Inner.Customer\n  }\n}");
+        let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
+        let ExpectDeclaration::Entity { shape: Some(fields), .. } = &expects[0] else {
+            panic!("expected an entity with a shape");
+        };
+        let uses = s.orbitals[0].uses.as_ref().expect("the spec keeps its `uses`, which is how it inherits Inner's obligations");
+        assert_eq!(uses[0].alias, "Inner");
+        let owner = fields.iter().find(|f| f.name.as_deref() == Some("owner")).expect("owner");
+        assert_eq!(
+            owner.relation.as_ref().map(|r| r.entity.as_str()),
+            Some("Customer"),
+            "the alias-qualified name is the imported spec's entity: {owner:?}"
+        );
+    }
+
+    #[test]
+    fn control_a_qualified_name_whose_head_is_no_uses_alias_is_still_a_projection_error() {
+        let ast = parse_str("orbital OuterSpec {\n  expects entity Order {\n    id : string!\n    owner : Other.Customer\n  }\n}").expect("parse");
+        let err = lower_to_orb(&ast).expect_err("Other is not an alias");
+        assert!(err.to_string().contains("ELOLO_FIELD_PROJECTION"), "{err}");
+    }
+
+    #[test]
+    fn an_alias_that_is_also_a_declared_type_name_is_ambiguous() {
+        let ast = parse_str("uses Order from \"./inner.lolo\"\n\norbital O {\n  expects entity Order {\n    id : string!\n    owner : Order.Customer\n  }\n  entity Order {\n    id : string!\n    Customer : string\n  }\n}").expect("parse");
+        let err = lower_to_orb(&ast).expect_err("ambiguous");
+        assert!(err.to_string().contains("alias"), "{err}");
     }
 }
 

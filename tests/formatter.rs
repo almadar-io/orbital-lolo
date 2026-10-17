@@ -643,7 +643,7 @@ fn expects_survive_reformat() {
 "Expects round-trip."
 orbital ProductOrbital {
   uses AppShell from "std/behaviors/std-app-layout"
-  expects identity Customer {
+  expects entity Customer [identity] {
     role : "store-manager" | "operations-director"
   }
   expects entity OrderRecord {
@@ -651,7 +651,7 @@ orbital ProductOrbital {
     totalAmount : number
   }
   expects entity CartItem
-  expects event Checkout.ORDER_PLACED
+  expects trait Checkout { emits { ORDER_PLACED } }
   entity Product [persistent: products] {
     id : string!
     title : string!
@@ -668,10 +668,10 @@ orbital ProductOrbital {
     let ast = parse_str(source).expect("parse original");
     let formatted = format_program(&ast);
     for needle in [
-        "expects identity Customer {",
+        "expects entity Customer [identity] {",
         "expects entity OrderRecord {",
         "expects entity CartItem",
-        "expects event Checkout.ORDER_PLACED",
+        "expects trait Checkout { emits { ORDER_PLACED } }",
     ] {
         assert!(
             formatted.contains(needle),
@@ -680,7 +680,7 @@ orbital ProductOrbital {
     }
     // Layout: expects group after the uses group, one blank line between.
     let uses_pos = formatted.find("uses AppShell").expect("uses printed");
-    let expects_pos = formatted.find("expects identity").expect("expects printed");
+    let expects_pos = formatted.find("expects entity Customer").expect("expects printed");
     assert!(uses_pos < expects_pos, "expects must print after uses");
     assert!(
         formatted[uses_pos..expects_pos].contains("\n\n"),
@@ -984,4 +984,31 @@ mod xml_parse_list_paths {
             serde_json::json!(["xml/parse", "<a/>", "Row"])
         );
     }
+}
+
+#[test]
+fn an_expects_trait_payload_survives_reformat() {
+    let source = "app s \"1.0.0\"\n\norbital ShopSpec {\n  expects trait Checkout { emits { PLACED { orderId : string!, note : string } } }\n}\n";
+    let formatted = format_program(&parse_str(source).expect("parse"));
+    assert!(formatted.contains("expects trait Checkout { emits { PLACED {"), "{formatted}");
+    assert!(formatted.contains("orderId : string!"), "{formatted}");
+    let again = format_program(&parse_str(&formatted).expect("reparse the formatted source"));
+    assert_eq!(formatted, again);
+}
+
+#[test]
+fn a_spec_with_storage_access_pages_and_edges_survives_reformat() {
+    let source = "app s \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n  }\n  expects page \"/orders\" -> Checkout, Receipt\n  expects trait Checkout { state idle { PAY -> paid } }\n  expects trait Checkout { state refunded }\n}\n";
+    let formatted = format_program(&parse_str(source).expect("parse"));
+    for needle in [
+        "expects entity Order [persistent, shared] {",
+        "@update none \"joins another entity\"",
+        "expects page \"/orders\" -> Checkout, Receipt",
+        "expects trait Checkout { state idle { PAY -> paid } }",
+        "expects trait Checkout { state refunded }",
+    ] {
+        assert!(formatted.contains(needle), "formatter dropped `{needle}`; got:\n{formatted}");
+    }
+    let again = format_program(&parse_str(&formatted).expect("reparse"));
+    assert_eq!(formatted, again);
 }

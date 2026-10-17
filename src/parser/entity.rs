@@ -42,11 +42,7 @@ impl Parser {
         self.skip_newlines();
 
         let mut fields = Vec::new();
-        let mut read_policy = None;
-        let mut create_policy = None;
-        let mut update_policy = None;
-        let mut delete_policy = None;
-        let mut access_waivers: Vec<(String, String)> = Vec::new();
+        let mut access = ExpectedAccess::default();
         let mut instances: Vec<orbital_core_base::schema::SObject> = Vec::new();
         let mut locale_instances: std::collections::BTreeMap<
             String,
@@ -87,82 +83,9 @@ impl Parser {
                 self.expect_newline_or_eof()?;
                 continue;
             }
-            if let TokenKind::Sigil(raw_name) = self.peek().clone() {
-                let name = self.canon_annotation_sigil(&raw_name);
-                if matches!(name.as_str(), "read" | "create" | "update" | "delete") {
-                    let directive_span = self.peek_span();
-                    self.advance();
-
-                    // `@<op> none "<reason>"` — the omission, declared. Same
-                    // runtime behaviour as leaving the directive out; recorded
-                    // so a lint can tell a considered omission from a forgotten
-                    // one. The reason is mandatory: an unexplained waiver is
-                    // exactly the thing this is meant to rule out.
-                    if matches!(self.peek(), TokenKind::Identifier(id) if id == "none") {
-                        self.advance();
-                        let reason = match self.peek().clone() {
-                            TokenKind::String(text) => {
-                                self.advance();
-                                text
-                            }
-                            _ => {
-                                return Err(ParseError::InvalidType {
-                                    span: directive_span,
-                                    message: format!(
-                                        "ELOLO_ACCESS_WAIVER_NEEDS_REASON: `@{name} none` must state why no per-row predicate can express this rule, e.g. `@{name} none \"visibility follows Ticket, which a per-row predicate cannot join\"`"
-                                    ),
-                                });
-                            }
-                        };
-                        if reason.trim().is_empty() {
-                            return Err(ParseError::InvalidType {
-                                span: directive_span,
-                                message: format!(
-                                    "ELOLO_ACCESS_WAIVER_NEEDS_REASON: `@{name} none` was given an empty reason"
-                                ),
-                            });
-                        }
-                        self.expect_newline_or_eof()?;
-                        if access_waivers.iter().any(|(op, _)| op == &name)
-                            || match name.as_str() {
-                                "read" => read_policy.is_some(),
-                                "create" => create_policy.is_some(),
-                                "update" => update_policy.is_some(),
-                                _ => delete_policy.is_some(),
-                            }
-                        {
-                            return Err(ParseError::InvalidType {
-                                span: directive_span,
-                                message: format!(
-                                    "ELOLO_DUPLICATE_ACCESS_DIRECTIVE: entity declares `@{name}` more than once"
-                                ),
-                            });
-                        }
-                        access_waivers.push((name.clone(), reason));
-                        continue;
-                    }
-
-                    let expr = self.parse_sexpr_or_value()?;
-                    self.expect_newline_or_eof()?;
-                    let slot = match name.as_str() {
-                        "read" => &mut read_policy,
-                        "create" => &mut create_policy,
-                        "update" => &mut update_policy,
-                        "delete" => &mut delete_policy,
-                        _ => unreachable!(),
-                    };
-                    if slot.is_some() || access_waivers.iter().any(|(op, _)| op == &name) {
-                        return Err(ParseError::InvalidType {
-                            span: directive_span,
-                            message: format!(
-                                "ELOLO_DUPLICATE_ACCESS_DIRECTIVE: entity declares `@{}` more than once",
-                                name
-                            ),
-                        });
-                    }
-                    *slot = Some(expr);
-                    continue;
-                }
+            if let Some(name) = self.at_access_directive() {
+                self.parse_access_directive(&name, &mut access)?;
+                continue;
             }
             if self.is_entity_field_start() {
                 fields.push(self.parse_field_decl()?);
@@ -204,14 +127,93 @@ impl Parser {
             seed_mock,
             instances,
             locale_instances,
-            read_policy,
-            access_waivers,
-            create_policy,
-            update_policy,
-            delete_policy,
+            read_policy: access.read_policy,
+            access_waivers: access.access_waivers,
+            create_policy: access.create_policy,
+            update_policy: access.update_policy,
+            delete_policy: access.delete_policy,
             fields,
             span,
         })
+    }
+
+    /// The `read|create|update|delete` op at a `@<op>` directive, if the cursor is on one.
+    pub(crate) fn at_access_directive(&self) -> Option<String> {
+        let TokenKind::Sigil(raw_name) = self.peek() else {
+            return None;
+        };
+        let name = self.canon_annotation_sigil(raw_name);
+        matches!(name.as_str(), "read" | "create" | "update" | "delete").then_some(name)
+    }
+
+    /// One `@<op> <expr>` policy or `@<op> none "<reason>"` waiver, recorded in `access`. The single parser of
+    /// access directives: an entity body and an `expects entity` shape both read them here.
+    pub(crate) fn parse_access_directive(
+        &mut self,
+        name: &str,
+        access: &mut ExpectedAccess,
+    ) -> Result<(), ParseError> {
+        let directive_span = self.peek_span();
+        self.advance();
+        let duplicate = |access: &ExpectedAccess| {
+            access.access_waivers.iter().any(|(op, _)| op == name)
+                || match name {
+                    "read" => access.read_policy.is_some(),
+                    "create" => access.create_policy.is_some(),
+                    "update" => access.update_policy.is_some(),
+                    _ => access.delete_policy.is_some(),
+                }
+        };
+        let dup_error = || ParseError::InvalidType {
+            span: directive_span,
+            message: format!("ELOLO_DUPLICATE_ACCESS_DIRECTIVE: entity declares `@{name}` more than once"),
+        };
+        // `@<op> none "<reason>"` — the omission, declared. Same runtime behaviour as leaving the directive out;
+        // recorded so a lint can tell a considered omission from a forgotten one. The reason is mandatory.
+        if matches!(self.peek(), TokenKind::Identifier(id) if id == "none") {
+            self.advance();
+            let reason = match self.peek().clone() {
+                TokenKind::String(text) => {
+                    self.advance();
+                    text
+                }
+                _ => {
+                    return Err(ParseError::InvalidType {
+                        span: directive_span,
+                        message: format!(
+                            "ELOLO_ACCESS_WAIVER_NEEDS_REASON: `@{name} none` must state why no per-row predicate can express this rule, e.g. `@{name} none \"visibility follows Ticket, which a per-row predicate cannot join\"`"
+                        ),
+                    });
+                }
+            };
+            if reason.trim().is_empty() {
+                return Err(ParseError::InvalidType {
+                    span: directive_span,
+                    message: format!(
+                        "ELOLO_ACCESS_WAIVER_NEEDS_REASON: `@{name} none` was given an empty reason"
+                    ),
+                });
+            }
+            self.expect_newline_or_eof()?;
+            if duplicate(access) {
+                return Err(dup_error());
+            }
+            access.access_waivers.push((name.to_string(), reason));
+            return Ok(());
+        }
+        let expr = self.parse_sexpr_or_value()?;
+        self.expect_newline_or_eof()?;
+        if duplicate(access) {
+            return Err(dup_error());
+        }
+        let slot = match name {
+            "read" => &mut access.read_policy,
+            "create" => &mut access.create_policy,
+            "update" => &mut access.update_policy,
+            _ => &mut access.delete_policy,
+        };
+        *slot = Some(expr);
+        Ok(())
     }
 
     pub(crate) fn is_entity_field_start(&self) -> bool {

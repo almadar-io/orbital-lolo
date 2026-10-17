@@ -97,6 +97,7 @@ impl Parser {
             retype_fields: body.retype_fields,
             trait_overrides: body.trait_overrides,
             import_listens: body.import_listens,
+            alias_entity_refs: Vec::new(),
             // A reference-form orbital declares no knobs of its own — its
             // declared surface lives upstream; `config_overrides` above is
             // the override of THAT surface, not a second declaration.
@@ -166,16 +167,17 @@ impl Parser {
                 out.mounts = mounts;
                 out.page_modifiers = page_modifiers;
             } else if self.check_ident("expects") {
-                let decl = self.parse_expects_decl()?;
-                if let Some(dup) = super::expects_duplicate(&out.expects, &decl) {
-                    return Err(ParseError::InvalidType {
-                        span: decl.span,
-                        message: format!(
-                            "ELOLO_DUPLICATE_EXPECTATION: orbital declares {dup} more than once"
-                        ),
-                    });
+                for decl in self.parse_expects_decls()? {
+                    if let Some(dup) = super::expects_duplicate(&out.expects, &decl) {
+                        return Err(ParseError::InvalidType {
+                            span: decl.span,
+                            message: format!(
+                                "ELOLO_DUPLICATE_EXPECTATION: orbital declares {dup} more than once"
+                            ),
+                        });
+                    }
+                    out.expects.push(decl);
                 }
-                out.expects.push(decl);
             } else if self.check_ident("omit") {
                 out.omit = self.parse_orbital_ref_name_list()?;
             } else if self.check_ident("only") {

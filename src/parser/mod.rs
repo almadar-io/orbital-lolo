@@ -163,6 +163,10 @@ struct Parser {
     /// reference. Consumed (reset) on entry to `parse_sexpr_or_value`, so it
     /// never leaks into nested expressions.
     pub(crate) pattern_type_value: bool,
+    /// Set by the call parser for an argument the operator table declares `key-of` (the key of `object/get`, the
+    /// field of `array/sort`): a bare identifier there names a field, so it is the literal key and never the
+    /// `now`/`state` binding. Consumed on entry to `parse_sexpr_or_value`, like `pattern_type_value`.
+    pub(crate) literal_key_position: bool,
     /// Active while a config value parses: a dotted atom (`Trait.EVENT`,
     /// `Orbital.Trait.EVENT`) is legal there and is recorded with its trail
     /// so the type check can require an `event` position.
@@ -189,6 +193,7 @@ impl Parser {
             expr_span_capture: None,
             expr_trail: String::new(),
             pattern_type_value: false,
+            literal_key_position: false,
             event_ref_capture: None,
             lang,
         }
@@ -1022,16 +1027,17 @@ impl Parser {
             if self.check_ident("uses") {
                 uses.push(self.parse_use_decl()?);
             } else if self.check_ident("expects") {
-                let decl = self.parse_expects_decl()?;
-                if let Some(dup) = expects_duplicate(&expects, &decl) {
-                    return Err(ParseError::InvalidType {
-                        span: decl.span,
-                        message: format!(
-                            "ELOLO_DUPLICATE_EXPECTATION: orbital declares {dup} more than once"
-                        ),
-                    });
+                for decl in self.parse_expects_decls()? {
+                    if let Some(dup) = expects_duplicate(&expects, &decl) {
+                        return Err(ParseError::InvalidType {
+                            span: decl.span,
+                            message: format!(
+                                "ELOLO_DUPLICATE_EXPECTATION: orbital declares {dup} more than once"
+                            ),
+                        });
+                    }
+                    expects.push(decl);
                 }
-                expects.push(decl);
             } else if self.check_ident("type") {
                 type_aliases.push(self.parse_type_alias()?);
             } else if self.check_ident("entity") {
@@ -1155,6 +1161,7 @@ impl Parser {
             retype_fields: Vec::new(),
             trait_overrides: Vec::new(),
             import_listens: Vec::new(),
+            alias_entity_refs: Vec::new(),
             span,
         })
     }
@@ -1477,7 +1484,7 @@ impl Parser {
         })
     }
 
-    /// `expects` ("identity" Ident? shape? | "entity" Ident shape? | "event" Ident "." IDENT)
+    /// `expects` ("entity" Ident? tags? shape? | "trait" Ident "{" "emits" "{" EVENT+ "}" "}" | "page" STRING); `[identity]` makes it the roster
     /// — one expectation per line; the shape reuses the entity field parser.
     ///
     /// The identity name stays OPTIONAL on purpose. A program has exactly one
@@ -1485,45 +1492,70 @@ impl Parser {
     /// name — so the name here is informational, and requiring it would invite
     /// authors to write `Person.role` where the language means `@user.role`.
     /// What makes an identity expectation checkable is its SHAPE, not its name.
-    fn parse_expects_decl(&mut self) -> Result<ExpectsDecl, ParseError> {
+    fn parse_expects_decls(&mut self) -> Result<Vec<ExpectsDecl>, ParseError> {
         let span = self.peek_span();
         self.expect_keyword("expects")?;
-        let kind = if self.check_ident("identity") {
+        let kinds = if self.check_ident("entity") {
             self.advance();
             let name = if matches!(self.peek(), TokenKind::Identifier(_)) {
                 Some(self.expect_ident()?)
             } else {
                 None
             };
-            let shape = self.parse_expects_shape()?;
-            ExpectsKind::Identity { name, shape }
-        } else if self.check_ident("entity") {
-            self.advance();
-            let name = self.expect_ident()?;
-            let shape = self.parse_expects_shape()?;
-            ExpectsKind::Entity { name, shape }
-        } else if self.check_ident("event") {
-            self.advance();
-            let path_span = self.peek_span();
-            let path = self.parse_dotted_ident()?;
-            let Some((trait_name, event)) = path.rsplit_once('.') else {
-                return Err(ParseError::UnexpectedToken {
-                    expected: "dotted Trait.EVENT form, e.g. expects event Checkout.ORDER_PLACED"
-                        .to_string(),
-                    got: path,
-                    span: path_span,
-                });
+            let tags = if matches!(self.peek(), TokenKind::LBracket) {
+                self.parse_expects_entity_tags()?
+            } else {
+                ExpectedTags::default()
             };
-            ExpectsKind::Event {
-                trait_name: trait_name.to_string(),
-                event: event.to_string(),
+            let (shape, access) = self.parse_expects_shape()?;
+            if tags.identity {
+                if access.has_any() {
+                    return Err(ParseError::InvalidType {
+                        span,
+                        message: "an `expects entity [identity]` states the roster's shape only — access directives belong to the provider".to_string(),
+                    });
+                }
+                vec![ExpectsKind::Identity { name, shape }]
+            } else {
+                let Some(name) = name else {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "an entity name, or `[identity]` for the viewer's roster"
+                            .to_string(),
+                        got: format!("{:?}", self.peek()),
+                        span: self.peek_span(),
+                    });
+                };
+                vec![ExpectsKind::Entity {
+                    name,
+                    shape,
+                    persistence: tags.persistence,
+                    shared: tags.shared,
+                    local: tags.local,
+                    access,
+                }]
             }
+        } else if self.check_ident("trait") {
+            self.advance();
+            let trait_name = self.expect_ident()?;
+            self.parse_expects_trait_body(&trait_name)?
         } else if self.check_ident("page") {
             self.advance();
             match self.peek().clone() {
                 TokenKind::String(path) => {
                     self.advance();
-                    ExpectsKind::Page { path }
+                    let mut traits = Vec::new();
+                    if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
+                        self.advance();
+                        loop {
+                            traits.push(self.expect_ident()?);
+                            if matches!(self.peek(), TokenKind::Comma) {
+                                self.advance();
+                                continue;
+                            }
+                            break;
+                        }
+                    }
+                    vec![ExpectsKind::Page { path, traits }]
                 }
                 other => {
                     return Err(ParseError::UnexpectedToken {
@@ -1534,22 +1566,173 @@ impl Parser {
                     })
                 }
             }
+        } else if self.check_ident("identity") {
+            let at = self.peek_span();
+            self.advance();
+            let spelled = if matches!(self.peek(), TokenKind::Identifier(_)) {
+                format!("expects entity {} [identity]", self.expect_ident()?)
+            } else {
+                "expects entity [identity]".to_string()
+            };
+            return Err(ParseError::InvalidType {
+                span: at,
+                message: format!("`expects identity` is now `{spelled}` — `expects` prefixes the real entity declaration"),
+            });
+        } else if self.check_ident("event") {
+            let at = self.peek_span();
+            self.advance();
+            let path = self.parse_dotted_ident()?;
+            let (t, e) = path.rsplit_once('.').unwrap_or((path.as_str(), "EVENT"));
+            return Err(ParseError::InvalidType {
+                span: at,
+                message: format!("`expects event {path}` is now `expects trait {t} {{ emits {{ {e} }} }}` — `expects` prefixes the real trait declaration"),
+            });
         } else {
             return Err(ParseError::UnexpectedToken {
-                expected: "identity, entity, event, or page after `expects`".to_string(),
+                expected: "entity, trait, or page after `expects`".to_string(),
                 got: format!("{:?}", self.peek()),
                 span: self.peek_span(),
             });
         };
         self.expect_newline_or_eof()?;
-        Ok(ExpectsDecl { kind, span })
+        Ok(kinds
+            .into_iter()
+            .map(|kind| ExpectsDecl { kind, span })
+            .collect())
     }
 
-    /// Optional `{ field_decl+ }` after an `expects identity`/`expects entity`
-    /// header — the §6 entity field-declaration grammar, verbatim.
-    fn parse_expects_shape(&mut self) -> Result<Option<Vec<EntityField>>, ParseError> {
+    /// The header tags an `expects entity` takes: `identity` (the viewer's roster) or the storage facts of the real
+    /// entity header (`persistent`/`runtime`, `shared`, `local`). A collection name (`persistent: orders`) and `mock`
+    /// are the provider's own business.
+    fn parse_expects_entity_tags(&mut self) -> Result<ExpectedTags, ParseError> {
+        let span = self.peek_span();
+        let tags = self.parse_persistence_tag()?;
+        if tags.collection.is_some() || tags.mock {
+            return Err(ParseError::InvalidType {
+                span,
+                message: "an `expects entity` header names the storage mode, `shared` or `local` only — a collection name and `mock` describe a provider, not a requirement".to_string(),
+            });
+        }
+        if tags.identity && (tags.persistence.is_some() || tags.shared || tags.local) {
+            return Err(ParseError::InvalidType {
+                span,
+                message: "an `expects entity [identity]` takes only the `identity` tag".to_string(),
+            });
+        }
+        Ok(ExpectedTags {
+            identity: tags.identity,
+            persistence: tags.persistence,
+            shared: tags.shared,
+            local: tags.local,
+        })
+    }
+
+    /// The body of `expects trait T { … }`: the real trait syntax with every body left off: `emits { E { fields } }`,
+    /// `state NAME` and `state NAME { EVENT -> target }` (no guard, no effects).
+    fn parse_expects_trait_body(&mut self, trait_name: &str) -> Result<Vec<ExpectsKind>, ParseError> {
+        let open = self.peek_span();
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut out = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                break;
+            }
+            if self.check_ident("emits") {
+                for (event, payload) in self.parse_expects_emits()? {
+                    out.push(ExpectsKind::Event {
+                        trait_name: trait_name.to_string(),
+                        event,
+                        payload,
+                    });
+                }
+            } else if self.check_ident("state") {
+                let state = self.parse_state()?;
+                let at = state.span;
+                if state.time_bound.is_some() {
+                    return Err(ParseError::InvalidType {
+                        span: at,
+                        message: format!("an `expects trait` state `{}` names the state only — a time bound is the provider's", state.name),
+                    });
+                }
+                if state.transitions.is_empty() {
+                    out.push(ExpectsKind::State {
+                        trait_name: trait_name.to_string(),
+                        state: state.name.clone(),
+                    });
+                }
+                for t in state.transitions {
+                    if t.guard.is_some() || !t.effects.is_empty() || t.term_match.is_some() {
+                        return Err(ParseError::InvalidType {
+                            span: t.span,
+                            message: format!(
+                                "an `expects trait` transition `{} -> {}` names the edge only — a guard, effects or a match belong to the provider",
+                                t.event, t.target
+                            ),
+                        });
+                    }
+                    out.push(ExpectsKind::Transition {
+                        trait_name: trait_name.to_string(),
+                        from: state.name.clone(),
+                        event: t.event,
+                        to: t.target,
+                    });
+                }
+            } else {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "`emits { … }` or `state NAME` inside `expects trait`".to_string(),
+                    got: format!("{:?}", self.peek()),
+                    span: self.peek_span(),
+                });
+            }
+        }
+        if out.is_empty() {
+            return Err(ParseError::InvalidType {
+                span: open,
+                message: "`expects trait` must state at least one emitted event, state or transition".to_string(),
+            });
+        }
+        Ok(out)
+    }
+
+    /// `emits { EVENT [{ fields }] … }` inside `expects trait T` — the real `emits` grammar, restricted to the event
+    /// name and its payload (scope and annotations describe a provider, not a requirement).
+    fn parse_expects_emits(&mut self) -> Result<Vec<(String, Vec<EventField>)>, ParseError> {
+        let span = self.peek_span();
+        let emits = self.parse_emits_block()?;
+        if emits.is_empty() {
+            return Err(ParseError::InvalidType {
+                span,
+                message: "`expects trait` must list at least one emitted event".to_string(),
+            });
+        }
+        let mut out = Vec::with_capacity(emits.len());
+        for emit in emits {
+            if emit.scope.is_some()
+                || emit.description.is_some()
+                || emit.synonyms.is_some()
+                || emit.tier.is_some()
+            {
+                return Err(ParseError::InvalidType {
+                    span: emit.span,
+                    message: format!(
+                        "an `expects trait` emit names the event and its payload only — scope and annotations on `{}` describe a provider, not a requirement",
+                        emit.event
+                    ),
+                });
+            }
+            out.push((emit.event, emit.payload));
+        }
+        Ok(out)
+    }
+
+    /// Optional `{ field_decl+ }` after an `expects entity` header — the §6 entity field-declaration grammar,
+    /// verbatim, plus the entity's own `@read|@create|@update|@delete` directives.
+    fn parse_expects_shape(&mut self) -> Result<(Option<Vec<EntityField>>, ExpectedAccess), ParseError> {
+        let mut access = ExpectedAccess::default();
         if !matches!(self.peek(), TokenKind::LBrace) {
-            return Ok(None);
+            return Ok((None, access));
         }
         let shape_span = self.peek_span();
         self.advance();
@@ -1566,7 +1749,9 @@ impl Parser {
                     span: self.peek_span(),
                 });
             }
-            if self.is_entity_field_start() {
+            if let Some(name) = self.at_access_directive() {
+                self.parse_access_directive(&name, &mut access)?;
+            } else if self.is_entity_field_start() {
                 fields.push(self.parse_field_decl()?);
             } else {
                 return Err(ParseError::UnexpectedToken {
@@ -1576,7 +1761,7 @@ impl Parser {
                 });
             }
         }
-        if fields.is_empty() {
+        if fields.is_empty() && !access.has_any() {
             return Err(ParseError::InvalidType {
                 span: shape_span,
                 message: "expects shape must declare at least one field — omit the braces for the existence-only form".to_string(),
@@ -1595,8 +1780,17 @@ impl Parser {
                 });
             }
         }
-        Ok(Some(fields))
+        Ok(((!fields.is_empty()).then_some(fields), access))
     }
+}
+
+/// The tags of an `expects entity` header.
+#[derive(Default)]
+struct ExpectedTags {
+    identity: bool,
+    persistence: Option<Persistence>,
+    shared: bool,
+    local: bool,
 }
 
 /// Duplicate key for `ELOLO_DUPLICATE_EXPECTATION`: same kind+name, or the
@@ -1607,24 +1801,52 @@ fn expects_duplicate(existing: &[ExpectsDecl], new: &ExpectsDecl) -> Option<Stri
             if a == b =>
         {
             Some(match b {
-                Some(n) => format!("`expects identity {n}`"),
-                None => "`expects identity`".to_string(),
+                Some(n) => format!("`expects entity {n} [identity]`"),
+                None => "`expects entity [identity]`".to_string(),
             })
         }
         (ExpectsKind::Entity { name: a, .. }, ExpectsKind::Entity { name: b, .. }) if a == b => {
             Some(format!("`expects entity {b}`"))
         }
         (
+            ExpectsKind::State {
+                trait_name: ta,
+                state: sa,
+            },
+            ExpectsKind::State {
+                trait_name: tb,
+                state: sb,
+            },
+        ) if ta == tb && sa == sb => Some(format!("`expects trait {tb}` state `{sb}`")),
+        (
+            ExpectsKind::Transition {
+                trait_name: ta,
+                from: fa,
+                event: ea,
+                ..
+            },
+            ExpectsKind::Transition {
+                trait_name: tb,
+                from: fb,
+                event: eb,
+                ..
+            },
+        ) if ta == tb && fa == fb && ea == eb => {
+            Some(format!("`expects trait {tb}` transition `{fb}` on `{eb}`"))
+        }
+        (
             ExpectsKind::Event {
                 trait_name: ta,
                 event: ea,
+                ..
             },
             ExpectsKind::Event {
                 trait_name: tb,
                 event: eb,
+                ..
             },
-        ) if ta == tb && ea == eb => Some(format!("`expects event {tb}.{eb}`")),
-        (ExpectsKind::Page { path: a }, ExpectsKind::Page { path: b }) if a == b => {
+        ) if ta == tb && ea == eb => Some(format!("`expects trait {tb} {{ emits {{ {eb} }} }}`")),
+        (ExpectsKind::Page { path: a, .. }, ExpectsKind::Page { path: b, .. }) if a == b => {
             Some(format!("`expects page \"{b}\"`"))
         }
         _ => None,
@@ -2455,7 +2677,7 @@ mod tests {
 
     #[test]
     fn parse_expects_all_forms() {
-        let src = "orbital O {\n  expects identity Customer {\n    role : \"store-manager\" | \"operations-director\"\n  }\n  expects entity OrderRecord {\n    status : \"placed\" | \"shipped\" | \"delivered\"\n    totalAmount : number\n  }\n  expects entity CartItem\n  expects event Checkout.ORDER_PLACED\n  entity E { id : string! }\n}";
+        let src = "orbital O {\n  expects entity Customer [identity] {\n    role : \"store-manager\" | \"operations-director\"\n  }\n  expects entity OrderRecord {\n    status : \"placed\" | \"shipped\" | \"delivered\"\n    totalAmount : number\n  }\n  expects entity CartItem\n  expects trait Checkout { emits { ORDER_PLACED } }\n  entity E { id : string! }\n}";
         let prog = p(src);
         let expects = &prog.orbitals[0].expects;
         assert_eq!(expects.len(), 4);
@@ -2470,7 +2692,7 @@ mod tests {
             other => panic!("expected identity, got {other:?}"),
         }
         match &expects[1].kind {
-            ExpectsKind::Entity { name, shape } => {
+            ExpectsKind::Entity { name, shape, .. } => {
                 assert_eq!(name, "OrderRecord");
                 let shape = shape.as_ref().expect("entity shape");
                 assert_eq!(shape.len(), 2);
@@ -2484,14 +2706,14 @@ mod tests {
             other => panic!("expected entity, got {other:?}"),
         }
         match &expects[2].kind {
-            ExpectsKind::Entity { name, shape } => {
+            ExpectsKind::Entity { name, shape, .. } => {
                 assert_eq!(name, "CartItem");
                 assert!(shape.is_none());
             }
             other => panic!("expected entity, got {other:?}"),
         }
         match &expects[3].kind {
-            ExpectsKind::Event { trait_name, event } => {
+            ExpectsKind::Event { trait_name, event, .. } => {
                 assert_eq!(trait_name, "Checkout");
                 assert_eq!(event, "ORDER_PLACED");
             }
@@ -2501,7 +2723,7 @@ mod tests {
 
     #[test]
     fn parse_expects_bare_identity() {
-        let prog = p("orbital O {\n  expects identity\n  entity E { id : string! }\n}");
+        let prog = p("orbital O {\n  expects entity [identity]\n  entity E { id : string! }\n}");
         match &prog.orbitals[0].expects[0].kind {
             ExpectsKind::Identity { name, shape } => {
                 assert!(name.is_none());
@@ -2513,7 +2735,7 @@ mod tests {
 
     #[test]
     fn parse_expects_named_identity_without_shape() {
-        let prog = p("orbital O {\n  expects identity Customer\n  entity E { id : string! }\n}");
+        let prog = p("orbital O {\n  expects entity Customer [identity]\n  entity E { id : string! }\n}");
         match &prog.orbitals[0].expects[0].kind {
             ExpectsKind::Identity { name, shape } => {
                 assert_eq!(name.as_deref(), Some("Customer"));
@@ -2521,6 +2743,155 @@ mod tests {
             }
             other => panic!("expected identity, got {other:?}"),
         }
+    }
+
+    #[test]
+    fn expects_entity_with_the_identity_tag_is_an_identity_expectation() {
+        let prog = p("orbital O {\n  expects entity Customer [identity] {\n    role : \"admin\" | \"buyer\"\n  }\n  expects entity Cart\n  entity E { id : string! }\n}");
+        let expects = &prog.orbitals[0].expects;
+        assert!(matches!(&expects[0].kind, ExpectsKind::Identity { name, shape }
+            if name.as_deref() == Some("Customer") && shape.as_ref().map(Vec::len) == Some(1)));
+        assert!(matches!(&expects[1].kind, ExpectsKind::Entity { name, .. } if name == "Cart"));
+    }
+
+    #[test]
+    fn expects_entity_identity_tag_may_omit_the_name() {
+        let prog = p("orbital O {\n  expects entity [identity]\n  entity E { id : string! }\n}");
+        assert!(matches!(&prog.orbitals[0].expects[0].kind,
+            ExpectsKind::Identity { name: None, shape: None }));
+    }
+
+    #[test]
+    fn expects_entity_without_a_name_or_identity_tag_errors() {
+        assert!(parse_str("orbital O {\n  expects entity\n  entity E { id : string! }\n}").is_err());
+    }
+
+    #[test]
+    fn expects_trait_emits_lowers_to_one_event_expectation_per_emitted_event() {
+        let prog = p("orbital O {\n  expects trait Checkout {\n    emits {\n      ORDER_PLACED\n      ORDER_CANCELLED\n    }\n  }\n  entity E { id : string! }\n}");
+        let expects = &prog.orbitals[0].expects;
+        assert_eq!(expects.len(), 2);
+        assert!(matches!(&expects[0].kind, ExpectsKind::Event { trait_name, event, .. }
+            if trait_name == "Checkout" && event == "ORDER_PLACED"));
+        assert!(matches!(&expects[1].kind, ExpectsKind::Event { event, .. } if event == "ORDER_CANCELLED"));
+    }
+
+    #[test]
+    fn expects_trait_duplicate_event_errors() {
+        let src = "orbital O {\n  expects trait T { emits { A } }\n  expects trait T { emits { A } }\n  entity E { id : string! }\n}";
+        assert!(parse_str(src).expect_err("duplicate").to_string().contains("ELOLO_DUPLICATE_EXPECTATION"));
+    }
+
+    #[test]
+    fn expects_trait_emit_carries_its_payload_fields() {
+        let prog = p("orbital O {\n  expects trait T { emits { A { id : string!, note : string } } }\n  entity E { id : string! }\n}");
+        match &prog.orbitals[0].expects[0].kind {
+            ExpectsKind::Event { event, payload, .. } => {
+                assert_eq!(event, "A");
+                assert_eq!(payload.len(), 2);
+                assert!(payload[0].required && !payload[1].required);
+            }
+            other => panic!("expected event, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn expects_trait_emit_refuses_a_scope_or_annotation() {
+        let scope = "orbital O {\n  expects trait T { emits { A -> external } }\n  entity E { id : string! }\n}";
+        assert!(parse_str(scope).is_err());
+        let note = "orbital O {\n  expects trait T { emits {\n    A\n      @description \"x\"\n  } }\n  entity E { id : string! }\n}";
+        assert!(parse_str(note).is_err());
+    }
+
+    #[test]
+    fn expects_trait_without_emits_errors() {
+        assert!(parse_str("orbital O {\n  expects trait T { emits { } }\n  entity E { id : string! }\n}").is_err());
+    }
+
+    #[test]
+    fn the_retired_expects_identity_and_event_spellings_name_their_replacement() {
+        let id = parse_str("orbital O {\n  expects identity Customer\n  entity E { id : string! }\n}")
+            .expect_err("retired");
+        assert!(id.to_string().contains("expects entity Customer [identity]"), "{id}");
+        let ev = parse_str("orbital O {\n  expects event Checkout.ORDER_PLACED\n  entity E { id : string! }\n}")
+            .expect_err("retired");
+        assert!(ev.to_string().contains("expects trait Checkout"), "{ev}");
+    }
+
+    #[test]
+    fn expects_entity_states_its_storage_marks_and_access_in_the_real_syntax() {
+        let src = "orbital O {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  entity E { id : string! }\n}";
+        let prog = p(src);
+        match &prog.orbitals[0].expects[0].kind {
+            ExpectsKind::Entity { name, shape, persistence, shared, local, access } => {
+                assert_eq!(name, "Order");
+                assert_eq!(*persistence, Some(Persistence::Persistent));
+                assert!(*shared && !*local);
+                assert!(access.read_policy.is_some());
+                assert_eq!(access.access_waivers, vec![("update".to_string(), "joins another entity".to_string())]);
+                assert_eq!(shape.as_ref().map(Vec::len), Some(2));
+            }
+            other => panic!("expected an entity, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn expects_entity_may_state_access_alone() {
+        let prog = p("orbital O {\n  expects entity Order {\n    @read none \"public\"\n  }\n  entity E { id : string! }\n}");
+        assert!(matches!(&prog.orbitals[0].expects[0].kind,
+            ExpectsKind::Entity { shape: None, access, .. } if access.has_any()));
+    }
+
+    #[test]
+    fn expects_entity_refuses_a_collection_name_mock_and_a_duplicate_directive() {
+        for bad in [
+            "expects entity Order [persistent: orders]",
+            "expects entity Order [mock]",
+            "expects entity Order {\n    @read none \"a\"\n    @read none \"b\"\n  }",
+            "expects entity C [identity, persistent]",
+        ] {
+            let src = format!("orbital O {{\n  {bad}\n  entity E {{ id : string! }}\n}}");
+            assert!(parse_str(&src).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn expects_page_names_the_traits_it_mounts() {
+        let prog = p("orbital O {\n  expects page \"/orders\" -> Checkout, Receipt\n  expects page \"/plain\"\n  entity E { id : string! }\n}");
+        assert!(matches!(&prog.orbitals[0].expects[0].kind,
+            ExpectsKind::Page { path, traits } if path == "/orders" && traits == &vec!["Checkout".to_string(), "Receipt".to_string()]));
+        assert!(matches!(&prog.orbitals[0].expects[1].kind,
+            ExpectsKind::Page { traits, .. } if traits.is_empty()), "control: a bare page names none");
+    }
+
+    #[test]
+    fn expects_trait_states_and_edges_use_the_real_state_syntax() {
+        let src = "orbital O {\n  expects trait Checkout {\n    state idle { PAY -> paid }\n    state refunded\n    emits { PLACED }\n  }\n  entity E { id : string! }\n}";
+        let prog = p(src);
+        let k = &prog.orbitals[0].expects;
+        assert_eq!(k.len(), 3);
+        assert!(matches!(&k[0].kind, ExpectsKind::Transition { trait_name, from, event, to }
+            if trait_name == "Checkout" && from == "idle" && event == "PAY" && to == "paid"));
+        assert!(matches!(&k[1].kind, ExpectsKind::State { state, .. } if state == "refunded"));
+        assert!(matches!(&k[2].kind, ExpectsKind::Event { event, .. } if event == "PLACED"));
+    }
+
+    #[test]
+    fn expects_trait_edges_refuse_guards_effects_and_time_bounds() {
+        for bad in [
+            "state idle { PAY -> paid when (> 1 0) }",
+            "state idle { PAY -> paid (set @entity.x 1) }",
+            "state idle for 5s",
+        ] {
+            let src = format!("orbital O {{\n  expects trait T {{ {bad} }}\n  entity E {{ id : string! }}\n}}");
+            assert!(parse_str(&src).is_err(), "{bad}");
+        }
+    }
+
+    #[test]
+    fn expects_trait_duplicate_edge_errors() {
+        let src = "orbital O {\n  expects trait T { state a { E -> b } }\n  expects trait T { state a { E -> b } }\n  entity E { id : string! }\n}";
+        assert!(parse_str(src).expect_err("duplicate").to_string().contains("ELOLO_DUPLICATE_EXPECTATION"));
     }
 
     #[test]
@@ -2541,7 +2912,7 @@ mod tests {
 
     #[test]
     fn parse_expects_duplicate_event_errors() {
-        let src = "orbital O {\n  expects event Checkout.ORDER_PLACED\n  expects event Checkout.ORDER_PLACED\n  entity E { id : string! }\n}";
+        let src = "orbital O {\n  expects trait Checkout { emits { ORDER_PLACED } }\n  expects trait Checkout { emits { ORDER_PLACED } }\n  entity E { id : string! }\n}";
         let err = parse_str(src).expect_err("duplicate must fail");
         assert!(
             err.to_string().contains("ELOLO_DUPLICATE_EXPECTATION"),
@@ -2552,7 +2923,7 @@ mod tests {
     #[test]
     fn parse_expects_duplicate_bare_identity_errors() {
         let src =
-            "orbital O {\n  expects identity\n  expects identity\n  entity E { id : string! }\n}";
+            "orbital O {\n  expects entity [identity]\n  expects entity [identity]\n  entity E { id : string! }\n}";
         let err = parse_str(src).expect_err("duplicate must fail");
         assert!(
             err.to_string().contains("ELOLO_DUPLICATE_EXPECTATION"),
@@ -2562,7 +2933,7 @@ mod tests {
 
     #[test]
     fn parse_expects_same_name_different_kind_is_not_duplicate() {
-        let src = "orbital O {\n  expects identity Customer\n  expects entity Customer\n  entity E { id : string! }\n}";
+        let src = "orbital O {\n  expects entity Customer [identity]\n  expects entity Customer\n  entity E { id : string! }\n}";
         let prog = p(src);
         assert_eq!(prog.orbitals[0].expects.len(), 2);
     }

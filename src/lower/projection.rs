@@ -14,6 +14,10 @@ type Declared = HashMap<String, Vec<HashMap<String, TypeExpr>>>;
 pub(crate) fn resolve_field_projections(program: &Program) -> Result<Program, LowerError> {
     let declared = declared_types(program);
     let mut out = program.clone();
+    let file_aliases: Vec<String> = program.uses.iter().map(|u| u.alias.clone()).collect();
+    for orbital in &mut out.orbitals {
+        qualify_alias_names(orbital, &file_aliases, &declared)?;
+    }
     let mut visit = |t: &mut TypeExpr| resolve(t, &declared, &mut Vec::new());
     for alias in &mut out.type_aliases {
         visit_alias(alias, &mut visit)?;
@@ -186,4 +190,68 @@ fn visit_orbital(orbital: &mut Orbital, visit: &mut Visit<'_>) -> Result<(), Low
         u.config.iter_mut().try_for_each(|c| visit(&mut c.type_expr))?;
     }
     Ok(())
+}
+
+/// `owner : Inner.Customer` in an `expects entity` shape, where `Inner` is a `uses` alias: the entity `Customer` of the
+/// spec `Inner` imports, not a field projection. Rewritten to the bare name (a relation target the importer must
+/// provide) and recorded on the orbital so the type check accepts it. A name that is both an alias and a declared type is
+/// ambiguous and refused.
+fn qualify_alias_names(
+    orbital: &mut Orbital,
+    file_aliases: &[String],
+    declared: &Declared,
+) -> Result<(), LowerError> {
+    let aliases: Vec<String> = file_aliases
+        .iter()
+        .cloned()
+        .chain(orbital.uses.iter().map(|u| u.alias.clone()))
+        .collect();
+    if aliases.is_empty() {
+        return Ok(());
+    }
+    let mut seen = Vec::new();
+    for expects in &mut orbital.expects {
+        if let ExpectsKind::Identity { shape: Some(fields), .. } | ExpectsKind::Entity { shape: Some(fields), .. } =
+            &mut expects.kind
+        {
+            for field in fields {
+                rewrite_alias_head(&mut field.type_expr, &aliases, declared, &mut seen)?;
+            }
+        }
+    }
+    for name in seen {
+        if !orbital.alias_entity_refs.contains(&name) {
+            orbital.alias_entity_refs.push(name);
+        }
+    }
+    Ok(())
+}
+
+fn rewrite_alias_head(
+    t: &mut TypeExpr,
+    aliases: &[String],
+    declared: &Declared,
+    seen: &mut Vec<String>,
+) -> Result<(), LowerError> {
+    match t {
+        TypeExpr::FieldOf { ty, field, .. } if aliases.contains(ty) => {
+            if declared.contains_key(ty.as_str()) {
+                return Err(LowerError::FieldProjection {
+                    projection: format!("{ty}.{field}"),
+                    reason: format!("`{ty}` is both a `uses` alias and a declared type, so the qualified name is ambiguous"),
+                });
+            }
+            seen.push(field.clone());
+            *t = TypeExpr::Named(field.clone());
+            Ok(())
+        }
+        TypeExpr::Array(inner) | TypeExpr::Optional(inner) => rewrite_alias_head(inner, aliases, declared, seen),
+        TypeExpr::Union(parts) => {
+            for part in parts {
+                rewrite_alias_head(part, aliases, declared, seen)?;
+            }
+            Ok(())
+        }
+        _ => Ok(()),
+    }
 }

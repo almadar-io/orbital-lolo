@@ -343,3 +343,36 @@ fn control_string_entity_field_does_not_lower_to_bytes() {
     let schema = parse_and_lower_str_with(&bytes_program("string"), &options).unwrap();
     assert!(!serde_json::to_string(&schema).unwrap().contains(r#""type":"bytes""#));
 }
+
+const SPEC_PROGRAM: &str = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order { total : number }\n  expects trait Checkout { emits { PLACED } }\n  expects page \"/orders\"\n}\n";
+
+#[test]
+fn a_spec_orbital_round_trips_without_growing_an_entity() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(SPEC_PROGRAM, &options).unwrap();
+    let printed = schema_to_lolo(&parse_and_lower_str_with(SPEC_PROGRAM, &options).unwrap()).unwrap();
+    assert!(!printed.contains("entity ShopSpec"), "{printed}");
+    assert!(printed.contains("expects entity Order"), "{printed}");
+}
+
+#[test]
+fn a_spec_event_payload_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects trait Checkout { emits { PLACED { orderId : string!, note : string } } }\n}\n";
+    round_trip(source, &options).unwrap();
+    let printed = schema_to_lolo(&parse_and_lower_str_with(source, &options).unwrap()).unwrap();
+    assert!(printed.contains("orderId : string!"), "{printed}");
+}
+
+#[test]
+fn a_spec_with_storage_access_pages_and_edges_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  expects page \"/orders\" -> Checkout, Receipt\n  expects trait Checkout { state idle { PAY -> paid } }\n  expects trait Checkout { state refunded }\n}\n";
+    round_trip(source, &options).unwrap();
+}

@@ -67,6 +67,17 @@ fn an_address_is_legal_at_an_event_address_position() {
 }
 
 #[test]
+fn a_call_key_member_lowers_as_its_own_type() {
+    let t = tools(&program("CallKey", "[]"));
+    assert_eq!(t["items"]["properties"]["event"]["type"], "CallKey", "{t}");
+}
+
+#[test]
+fn control_a_string_literal_is_still_accepted_at_a_bytes_position() {
+    assert!(parse_and_lower_str(&program("bytes", "[{ event: \"AAEC\" }]")).is_ok());
+}
+
+#[test]
 fn control_an_event_member_still_lowers_as_event() {
     let t = tools(&program("event", "[]"));
     assert_eq!(t["items"]["properties"]["event"]["type"], "event", "{t}");

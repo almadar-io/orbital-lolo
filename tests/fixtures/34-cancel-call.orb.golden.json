@@ -25,7 +25,7 @@
           "effectRow": [
             {
               "kind": "call-service",
-              "resource": "webhook.send"
+              "resource": "test-svc.run"
             },
             {
               "kind": "cancel-call"
@@ -65,8 +65,8 @@
                   ],
                   [
                     "call-service",
-                    "webhook",
-                    "send",
+                    "test-svc",
+                    "run",
                     {
                       "event": "@payload.event",
                       "url": "@payload.url"

@@ -319,13 +319,14 @@ pub(crate) fn lower_orbital_reference(
         name: orb.name.clone(),
         id: None,
         uses,
+        spec: false,
         expects: if orb.expects.is_empty() {
             None
         } else {
             Some(
                 orb.expects
                     .iter()
-                    .map(|e| super::lower_expects_decl(e, aliases, entity_names))
+                    .map(|e| super::lower_expects_decl(e, false, aliases, entities, entity_names))
                     .collect::<Result<Vec<_>, _>>()?,
             )
         },

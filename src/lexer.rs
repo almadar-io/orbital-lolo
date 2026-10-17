@@ -525,6 +525,12 @@ impl Lexer {
                         Some('"') => buf.push('"'),
                         Some('\\') => buf.push('\\'),
                         Some('/') => buf.push('/'),
+                        // `\.` stays backslash-dot: the path splitter reads it as a literal dot (`"http\.method"`).
+                        Some('.') => buf.push_str("\\."),
+                        Some('u') => {
+                            let ch = self.lex_unicode_escape(escape_line, escape_col)?;
+                            buf.push(ch);
+                        }
                         Some(c) => {
                             return Err(LexError::InvalidEscape {
                                 ch: c,
@@ -542,6 +548,46 @@ impl Lexer {
                 None => return Err(LexError::UnterminatedString { line, col }),
             }
         }
+    }
+
+    /// The `{H..H}` after `\u` in a string: 1 to 6 hex digits naming a Unicode scalar value.
+    fn lex_unicode_escape(&mut self, line: u32, col: u32) -> Result<char, LexError> {
+        let bad = |reason: &str| LexError::InvalidUnicodeEscape {
+            reason: reason.to_string(),
+            line,
+            col,
+        };
+        if self.peek() != Some('{') {
+            return Err(bad("`\\u` must be followed by `{`, as in `\\u{1F}`"));
+        }
+        self.advance();
+        let mut digits = String::new();
+        loop {
+            match self.peek() {
+                Some('}') => {
+                    self.advance();
+                    break;
+                }
+                Some(c) if c.is_ascii_hexdigit() => {
+                    digits.push(c);
+                    self.advance();
+                }
+                Some(c) if c != '"' && c != '\n' => {
+                    return Err(bad(&format!("`{c}` is not a hex digit")));
+                }
+                _ => return Err(bad("missing the closing `}`")),
+            }
+        }
+        if digits.is_empty() {
+            return Err(bad("no hex digits between `{` and `}`"));
+        }
+        if digits.len() > 6 {
+            return Err(bad(&format!("`{digits}` has more than 6 hex digits")));
+        }
+        let code = u32::from_str_radix(&digits, 16).map_err(|_| bad("not a hex number"))?;
+        char::from_u32(code).ok_or_else(|| {
+            bad(&format!("U+{code:X} is not a Unicode scalar value (surrogates U+D800..U+DFFF and values above U+10FFFF are refused)"))
+        })
     }
 
     fn lex_number(&mut self, line: u32, col: u32, negative: bool) -> Result<(), LexError> {
@@ -952,5 +998,43 @@ mod tests {
             tokenize("\"unterminated"),
             Err(LexError::UnterminatedString { .. })
         ));
+    }
+
+    fn string_of(src: &str) -> Result<String, LexError> {
+        tokenize(src).map(|ts| {
+            ts.into_iter()
+                .find_map(|t| match t.kind {
+                    TokenKind::String(s) => Some(s),
+                    _ => None,
+                })
+                .expect("a string token")
+        })
+    }
+
+    #[test]
+    fn unicode_escapes_lex_to_their_scalar_value() {
+        assert_eq!(string_of(r#""a\u{1F}b""#).unwrap(), "a\u{1F}b");
+        assert_eq!(string_of(r#""\u{0}""#).unwrap(), "\u{0}");
+        assert_eq!(string_of(r#""\u{1F600}""#).unwrap(), "\u{1F600}");
+        assert_eq!(string_of(r#""\u{10FFFF}\u{000041}\u{e9}""#).unwrap(), "\u{10FFFF}A\u{E9}");
+        assert_eq!(string_of(r#""\\u{1F}""#).unwrap(), "\\u{1F}");
+    }
+
+    #[test]
+    fn an_invalid_unicode_escape_is_a_clear_lex_error() {
+        for (src, needle) in [
+            (r#""\u1F""#, "must be followed by `{`"),
+            (r#""\u""#, "must be followed by `{`"),
+            (r#""\u{}""#, "no hex digits"),
+            (r#""\u{1F""#, "closing `}`"),
+            (r#""\u{1G}""#, "`G` is not a hex digit"),
+            (r#""\u{1234567}""#, "more than 6 hex digits"),
+            (r#""\u{D800}""#, "not a Unicode scalar value"),
+            (r#""\u{110000}""#, "not a Unicode scalar value"),
+        ] {
+            let err = string_of(src).expect_err(src);
+            assert!(matches!(err, LexError::InvalidUnicodeEscape { .. }), "{src}: {err:?}");
+            assert!(err.to_string().contains(needle), "{src}: {err}");
+        }
     }
 }

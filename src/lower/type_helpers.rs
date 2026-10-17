@@ -193,6 +193,8 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
         "money" => actual == "number",
         "file" => actual == "object",
         "bytes" => actual == "string",
+        // A call key reads as a string; a string never reads as a call key.
+        "string" => actual == "callkey",
         // A tagged union of struct variants takes a struct literal; which
         // variant it satisfies is the L2 emit-payload backstop's check.
         "union" => actual == "object",

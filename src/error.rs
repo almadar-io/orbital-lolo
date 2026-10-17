@@ -15,6 +15,9 @@ pub enum LexError {
     #[error("invalid string escape sequence \\{ch} at {line}:{col}")]
     InvalidEscape { ch: char, line: u32, col: u32 },
 
+    #[error("invalid unicode escape at {line}:{col}: {reason}")]
+    InvalidUnicodeEscape { reason: String, line: u32, col: u32 },
+
     #[error("invalid number {value:?} at {line}:{col}")]
     InvalidNumber { value: String, line: u32, col: u32 },
 
@@ -28,6 +31,7 @@ impl LexError {
             LexError::UnexpectedChar { line, col, .. }
             | LexError::UnterminatedString { line, col }
             | LexError::InvalidEscape { line, col, .. }
+            | LexError::InvalidUnicodeEscape { line, col, .. }
             | LexError::InvalidNumber { line, col, .. }
             | LexError::UnterminatedBlockComment { line, col } => Span::new(*line, *col, 1),
         }
@@ -62,11 +66,13 @@ impl LexError {
                 Some("a curly “smart” quote — `.lolo` strings use straight double quotes only".to_string()),
                 Some("replace the curly quote with a straight `\"` (and apostrophes in prose belong inside a double-quoted string or a `;;` comment)".to_string()),
             ),
-            // `\uXXXX`-style escapes (run 39: StudyStreak) — the string escape
-            // set is tiny; unicode goes in literally.
             LexError::InvalidEscape { ch, .. } => (
-                Some(format!("`\\{ch}` is not a valid string escape — `.lolo` supports only `\\\"`, `\\\\`, `\\/`, `\\n`, `\\t`, `\\r`")),
-                Some("write the character directly in the string (files are UTF-8; no `\\u` escapes needed)".to_string()),
+                Some(format!("`\\{ch}` is not a valid string escape — `.lolo` supports only `\\\"`, `\\\\`, `\\/`, `\\n`, `\\t`, `\\r`, `\\.` and `\\u{{H}}`")),
+                Some("write the character directly in the string (files are UTF-8), or `\\u{H}` with its hex code point".to_string()),
+            ),
+            LexError::InvalidUnicodeEscape { .. } => (
+                Some("a unicode escape is `\\u{H}` to `\\u{HHHHHH}` — 1 to 6 hex digits naming a Unicode scalar value (not U+D800..U+DFFF, at most U+10FFFF)".to_string()),
+                Some("write e.g. `\\u{1F}`, `\\u{0}` or `\\u{1F600}`".to_string()),
             ),
             _ => (None, None),
         }

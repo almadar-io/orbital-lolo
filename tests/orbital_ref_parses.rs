@@ -588,7 +588,7 @@ uses Pm from "almadar-behaviors/std-project-manager"
 
 orbital ProjectOrbital = Pm.orbitals.ProjectOrbital {
   expects page "/enroll"
-  expects identity Person {
+  expects entity Person [identity] {
     id : string!
   }
 }

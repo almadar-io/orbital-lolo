@@ -8,7 +8,7 @@ use super::types::{
 };
 use super::UnlowerError;
 use crate::ast::{
-    Entity, ExpectsDecl, ExpectsKind, Orbital, Page, Persistence, Span, TypeAlias, TypeBody,
+    Entity, ExpectedAccess, ExpectsDecl, ExpectsKind, Orbital, Page, Persistence, Span, TypeAlias, TypeBody,
     TypeExpr, UseDecl,
 };
 use orbital_core_base::schema::{
@@ -84,24 +84,28 @@ fn named_by_payload(
     Some(te)
 }
 
+/// The IR's waiver record as the `(op, reason)` pairs the `.lolo` AST holds.
+fn waiver_pairs(w: Option<&orbital_core_base::schema::AccessWaivers>) -> Vec<(String, String)> {
+    let Some(w) = w else {
+        return Vec::new();
+    };
+    [
+        ("read", &w.read),
+        ("create", &w.create),
+        ("update", &w.update),
+        ("delete", &w.delete),
+    ]
+    .into_iter()
+    .filter_map(|(op, reason)| reason.as_ref().map(|r| (op.to_string(), r.clone())))
+    .collect()
+}
+
 pub(super) fn entity(
     def: &EntityDefinition,
     hints: &AliasShapes,
     unions: &mut Vec<(String, Vec<String>)>,
 ) -> Result<Entity, UnlowerError> {
-    let mut waivers = Vec::new();
-    if let Some(w) = &def.access_waivers {
-        for (op, reason) in [
-            ("read", &w.read),
-            ("create", &w.create),
-            ("update", &w.update),
-            ("delete", &w.delete),
-        ] {
-            if let Some(r) = reason {
-                waivers.push((op.to_string(), r.clone()));
-            }
-        }
-    }
+    let waivers = waiver_pairs(def.access_waivers.as_ref());
     Ok(Entity {
         name: def.name.clone(),
         type_annotation: None,
@@ -164,19 +168,75 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
         s.as_ref().map(|f| entity_fields(f)).transpose()
     };
     let kind = match e {
-        ExpectDeclaration::Identity { name, shape: s } => ExpectsKind::Identity {
+        ExpectDeclaration::Identity { name, shape: s, .. } => ExpectsKind::Identity {
             name: name.clone(),
             shape: shape(s)?,
         },
-        ExpectDeclaration::Entity { name, shape: s } => ExpectsKind::Entity {
+        ExpectDeclaration::Entity {
+            name,
+            shape: s,
+            persistence,
+            shared,
+            local,
+            read_policy,
+            create_policy,
+            update_policy,
+            delete_policy,
+            access_waivers,
+            ..
+        } => ExpectsKind::Entity {
             name: name.clone(),
             shape: shape(s)?,
+            persistence: persistence.as_ref().map(|p| match p {
+                CorePersistence::Persistent => Persistence::Persistent,
+                CorePersistence::Runtime => Persistence::Runtime,
+            }),
+            shared: *shared,
+            local: *local,
+            access: ExpectedAccess {
+                read_policy: read_policy.clone(),
+                create_policy: create_policy.clone(),
+                update_policy: update_policy.clone(),
+                delete_policy: delete_policy.clone(),
+                access_waivers: waiver_pairs(access_waivers.as_ref()),
+            },
         },
-        ExpectDeclaration::Event { trait_name, event } => ExpectsKind::Event {
+        ExpectDeclaration::Event {
+            trait_name,
+            event,
+            payload,
+            ..
+        } => ExpectsKind::Event {
             trait_name: trait_name.clone(),
             event: event.clone(),
+            payload: payload
+                .as_deref()
+                .map(super::types::event_fields)
+                .transpose()?
+                .unwrap_or_default(),
         },
-        ExpectDeclaration::Page { path } => ExpectsKind::Page { path: path.clone() },
+        ExpectDeclaration::Page { path, traits, .. } => ExpectsKind::Page {
+            path: path.clone(),
+            traits: traits.clone().unwrap_or_default(),
+        },
+        ExpectDeclaration::State {
+            trait_name, state, ..
+        } => ExpectsKind::State {
+            trait_name: trait_name.clone(),
+            state: state.clone(),
+        },
+        ExpectDeclaration::Transition {
+            trait_name,
+            from,
+            event,
+            to,
+            ..
+        } => ExpectsKind::Transition {
+            trait_name: trait_name.clone(),
+            from: from.clone(),
+            event: event.clone(),
+            to: to.clone(),
+        },
     };
     Ok(ExpectsDecl {
         kind,
@@ -279,6 +339,7 @@ fn empty_orbital(name: &str) -> Orbital {
         retype_fields: Vec::new(),
         trait_overrides: Vec::new(),
         import_listens: Vec::new(),
+        alias_entity_refs: Vec::new(),
         os_grants: orbital_core_base::os_grants::OsGrants::default(),
         span: Span::dummy(),
     }
@@ -450,6 +511,9 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
         return Ok(out);
     }
 
+    if o.is_spec() {
+        return Ok(out);
+    }
     out.theme = o.theme.as_ref().map(theme_decl).transpose()?;
     let mut hinted_unions: Vec<(String, Vec<String>)> = Vec::new();
     out.entity = Some(inline_entity(&o.entity, global, &mut hinted_unions)?);

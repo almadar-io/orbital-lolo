@@ -137,6 +137,7 @@ impl Parser {
             }
             arg_spans.push(self.peek_span());
             let arg_index = items.len();
+            self.literal_key_position = head.as_deref().is_some_and(|h| declares_key_position(h, arg_index - 1));
             let arg =
                 self.with_trail_seg(format!("[{arg_index}]"), |p| p.parse_sexpr_or_value())?;
             items.push(arg);
@@ -424,6 +425,7 @@ impl Parser {
             self.record_expr_span();
         }
         let pattern_type_value = std::mem::take(&mut self.pattern_type_value);
+        let literal_key = std::mem::take(&mut self.literal_key_position);
         match self.peek().clone() {
             TokenKind::AtParen => self.parse_inline_trait_ref(),
             TokenKind::LParen => self.parse_sexpr(),
@@ -503,6 +505,7 @@ impl Parser {
                 // and `state` (also translated via the `sigils` section) lower
                 // to bindings.
                 let atom = match self.lang.canon_sigil(&name).unwrap_or(name.as_str()) {
+                    _ if literal_key => name,
                     "now" => "@now".to_string(),
                     "state" => "@state".to_string(),
                     _ => name,
@@ -784,4 +787,20 @@ pub(crate) fn lower_self_sigil(name: &str) -> String {
         return "entity".to_string();
     }
     name.to_string()
+}
+
+/// Whether the installed operator table declares argument `index` of `head` a `key-of` position, directly or as
+/// a member of a union.
+fn declares_key_position(head: &str, index: usize) -> bool {
+    use orbital_core_base::language::registry::{try_get_operator, OperatorTypeRef, OperatorTypeRefKind};
+    fn names_key(ty: &OperatorTypeRef) -> bool {
+        match ty {
+            OperatorTypeRef::Tagged(OperatorTypeRefKind::KeyOf { .. }) => true,
+            OperatorTypeRef::Tagged(OperatorTypeRefKind::Union { of }) => of.iter().any(names_key),
+            _ => false,
+        }
+    }
+    try_get_operator(head)
+        .and_then(|operator| orbital_core_base::signature::Signature::of(operator).formal(index))
+        .is_some_and(names_key)
 }

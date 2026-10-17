@@ -1593,8 +1593,8 @@ mod recursive_struct_payload_tests {
     }
 
     /// §81(b): a trait type parameter used as a struct MEMBER, where the
-    /// struct is reached through an event payload — `std-service-queue`'s
-    /// minimal repro (`type QueueJob = { payload : tpayload! }`, `type
+    /// struct is reached through an event payload — the retired queue service
+    /// atom's minimal repro (`type QueueJob = { payload : tpayload! }`, `type
     /// ServiceQueueDequeueDone = Event { job : QueueJob }`, on a trait
     /// declaring `(tpayload : Entity)`). Both derivation paths must resolve
     /// "payload" to the SAME `$tpayload` sentinel.

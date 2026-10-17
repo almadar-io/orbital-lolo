@@ -502,3 +502,51 @@ mod supervisor {
         assert_eq!(rig.state(), "running");
     }
 }
+
+fn plain_program(effect: &str) -> String {
+    program(effect).replace("    config { token: secret = \"TOKEN_NAME\" }\n", "")
+}
+
+#[test]
+fn unicode_escapes_lower_to_the_characters_and_the_formatter_prints_control_characters_canonically() {
+    let src = plain_program(r#"(set @entity.id "a\u{1F}b\u{0}c\u{1F600}d\u{e9}\u{7f}")"#);
+    let effects = effects_of(&src);
+    assert_eq!(effects, vec![json!(["set", "@entity.id", "a\u{1F}b\u{0}c\u{1F600}d\u{E9}\u{7F}"])]);
+    let formatted = format_program(&parse_str(&src).expect("parse"));
+    assert!(formatted.contains(r#""a\u{1F}b\u{0}c😀dé\u{7F}""#), "{formatted}");
+    assert_eq!(effects_of(&formatted), effects);
+    assert_eq!(format_program(&parse_str(&formatted).expect("reparse")), formatted);
+    let control = plain_program(r#"(set @entity.id "plain \n \t text")"#);
+    let again = format_program(&parse_str(&control).expect("parse"));
+    assert!(again.contains(r#""plain \n \t text""#) && !again.contains("\\u{"), "{again}");
+}
+
+#[test]
+fn an_invalid_unicode_escape_fails_lowering() {
+    let err = parse_and_lower_str(&plain_program(r#"(set @entity.id "\u{D800}")"#)).expect_err("surrogate");
+    assert!(err.to_string().contains("not a Unicode scalar value"), "{err}");
+}
+
+#[test]
+fn the_credential_administration_effects_lower_with_their_request_object_and_survive_the_formatter() {
+    for (call, expected) in [
+        (
+            "(credential-list { service: \"llm\" } { emit: { success: LISTED } })",
+            json!(["credential-list", { "service": "llm" }, { "emit": { "success": "LISTED" } }]),
+        ),
+        (
+            "(credential-set { service: \"KeysOrbital\", envVar: \"SALT\", value: @payload.value } { emit: { success: SAVED, failure: FAILED } })",
+            json!(["credential-set", { "service": "KeysOrbital", "envVar": "SALT", "value": "@payload.value" }, { "emit": { "success": "SAVED", "failure": "FAILED" } }]),
+        ),
+        ("(credential-remove { service: \"a\", envVar: \"B\" })", json!(["credential-remove", { "service": "a", "envVar": "B" }])),
+        ("(credential-test { service: \"a\" })", json!(["credential-test", { "service": "a" }])),
+        ("(credential-mode { mode: \"real\" })", json!(["credential-mode", { "mode": "real" }])),
+        ("(credential-rotate {})", json!(["credential-rotate", {}])),
+    ] {
+        let src = program(&format!("{call}\n        (credential-forget @config.token)"));
+        assert_eq!(effects_of(&src)[0], expected, "{call}");
+        let formatted = format_program(&parse_str(&src).expect("parse"));
+        assert!(formatted.contains(call.split_whitespace().next().unwrap()), "{formatted}");
+        assert_eq!(effects_of(&formatted), effects_of(&src), "{call}");
+    }
+}

@@ -47,23 +47,29 @@ pub(crate) fn lower_entity(
         create_policy: entity.create_policy.clone(),
         update_policy: entity.update_policy.clone(),
         delete_policy: entity.delete_policy.clone(),
-        access_waivers: if entity.access_waivers.is_empty() {
-            None
-        } else {
-            let mut waivers = orbital_core_base::schema::AccessWaivers::default();
-            for (op, reason) in &entity.access_waivers {
-                match op.as_str() {
-                    "read" => waivers.read = Some(reason.clone()),
-                    "create" => waivers.create = Some(reason.clone()),
-                    "update" => waivers.update = Some(reason.clone()),
-                    "delete" => waivers.delete = Some(reason.clone()),
-                    _ => {}
-                }
-            }
-            Some(waivers)
-        },
+        access_waivers: access_waivers_of(&entity.access_waivers),
         id: None,
     })
+}
+
+/// The `@<op> none "<reason>"` declarations as the IR's waiver record; `None` when there are none.
+pub(crate) fn access_waivers_of(
+    declared: &[(String, String)],
+) -> Option<orbital_core_base::schema::AccessWaivers> {
+    if declared.is_empty() {
+        return None;
+    }
+    let mut waivers = orbital_core_base::schema::AccessWaivers::default();
+    for (op, reason) in declared {
+        match op.as_str() {
+            "read" => waivers.read = Some(reason.clone()),
+            "create" => waivers.create = Some(reason.clone()),
+            "update" => waivers.update = Some(reason.clone()),
+            "delete" => waivers.delete = Some(reason.clone()),
+            _ => {}
+        }
+    }
+    Some(waivers)
 }
 
 /// The config-only type an entity field reaches, following record aliases: the parser's own list
@@ -485,6 +491,7 @@ pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
         "money" => FieldType::Money,
         "file" => FieldType::File,
         "bytes" => FieldType::Bytes,
+        "CallKey" => FieldType::CallKey,
         // Semantic string domains, now first-class field types rather than
         // subtypes that erased to `string`. Closes the "no format validation yet"
         // half of Gap G-LOLO-TYPENAME-SILENT-FALLBACK: the declared domain

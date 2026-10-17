@@ -495,6 +495,9 @@ pub struct Orbital {
     /// Orbital-import `listens { Source.EVENT -> Target.TRIGGER }` — routes
     /// into the imported set; each carries its `target_trait`.
     pub import_listens: Vec<Listen>,
+    /// Entity names a spec shape reaches through a `uses` alias (`owner : Inner.Customer` names `Customer`).
+    /// Set by the projection pass; they are legal relation targets, supplied by the imported spec.
+    pub alias_entity_refs: Vec<String>,
     /// `orbital Name [ fs: …, exec: … ]` — this orbital's own `os/` grants.
     pub os_grants: orbital_core_base::os_grants::OsGrants,
     pub span: Span,
@@ -536,6 +539,28 @@ pub struct UseDecl {
     pub span: Span,
 }
 
+/// The `@read|@create|@update|@delete` directives of an entity body or an `expects entity` shape.
+#[derive(Debug, Clone, Default)]
+pub struct ExpectedAccess {
+    pub read_policy: Option<SExpression>,
+    pub create_policy: Option<SExpression>,
+    pub update_policy: Option<SExpression>,
+    pub delete_policy: Option<SExpression>,
+    /// `@<op> none "<reason>"` waivers, as `(op, reason)`.
+    pub access_waivers: Vec<(String, String)>,
+}
+
+impl ExpectedAccess {
+    /// Whether any directive was stated.
+    pub fn has_any(&self) -> bool {
+        self.read_policy.is_some()
+            || self.create_policy.is_some()
+            || self.update_policy.is_some()
+            || self.delete_policy.is_some()
+            || !self.access_waivers.is_empty()
+    }
+}
+
 /// One `expects ...` declaration inside an orbital block.
 #[derive(Debug, Clone)]
 pub struct ExpectsDecl {
@@ -547,23 +572,40 @@ pub struct ExpectsDecl {
 /// grammar verbatim — it is the consumer's declared minimal contract.
 #[derive(Debug, Clone)]
 pub enum ExpectsKind {
-    /// `expects identity [Name] [{ fields }]` — bare (neither name nor shape)
+    /// `expects entity [Name] [identity] [{ fields }]` — bare (neither name nor shape)
     /// is the hand-authoring escape hatch.
     Identity {
         name: Option<String>,
         shape: Option<Vec<EntityField>>,
     },
-    /// `expects entity Name [{ fields }]` — shape omitted = opaque reference.
+    /// `expects entity Name [persistent, shared] [{ fields, @read … }]` — shape omitted = opaque reference.
     Entity {
         name: String,
         shape: Option<Vec<EntityField>>,
+        persistence: Option<Persistence>,
+        shared: bool,
+        local: bool,
+        access: ExpectedAccess,
     },
-    /// `expects event Trait.EVENT` — names pass through verbatim.
-    Event { trait_name: String, event: String },
+    /// `expects trait Trait { emits { EVENT } }` — one per emitted event; names pass through verbatim.
+    Event {
+        trait_name: String,
+        event: String,
+        payload: Vec<EventField>,
+    },
     /// `expects page "/articles/:slug"` — a route a sibling orbital declares
     /// and this one navigates to. The provider's PATTERN, which a navigate
     /// effect's static prefix cannot supply.
-    Page { path: String },
+    Page { path: String, traits: Vec<String> },
+    /// `expects trait T { state paid }` — the provider trait declares this state.
+    State { trait_name: String, state: String },
+    /// `expects trait T { state idle { PAY -> paid } }` — the provider trait has this transition.
+    Transition {
+        trait_name: String,
+        from: String,
+        event: String,
+        to: String,
+    },
 }
 
 /// `entity Name [:: TypeAnnotation] [persistence] { fields... }`.

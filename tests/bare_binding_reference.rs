@@ -170,3 +170,51 @@ fn type_key_exemption_does_not_leak_into_nested_expressions() {
         "a bare bound name nested under a type: value must still error, got: {err}"
     );
 }
+
+fn lowered_fetch_filter(filter: &str) -> String {
+    let source = format!(
+        r#"app keyprobe
+orbital KeyOrbital {{
+  entity Thing [persistent: things] {{
+    id : string!
+    state : string = "a"
+    now : number = 0
+  }}
+  trait KeyRun -> Thing [lifecycle, instance] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (fetch Thing {{ filter: {filter}, emit: {{ success: LOADED, failure: FAILED }} }})
+    }}
+  }}
+}}"#
+    );
+    let orb = orbital_lolo::parse_and_lower_str(&source).unwrap();
+    serde_json::to_value(&orb).unwrap()["orbitals"][0]["traits"][0]["stateMachine"]["transitions"][0]["effects"][0].to_string()
+}
+
+#[test]
+fn a_bare_field_name_in_a_key_position_stays_a_literal_key() {
+    for field in ["state", "now"] {
+        let lowered = lowered_fetch_filter(&format!(r#"["=", (object/get @entity {field}), "x"]"#));
+        assert!(lowered.contains(&format!(r#"["object/get","@entity","{field}"]"#)), "{field}: {lowered}");
+    }
+    let lowered = lowered_fetch_filter(r#"["=", (object/has @entity state), true]"#);
+    assert!(lowered.contains(r#"["object/has","@entity","state"]"#), "{lowered}");
+}
+
+#[test]
+fn control_a_bare_state_in_a_value_position_is_still_the_binding() {
+    let lowered = lowered_fetch_filter(r#"["=", (object/get @entity id), state]"#);
+    assert!(lowered.contains(r#""@state""#), "{lowered}");
+    let explicit = lowered_fetch_filter(r#"["=", (object/get @entity @state), "x"]"#);
+    assert!(explicit.contains(r#"["object/get","@entity","@state"]"#), "{explicit}");
+}
+
+#[test]
+fn a_backslash_dot_in_a_key_string_reaches_the_path_splitter_as_backslash_dot() {
+    let lowered = lowered_fetch_filter(r#"["=", (object/get @entity "http\.method"), "x"]"#);
+    assert!(lowered.contains(r#"["object/get","@entity","http\\.method"]"#), "{lowered}");
+    let doubled = lowered_fetch_filter(r#"["=", (object/get @entity "a\\.b"), "x"]"#);
+    assert!(doubled.contains(r#"["object/get","@entity","a\\.b"]"#), "control: `\\\\.` lexes to the same backslash-dot: {doubled}");
+}

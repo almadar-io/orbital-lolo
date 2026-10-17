@@ -10,7 +10,7 @@ use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str, LoloError};
 
 /// One entity (`op`/`key` fields, closed 3-member `op` vocabulary) shared by
-/// every entity-scrutinee test below — the same shape `std-service-redis`'s
+/// every entity-scrutinee test below — the same shape a service atom's
 /// `op` field has (a closed dispatch vocabulary set from config at INIT).
 fn wrap_entity_trait(trait_body: &str) -> String {
     format!(
@@ -118,9 +118,9 @@ fn match_lowers_to_the_same_transitions_as_the_hand_guarded_spelling() {
         (set @entity.op "get")
         (set @entity.key "k")
       EXEC -> executing match @entity.op {
-        "set" -> (call-service redis set { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
-        "del" -> (call-service redis delete { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
-        _     -> (call-service redis get { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        "set" -> (call-service test-svc set { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        "del" -> (call-service test-svc delete { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        _     -> (call-service test-svc get { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
       }
     }
     state executing {
@@ -142,11 +142,11 @@ fn match_lowers_to_the_same_transitions_as_the_hand_guarded_spelling() {
         (set @entity.op "get")
         (set @entity.key "k")
       EXEC -> executing when (== @entity.op "set")
-        (call-service redis set { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        (call-service test-svc set { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
       EXEC -> executing when (== @entity.op "del")
-        (call-service redis delete { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        (call-service test-svc delete { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
       EXEC -> executing
-        (call-service redis get { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        (call-service test-svc get { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
     }
     state executing {
       RedisDone -> idle
@@ -877,9 +877,9 @@ fn format_round_trip_is_idempotent_and_semantics_preserving() {
         (set @entity.op "get")
         (set @entity.key "k")
       EXEC -> executing match @entity.op {
-        "set" -> (call-service redis set { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
-        "del" -> (call-service redis delete { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
-        _     -> (call-service redis get { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        "set" -> (call-service test-svc set { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        "del" -> (call-service test-svc delete { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
+        _     -> (call-service test-svc get { key: @entity.key } { emit: { failure: FAILED, success: RedisDone } })
       }
     }
     state executing {

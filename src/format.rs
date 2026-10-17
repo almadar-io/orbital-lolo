@@ -11,7 +11,7 @@ use std::collections::HashMap;
 
 use crate::ast::{
     AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst,
-    ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, PayloadOfTarget, Persistence,
+    ExpectedAccess, ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, PayloadOfTarget, Persistence,
     Program, State, TermMatch, ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait, TraitRefData,
     TraitScope, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
 };
@@ -1585,40 +1585,97 @@ impl Formatter {
         self.output.push_str("expects ");
         match &e.kind {
             ExpectsKind::Identity { name, shape } => {
-                self.output.push_str("identity");
+                self.output.push_str("entity ");
                 if let Some(name) = name {
-                    self.output.push(' ');
                     self.output.push_str(name);
+                    self.output.push(' ');
                 }
-                self.fmt_expects_shape(shape);
+                self.output.push_str("[identity]");
+                self.fmt_expects_shape(shape, &ExpectedAccess::default());
             }
-            ExpectsKind::Entity { name, shape } => {
+            ExpectsKind::Entity {
+                name,
+                shape,
+                persistence,
+                shared,
+                local,
+                access,
+            } => {
                 self.output.push_str("entity ");
                 self.output.push_str(name);
-                self.fmt_expects_shape(shape);
+                let mut tags: Vec<&str> = Vec::new();
+                match persistence {
+                    Some(Persistence::Persistent) => tags.push("persistent"),
+                    Some(Persistence::Runtime) => tags.push("runtime"),
+                    None => {}
+                }
+                if *shared {
+                    tags.push("shared");
+                }
+                if *local {
+                    tags.push("local");
+                }
+                if !tags.is_empty() {
+                    self.output.push_str(" [");
+                    self.output.push_str(&tags.join(", "));
+                    self.output.push(']');
+                }
+                self.fmt_expects_shape(shape, access);
             }
-            ExpectsKind::Event { trait_name, event } => {
-                self.output.push_str("event ");
+            ExpectsKind::Event {
+                trait_name,
+                event,
+                payload,
+            } => {
+                self.output.push_str("trait ");
                 self.output.push_str(trait_name);
-                self.output.push('.');
+                self.output.push_str(" { emits { ");
                 self.output.push_str(event);
+                if !payload.is_empty() {
+                    self.output.push(' ');
+                    self.fmt_event_payload(payload);
+                }
+                self.output.push_str(" } }");
             }
-            ExpectsKind::Page { path } => {
+            ExpectsKind::Page { path, traits } => {
                 self.output.push_str("page \"");
                 self.output.push_str(path);
                 self.output.push('"');
+                if !traits.is_empty() {
+                    self.output.push_str(" -> ");
+                    self.output.push_str(&traits.join(", "));
+                }
+            }
+            ExpectsKind::State { trait_name, state } => {
+                self.output.push_str(&format!("trait {trait_name} {{ state {state} }}"));
+            }
+            ExpectsKind::Transition {
+                trait_name,
+                from,
+                event,
+                to,
+            } => {
+                self.output
+                    .push_str(&format!("trait {trait_name} {{ state {from} {{ {event} -> {to} }} }}"));
             }
         }
     }
 
-    fn fmt_expects_shape(&mut self, shape: &Option<Vec<EntityField>>) {
-        let Some(fields) = shape else {
+    fn fmt_expects_shape(&mut self, shape: &Option<Vec<EntityField>>, access: &ExpectedAccess) {
+        if shape.is_none() && !access.has_any() {
             return;
-        };
+        }
         self.output.push_str(" {");
         self.write_newline();
         self.indent();
-        for field in fields {
+        self.fmt_access_directives(
+            &access.read_policy,
+            &access.create_policy,
+            &access.update_policy,
+            &access.delete_policy,
+            &access.access_waivers,
+        );
+        for field in shape.iter().flatten() {
             self.write_indent();
             self.fmt_entity_field(field);
             self.write_newline();
@@ -1626,6 +1683,37 @@ impl Formatter {
         self.dedent();
         self.write_indent();
         self.output.push('}');
+    }
+
+    /// The `@read|@create|@update|@delete` directives of an entity body or an `expects entity` shape: a policy
+    /// expression, or the declared omission `@<op> none "<reason>"` in the same slot so a round trip is lossless.
+    fn fmt_access_directives(
+        &mut self,
+        read: &Option<SExpression>,
+        create: &Option<SExpression>,
+        update: &Option<SExpression>,
+        delete: &Option<SExpression>,
+        waivers: &[(String, String)],
+    ) {
+        for (sigil, expr) in [("read", read), ("create", create), ("update", update), ("delete", delete)] {
+            if let Some(expr) = expr {
+                self.write_indent();
+                self.output.push('@');
+                self.output.push_str(sigil);
+                self.output.push(' ');
+                self.fmt_sexpr(expr);
+                self.write_newline();
+            } else if let Some((_, reason)) = waivers.iter().find(|(op, _)| op == sigil) {
+                self.write_indent();
+                self.output.push('@');
+                self.output.push_str(sigil);
+                self.output.push_str(" none ");
+                self.output.push('"');
+                self.output.push_str(&reason.replace('"', "\\\""));
+                self.output.push('"');
+                self.write_newline();
+            }
+        }
     }
 
     /// `instances [ … ]`, or `instances <lang> [ … ]` for one locale's rows.
@@ -1685,35 +1773,13 @@ impl Formatter {
         {
             self.write_newline();
             self.indent();
-            for (sigil, expr) in [
-                ("read", &entity.read_policy),
-                ("create", &entity.create_policy),
-                ("update", &entity.update_policy),
-                ("delete", &entity.delete_policy),
-            ] {
-                if let Some(expr) = expr {
-                    self.write_indent();
-                    self.output.push('@');
-                    self.output.push_str(sigil);
-                    self.output.push(' ');
-                    self.fmt_sexpr(expr);
-                    self.write_newline();
-                } else if let Some((_, reason)) =
-                    entity.access_waivers.iter().find(|(op, _)| op == sigil)
-                {
-                    // `@<op> none "<reason>"` — the declared omission, printed
-                    // in the same slot as a real directive so a round-trip is
-                    // lossless.
-                    self.write_indent();
-                    self.output.push('@');
-                    self.output.push_str(sigil);
-                    self.output.push_str(" none ");
-                    self.output.push('"');
-                    self.output.push_str(&reason.replace('"', "\\\""));
-                    self.output.push('"');
-                    self.write_newline();
-                }
-            }
+            self.fmt_access_directives(
+                &entity.read_policy,
+                &entity.create_policy,
+                &entity.update_policy,
+                &entity.delete_policy,
+                &entity.access_waivers,
+            );
             for field in &entity.fields {
                 self.write_indent();
                 self.fmt_entity_field(field);
@@ -3242,7 +3308,7 @@ fn render_match_pattern(pattern: &MatchPattern) -> String {
                     '\n' => out.push_str("\\n"),
                     '\t' => out.push_str("\\t"),
                     '\r' => out.push_str("\\r"),
-                    c => out.push(c),
+                    c => push_plain_char(&mut out, c),
                 }
             }
             out.push('"');
@@ -3424,6 +3490,16 @@ fn shape_field_name(name: &str) -> String {
     }
 }
 
+/// A character with no named escape: a control character prints as `\u{H}` (uppercase hex, no padding), the
+/// canonical spelling whichever form the source wrote; every other character prints as itself.
+fn push_plain_char(out: &mut String, c: char) {
+    if c.is_control() {
+        out.push_str(&format!("\\u{{{:X}}}", c as u32));
+    } else {
+        out.push(c);
+    }
+}
+
 /// A `.lolo` string literal for `s`.
 fn quote_lolo(s: &str) -> String {
     let mut out = String::with_capacity(s.len() + 2);
@@ -3435,7 +3511,7 @@ fn quote_lolo(s: &str) -> String {
             '\n' => out.push_str("\\n"),
             '\t' => out.push_str("\\t"),
             '\r' => out.push_str("\\r"),
-            c => out.push(c),
+            c => push_plain_char(&mut out, c),
         }
     }
     out.push('"');

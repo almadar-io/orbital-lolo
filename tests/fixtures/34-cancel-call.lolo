@@ -8,7 +8,7 @@ orbital BatchOrbital {
     state idle {
       START -> idle
         (set "@entity.batchId" "@payload.batchId")
-        (call-service "webhook" "send" { url: "@payload.url", event: "@payload.event" } {
+        (call-service "test-svc" "run" { url: "@payload.url", event: "@payload.event" } {
           key: "@entity.batchId",
           emit: {
             success: "CLASSIFIED",

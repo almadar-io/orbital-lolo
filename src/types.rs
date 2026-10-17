@@ -913,20 +913,24 @@ pub fn check_orbital_annotation(
     Ok(())
 }
 
-/// Every entity name an orbital's `expects entity` / `expects identity`
+/// Every entity name an orbital's `expects entity` / `expects entity [identity]`
 /// declaration promises. The named entity is supplied by a sibling orbital at
 /// compose time, so its name is a legal field-type reference (`field :
 /// Customer`, `[Customer]`) even with no local `entity` block. L1 mirror of
 /// the compiler's `expectations::expected_entity_names`.
 pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
-    orb.expects
+    orb.alias_entity_refs
         .iter()
-        .filter_map(|e| match &e.kind {
+        .map(String::as_str)
+        .chain(orb.expects.iter().filter_map(|e| match &e.kind {
             ExpectsKind::Entity { name, .. } => Some(name.as_str()),
             ExpectsKind::Identity { name, .. } => name.as_deref(),
             // Not an entity name — a route.
-            ExpectsKind::Event { .. } | ExpectsKind::Page { .. } => None,
-        })
+            ExpectsKind::Event { .. }
+            | ExpectsKind::Page { .. }
+            | ExpectsKind::State { .. }
+            | ExpectsKind::Transition { .. } => None,
+        }))
         .collect()
 }
 
