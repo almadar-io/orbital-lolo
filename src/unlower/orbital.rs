@@ -279,6 +279,7 @@ fn empty_orbital(name: &str) -> Orbital {
         retype_fields: Vec::new(),
         trait_overrides: Vec::new(),
         import_listens: Vec::new(),
+        os_grants: orbital_core_base::os_grants::OsGrants::default(),
         span: Span::dummy(),
     }
 }
@@ -333,6 +334,7 @@ pub(super) fn alias_shapes(
 
 pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, UnlowerError> {
     let mut out = empty_orbital(&o.name);
+    out.os_grants = o.os_grants.clone().unwrap_or_default();
     out.uses = o
         .uses
         .iter()

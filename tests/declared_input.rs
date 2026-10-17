@@ -147,3 +147,121 @@ fn control_an_emitted_array_of_scalars_has_no_element_shape() {
     );
     assert!(emitted.get("properties").is_none(), "{emitted}");
 }
+
+fn inbound_program(header: &str, listens: &str) -> String {
+    format!(
+        r#"app Probe {header}
+orbital HookOrbital {{
+  entity Req [runtime] {{
+    id : string!
+  }}
+  trait HookIn -> Req [interaction, instance] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+      PUSH -> idle
+        (emit DONE {{ status: 200, body: "{{}}" }})
+    }}
+    listens {{
+{listens}
+    }}
+    emits {{
+      DONE -> internal {{
+        status : number!
+        body : string!
+      }}
+    }}
+  }}
+  page "/" -> HookIn [initial]
+}}"#
+    )
+}
+
+const INBOUND_LISTEN: &str =
+    "      PUSH -> inbound \"google-calendar\" answers DONE { headers : Map string string, rawBody : string }";
+
+#[test]
+fn an_inbound_listen_lowers_to_the_events_inbound_declaration_and_is_not_an_external_input() {
+    let src = inbound_program("[ inbound: [\"google-calendar\"] ]", INBOUND_LISTEN);
+    let ev = event(&src, "PUSH");
+    assert_eq!(ev["inbound"], serde_json::json!({ "name": "google-calendar", "answers": "DONE" }));
+    assert_eq!(ev["listened"], Value::Bool(true));
+    assert!(ev.get("external").is_none(), "{ev}");
+    assert_eq!(ev["payloadSchema"][0]["name"], "headers", "{ev}");
+    let schema = parse_and_lower_str(&src).unwrap();
+    assert_eq!(schema.inbound, Some(vec!["google-calendar".to_string()]));
+}
+
+#[test]
+fn control_no_header_entry_and_no_inbound_listen_leave_both_absent() {
+    let src = inbound_program("", "      PUSH { rawBody : string }");
+    assert_eq!(parse_and_lower_str(&src).unwrap().inbound, None);
+    assert!(event(&src, "PUSH").get("inbound").is_none());
+    let external = inbound_program("", "      PUSH -> external { rawBody : string }");
+    assert_eq!(event(&external, "PUSH")["external"], Value::Bool(true));
+    assert!(event(&external, "PUSH").get("inbound").is_none());
+}
+
+#[test]
+fn inbound_survives_unlower_and_re_lowers_to_the_same_schema() {
+    let src = inbound_program("[ inbound: [\"google-calendar\"] ]", INBOUND_LISTEN);
+    let schema = parse_and_lower_str(&src).unwrap();
+    let printed = schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert!(printed.contains("inbound: [\"google-calendar\"]"), "{printed}");
+    assert!(printed.contains("-> inbound \"google-calendar\" answers DONE"), "{printed}");
+    let again = parse_and_lower_str(&printed).expect("printed form lowers");
+    assert_eq!(again.inbound, schema.inbound);
+    assert_eq!(
+        serde_json::to_value(&again).unwrap()["orbitals"][0]["traits"][0]["stateMachine"]["events"],
+        serde_json::to_value(&schema).unwrap()["orbitals"][0]["traits"][0]["stateMachine"]["events"]
+    );
+}
+
+#[test]
+fn an_inbound_listen_needs_a_hook_name_and_an_answer_event() {
+    for bad in [
+        "      PUSH -> inbound answers DONE { rawBody : string }",
+        "      PUSH -> inbound \"google-calendar\" { rawBody : string }",
+        "      PUSH -> inbound \"google-calendar\" answers DONE",
+    ] {
+        assert!(parse_and_lower_str(&inbound_program("", bad)).is_err(), "{bad}");
+    }
+}
+
+const VERIFIED_LISTEN: &str = "      PUSH -> inbound \"google-calendar\" answers DONE verifies \"x-goog-channel-token\" \"CHANNEL_TOKEN\" { headers : Map string string, verified : boolean }";
+
+#[test]
+fn a_verifies_clause_lowers_to_the_declaration_and_survives_unlower() {
+    let src = inbound_program("[ inbound: [\"google-calendar\"] ]", VERIFIED_LISTEN);
+    assert_eq!(
+        event(&src, "PUSH")["inbound"],
+        serde_json::json!({
+            "name": "google-calendar",
+            "answers": "DONE",
+            "verifies": { "header": "x-goog-channel-token", "credential": "CHANNEL_TOKEN" }
+        })
+    );
+    let schema = parse_and_lower_str(&src).unwrap();
+    let printed = schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert!(
+        printed.contains("answers DONE verifies \"x-goog-channel-token\" \"CHANNEL_TOKEN\""),
+        "{printed}"
+    );
+    let again = parse_and_lower_str(&printed).expect("printed form lowers");
+    assert_eq!(
+        serde_json::to_value(&again).unwrap()["orbitals"][0]["traits"][0]["stateMachine"]["events"],
+        serde_json::to_value(&schema).unwrap()["orbitals"][0]["traits"][0]["stateMachine"]["events"]
+    );
+}
+
+#[test]
+fn control_an_inbound_listen_without_verifies_declares_none_and_a_half_clause_is_an_error() {
+    let src = inbound_program("[ inbound: [\"google-calendar\"] ]", INBOUND_LISTEN);
+    assert!(event(&src, "PUSH")["inbound"].get("verifies").is_none());
+    for bad in [
+        "      PUSH -> inbound \"g\" answers DONE verifies \"x-token\" { rawBody : string }",
+        "      PUSH -> inbound \"g\" answers DONE verifies { rawBody : string }",
+    ] {
+        assert!(parse_and_lower_str(&inbound_program("", bad)).is_err(), "{bad}");
+    }
+}

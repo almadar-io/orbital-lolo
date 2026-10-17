@@ -44,6 +44,7 @@ impl Parser {
         name: String,
         span: Span,
         type_annotation: Option<TypeAnnotation>,
+        os_grants: orbital_core_base::os_grants::OsGrants,
     ) -> Result<Orbital, ParseError> {
         // Consume the `=`.
         self.expect_kind(&TokenKind::Equals, "=")?;
@@ -100,6 +101,7 @@ impl Parser {
             // declared surface lives upstream; `config_overrides` above is
             // the override of THAT surface, not a second declaration.
             config: Vec::new(),
+            os_grants,
             span,
         })
     }

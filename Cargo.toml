@@ -22,5 +22,6 @@ quote = "1"
 pretty_assertions.workspace = true
 orbital-compiler = { path = "../orbital-compiler" }
 orbital-test-support = { path = "../orbital-test-support" }
+orbital-core-runtime = { path = "../orbital-core/crates/runtime" }
 serde_json.workspace = true
 tempfile = "3.10"

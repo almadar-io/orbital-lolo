@@ -130,3 +130,29 @@ fn page_facts_and_beacon_lower_to_the_contract_forms() {
         ])]
     );
 }
+
+#[test]
+fn on_device_model_effects_lower_to_the_contract_forms() {
+    let prompt = effects_of(
+        &program(
+            "",
+            r#"(browser/prompt @entity.id (json/stringify { type: "object" }) { key: @entity.id, emit: { success: S, failure: F, cancelled: C } })"#,
+        ),
+        "GO",
+    );
+    assert_eq!(
+        prompt,
+        vec![json!([
+            "browser/prompt",
+            "@entity.id",
+            ["json/stringify", { "type": "object" }],
+            { "key": "@entity.id", "emit": { "success": "S", "failure": "F", "cancelled": "C" } }
+        ])]
+    );
+
+    let embed = effects_of(&program("", r#"(browser/embed [@entity.id, "b"] { emit: { success: S } })"#), "GO");
+    assert_eq!(embed, vec![json!(["browser/embed", ["@entity.id", "b"], { "emit": { "success": "S" } }])]);
+
+    let bare = effects_of(&program("", r#"(browser/embed ["a"])"#), "GO");
+    assert_eq!(bare, vec![json!(["browser/embed", ["a"]])]);
+}

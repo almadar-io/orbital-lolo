@@ -290,10 +290,10 @@ impl ParseError {
                 Some("std imports use the flat canonical form `std/behaviors/<name>` — topic folders never appear in import paths".to_string()),
             ),
             ParseError::UnexpectedToken { expected, .. }
-                if expected.starts_with("`external` after `->` on a local listen") =>
+                if expected.starts_with("`external` or `inbound` after `->` on a local listen") =>
             (
                 Some("on a local `listens` entry `->` only declares an external input (`EVENT -> external { … }`); `-> internal` and other scopes belong to `emits`".to_string()),
-                Some("write `EVENT { … }` for a local payload, `EVENT -> external { … }` for an input clients may send, or move the event to `emits`".to_string()),
+                Some("write `EVENT { … }` for a local payload, `EVENT -> external { … }` for an input clients may send, `EVENT -> inbound \"name\" answers ANSWER { … }` for an inbound webhook, or move the event to `emits`".to_string()),
             ),
             // `payload: { … }` under an emits entry (run 33: ActivityHeatmap
             // — the listens brace-block shape guessed with a keyword; the old

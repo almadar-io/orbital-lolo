@@ -29,12 +29,24 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "theme",
     "locales",
     "egress",
+    "inbound",
+    "fs",
+    "exec",
+    "net",
+    "env",
+    "stdio",
+    "sys",
+    "desktop",
+    "deployment",
     "public",
     "origin",
     "icon",
     "siteName",
     "signIn",
 ];
+
+/// Keys of an `orbital Name [ … ]` modifier bracket.
+pub(crate) const ORBITAL_MODIFIERS: &[&str] = grants::GRANT_KEYS;
 
 /// Keys of a `page … [ … ]` modifier bracket.
 pub(crate) const PAGE_MODIFIERS: &[&str] = &[
@@ -63,6 +75,7 @@ pub(crate) const REMAP_PAGE_MODIFIERS: &[&str] = &[
 
 mod entity;
 mod expression;
+mod grants;
 pub(crate) mod jsx;
 mod orbital;
 mod page;
@@ -541,6 +554,9 @@ impl Parser {
                 theme: None,
                 locales: Vec::new(),
                 egress: Vec::new(),
+                inbound: Vec::new(),
+                os_grants: orbital_core_base::os_grants::OsGrants::default(),
+                deployment: Vec::new(),
                 public: None,
                 site: orbital_core_base::schema::SiteMeta::default(),
                 legacy_lines: false,
@@ -615,6 +631,9 @@ impl Parser {
         let mut theme = None;
         let mut locales = Vec::new();
         let mut egress = Vec::new();
+        let mut inbound = Vec::new();
+        let mut os_grants = orbital_core_base::os_grants::OsGrants::default();
+        let mut deployment = Vec::new();
         let mut public = None;
         let mut site = orbital_core_base::schema::SiteMeta::default();
         let mut legacy_lines = positional_version.is_some();
@@ -626,7 +645,12 @@ impl Parser {
                     "description" => description = Some(p.parse_option_string(key)?),
                     "theme" => theme = Some(p.parse_theme_value()?),
                     "locales" => locales = p.parse_locale_items()?,
-                    "egress" => egress = p.parse_egress_items()?,
+                    "egress" => egress = p.parse_string_items(key)?,
+                    "inbound" => inbound = p.parse_string_items(key)?,
+                    "deployment" => deployment = p.parse_deployment()?,
+                    grant if grants::GRANT_KEYS.contains(&grant) => {
+                        p.parse_grant_value(grant, &mut os_grants)?
+                    }
                     "public" => public = Some(p.parse_option_string(key)?),
                     "origin" => site.origin = Some(p.parse_option_string(key)?),
                     "icon" => site.icon = Some(p.parse_option_string(key)?),
@@ -694,6 +718,9 @@ impl Parser {
             theme,
             locales,
             egress,
+            inbound,
+            os_grants,
+            deployment,
             public,
             site,
             legacy_lines,
@@ -702,8 +729,8 @@ impl Parser {
         })
     }
 
-    /// `["https://a.test", …]` — the `egress` value.
-    fn parse_egress_items(&mut self) -> Result<Vec<String>, ParseError> {
+    /// `["a", "b", …]` — a list of strings (`egress`, `exec`, `env`).
+    pub(crate) fn parse_string_items(&mut self, key: &str) -> Result<Vec<String>, ParseError> {
         self.expect_kind(&TokenKind::LBracket, "[")?;
         let mut origins = Vec::new();
         loop {
@@ -712,7 +739,7 @@ impl Parser {
                 self.advance();
                 break;
             }
-            origins.push(self.parse_option_string("egress")?);
+            origins.push(self.parse_option_string(key)?);
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -939,6 +966,15 @@ impl Parser {
         self.expect_keyword("orbital")?;
         let name = self.expect_ident()?;
 
+        // Optional `[ fs: …, exec: … ]` grant bracket.
+        let mut os_grants = orbital_core_base::os_grants::OsGrants::default();
+        if matches!(self.peek(), TokenKind::LBracket) {
+            self.parse_modifier_bracket("orbital", ORBITAL_MODIFIERS, |p, key| {
+                p.expect_kind(&TokenKind::Colon, "':' after an orbital modifier")?;
+                p.parse_grant_value(key, &mut os_grants)
+            })?;
+        }
+
         // Optional `:: TypeName [args]` annotation applied to the orbital body.
         let type_annotation = self.try_parse_type_annotation()?;
 
@@ -947,7 +983,7 @@ impl Parser {
         // name/annotation disambiguates from the inline form, exactly as
         // `parse_trait` dispatches on `=` before falling into `->`.
         if matches!(self.peek(), TokenKind::Equals) {
-            return self.parse_orbital_reference(name, span, type_annotation);
+            return self.parse_orbital_reference(name, span, type_annotation, os_grants);
         }
 
         // Optional `{ ... }` brace form. The spec uses indentation, but we
@@ -1113,6 +1149,7 @@ impl Parser {
             entities_remap: Vec::new(),
             mounts: Vec::new(),
             config,
+            os_grants,
             extend_fields: Vec::new(),
             mock_overrides: Vec::new(),
             retype_fields: Vec::new(),

@@ -71,6 +71,12 @@ pub struct AppHeader {
     pub locales: Vec<String>,
     /// `egress: ["https://host", …]` — the origins `http` may reach.
     pub egress: Vec<String>,
+    /// `inbound: ["name", …]` — the hook names (`/api/hooks/<name>`) the program accepts.
+    pub inbound: Vec<String>,
+    /// `fs:` / `exec:` / `net:` / `env:` / `stdio:` / `sys:` / `desktop:` — the `os/` grants of every orbital.
+    pub os_grants: orbital_core_base::os_grants::OsGrants,
+    /// `deployment: { unit: [Orbital, …] }`, units in source order.
+    pub deployment: Vec<(String, Vec<String>)>,
     /// `public: "./public"` — a folder copied verbatim to the built site's root.
     pub public: Option<String>,
     /// `origin:` / `icon:` / `siteName:` / `signIn:` site modifiers.
@@ -489,6 +495,8 @@ pub struct Orbital {
     /// Orbital-import `listens { Source.EVENT -> Target.TRIGGER }` — routes
     /// into the imported set; each carries its `target_trait`.
     pub import_listens: Vec<Listen>,
+    /// `orbital Name [ fs: …, exec: … ]` — this orbital's own `os/` grants.
+    pub os_grants: orbital_core_base::os_grants::OsGrants,
     pub span: Span,
 }
 
@@ -1197,7 +1205,25 @@ pub struct Listen {
     /// `EVENT -> external { … }`: a declared external input, an event a client
     /// outside the program may send this trait.
     pub external: bool,
+    /// `EVENT -> inbound "name" answers ANSWER { … }`: the hook delivered to this event and the event that answers it.
+    pub inbound: Option<InboundListen>,
     pub span: Span,
+}
+
+/// The `inbound "name" answers ANSWER` part of a local listen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InboundListen {
+    pub name: String,
+    pub answers: String,
+    /// `verifies "<header>" "<CREDENTIAL>"`: the kernel compares the header with the named credential.
+    pub verifies: Option<InboundVerifies>,
+}
+
+/// The `verifies "<header>" "<CREDENTIAL>"` part of an inbound listen.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct InboundVerifies {
+    pub header: String,
+    pub credential: String,
 }
 
 /// One entry in a `ticks { }` block.

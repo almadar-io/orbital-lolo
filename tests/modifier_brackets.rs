@@ -346,3 +346,105 @@ fn a_version_both_positional_and_in_the_bracket_is_rejected() {
     let err = parse_and_lower_str(&program("app std-home \"1.0.0\" [version: \"2.0.0\"]\n")).unwrap_err();
     assert!(err.to_string().contains("ORB_L_OPTION_DUPLICATE"), "{err}");
 }
+
+const GRANTS_PROGRAM: &str = r#"app Shop [
+  version: "1.0.0",
+  egress: ["https://api.example.org"],
+  fs: { "/data/**": [read] },
+  stdio: [out],
+  deployment: { api: [Orders, Billing], web: [Storefront] }
+]
+
+orbital Orders [
+  fs: { "/data/orders/**": [read, write, create] },
+  exec: ["git"],
+  net: { "db.internal:5432": [tcp], "0.0.0.0:8080": [listen] },
+  env: ["HOME"],
+  stdio: [out, err],
+  sys: [memory, power-state],
+  desktop: [notify]
+] {
+  entity Order [runtime] {
+    id : string!
+  }
+}
+
+orbital Billing {
+  entity Bill [runtime] {
+    id : string!
+  }
+}
+
+orbital Storefront {
+  entity Item [runtime] {
+    id : string!
+  }
+}
+"#;
+
+fn grants_error(source: &str) -> String {
+    parse_and_lower_str(source).expect_err("must not lower").to_string()
+}
+
+#[test]
+fn app_and_orbital_grants_lower_beside_egress_and_absent_stays_none() {
+    use orbital_core_base::os_grants::{DesktopKind, FsMode, NetKind, StdioKind, SysKind};
+    let schema = parse_and_lower_str(GRANTS_PROGRAM).expect("lower");
+    let app = schema.os_grants.as_ref().expect("app-level grants");
+    assert!(app.fs_allows(std::path::Path::new("/data/a"), FsMode::Read));
+    assert!(app.stdio_allows(StdioKind::Out) && !app.stdio_allows(StdioKind::Err));
+    let units = schema.deployment.as_ref().expect("deployment");
+    assert_eq!(units["api"], ["Orders", "Billing"]);
+    assert_eq!(units["web"], ["Storefront"]);
+    assert_eq!(schema.egress.as_deref(), Some(&["https://api.example.org".to_string()][..]));
+
+    let orders = schema.orbitals[0].os_grants.as_ref().expect("orbital grants");
+    assert!(orders.fs_allows(std::path::Path::new("/data/orders/x"), FsMode::Create));
+    assert!(!orders.fs_allows(std::path::Path::new("/data/x"), FsMode::Read), "the app level is not folded in");
+    assert!(orders.exec_allows("git") && orders.env_allows("HOME"));
+    assert!(orders.net_allows("db.internal", 5432, NetKind::Tcp));
+    assert!(orders.net_allows("0.0.0.0", 8080, NetKind::Listen));
+    assert!(orders.sys_allows(SysKind::PowerState) && orders.desktop_allows(DesktopKind::Notify));
+    assert!(schema.orbitals[1].os_grants.is_none());
+
+    let plain = parse_and_lower_str(&GRANTS_PROGRAM.replace("fs: { \"/data/**\": [read] },\n  stdio: [out],\n  deployment: { api: [Orders, Billing], web: [Storefront] }", "")).expect("lower");
+    assert!(plain.os_grants.is_none() && plain.deployment.is_none());
+}
+
+#[test]
+fn grants_survive_format_and_unlower() {
+    let schema = parse_and_lower_str(GRANTS_PROGRAM).expect("lower");
+    let formatted = format_program(&parse_str(GRANTS_PROGRAM).expect("parse"));
+    for needle in ["fs: { \"/data/**\": [read] }", "deployment: { api: [Orders, Billing], web: [Storefront] }", "exec: [\"git\"]", "sys: [memory, power-state]"] {
+        assert!(formatted.contains(needle), "{needle}\n{formatted}");
+    }
+    let again = parse_and_lower_str(&formatted).expect("reparse");
+    assert_eq!(again.os_grants, schema.os_grants);
+    assert_eq!(again.deployment, schema.deployment);
+    assert_eq!(again.orbitals[0].os_grants, schema.orbitals[0].os_grants);
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    let back = parse_and_lower_str(&text).expect("lower the unlowered text");
+    assert_eq!(back.os_grants, schema.os_grants);
+    assert_eq!(back.deployment, schema.deployment);
+    assert_eq!(back.orbitals[0].os_grants, schema.orbitals[0].os_grants);
+}
+
+#[test]
+fn a_grant_word_outside_the_closed_set_is_an_invalid_entry() {
+    let err = grants_error(&GRANTS_PROGRAM.replace("[read, write, create]", "[read, wrte]"));
+    assert!(err.contains("ORB_OS_GRANT_ENTRY_INVALID"), "{err}");
+    let err = grants_error(&GRANTS_PROGRAM.replace("sys: [memory, power-state]", "sys: [gpu]"));
+    assert!(err.contains("ORB_OS_GRANT_ENTRY_INVALID"), "{err}");
+}
+
+#[test]
+fn grant_brackets_reject_unknown_and_repeated_keys_like_the_app_bracket() {
+    let err = grants_error(&GRANTS_PROGRAM.replace("exec: [\"git\"],", "exec: [\"git\"], execs: [\"x\"],"));
+    assert!(err.contains("ORB_L_OPTION_UNKNOWN"), "{err}");
+    let err = grants_error(&GRANTS_PROGRAM.replace("exec: [\"git\"],", "exec: [\"git\"], exec: [\"ls\"],"));
+    assert!(err.contains("ORB_L_OPTION_DUPLICATE"), "{err}");
+    let err = grants_error(&GRANTS_PROGRAM.replace("stdio: [out],", "stdio: [out], stdio: [err],"));
+    assert!(err.contains("ORB_L_OPTION_DUPLICATE"), "{err}");
+    let err = grants_error(&GRANTS_PROGRAM.replace("web: [Storefront]", "api: [Storefront]"));
+    assert!(err.contains("ORB_L_OPTION_DUPLICATE"), "{err}");
+}

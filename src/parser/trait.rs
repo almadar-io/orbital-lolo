@@ -1245,6 +1245,7 @@ impl Parser {
                     tier,
                     target_trait: None,
                     external: false,
+                    inbound: None,
                     span,
                 })
             }
@@ -1258,18 +1259,71 @@ impl Parser {
                     .canon_keyword(&word)
                     .map(str::to_string)
                     .unwrap_or(word);
-                if word != "external" {
+                if word != "external" && word != "inbound" {
                     return Err(ParseError::UnexpectedToken {
                         expected:
-                            "`external` after `->` on a local listen (`EVENT -> external { … }`)"
+                            "`external` or `inbound` after `->` on a local listen (`EVENT -> external { … }`, `EVENT -> inbound \"name\" answers ANSWER { … }`)"
                                 .to_string(),
                         got: word,
                         span: self.peek_span(),
                     });
                 }
+                let inbound = if word == "inbound" {
+                    let name = match self.peek().clone() {
+                        TokenKind::String(name) => {
+                            self.advance();
+                            name
+                        }
+                        other => {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: "a hook name string after `-> inbound`".to_string(),
+                                got: format!("{other:?}"),
+                                span: self.peek_span(),
+                            })
+                        }
+                    };
+                    let answers_word = self.expect_ident()?;
+                    let answers_word = self
+                        .lang
+                        .canon_keyword(&answers_word)
+                        .map(str::to_string)
+                        .unwrap_or(answers_word);
+                    if answers_word != "answers" {
+                        return Err(ParseError::UnexpectedToken {
+                            expected: "`answers EVENT` after the hook name of `-> inbound`"
+                                .to_string(),
+                            got: answers_word,
+                            span: self.peek_span(),
+                        });
+                    }
+                    let answers = self.expect_ident()?;
+                    let answers = self.canon_event_name(answers);
+                    let verifies = if matches!(self.peek(), TokenKind::Identifier(w) if self.lang.canon_keyword(w).unwrap_or(w.as_str()) == "verifies") {
+                        self.advance();
+                        let mut take = |what: &str| match self.peek().clone() {
+                            TokenKind::String(value) => {
+                                self.advance();
+                                Ok(value)
+                            }
+                            other => Err(ParseError::UnexpectedToken {
+                                expected: format!("{what} string after `verifies`"),
+                                got: format!("{other:?}"),
+                                span: self.peek_span(),
+                            }),
+                        };
+                        let header = take("a header name")?;
+                        let credential = take("a credential name")?;
+                        Some(InboundVerifies { header, credential })
+                    } else {
+                        None
+                    };
+                    Some(InboundListen { name, answers, verifies })
+                } else {
+                    None
+                };
                 if !matches!(self.peek(), TokenKind::LBrace) {
                     return Err(ParseError::UnexpectedToken {
-                        expected: "a payload `{ … }` after `-> external` (write `{}` for none)"
+                        expected: "a payload `{ … }` after `-> external` / `-> inbound` (write `{}` for none)"
                             .to_string(),
                         got: format!("{:?}", self.peek()),
                         span: self.peek_span(),
@@ -1290,7 +1344,8 @@ impl Parser {
                     synonyms,
                     tier,
                     target_trait: None,
-                    external: true,
+                    external: inbound.is_none(),
+                    inbound,
                     span,
                 })
             }
@@ -1311,6 +1366,7 @@ impl Parser {
                     tier,
                     target_trait: None,
                     external: false,
+                    inbound: None,
                     span,
                 })
             }
@@ -1414,6 +1470,7 @@ impl Parser {
                     tier: None,
                     target_trait,
                     external: false,
+                    inbound: None,
                     span,
                 })
             }

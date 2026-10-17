@@ -347,6 +347,7 @@ pub(crate) fn lower_orbital_reference(
         // of THAT surface.
         config: None,
         domain_context: None,
+        os_grants: (!orb.os_grants.is_empty()).then(|| orb.os_grants.clone()),
         design: None,
         types: None,
     })

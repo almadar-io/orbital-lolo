@@ -746,6 +746,25 @@ pub(crate) fn lower_trait(
         .filter(|l| l.external)
         .map(|l| l.event.clone())
         .collect();
+    let inbound_handlers: HashMap<String, InboundDeclaration> = t
+        .listens
+        .iter()
+        .filter_map(|l| {
+            l.inbound.as_ref().map(|i| {
+                (
+                    l.event.clone(),
+                    InboundDeclaration {
+                        name: i.name.clone(),
+                        answers: i.answers.clone(),
+                        verifies: i.verifies.as_ref().map(|v| InboundVerification {
+                            header: v.header.clone(),
+                            credential: v.credential.clone(),
+                        }),
+                    },
+                )
+            })
+        })
+        .collect();
     let declared_inputs: HashSet<String> = t
         .listens
         .iter()
@@ -762,6 +781,7 @@ pub(crate) fn lower_trait(
                 .map(|k| -> Result<EventDefinition, LowerError> {
                     let is_external = external_inputs.contains(&k);
                     let is_listened = declared_inputs.contains(&k);
+                    let inbound = inbound_handlers.get(&k).cloned();
                     let name = humanize_event_key(&k, entity_hint);
                     let (description, synonyms, tier) = event_annotations
                         .get(&k)
@@ -854,6 +874,7 @@ pub(crate) fn lower_trait(
                         payload_entity,
                         external: is_external.then_some(true),
                         listened: is_listened.then_some(true),
+                        inbound,
                     })
                 })
                 .collect::<Result<Vec<_>, _>>()?,

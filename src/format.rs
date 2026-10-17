@@ -5,6 +5,7 @@
 //! lexer captures them as trivia and the formatter re-interleaves them by source
 //! line before the node that follows them (re-indented to the output).
 
+use orbital_core_base::os_grants::{DesktopKind, FsMode, NetKind, OsGrants, StdioKind, SysKind};
 use orbital_core_base::schema::SExpression;
 use std::collections::HashMap;
 
@@ -323,6 +324,40 @@ impl Formatter {
                 }),
             ));
         }
+        if !app.inbound.is_empty() {
+            entries.push((
+                "inbound",
+                Box::new(move |f: &mut Self| {
+                    f.output.push('[');
+                    for (i, name) in app.inbound.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(name);
+                    }
+                    f.output.push(']');
+                }),
+            ));
+        }
+        entries.extend(Self::grant_entries(&app.os_grants));
+        if !app.deployment.is_empty() {
+            entries.push((
+                "deployment",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str("{ ");
+                    for (i, (unit, orbitals)) in app.deployment.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.output.push_str(unit);
+                        f.output.push_str(": [");
+                        f.output.push_str(&orbitals.join(", "));
+                        f.output.push(']');
+                    }
+                    f.output.push_str(" }");
+                }),
+            ));
+        }
         if let Some(public) = &app.public {
             entries.push((
                 "public",
@@ -355,6 +390,92 @@ impl Formatter {
             self.write_indent();
             self.output.push('}');
         }
+    }
+
+    /// The `fs` … `desktop` entries of a grant set, in the contract's order; an empty family writes nothing.
+    fn grant_entries(grants: &OsGrants) -> Vec<ModifierEntry<'_>> {
+        fn names<T: Copy>(kinds: &[T], name: fn(T) -> &'static str) -> String {
+            kinds.iter().map(|k| name(*k)).collect::<Vec<_>>().join(", ")
+        }
+        fn strings(f: &mut Formatter, items: &[String]) {
+            f.output.push('[');
+            for (i, item) in items.iter().enumerate() {
+                if i > 0 {
+                    f.output.push_str(", ");
+                }
+                f.write_quoted_string(item);
+            }
+            f.output.push(']');
+        }
+        let mut entries: Vec<ModifierEntry<'_>> = Vec::new();
+        if !grants.fs.is_empty() {
+            entries.push((
+                "fs",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str("{ ");
+                    for (i, g) in grants.fs.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(&g.glob);
+                        f.output.push_str(": [");
+                        f.output.push_str(&names(&g.modes, FsMode::name));
+                        f.output.push(']');
+                    }
+                    f.output.push_str(" }");
+                }),
+            ));
+        }
+        if !grants.exec.is_empty() {
+            entries.push(("exec", Box::new(move |f: &mut Self| strings(f, &grants.exec))));
+        }
+        if !grants.net.is_empty() {
+            entries.push((
+                "net",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str("{ ");
+                    for (i, g) in grants.net.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(&g.target);
+                        f.output.push_str(": [");
+                        f.output.push_str(&names(&g.kinds, NetKind::name));
+                        f.output.push(']');
+                    }
+                    f.output.push_str(" }");
+                }),
+            ));
+        }
+        if !grants.env.is_empty() {
+            entries.push(("env", Box::new(move |f: &mut Self| strings(f, &grants.env))));
+        }
+        if !grants.stdio.is_empty() {
+            entries.push((
+                "stdio",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str(&format!("[{}]", names(&grants.stdio, StdioKind::name)))
+                }),
+            ));
+        }
+        if !grants.sys.is_empty() {
+            entries.push((
+                "sys",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str(&format!("[{}]", names(&grants.sys, SysKind::name)))
+                }),
+            ));
+        }
+        if !grants.desktop.is_empty() {
+            entries.push((
+                "desktop",
+                Box::new(move |f: &mut Self| {
+                    f.output
+                        .push_str(&format!("[{}]", names(&grants.desktop, DesktopKind::name)))
+                }),
+            ));
+        }
+        entries
     }
 
     fn fmt_theme_decl(&mut self, decl: &ThemeDecl) {
@@ -904,6 +1025,7 @@ impl Formatter {
         self.write_indent();
         self.output.push_str("orbital ");
         self.output.push_str(&orbital.name);
+        self.fmt_modifier_bracket(Self::grant_entries(&orbital.os_grants));
         if let Some(ann) = &orbital.type_annotation {
             self.output.push(' ');
             self.fmt_type_annotation(ann);
@@ -2073,7 +2195,20 @@ impl Formatter {
             self.write_indent();
             self.output.push('}');
         }
-        if listen.external && listen.triggers.is_none() {
+        if let (Some(inbound), None) = (&listen.inbound, &listen.triggers) {
+            self.output.push_str(" -> inbound ");
+            self.write_quoted_string(&inbound.name);
+            self.output.push_str(" answers ");
+            self.output.push_str(&inbound.answers);
+            if let Some(v) = &inbound.verifies {
+                self.output.push_str(" verifies ");
+                self.write_quoted_string(&v.header);
+                self.output.push(' ');
+                self.write_quoted_string(&v.credential);
+            }
+            self.output.push(' ');
+            self.fmt_event_payload(&listen.payload);
+        } else if listen.external && listen.triggers.is_none() {
             self.output.push_str(" -> external ");
             self.fmt_event_payload(&listen.payload);
         } else if !listen.payload.is_empty() && listen.triggers.is_none() {

@@ -13,7 +13,7 @@ use orbital_core_base::behavior_packages::BehaviorPackage;
 use orbital_core_base::effect_row::{EffectRow, EffectRowBuilder, EffectSite};
 use orbital_core_base::schema::{
     Cardinality, ConfigField as SchemaConfigField, EmitDefinition, EntityDefinition,
-    EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration,
+    EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration, InboundDeclaration, InboundVerification,
     FieldDefinition, FieldType, ListenDefinition, ListenSource, Orbital as CoreOrbital,
     OrbitalRefObject, OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
     Persistence as CorePersistence, RelationDefinition, SExpression, StateDefinition, StateMachine,
@@ -359,8 +359,11 @@ fn lower_to_orb_names_only(
         theme_definitions: None,
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
         egress: (!ast.app.egress.is_empty()).then(|| ast.app.egress.clone()),
+        inbound: (!ast.app.inbound.is_empty()).then(|| ast.app.inbound.clone()),
         public_dir: ast.app.public.clone(),
-        os_grants: None,
+        os_grants: (!ast.app.os_grants.is_empty()).then(|| ast.app.os_grants.clone()),
+        deployment: (!ast.app.deployment.is_empty())
+            .then(|| ast.app.deployment.iter().cloned().collect()),
         site: (!ast.app.site.is_empty()).then(|| ast.app.site.clone()),
         lazy_pages: None,
         name: if ast.app.name.is_empty() {
@@ -914,6 +917,7 @@ fn lower_orbital(
                     payload_entity: None,
                     external: None,
                     listened: None,
+                    inbound: None,
                 }]),
                 transitions: vec![TransitionDefinition {
                     from: StringOrArray::Single("init".to_string()),
@@ -1032,6 +1036,7 @@ fn lower_orbital(
         listens: None,
         exposes: None,
         domain_context: None,
+        os_grants: (!orb.os_grants.is_empty()).then(|| orb.os_grants.clone()),
         design: None,
         id: None,
         types,

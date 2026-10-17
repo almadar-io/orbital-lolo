@@ -3,7 +3,7 @@
 use super::types::{config_fields, event_fields};
 use super::UnlowerError;
 use crate::ast::{
-    Emit, Listen, Span, State, Tick, TickInterval, Trait, TraitRefData, TraitScope, TraitTypeParam,
+    Emit, InboundListen, InboundVerifies, Listen, Span, State, Tick, TickInterval, Trait, TraitRefData, TraitScope, TraitTypeParam,
     Transition, TypeAnnotation, TypeExpr,
 };
 use orbital_core_base::schema::{
@@ -71,6 +71,7 @@ pub(super) fn cross_listen(l: &ListenDefinition) -> Listen {
         tier: l.tier.clone(),
         target_trait: None,
         external: false,
+        inbound: None,
         span: Span::dummy(),
     }
 }
@@ -394,6 +395,7 @@ pub(super) fn trait_definition(
             && ev.payload_entity == emit.and_then(|e| e.payload_entity.clone());
         if ev.external == Some(true)
             || ev.listened == Some(true)
+            || ev.inbound.is_some()
             || sole_source
             || (payload_differs && !aliased)
             || annotations_differ
@@ -413,6 +415,17 @@ pub(super) fn trait_definition(
                 tier: ev.tier.clone(),
                 target_trait: None,
                 external: ev.external == Some(true),
+                inbound: ev
+                    .inbound
+                    .as_ref()
+                    .map(|i| InboundListen {
+                        name: i.name.clone(),
+                        answers: i.answers.clone(),
+                        verifies: i.verifies.as_ref().map(|v| InboundVerifies {
+                            header: v.header.clone(),
+                            credential: v.credential.clone(),
+                        }),
+                    }),
                 span: Span::dummy(),
             });
         }

@@ -1443,7 +1443,7 @@ mod recursive_struct_payload_tests {
     }
     /// §81(a): a DIRECT (non-collection) self-referential struct alias
     /// reached through an entity field, itself reached through an event
-    /// payload — `std-service-llm`'s minimal repro (`entity ServiceLlm {
+    /// payload — the minimal repro (`entity ServiceLlm {
     /// schema : ServiceLlmSchema }`, `ServiceLlmSchema { additionalProperties
     /// : ServiceLlmSchema, items : ServiceLlmSchema }`, `Loaded { data :
     /// [ServiceLlm] }`).
