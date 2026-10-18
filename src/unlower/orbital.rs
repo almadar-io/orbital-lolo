@@ -183,6 +183,7 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
             update_policy,
             delete_policy,
             access_waivers,
+            invariants,
             ..
         } => ExpectsKind::Entity {
             name: name.clone(),
@@ -200,6 +201,7 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
                 delete_policy: delete_policy.clone(),
                 access_waivers: waiver_pairs(access_waivers.as_ref()),
             },
+            invariants: invariants.clone().unwrap_or_default(),
         },
         ExpectDeclaration::Event {
             trait_name,
@@ -220,10 +222,11 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
             traits: traits.clone().unwrap_or_default(),
         },
         ExpectDeclaration::State {
-            trait_name, state, ..
+            trait_name, state, holds, ..
         } => ExpectsKind::State {
             trait_name: trait_name.clone(),
             state: state.clone(),
+            holds: holds.clone(),
         },
         ExpectDeclaration::Transition {
             trait_name,

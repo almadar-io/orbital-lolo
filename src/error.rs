@@ -490,6 +490,11 @@ pub enum LowerError {
     #[error("invalid persistence {value:?}")]
     InvalidPersistence { value: String },
 
+    /// `@invariant` / `@holds` in an orbital that is not a spec: an in-body `expects` is a deferred promise, never
+    /// a proof obligation.
+    #[error("ELOLO_INVARIANT_SPEC_ONLY: {what} is a spec obligation — state it in a spec orbital (only `expects` lines), which the program binds with `uses`")]
+    PropositionOutsideSpec { what: String },
+
     #[error("invalid trait category {value:?}")]
     InvalidCategory { value: String },
 

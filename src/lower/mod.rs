@@ -695,6 +695,7 @@ pub(crate) fn lower_expects_decl(
             shared,
             local,
             access,
+            invariants,
         } => ExpectDeclaration::Entity {
             name: name.clone(),
             shape: lower_shape(shape)?,
@@ -709,6 +710,14 @@ pub(crate) fn lower_expects_decl(
             update_policy: access.update_policy.clone(),
             delete_policy: access.delete_policy.clone(),
             access_waivers: entity::access_waivers_of(&access.access_waivers),
+            invariants: match (invariants.is_empty(), strict) {
+                (true, _) => None,
+                (false, true) => Some(invariants.clone()),
+                (false, false) => {
+                    return Err(LowerError::PropositionOutsideSpec { what: format!("`@invariant` on `expects entity {name}`") }
+                        .located(decl.span))
+                }
+            },
             strict,
         },
         // Trait and event names pass through verbatim — no case-folding.
@@ -746,11 +755,18 @@ pub(crate) fn lower_expects_decl(
             traits: (!traits.is_empty()).then(|| traits.clone()),
             strict,
         },
-        ExpectsKind::State { trait_name, state } => ExpectDeclaration::State {
-            trait_name: trait_name.clone(),
-            state: state.clone(),
-            strict,
-        },
+        ExpectsKind::State { trait_name, state, holds } => {
+            if holds.is_some() && !strict {
+                return Err(LowerError::PropositionOutsideSpec { what: format!("`@holds` on `expects trait {trait_name}` state `{state}`") }
+                    .located(decl.span));
+            }
+            ExpectDeclaration::State {
+                trait_name: trait_name.clone(),
+                state: state.clone(),
+                holds: holds.clone(),
+                strict,
+            }
+        }
         ExpectsKind::Transition {
             trait_name,
             from,

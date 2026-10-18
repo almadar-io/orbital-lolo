@@ -376,3 +376,45 @@ fn a_spec_with_storage_access_pages_and_edges_round_trips() {
     let source = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  expects page \"/orders\" -> Checkout, Receipt\n  expects trait Checkout { state idle { PAY -> paid } }\n  expects trait Checkout { state refunded }\n}\n";
     round_trip(source, &options).unwrap();
 }
+
+const PROPOSITION_SPEC: &str = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order [persistent] {\n    total : number\n    paid : number\n    @invariant (>= @entity.total 0)\n    @invariant (<= @entity.paid @entity.total)\n  }\n  expects trait Checkout { state paid @holds (= @entity.status \"paid\") }\n}\n";
+
+#[test]
+fn spec_invariants_and_holds_lower_into_the_ir_and_round_trip() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let schema = parse_and_lower_str_with(PROPOSITION_SPEC, &options).unwrap();
+    let json = serde_json::to_value(&schema).unwrap();
+    let expects = &json["orbitals"][0]["expects"];
+    let order = expects.as_array().unwrap().iter().find(|e| e["kind"] == "entity").unwrap();
+    assert_eq!(order["invariants"].as_array().map(Vec::len), Some(2), "{order}");
+    let paid = expects.as_array().unwrap().iter().find(|e| e["kind"] == "state").unwrap();
+    assert_eq!(paid["holds"], serde_json::json!(["=", "@entity.status", "paid"]), "{paid}");
+    round_trip(PROPOSITION_SPEC, &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert!(printed.contains("@invariant (<= @entity.paid @entity.total)"), "{printed}");
+    assert!(printed.contains("state paid @holds"), "{printed}");
+}
+
+#[test]
+fn a_spec_without_propositions_carries_no_invariant_fields() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let json = serde_json::to_string(&parse_and_lower_str_with(SPEC_PROGRAM, &options).unwrap()).unwrap();
+    assert!(!json.contains("invariants") && !json.contains("holds"), "{json}");
+}
+
+#[test]
+fn propositions_outside_a_spec_are_refused() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let in_body = "app shop \"1.0.0\"\n\norbital Shop {\n  entity Cart [runtime] { id : string }\n  expects entity Order { total : number\n    @invariant (>= @entity.total 0)\n  }\n  trait CartView -> Cart [interaction] {\n    state idle {\n      INIT -> idle\n    }\n  }\n  page \"/cart\" -> CartView\n}\n";
+    let err = parse_and_lower_str_with(in_body, &options).unwrap_err().to_string();
+    assert!(err.contains("ELOLO_INVARIANT_SPEC_ONLY"), "{err}");
+    let on_entity = "app shop \"1.0.0\"\n\norbital Shop {\n  entity Order [runtime] {\n    total : number\n    @invariant (>= @entity.total 0)\n  }\n}\n";
+    let err = parse_and_lower_str_with(on_entity, &options).unwrap_err().to_string();
+    assert!(err.contains("ELOLO_INVARIANT_SPEC_ONLY"), "{err}");
+}

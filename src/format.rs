@@ -1591,7 +1591,7 @@ impl Formatter {
                     self.output.push(' ');
                 }
                 self.output.push_str("[identity]");
-                self.fmt_expects_shape(shape, &ExpectedAccess::default());
+                self.fmt_expects_shape(shape, &ExpectedAccess::default(), &[]);
             }
             ExpectsKind::Entity {
                 name,
@@ -1600,6 +1600,7 @@ impl Formatter {
                 shared,
                 local,
                 access,
+                invariants,
             } => {
                 self.output.push_str("entity ");
                 self.output.push_str(name);
@@ -1620,7 +1621,7 @@ impl Formatter {
                     self.output.push_str(&tags.join(", "));
                     self.output.push(']');
                 }
-                self.fmt_expects_shape(shape, access);
+                self.fmt_expects_shape(shape, access, invariants);
             }
             ExpectsKind::Event {
                 trait_name,
@@ -1646,8 +1647,13 @@ impl Formatter {
                     self.output.push_str(&traits.join(", "));
                 }
             }
-            ExpectsKind::State { trait_name, state } => {
+            ExpectsKind::State { trait_name, state, holds: None } => {
                 self.output.push_str(&format!("trait {trait_name} {{ state {state} }}"));
+            }
+            ExpectsKind::State { trait_name, state, holds: Some(holds) } => {
+                self.output.push_str(&format!("trait {trait_name} {{ state {state} @holds "));
+                self.fmt_sexpr(holds);
+                self.output.push_str(" }");
             }
             ExpectsKind::Transition {
                 trait_name,
@@ -1661,8 +1667,8 @@ impl Formatter {
         }
     }
 
-    fn fmt_expects_shape(&mut self, shape: &Option<Vec<EntityField>>, access: &ExpectedAccess) {
-        if shape.is_none() && !access.has_any() {
+    fn fmt_expects_shape(&mut self, shape: &Option<Vec<EntityField>>, access: &ExpectedAccess, invariants: &[SExpression]) {
+        if shape.is_none() && !access.has_any() && invariants.is_empty() {
             return;
         }
         self.output.push_str(" {");
@@ -1678,6 +1684,12 @@ impl Formatter {
         for field in shape.iter().flatten() {
             self.write_indent();
             self.fmt_entity_field(field);
+            self.write_newline();
+        }
+        for invariant in invariants {
+            self.write_indent();
+            self.output.push_str("@invariant ");
+            self.fmt_sexpr(invariant);
             self.write_newline();
         }
         self.dedent();

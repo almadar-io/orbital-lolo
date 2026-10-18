@@ -87,6 +87,12 @@ impl Parser {
                 self.parse_access_directive(&name, &mut access)?;
                 continue;
             }
+            if matches!(self.peek(), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "invariant") {
+                return Err(ParseError::InvalidType {
+                    span: self.peek_span(),
+                    message: "ELOLO_INVARIANT_SPEC_ONLY: `@invariant` is a spec obligation — state it in a spec orbital's `expects entity` shape, which the program binds with `uses`".to_string(),
+                });
+            }
             if self.is_entity_field_start() {
                 fields.push(self.parse_field_decl()?);
             } else {

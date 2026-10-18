@@ -164,7 +164,9 @@ const CAPABILITIES: &[&str] = &[
 /// `@synonyms`, `@read`/`@create`/`@update`/`@delete`), `parser/trait.rs`
 /// (`@rebindable`, `@description`/`@synonyms` binding annotations,
 /// `@label`/`@description`/`@synonyms`/`@tier` config annotations), and
-/// `parser/page.rs` (`@label`). NOTE (discrepancy, reported — see the
+/// `parser/page.rs` (`@label`), and the spec propositions `@invariant` (an
+/// `expects entity` shape) and `@holds` (an `expects trait` state) at
+/// `parser/mod.rs`. NOTE (discrepancy, reported — see the
 /// program report): `parser/page.rs` also accepts `@icon` at the same
 /// call site as `@label`, but `icon` is not a B1 annotations-section
 /// word; listed here anyway since this table must stay faithful to the
@@ -185,6 +187,8 @@ const ANNOTATIONS: &[&str] = &[
     "delete",
     "icon",
     "roles",
+    "invariant",
+    "holds",
 ];
 
 /// `entity payload state now config user trait event prevEvents prevStates

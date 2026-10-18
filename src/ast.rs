@@ -586,6 +586,8 @@ pub enum ExpectsKind {
         shared: bool,
         local: bool,
         access: ExpectedAccess,
+        /// `@invariant <expr>` lines (spec only): propositions every stored row satisfies.
+        invariants: Vec<SExpression>,
     },
     /// `expects trait Trait { emits { EVENT } }` — one per emitted event; names pass through verbatim.
     Event {
@@ -597,8 +599,9 @@ pub enum ExpectsKind {
     /// and this one navigates to. The provider's PATTERN, which a navigate
     /// effect's static prefix cannot supply.
     Page { path: String, traits: Vec<String> },
-    /// `expects trait T { state paid }` — the provider trait declares this state.
-    State { trait_name: String, state: String },
+    /// `expects trait T { state paid }` — the provider trait declares this state; `state paid @holds <expr>` (spec
+    /// only) adds a proposition over `@entity` that holds while the trait is in it.
+    State { trait_name: String, state: String, holds: Option<SExpression> },
     /// `expects trait T { state idle { PAY -> paid } }` — the provider trait has this transition.
     Transition {
         trait_name: String,

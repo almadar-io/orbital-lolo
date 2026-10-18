@@ -1507,12 +1507,12 @@ impl Parser {
             } else {
                 ExpectedTags::default()
             };
-            let (shape, access) = self.parse_expects_shape()?;
+            let (shape, access, invariants) = self.parse_expects_shape()?;
             if tags.identity {
-                if access.has_any() {
+                if access.has_any() || !invariants.is_empty() {
                     return Err(ParseError::InvalidType {
                         span,
-                        message: "an `expects entity [identity]` states the roster's shape only — access directives belong to the provider".to_string(),
+                        message: "an `expects entity [identity]` states the roster's shape only — access directives and invariants belong to a stored entity".to_string(),
                     });
                 }
                 vec![ExpectsKind::Identity { name, shape }]
@@ -1532,6 +1532,7 @@ impl Parser {
                     shared: tags.shared,
                     local: tags.local,
                     access,
+                    invariants,
                 }]
             }
         } else if self.check_ident("trait") {
@@ -1628,7 +1629,8 @@ impl Parser {
     }
 
     /// The body of `expects trait T { … }`: the real trait syntax with every body left off: `emits { E { fields } }`,
-    /// `state NAME` and `state NAME { EVENT -> target }` (no guard, no effects).
+    /// `state NAME` and `state NAME { EVENT -> target }` (no guard, no effects), and the spec proposition
+    /// `state NAME @holds <expr>`.
     fn parse_expects_trait_body(&mut self, trait_name: &str) -> Result<Vec<ExpectsKind>, ParseError> {
         let open = self.peek_span();
         self.expect_kind(&TokenKind::LBrace, "{")?;
@@ -1647,6 +1649,18 @@ impl Parser {
                         payload,
                     });
                 }
+            } else if self.check_ident("state")
+                && matches!(self.peek_n(2), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "holds")
+            {
+                self.advance();
+                let state = self.expect_ident()?;
+                self.advance();
+                let holds = self.parse_sexpr_or_value()?;
+                out.push(ExpectsKind::State {
+                    trait_name: trait_name.to_string(),
+                    state,
+                    holds: Some(holds),
+                });
             } else if self.check_ident("state") {
                 let state = self.parse_state()?;
                 let at = state.span;
@@ -1660,6 +1674,7 @@ impl Parser {
                     out.push(ExpectsKind::State {
                         trait_name: trait_name.to_string(),
                         state: state.name.clone(),
+                        holds: None,
                     });
                 }
                 for t in state.transitions {
@@ -1728,11 +1743,13 @@ impl Parser {
     }
 
     /// Optional `{ field_decl+ }` after an `expects entity` header — the §6 entity field-declaration grammar,
-    /// verbatim, plus the entity's own `@read|@create|@update|@delete` directives.
-    fn parse_expects_shape(&mut self) -> Result<(Option<Vec<EntityField>>, ExpectedAccess), ParseError> {
+    /// verbatim, plus the entity's own `@read|@create|@update|@delete` directives and `@invariant <expr>` lines.
+    #[allow(clippy::type_complexity)]
+    fn parse_expects_shape(&mut self) -> Result<(Option<Vec<EntityField>>, ExpectedAccess, Vec<SExpression>), ParseError> {
         let mut access = ExpectedAccess::default();
+        let mut invariants = Vec::new();
         if !matches!(self.peek(), TokenKind::LBrace) {
-            return Ok((None, access));
+            return Ok((None, access, invariants));
         }
         let shape_span = self.peek_span();
         self.advance();
@@ -1751,6 +1768,10 @@ impl Parser {
             }
             if let Some(name) = self.at_access_directive() {
                 self.parse_access_directive(&name, &mut access)?;
+            } else if matches!(self.peek(), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "invariant") {
+                self.advance();
+                invariants.push(self.parse_sexpr_or_value()?);
+                self.expect_newline_or_eof()?;
             } else if self.is_entity_field_start() {
                 fields.push(self.parse_field_decl()?);
             } else {
@@ -1761,7 +1782,7 @@ impl Parser {
                 });
             }
         }
-        if fields.is_empty() && !access.has_any() {
+        if fields.is_empty() && !access.has_any() && invariants.is_empty() {
             return Err(ParseError::InvalidType {
                 span: shape_span,
                 message: "expects shape must declare at least one field — omit the braces for the existence-only form".to_string(),
@@ -1780,7 +1801,7 @@ impl Parser {
                 });
             }
         }
-        Ok(((!fields.is_empty()).then_some(fields), access))
+        Ok(((!fields.is_empty()).then_some(fields), access, invariants))
     }
 }
 
@@ -1812,10 +1833,12 @@ fn expects_duplicate(existing: &[ExpectsDecl], new: &ExpectsDecl) -> Option<Stri
             ExpectsKind::State {
                 trait_name: ta,
                 state: sa,
+                ..
             },
             ExpectsKind::State {
                 trait_name: tb,
                 state: sb,
+                ..
             },
         ) if ta == tb && sa == sb => Some(format!("`expects trait {tb}` state `{sb}`")),
         (
@@ -2845,7 +2868,7 @@ mod tests {
         let src = "orbital O {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  entity E { id : string! }\n}";
         let prog = p(src);
         match &prog.orbitals[0].expects[0].kind {
-            ExpectsKind::Entity { name, shape, persistence, shared, local, access } => {
+            ExpectsKind::Entity { name, shape, persistence, shared, local, access, .. } => {
                 assert_eq!(name, "Order");
                 assert_eq!(*persistence, Some(Persistence::Persistent));
                 assert!(*shared && !*local);
