@@ -5,6 +5,7 @@ use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use serde_json::{json, Value};
 
 fn program(effect: &str) -> String {
+    let config = if effect.contains("@config.token") { r#"config { token: secret = "TOKEN_NAME" }"# } else { "" };
     format!(
         r#"orbital DemoOrbital {{
   entity Demo [runtime] {{
@@ -12,7 +13,7 @@ fn program(effect: &str) -> String {
   }}
 
   trait DemoFlow -> Demo [interaction, instance] {{
-    config {{ token: secret = "TOKEN_NAME" }}
+    {config}
     initial: idle
     state idle {{
       INIT -> idle
@@ -45,7 +46,7 @@ fn random_bytes_lowers_to_the_contract_form() {
     let effects = effects_of(&program("(random-bytes 32 { emit: { success: DRAWN, failure: DRAW_FAILED } })"));
     assert_eq!(
         effects,
-        vec![json!(["random-bytes", 32, { "emit": { "success": "DRAWN", "failure": "DRAW_FAILED" } }])]
+        vec![json!(["random-bytes", 32.0, { "emit": { "success": "DRAWN", "failure": "DRAW_FAILED" } }])]
     );
 }
 
@@ -63,7 +64,7 @@ fn the_credential_effects_lower_with_the_knob_binding() {
 
 #[test]
 fn control_options_are_optional() {
-    assert_eq!(effects_of(&program("(random-bytes 8)")), vec![json!(["random-bytes", 8])]);
+    assert_eq!(effects_of(&program("(random-bytes 8)")), vec![json!(["random-bytes", 8.0])]);
 }
 
 #[test]
@@ -541,7 +542,7 @@ fn the_credential_administration_effects_lower_with_their_request_object_and_sur
         ("(credential-remove { service: \"a\", envVar: \"B\" })", json!(["credential-remove", { "service": "a", "envVar": "B" }])),
         ("(credential-test { service: \"a\" })", json!(["credential-test", { "service": "a" }])),
         ("(credential-mode { mode: \"real\" })", json!(["credential-mode", { "mode": "real" }])),
-        ("(credential-rotate {})", json!(["credential-rotate", {}])),
+        ("(credential-rotate)", json!(["credential-rotate"])),
     ] {
         let src = program(&format!("{call}\n        (credential-forget @config.token)"));
         assert_eq!(effects_of(&src)[0], expected, "{call}");
