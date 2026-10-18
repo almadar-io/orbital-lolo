@@ -254,6 +254,7 @@ pub(crate) fn lower_type_expr(
                         entity: name.clone(),
                         cardinality: Some(Cardinality::One),
                         entity_id: None,
+                        on_delete: None,
                     }),
                 )
             } else if let Some(ft) = primitive_field_type(name) {
@@ -286,6 +287,7 @@ pub(crate) fn lower_type_expr(
                             entity: name.clone(),
                             cardinality: Some(Cardinality::Many),
                             entity_id: None,
+                            on_delete: None,
                         }),
                     );
                 }
