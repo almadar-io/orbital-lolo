@@ -418,3 +418,30 @@ fn propositions_outside_a_spec_are_refused() {
     let err = parse_and_lower_str_with(on_entity, &options).unwrap_err().to_string();
     assert!(err.contains("ELOLO_INVARIANT_SPEC_ONLY"), "{err}");
 }
+
+#[test]
+fn a_list_of_a_union_round_trips_through_the_printer() {
+    let source = r#"app Probe
+type Adv = { id : number }
+type Holder = { via : [(Adv | string)] }
+orbital TaskOrbital {
+  entity Task [persistent: tasks] {
+    id : string!
+  }
+  trait TaskPersistor -> Task [lifecycle] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      DO_SCAN -> idle
+    }
+    listens {
+      DO_SCAN -> external { via : [(Adv | string)], holder : Holder }
+    }
+  }
+  page "/" -> TaskPersistor [initial]
+}"#;
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(source, &options).unwrap();
+}

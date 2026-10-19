@@ -357,6 +357,7 @@ fn lower_to_orb_names_only(
 
     let mut schema = OrbitalSchema {
         theme_definitions: None,
+        themes: None,
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
         egress: (!ast.app.egress.is_empty()).then(|| ast.app.egress.clone()),
         inbound: (!ast.app.inbound.is_empty()).then(|| ast.app.inbound.clone()),
@@ -1138,6 +1139,7 @@ fn lower_orbital(
                         type_when: None,
                         entity: None,
                         projected_from: None,
+                        items: None,
                     }],
                 );
             }
@@ -1157,6 +1159,7 @@ fn lower_orbital(
                             type_when: None,
                             entity: None,
                             projected_from: None,
+                            items: None,
                         }],
                     );
                 }

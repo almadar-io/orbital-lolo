@@ -91,3 +91,57 @@ fn a_sourced_listen_is_unchanged() {
     let src = program("      Src.DONE -> DO_CREATE");
     assert!(parse_str(&src).is_ok());
 }
+
+fn union_program(field: &str) -> String {
+    format!(
+        r#"app Probe
+type Adv = {{ id : number }}
+type Holder = {{ via : [(Adv | string)] }}
+orbital TaskOrbital {{
+  entity Task [persistent: tasks] {{
+    id : string!
+  }}
+  trait TaskPersistor -> Task [lifecycle] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+      DO_SCAN -> idle
+    }}
+    listens {{
+      DO_SCAN -> external {{ {field} }}
+    }}
+  }}
+  page "/" -> TaskPersistor [initial]
+}}"#
+    )
+}
+
+#[test]
+fn a_list_of_a_union_keeps_its_element_union_in_items() {
+    let schema = parse_and_lower_str(&union_program("via : [(Adv | string)]")).expect("lowers");
+    let field = &event(&schema, "DO_SCAN")["payloadSchema"][0];
+    assert_eq!(field["name"], "via");
+    assert_eq!(field["type"], "array");
+    assert_eq!(field["items"]["type"], "union");
+    let variants: Vec<&str> = field["items"]["properties"].as_array().expect("variants").iter().map(|v| v["name"].as_str().unwrap_or("")).collect();
+    assert_eq!(variants, vec!["Adv", "string"]);
+}
+
+#[test]
+fn a_struct_alias_member_that_is_a_list_of_a_union_keeps_it_too() {
+    let schema = parse_and_lower_str(&union_program("holder : Holder")).expect("lowers");
+    let holder = &event(&schema, "DO_SCAN")["payloadSchema"][0];
+    let via = holder["properties"].as_array().expect("holder members").iter().find(|m| m["name"] == "via").expect("via member").clone();
+    assert_eq!(via["type"], "array");
+    assert_eq!(via["items"]["type"], "union");
+}
+
+#[test]
+fn control_lists_of_structs_and_of_primitives_are_unchanged() {
+    let schema = parse_and_lower_str(&union_program("advs : [Adv]\n        names : [string]")).expect("lowers");
+    let ev = event(&schema, "DO_SCAN");
+    assert_eq!(ev["payloadSchema"][0]["type"], "[object]");
+    assert_eq!(ev["payloadSchema"][1]["type"], "[string]");
+    assert!(ev["payloadSchema"][0].get("items").is_none());
+    assert!(ev["payloadSchema"][1].get("items").is_none());
+}

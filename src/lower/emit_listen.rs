@@ -194,6 +194,7 @@ pub(crate) fn lower_emit(
                 type_when: None,
                 entity: None,
                 projected_from: projected.clone(),
+                items: None,
             });
             continue;
         }
@@ -205,7 +206,26 @@ pub(crate) fn lower_emit(
         // emitted member name is a bare identifier (`row`), never a dotted
         // `row.category` that is illegal as a TS member name. This also matches
         // the runtime DataGrid shape `{ id, row: itemData }`.
-        if let Some(props) = struct_payload_properties(ty, aliases, trait_type_params) {
+        if let Some(items) = union_list_items(ty, aliases, trait_type_params) {
+            if !seen.insert(f.name.clone()) {
+                return Err(LowerError::PayloadFieldCollision {
+                    event: e.event.clone(),
+                    field: f.name.clone(),
+                });
+            }
+            fields.push(PayloadField {
+                values: None,
+                name: f.name.clone(),
+                field_type: "array".to_string(),
+                required: if f.required { Some(true) } else { None },
+                description: None,
+                properties: None,
+                type_when: None,
+                entity: None,
+                projected_from: projected.clone(),
+                items: Some(items),
+            });
+        } else if let Some(props) = struct_payload_properties(ty, aliases, trait_type_params) {
             if !seen.insert(f.name.clone()) {
                 return Err(LowerError::PayloadFieldCollision {
                     event: e.event.clone(),
@@ -222,6 +242,7 @@ pub(crate) fn lower_emit(
                 type_when: None,
                 entity: None,
                 projected_from: projected.clone(),
+                items: None,
             });
         } else if let Some(variants) = union_payload_variants(ty, aliases, trait_type_params) {
             // A TYPE union — inline (`a | [b]`) or via a named alias — lowers
@@ -243,6 +264,7 @@ pub(crate) fn lower_emit(
                 type_when: None,
                 entity: None,
                 projected_from: projected.clone(),
+                items: None,
             });
         } else if let TypeExpr::Named(type_name) = ty {
             // Scalar entity reference (`row : Note`) — resolve through
@@ -267,6 +289,7 @@ pub(crate) fn lower_emit(
                 type_when: None,
                 entity: Some(type_name.clone()),
                 projected_from: projected.clone(),
+                items: None,
             });
         } else if let TypeExpr::Array(inner) = ty {
             if let TypeExpr::Named(type_name) = inner.as_ref() {
@@ -291,6 +314,7 @@ pub(crate) fn lower_emit(
                         type_when: None,
                         entity: Some(type_name.clone()),
                         projected_from: projected.clone(),
+                        items: None,
                     });
                     continue;
                 }
@@ -313,6 +337,7 @@ pub(crate) fn lower_emit(
                     type_when: None,
                     entity: None,
                     projected_from: projected.clone(),
+                    items: None,
                 });
                 continue;
             }
@@ -327,6 +352,7 @@ pub(crate) fn lower_emit(
                 type_when,
                 entity: None,
                 projected_from: projected.clone(),
+                items: None,
             });
         } else {
             if !seen.insert(f.name.clone()) {
@@ -346,6 +372,7 @@ pub(crate) fn lower_emit(
                 type_when,
                 entity: None,
                 projected_from: projected.clone(),
+                items: None,
             });
         }
     }
@@ -488,6 +515,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                     type_when: None,
                     entity: None,
                     projected_from: None,
+                    items: None,
                 })
                 .collect()
         })
@@ -519,6 +547,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                         // here; the marker isn't read by this comparator.
                         entity: None,
                         projected_from: None,
+                        items: None,
                     },
                     Some(base.to_string()),
                 );
@@ -622,6 +651,7 @@ pub(crate) fn type_expr_to_payload_fields(
             type_when: None,
             entity: None,
             projected_from: None,
+            items: None,
         }]);
     }
     match payload {
@@ -648,6 +678,7 @@ pub(crate) fn type_expr_to_payload_fields(
                 // sentinel instead — checked first since a param name never
                 // resolves as a struct alias.
                 let sentinel = type_param_sentinel(ftype, type_params);
+                let union_items = union_list_items(ftype.peel(), aliases, type_params);
                 let array_elem = match ftype {
                     TypeExpr::Array(inner) => {
                         struct_payload_properties(inner, aliases, type_params)
@@ -656,6 +687,8 @@ pub(crate) fn type_expr_to_payload_fields(
                 };
                 let (field_type, properties, entity) = if let Some(s) = sentinel {
                     (s, None, None)
+                } else if union_items.is_some() {
+                    ("array".to_string(), None, None)
                 } else if let Some(elem) = array_elem {
                     ("[object]".to_string(), Some(elem), None)
                 } else if let Some(nested) = struct_payload_properties(ftype, aliases, type_params)
@@ -699,6 +732,7 @@ pub(crate) fn type_expr_to_payload_fields(
                     type_when: None,
                     entity,
                     projected_from: None,
+                    items: union_items,
                 });
             }
             Ok(flat)
@@ -718,6 +752,7 @@ pub(crate) fn type_expr_to_payload_fields(
                 type_when: None,
                 entity: None,
                 projected_from: None,
+                items: None,
             }])
         }
     }
@@ -763,6 +798,7 @@ pub(crate) fn named_entity_fields(
                 type_when: None,
                 entity: None,
                 projected_from: None,
+                items: None,
             })
             .collect(),
         is_array,
@@ -866,9 +902,35 @@ pub(crate) fn union_payload_variants(
             type_when: None,
             entity: None,
             projected_from: None,
+            items: None,
         });
     }
     Some(out)
+}
+
+/// The element of a list of a type union (`[(Adv | string)]`), as the `items` of an `array` field: the variants
+/// ride in its `properties` exactly as a union field's do. `None` for any other list.
+pub(crate) fn union_list_items(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    type_params: &[&str],
+) -> Option<Box<PayloadField>> {
+    let TypeExpr::Array(inner) = ty else {
+        return None;
+    };
+    let variants = union_payload_variants(inner.peel(), aliases, type_params)?;
+    Some(Box::new(PayloadField {
+        values: None,
+        name: "item".to_string(),
+        field_type: "union".to_string(),
+        required: None,
+        description: None,
+        properties: Some(variants),
+        type_when: None,
+        entity: None,
+        projected_from: None,
+        items: None,
+    }))
 }
 
 /// True when `ty` is `Named(name)` or `Array(Named(name))` and `name` is
@@ -934,12 +996,15 @@ pub(crate) fn struct_payload_properties(
         // `$E` / `[$E]` sentinel — checked first (a param name never
         // resolves as a struct alias).
         let sentinel = type_param_sentinel(ty, type_params);
+        let union_items = union_list_items(ty, aliases, type_params);
         let array_elem = match ty {
             TypeExpr::Array(inner) => struct_payload_properties(inner, aliases, type_params),
             _ => None,
         };
         let (field_type, properties) = if let Some(s) = sentinel {
             (s, None)
+        } else if union_items.is_some() {
+            ("array".to_string(), None)
         } else if let Some(elem) = array_elem {
             ("[object]".to_string(), Some(elem))
         } else if let Some(nested) = struct_payload_properties(ty, aliases, type_params) {
@@ -967,6 +1032,7 @@ pub(crate) fn struct_payload_properties(
             type_when: None,
             entity: None,
             projected_from: projected,
+            items: union_items,
         });
     }
     if let Some(n) = guard_name {
@@ -1282,6 +1348,7 @@ mod recursive_struct_payload_tests {
             type_when: None,
             entity: None,
             projected_from: None,
+            items: None,
         }];
 
         // Terminating at all is the assertion; agreeing is the consequence.
@@ -1413,6 +1480,7 @@ mod recursive_struct_payload_tests {
                     type_when: None,
                     entity: None,
                     projected_from: None,
+                    items: None,
                 },
                 PayloadField {
                     values: None,
@@ -1424,11 +1492,13 @@ mod recursive_struct_payload_tests {
                     type_when: None,
                     entity: None,
                     projected_from: None,
+                    items: None,
                 },
             ]),
             type_when: None,
             entity: None,
             projected_from: None,
+            items: None,
         }];
         assert_eq!(
             payload_fields_mismatch_norm(

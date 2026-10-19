@@ -275,6 +275,10 @@ pub(super) fn payload_type(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> 
         });
     }
     let base = match (pf.field_type.as_str(), &pf.properties, &pf.entity) {
+        ("array", None, _) if pf.items.is_some() => match pf.items.as_deref() {
+            Some(item) => TypeExpr::Array(Box::new(payload_type(item)?)),
+            None => parse_type_string("array")?,
+        },
         ("object", Some(_), Some(entity)) => TypeExpr::Named(entity.clone()),
         ("[object]", Some(_), Some(entity)) => {
             TypeExpr::Array(Box::new(TypeExpr::Named(entity.clone())))

@@ -618,8 +618,11 @@ pub(crate) fn lower_trait(
                         }
                         _ => None,
                     };
+                    let union_items = emit_listen::union_list_items(ty, aliases, &trait_type_params);
                     let (field_type, properties, type_when, entity) = if let Some(s) = sentinel {
                         (s, None, None, None)
+                    } else if union_items.is_some() {
+                        ("array".to_string(), None, None, None)
                     } else if let Some(elem) = array_elem {
                         ("[object]".to_string(), Some(elem), None, None)
                     } else if let Some(nested) = emit_listen::struct_payload_properties(
@@ -669,6 +672,7 @@ pub(crate) fn lower_trait(
                         type_when,
                         entity,
                         projected_from: projected,
+                        items: union_items,
                     }
                 })
                 .collect()
