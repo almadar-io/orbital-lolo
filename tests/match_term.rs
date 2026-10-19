@@ -273,6 +273,45 @@ fn wildcard_optional_when_closed_vocabulary_is_fully_covered() {
     assert!(flips.iter().all(|t| t.guard.is_some()), "no `_` arm here");
 }
 
+#[test]
+fn ensures_on_a_match_transition_is_owed_by_every_arm_and_formats_back() {
+    let source = r#"orbital ToggleOrbital {
+  entity ToggleRow [runtime] {
+    id : string!
+    active : boolean = false
+  }
+
+  trait ToggleExec -> ToggleRow [interaction] {
+    state idle {
+      INIT -> idle
+        (set @entity.active false)
+      FLIP -> idle
+        @ensures (!= @entity.active @fromEntity.active)
+        match @entity.active {
+        true  -> (set @entity.active false)
+        false -> (set @entity.active true)
+      }
+    }
+  }
+}
+"#;
+    let schema = parse_and_lower_str(source).expect("@ensures before `match` parses");
+    let trait_def = trait_named(&schema, "ToggleExec");
+    let flips: Vec<_> = trait_def.state_machine.transitions.iter().filter(|t| t.event == "FLIP").collect();
+    assert_eq!(flips.len(), 2);
+    let owed = serde_json::json!([["!=", "@entity.active", "@fromEntity.active"]]);
+    for t in &flips {
+        assert_eq!(serde_json::to_value(&t.ensures).unwrap(), owed, "every expanded arm owes the contract");
+    }
+    let init = trait_def.state_machine.transitions.iter().find(|t| t.event == "INIT").unwrap();
+    assert!(init.ensures.is_none(), "control: INIT owes nothing");
+    let printed = format_program(&parse_str(source).unwrap());
+    assert!(printed.contains("@ensures (!= @entity.active @fromEntity.active)"), "{printed}");
+    let again = parse_and_lower_str(&printed).expect("formatted source re-parses");
+    let again_flips = trait_named(&again, "ToggleExec").state_machine.transitions.iter().filter(|t| t.event == "FLIP" && t.ensures.is_some()).count();
+    assert_eq!(again_flips, 2, "{printed}");
+}
+
 // ---------------------------------------------------------------------------
 // Parser errors
 // ---------------------------------------------------------------------------

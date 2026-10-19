@@ -338,6 +338,7 @@ pub(super) fn trait_definition(
                 event: t.event.clone(),
                 target: t.to.clone(),
                 guard: t.guard.clone(),
+                ensures: t.ensures.clone().unwrap_or_default(),
                 effects: t.effects.clone().unwrap_or_default(),
                 span: Span::dummy(),
                 guard_spans: Vec::new(),
@@ -349,6 +350,7 @@ pub(super) fn trait_definition(
             name: name.clone(),
             time_bound: def.time_bound_ms,
             transitions,
+            holds: def.holds.clone(),
             span: Span::dummy(),
         });
     }

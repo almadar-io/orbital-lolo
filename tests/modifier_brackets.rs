@@ -134,6 +134,53 @@ fn site_modifiers_lower_into_schema_site() {
     assert_eq!(site.sign_in.as_deref(), Some("/login"));
 }
 
+const THEMES_HEADER: &str = r#"app std-home [
+  version: "1.0.0",
+  theme: "almadar-light",
+  themes: ["almadar-dark", "clay-light"]
+]
+"#;
+
+#[test]
+fn the_themes_a_program_switches_to_lower_into_schema_themes() {
+    let schema = parse_and_lower_str(&program(THEMES_HEADER)).expect("lower");
+    assert_eq!(
+        schema.themes,
+        Some(vec!["almadar-dark".to_string(), "clay-light".to_string()])
+    );
+    assert!(matches!(
+        schema.theme,
+        Some(orbital_core_base::schema::ThemeRef::Reference(ref k)) if k == "almadar-light"
+    ));
+}
+
+#[test]
+fn control_no_themes_modifier_means_no_themes() {
+    assert!(parse_and_lower_str(&program(BRACKET_HEADER))
+        .unwrap()
+        .themes
+        .is_none());
+}
+
+#[test]
+fn edge_a_themes_entry_is_a_key_not_an_inline_theme() {
+    let header = "app std-home [version: \"1.0.0\", themes: [{ name: \"brand\" }]]\n";
+    assert!(parse_and_lower_str(&program(header)).is_err());
+}
+
+#[test]
+fn themes_survive_format_and_unlower() {
+    let schema = parse_and_lower_str(&program(THEMES_HEADER)).expect("lower");
+    let formatted = format_program(&parse_str(&program(THEMES_HEADER)).expect("parse"));
+    assert!(
+        formatted.contains("themes: [\"almadar-dark\", \"clay-light\"]"),
+        "{formatted}"
+    );
+    assert_eq!(parse_and_lower_str(&formatted).expect("reparse").themes, schema.themes);
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert_eq!(parse_and_lower_str(&text).expect("lower the unlowered text").themes, schema.themes);
+}
+
 #[test]
 fn control_no_site_modifiers_means_no_site() {
     assert!(parse_and_lower_str(&program(BRACKET_HEADER))

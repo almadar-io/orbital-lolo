@@ -123,6 +123,7 @@ fn a_list_of_a_union_keeps_its_element_union_in_items() {
     assert_eq!(field["name"], "via");
     assert_eq!(field["type"], "array");
     assert_eq!(field["items"]["type"], "union");
+    assert_eq!(field["items"]["name"], "item");
     let variants: Vec<&str> = field["items"]["properties"].as_array().expect("variants").iter().map(|v| v["name"].as_str().unwrap_or("")).collect();
     assert_eq!(variants, vec!["Adv", "string"]);
 }
@@ -144,4 +145,21 @@ fn control_lists_of_structs_and_of_primitives_are_unchanged() {
     assert_eq!(ev["payloadSchema"][1]["type"], "[string]");
     assert!(ev["payloadSchema"][0].get("items").is_none());
     assert!(ev["payloadSchema"][1].get("items").is_none());
+}
+
+#[test]
+fn a_map_of_a_union_keeps_its_value_union_in_items() {
+    let schema = parse_and_lower_str(&union_program("props : Map string (string | number | boolean)")).expect("lowers");
+    let field = &event(&schema, "DO_SCAN")["payloadSchema"][0];
+    assert_eq!(field["type"], "object");
+    assert!(field.get("properties").is_none());
+    assert_eq!(field["items"]["type"], "union");
+}
+
+#[test]
+fn control_a_map_of_one_kind_keeps_its_type_string() {
+    let schema = parse_and_lower_str(&union_program("tags : Map string number")).expect("lowers");
+    let field = &event(&schema, "DO_SCAN")["payloadSchema"][0];
+    assert_eq!(field["type"], "Map<string,number>");
+    assert!(field.get("items").is_none());
 }

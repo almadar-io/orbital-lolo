@@ -299,8 +299,9 @@ impl Lexer {
                     });
                 }
                 '"' => {
+                    let start = self.pos;
                     let s = self.lex_string()?;
-                    let len = (self.col - col) as u16;
+                    let len = (self.pos - start) as u16;
                     self.tokens.push(Token {
                         kind: TokenKind::String(s),
                         span: Span::new(line, col, len),
@@ -751,6 +752,14 @@ mod tests {
                 TokenKind::String("quote\"".to_string()),
             ]
         );
+    }
+
+    #[test]
+    fn a_string_that_spans_lines_lexes_with_its_own_length() {
+        let tokens = tokenize("x \"two\nlines\" y").expect("lexes");
+        let string = tokens.iter().find(|t| matches!(t.kind, TokenKind::String(_))).expect("a string");
+        assert_eq!(string.kind, TokenKind::String("two\nlines".to_string()));
+        assert_eq!(string.span.len, 11);
     }
 
     #[test]

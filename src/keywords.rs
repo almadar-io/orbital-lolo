@@ -67,6 +67,7 @@ const KEYWORDS: &[&str] = &[
     "answers",
     "verifies",
     "egress",
+    "themes",
     "deployment",
     "fs",
     "exec",
@@ -189,10 +190,11 @@ const ANNOTATIONS: &[&str] = &[
     "roles",
     "invariant",
     "holds",
+    "ensures",
 ];
 
 /// `entity payload state now config user trait event prevEvents prevStates
-/// fromState toState locale` — sigil roots (the text
+/// fromState toState fromEntity locale` — sigil roots (the text
 /// before the first `.` of a `@x`/`@x.y` token) recognized at value
 /// position (`parser/expression.rs`), type position (`parser/type.rs`),
 /// term-match scrutinees (`parser/trait.rs parse_term_match_scrutinee`),
@@ -211,6 +213,7 @@ const SIGILS: &[&str] = &[
     "prevStates",
     "fromState",
     "toState",
+    "fromEntity",
     "locale",
 ];
 

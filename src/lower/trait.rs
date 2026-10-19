@@ -33,6 +33,7 @@ pub(crate) fn expand_term_match(tr: &Transition) -> Vec<Transition> {
                 event: tr.event.clone(),
                 target: tr.target.clone(),
                 guard,
+                ensures: tr.ensures.clone(),
                 effects: arm.effects.clone(),
                 span: arm.span,
                 guard_spans: Vec::new(),
@@ -478,6 +479,7 @@ pub(crate) fn lower_trait(
             is_terminal: None,
             description: None,
             time_bound_ms: state.time_bound,
+            holds: state.holds.clone(),
         });
 
         for tr in &state.transitions {
@@ -527,6 +529,7 @@ pub(crate) fn lower_trait(
                                 .collect::<Result<Vec<_>, LowerError>>()?,
                         )
                     },
+                    ensures: (!tr.ensures.is_empty()).then(|| tr.ensures.iter().map(desugar_expr_match).collect()),
                 });
             }
         }
@@ -556,6 +559,7 @@ pub(crate) fn lower_trait(
                     event_id: None,
                     guard: None,
                     effects: None,
+                    ensures: None,
                 });
             }
         }
@@ -618,11 +622,11 @@ pub(crate) fn lower_trait(
                         }
                         _ => None,
                     };
-                    let union_items = emit_listen::union_list_items(ty, aliases, &trait_type_params);
+                    let union_items = emit_listen::union_container(ty, aliases, &trait_type_params);
                     let (field_type, properties, type_when, entity) = if let Some(s) = sentinel {
                         (s, None, None, None)
-                    } else if union_items.is_some() {
-                        ("array".to_string(), None, None, None)
+                    } else if let Some((container, _)) = &union_items {
+                        (container.clone(), None, None, None)
                     } else if let Some(elem) = array_elem {
                         ("[object]".to_string(), Some(elem), None, None)
                     } else if let Some(nested) = emit_listen::struct_payload_properties(
@@ -672,7 +676,7 @@ pub(crate) fn lower_trait(
                         type_when,
                         entity,
                         projected_from: projected,
-                        items: union_items,
+                        items: union_items.map(|(_, items)| items),
                     }
                 })
                 .collect()

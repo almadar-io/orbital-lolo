@@ -49,6 +49,7 @@ pub(crate) fn lower_entity(
         delete_policy: entity.delete_policy.clone(),
         access_waivers: access_waivers_of(&entity.access_waivers),
         id: None,
+        invariants: (!entity.invariants.is_empty()).then(|| entity.invariants.clone()),
     })
 }
 

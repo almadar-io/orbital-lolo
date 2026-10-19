@@ -723,11 +723,39 @@ impl Parser {
         self.skip_newlines();
 
         let mut transitions = Vec::new();
+        let mut holds = None;
         loop {
             self.skip_newlines();
             if brace_form && matches!(self.peek(), TokenKind::RBrace) {
                 self.advance();
                 break;
+            }
+            let annotation = match self.peek() {
+                TokenKind::Sigil(raw) => Some(self.canon_annotation_sigil(raw)),
+                _ => None,
+            };
+            if let Some(annotation) = annotation {
+                let at = self.peek_span();
+                match annotation.as_str() {
+                    "holds" if holds.is_none() => {
+                        self.advance();
+                        holds = Some(self.parse_sexpr_or_value()?);
+                        continue;
+                    }
+                    "holds" => {
+                        return Err(ParseError::InvalidType {
+                            span: at,
+                            message: format!("state `{name}` declares `@holds` more than once — conjoin the propositions with `and`"),
+                        });
+                    }
+                    "ensures" => {
+                        return Err(ParseError::InvalidType {
+                            span: at,
+                            message: format!("`@ensures` in state `{name}` belongs to a transition: write it under `EVENT -> target`, before the effects"),
+                        });
+                    }
+                    _ => {}
+                }
             }
             // Stop on next block keyword or end.
             if self.at_eof()
@@ -758,6 +786,7 @@ impl Parser {
             name,
             time_bound,
             transitions,
+            holds,
             span,
         })
     }
@@ -785,6 +814,10 @@ impl Parser {
             guard = Some(g);
             guard_spans = spans;
         }
+        let ensures = self.parse_ensures_lines()?;
+        if !ensures.is_empty() && self.check_ident_after_newlines("match") {
+            self.skip_newlines();
+        }
         // `match @entity.<f> { … }` / `match @payload.<f> { … }` sugar
         // (Phase 2, pattern-matching doc §1(a)) — mutually exclusive with
         // `when`: one dispatch mechanism per arm set.
@@ -802,6 +835,7 @@ impl Parser {
                 event,
                 target,
                 guard: None,
+                ensures,
                 effects: Vec::new(),
                 span,
                 guard_spans: Vec::new(),
@@ -836,12 +870,40 @@ impl Parser {
             event,
             target,
             guard,
+            ensures,
             effects,
             span,
             guard_spans,
             effect_spans,
             term_match: None,
         })
+    }
+
+    /// `@ensures <expr>` lines after a transition's target and guard (on the same line or the following ones). Only
+    /// newlines that lead to an `@ensures` are consumed, so a transition without one parses as before.
+    fn parse_ensures_lines(&mut self) -> Result<Vec<SExpression>, ParseError> {
+        let mut ensures = Vec::new();
+        loop {
+            let mut k = 0;
+            while matches!(self.peek_n(k), TokenKind::Newline) {
+                k += 1;
+            }
+            if !matches!(self.peek_n(k), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "ensures") {
+                return Ok(ensures);
+            }
+            for _ in 0..=k {
+                self.advance();
+            }
+            ensures.push(self.parse_sexpr_or_value()?);
+        }
+    }
+
+    fn check_ident_after_newlines(&self, word: &str) -> bool {
+        let mut k = 0;
+        while matches!(self.peek_n(k), TokenKind::Newline) {
+            k += 1;
+        }
+        matches!(self.peek_n(k), TokenKind::Identifier(w) if w == word || self.lang.canon_any(w) == Some(word))
     }
 
     /// Parse a term-level `match` body after the leading `match` keyword

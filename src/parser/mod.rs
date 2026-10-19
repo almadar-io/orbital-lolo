@@ -27,6 +27,7 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "version",
     "description",
     "theme",
+    "themes",
     "locales",
     "egress",
     "inbound",
@@ -557,6 +558,7 @@ impl Parser {
                 version: None,
                 description: None,
                 theme: None,
+                themes: Vec::new(),
                 locales: Vec::new(),
                 egress: Vec::new(),
                 inbound: Vec::new(),
@@ -634,6 +636,7 @@ impl Parser {
         let mut version = None;
         let mut description = None;
         let mut theme = None;
+        let mut themes = Vec::new();
         let mut locales = Vec::new();
         let mut egress = Vec::new();
         let mut inbound = Vec::new();
@@ -649,6 +652,7 @@ impl Parser {
                     "version" => version = Some(p.parse_option_string(key)?),
                     "description" => description = Some(p.parse_option_string(key)?),
                     "theme" => theme = Some(p.parse_theme_value()?),
+                    "themes" => themes = p.parse_string_items(key)?,
                     "locales" => locales = p.parse_locale_items()?,
                     "egress" => egress = p.parse_string_items(key)?,
                     "inbound" => inbound = p.parse_string_items(key)?,
@@ -721,6 +725,7 @@ impl Parser {
             version: version.or(positional_version),
             description,
             theme,
+            themes,
             locales,
             egress,
             inbound,
@@ -1670,11 +1675,11 @@ impl Parser {
                         message: format!("an `expects trait` state `{}` names the state only — a time bound is the provider's", state.name),
                     });
                 }
-                if state.transitions.is_empty() {
+                if state.transitions.is_empty() || state.holds.is_some() {
                     out.push(ExpectsKind::State {
                         trait_name: trait_name.to_string(),
                         state: state.name.clone(),
-                        holds: None,
+                        holds: state.holds.clone(),
                     });
                 }
                 for t in state.transitions {
@@ -1692,6 +1697,7 @@ impl Parser {
                         from: state.name.clone(),
                         event: t.event,
                         to: t.target,
+                        ensures: t.ensures,
                     });
                 }
             } else {
@@ -2915,7 +2921,7 @@ mod tests {
         let prog = p(src);
         let k = &prog.orbitals[0].expects;
         assert_eq!(k.len(), 3);
-        assert!(matches!(&k[0].kind, ExpectsKind::Transition { trait_name, from, event, to }
+        assert!(matches!(&k[0].kind, ExpectsKind::Transition { trait_name, from, event, to, .. }
             if trait_name == "Checkout" && from == "idle" && event == "PAY" && to == "paid"));
         assert!(matches!(&k[1].kind, ExpectsKind::State { state, .. } if state == "refunded"));
         assert!(matches!(&k[2].kind, ExpectsKind::Event { event, .. } if event == "PLACED"));

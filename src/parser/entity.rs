@@ -43,6 +43,7 @@ impl Parser {
 
         let mut fields = Vec::new();
         let mut access = ExpectedAccess::default();
+        let mut invariants = Vec::new();
         let mut instances: Vec<orbital_core_base::schema::SObject> = Vec::new();
         let mut locale_instances: std::collections::BTreeMap<
             String,
@@ -88,10 +89,10 @@ impl Parser {
                 continue;
             }
             if matches!(self.peek(), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "invariant") {
-                return Err(ParseError::InvalidType {
-                    span: self.peek_span(),
-                    message: "ELOLO_INVARIANT_SPEC_ONLY: `@invariant` is a spec obligation — state it in a spec orbital's `expects entity` shape, which the program binds with `uses`".to_string(),
-                });
+                self.advance();
+                invariants.push(self.parse_sexpr_or_value()?);
+                self.expect_newline_or_eof()?;
+                continue;
             }
             if self.is_entity_field_start() {
                 fields.push(self.parse_field_decl()?);
@@ -138,6 +139,7 @@ impl Parser {
             create_policy: access.create_policy,
             update_policy: access.update_policy,
             delete_policy: access.delete_policy,
+            invariants,
             fields,
             span,
         })

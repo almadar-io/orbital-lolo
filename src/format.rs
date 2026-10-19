@@ -299,6 +299,21 @@ impl Formatter {
                 Box::new(move |f: &mut Self| f.fmt_theme_value(theme)),
             ));
         }
+        if !app.themes.is_empty() {
+            entries.push((
+                "themes",
+                Box::new(move |f: &mut Self| {
+                    f.output.push('[');
+                    for (i, key) in app.themes.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(key);
+                    }
+                    f.output.push(']');
+                }),
+            ));
+        }
         if !app.locales.is_empty() {
             entries.push((
                 "locales",
@@ -1660,9 +1675,15 @@ impl Formatter {
                 from,
                 event,
                 to,
+                ensures,
             } => {
                 self.output
-                    .push_str(&format!("trait {trait_name} {{ state {from} {{ {event} -> {to} }} }}"));
+                    .push_str(&format!("trait {trait_name} {{ state {from} {{ {event} -> {to}"));
+                for p in ensures {
+                    self.output.push_str(" @ensures ");
+                    self.fmt_sexpr(p);
+                }
+                self.output.push_str(" } }");
             }
         }
     }
@@ -1780,6 +1801,7 @@ impl Formatter {
             || !entity.access_waivers.is_empty();
         if !entity.fields.is_empty()
             || has_access_directives
+            || !entity.invariants.is_empty()
             || !entity.instances.is_empty()
             || !entity.locale_instances.is_empty()
         {
@@ -1795,6 +1817,12 @@ impl Formatter {
             for field in &entity.fields {
                 self.write_indent();
                 self.fmt_entity_field(field);
+                self.write_newline();
+            }
+            for invariant in &entity.invariants {
+                self.write_indent();
+                self.output.push_str("@invariant ");
+                self.fmt_sexpr(invariant);
                 self.write_newline();
             }
             if !entity.instances.is_empty() {
@@ -2130,9 +2158,15 @@ impl Formatter {
             self.output.push_str(&fmt_duration(ms));
         }
         self.output.push_str(" {");
-        if !state.transitions.is_empty() {
+        if !state.transitions.is_empty() || state.holds.is_some() {
             self.write_newline();
             self.indent();
+            if let Some(holds) = &state.holds {
+                self.write_indent();
+                self.output.push_str("@holds ");
+                self.fmt_sexpr(holds);
+                self.write_newline();
+            }
             for tr in &state.transitions {
                 self.emit_comments_before(tr.span.line);
                 self.write_indent();
@@ -2155,14 +2189,30 @@ impl Formatter {
         self.output.push_str(&tr.event);
         self.output.push_str(" -> ");
         self.output.push_str(&tr.target);
-        if let Some(tm) = &tr.term_match {
-            self.output.push(' ');
-            self.fmt_term_match(tm);
-            return;
-        }
         if let Some(guard) = &tr.guard {
             self.output.push_str(" when ");
             self.fmt_sexpr(guard);
+        }
+        if !tr.ensures.is_empty() {
+            self.indent();
+            for p in &tr.ensures {
+                self.write_newline();
+                self.write_indent();
+                self.output.push_str("@ensures ");
+                self.fmt_sexpr(p);
+            }
+            if tr.term_match.is_some() {
+                self.write_newline();
+                self.write_indent();
+            }
+            self.dedent();
+        }
+        if let Some(tm) = &tr.term_match {
+            if tr.ensures.is_empty() {
+                self.output.push(' ');
+            }
+            self.fmt_term_match(tm);
+            return;
         }
         if !tr.effects.is_empty() {
             self.write_newline();

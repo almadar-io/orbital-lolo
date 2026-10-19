@@ -125,6 +125,7 @@ pub(super) fn entity(
         update_policy: def.update_policy.clone(),
         delete_policy: def.delete_policy.clone(),
         access_waivers: waivers,
+        invariants: def.invariants.clone().unwrap_or_default(),
         fields: def
             .fields
             .iter()
@@ -233,12 +234,14 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
             from,
             event,
             to,
+            ensures,
             ..
         } => ExpectsKind::Transition {
             trait_name: trait_name.clone(),
             from: from.clone(),
             event: event.clone(),
             to: to.clone(),
+            ensures: ensures.clone().unwrap_or_default(),
         },
     };
     Ok(ExpectsDecl {

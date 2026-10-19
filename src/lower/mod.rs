@@ -357,7 +357,7 @@ fn lower_to_orb_names_only(
 
     let mut schema = OrbitalSchema {
         theme_definitions: None,
-        themes: None,
+        themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.clone()),
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
         egress: (!ast.app.egress.is_empty()).then(|| ast.app.egress.clone()),
         inbound: (!ast.app.inbound.is_empty()).then(|| ast.app.inbound.clone()),
@@ -711,14 +711,7 @@ pub(crate) fn lower_expects_decl(
             update_policy: access.update_policy.clone(),
             delete_policy: access.delete_policy.clone(),
             access_waivers: entity::access_waivers_of(&access.access_waivers),
-            invariants: match (invariants.is_empty(), strict) {
-                (true, _) => None,
-                (false, true) => Some(invariants.clone()),
-                (false, false) => {
-                    return Err(LowerError::PropositionOutsideSpec { what: format!("`@invariant` on `expects entity {name}`") }
-                        .located(decl.span))
-                }
-            },
+            invariants: (!invariants.is_empty()).then(|| invariants.clone()),
             strict,
         },
         // Trait and event names pass through verbatim — no case-folding.
@@ -756,28 +749,24 @@ pub(crate) fn lower_expects_decl(
             traits: (!traits.is_empty()).then(|| traits.clone()),
             strict,
         },
-        ExpectsKind::State { trait_name, state, holds } => {
-            if holds.is_some() && !strict {
-                return Err(LowerError::PropositionOutsideSpec { what: format!("`@holds` on `expects trait {trait_name}` state `{state}`") }
-                    .located(decl.span));
-            }
-            ExpectDeclaration::State {
-                trait_name: trait_name.clone(),
-                state: state.clone(),
-                holds: holds.clone(),
-                strict,
-            }
-        }
+        ExpectsKind::State { trait_name, state, holds } => ExpectDeclaration::State {
+            trait_name: trait_name.clone(),
+            state: state.clone(),
+            holds: holds.clone(),
+            strict,
+        },
         ExpectsKind::Transition {
             trait_name,
             from,
             event,
             to,
+            ensures,
         } => ExpectDeclaration::Transition {
             trait_name: trait_name.clone(),
             from: from.clone(),
             event: event.clone(),
             to: to.clone(),
+            ensures: (!ensures.is_empty()).then(|| ensures.clone()),
             strict,
         },
     })
@@ -851,6 +840,7 @@ fn spec_placeholder_entity(name: &str) -> EntityDefinition {
         fields: Vec::new(),
         instances: None,
         id: None,
+        invariants: None,
     }
 }
 
@@ -1063,6 +1053,7 @@ fn lower_orbital(
                     is_terminal: None,
                     description: None,
                     time_bound_ms: None,
+                    holds: None,
                 }],
                 events: Some(vec![EventDefinition {
                     key: "INIT".to_string(),
@@ -1084,6 +1075,7 @@ fn lower_orbital(
                     event_id: None,
                     guard: None,
                     effects: Some(orb.body.clone()),
+                    ensures: None,
                 }],
             },
             ticks: None,

@@ -406,17 +406,67 @@ fn a_spec_without_propositions_carries_no_invariant_fields() {
     assert!(!json.contains("invariants") && !json.contains("holds"), "{json}");
 }
 
+const WALLET: &str = "app wallet \"1.0.0\"\n\norbital Wallet {\n  entity Account [persistent: accounts] {\n    balance : number\n    @invariant (>= @entity.balance 0)\n  }\n  trait Wallet -> Account [interaction] {\n    state active {\n      @holds (>= @entity.balance 0)\n      INIT -> active\n        (set @entity.balance 100)\n      SPEND -> active when (<= @payload.amount @entity.balance)\n        @ensures (= @entity.balance (- @fromEntity.balance @payload.amount))\n        (persist update Account @entity.id { balance: (- @entity.balance @payload.amount) })\n    }\n  }\n  page \"/wallet\" -> Wallet\n}\n";
+
 #[test]
-fn propositions_outside_a_spec_are_refused() {
+fn propositions_on_real_declarations_lower_into_the_ir_and_round_trip() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let schema = parse_and_lower_str_with(WALLET, &options).unwrap();
+    let json = serde_json::to_value(&schema).unwrap();
+    let orbital = &json["orbitals"][0];
+    assert_eq!(orbital["entity"]["invariants"], serde_json::json!([[">=", "@entity.balance", 0.0]]), "{}", orbital["entity"]);
+    let sm = &orbital["traits"][0]["stateMachine"];
+    let active = sm["states"].as_array().unwrap().iter().find(|s| s["name"] == "active").unwrap();
+    assert_eq!(active["holds"], serde_json::json!([">=", "@entity.balance", 0.0]), "{active}");
+    let spend = sm["transitions"].as_array().unwrap().iter().find(|t| t["event"] == "SPEND").unwrap();
+    assert_eq!(spend["ensures"], serde_json::json!([["=", "@entity.balance", ["-", "@fromEntity.balance", "@payload.amount"]]]), "{spend}");
+    let init = sm["transitions"].as_array().unwrap().iter().find(|t| t["event"] == "INIT").unwrap();
+    assert!(init.get("ensures").is_none(), "control: a transition without @ensures carries none: {init}");
+    round_trip(WALLET, &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert!(printed.contains("@holds (>= @entity.balance 0)"), "{printed}");
+    assert!(printed.contains("@ensures (= @entity.balance (- @fromEntity.balance ?amount))"), "{printed}");
+}
+
+#[test]
+fn propositions_on_a_spec_transition_round_trip() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let spec = "app wallet-spec \"1.0.0\"\n\norbital WalletSpec {\n  expects trait Wallet { state active { SPEND -> active @ensures (= @entity.balance (- @fromEntity.balance @payload.amount)) } }\n  expects trait Wallet { state idle { GO -> active } }\n}\n";
+    let schema = parse_and_lower_str_with(spec, &options).unwrap();
+    let json = serde_json::to_value(&schema).unwrap();
+    let edges: Vec<&serde_json::Value> = json["orbitals"][0]["expects"].as_array().unwrap().iter().filter(|e| e["kind"] == "transition").collect();
+    let spend = edges.iter().find(|e| e["event"] == "SPEND").unwrap();
+    assert_eq!(spend["ensures"].as_array().map(Vec::len), Some(1), "{spend}");
+    let go = edges.iter().find(|e| e["event"] == "GO").unwrap();
+    assert!(go.get("ensures").is_none(), "control: {go}");
+    round_trip(spec, &options).unwrap();
+}
+
+#[test]
+fn propositions_in_an_ordinary_orbital_are_accepted() {
     let Some(options) = monorepo_options() else {
         return;
     };
     let in_body = "app shop \"1.0.0\"\n\norbital Shop {\n  entity Cart [runtime] { id : string }\n  expects entity Order { total : number\n    @invariant (>= @entity.total 0)\n  }\n  trait CartView -> Cart [interaction] {\n    state idle {\n      INIT -> idle\n    }\n  }\n  page \"/cart\" -> CartView\n}\n";
-    let err = parse_and_lower_str_with(in_body, &options).unwrap_err().to_string();
-    assert!(err.contains("ELOLO_INVARIANT_SPEC_ONLY"), "{err}");
-    let on_entity = "app shop \"1.0.0\"\n\norbital Shop {\n  entity Order [runtime] {\n    total : number\n    @invariant (>= @entity.total 0)\n  }\n}\n";
-    let err = parse_and_lower_str_with(on_entity, &options).unwrap_err().to_string();
-    assert!(err.contains("ELOLO_INVARIANT_SPEC_ONLY"), "{err}");
+    let schema = parse_and_lower_str_with(in_body, &options).unwrap();
+    let json = serde_json::to_string(&schema).unwrap();
+    assert!(json.contains("invariants"), "{json}");
+    assert!(!json.contains("\"strict\":true"), "an in-body expects stays lenient: {json}");
+    round_trip(in_body, &options).unwrap();
+}
+
+#[test]
+fn propositions_ensures_outside_a_transition_is_refused() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let on_state = "app w \"1.0.0\"\n\norbital W {\n  entity A [runtime] { n : number }\n  trait T -> A [interaction] {\n    state s {\n      @ensures (>= @entity.n 0)\n      INIT -> s\n    }\n  }\n  page \"/w\" -> T\n}\n";
+    let err = parse_and_lower_str_with(on_state, &options).unwrap_err().to_string();
+    assert!(err.contains("@ensures"), "{err}");
 }
 
 #[test]

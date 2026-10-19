@@ -279,6 +279,10 @@ pub(super) fn payload_type(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> 
             Some(item) => TypeExpr::Array(Box::new(payload_type(item)?)),
             None => parse_type_string("array")?,
         },
+        ("object", None, _) if pf.items.is_some() => match pf.items.as_deref() {
+            Some(item) => TypeExpr::Map(Box::new(TypeExpr::Primitive("string".to_string())), Box::new(payload_type(item)?)),
+            None => parse_type_string("object")?,
+        },
         ("object", Some(_), Some(entity)) => TypeExpr::Named(entity.clone()),
         ("[object]", Some(_), Some(entity)) => {
             TypeExpr::Array(Box::new(TypeExpr::Named(entity.clone())))

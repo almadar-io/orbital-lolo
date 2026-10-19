@@ -67,6 +67,8 @@ pub struct AppHeader {
     /// declares its own `theme`. A full `<base>-<light|dark>` registry key,
     /// or an inline `theme { … }` token definition.
     pub theme: Option<ThemeDecl>,
+    /// `themes: ["<key>", …]` — the registry themes the program switches to inside a page.
+    pub themes: Vec<String>,
     /// `locales [en, ar, sl]` — the locales this program ships.
     pub locales: Vec<String>,
     /// `egress: ["https://host", …]` — the origins `http` may reach.
@@ -586,7 +588,7 @@ pub enum ExpectsKind {
         shared: bool,
         local: bool,
         access: ExpectedAccess,
-        /// `@invariant <expr>` lines (spec only): propositions every stored row satisfies.
+        /// `@invariant <expr>` lines: propositions every stored row satisfies.
         invariants: Vec<SExpression>,
     },
     /// `expects trait Trait { emits { EVENT } }` — one per emitted event; names pass through verbatim.
@@ -599,15 +601,17 @@ pub enum ExpectsKind {
     /// and this one navigates to. The provider's PATTERN, which a navigate
     /// effect's static prefix cannot supply.
     Page { path: String, traits: Vec<String> },
-    /// `expects trait T { state paid }` — the provider trait declares this state; `state paid @holds <expr>` (spec
-    /// only) adds a proposition over `@entity` that holds while the trait is in it.
+    /// `expects trait T { state paid }` — the provider trait declares this state; `state paid @holds <expr>` adds a
+    /// proposition over `@entity` that holds while the trait is in it.
     State { trait_name: String, state: String, holds: Option<SExpression> },
-    /// `expects trait T { state idle { PAY -> paid } }` — the provider trait has this transition.
+    /// `expects trait T { state idle { PAY -> paid } }` — the provider trait has this transition; `@ensures <expr>`
+    /// lines after the target add its outcome contract.
     Transition {
         trait_name: String,
         from: String,
         event: String,
         to: String,
+        ensures: Vec<SExpression>,
     },
 }
 
@@ -654,6 +658,8 @@ pub struct Entity {
     /// Behaves exactly like leaving the directive out; it exists so a lint can
     /// tell a considered omission from a forgotten one.
     pub access_waivers: Vec<(String, String)>,
+    /// `@invariant <expr>` lines: propositions every stored row satisfies, proved by `orb validate`.
+    pub invariants: Vec<SExpression>,
     pub fields: Vec<EntityField>,
     pub span: Span,
 }
@@ -1085,6 +1091,8 @@ pub struct State {
     pub time_bound: Option<u64>,
     /// All transitions out of this state, in source order.
     pub transitions: Vec<Transition>,
+    /// `@holds <expr>`: a proposition over `@entity` that holds while the trait is in this state.
+    pub holds: Option<SExpression>,
     pub span: Span,
 }
 
@@ -1094,6 +1102,8 @@ pub struct Transition {
     pub event: String,
     pub target: String,
     pub guard: Option<SExpression>,
+    /// `@ensures <expr>` lines: the outcome contract owed at this transition (`@fromEntity` is the row before it).
+    pub ensures: Vec<SExpression>,
     pub effects: Vec<SExpression>,
     pub span: Span,
     /// L2 source-map spans captured while parsing `guard`, keyed by the
