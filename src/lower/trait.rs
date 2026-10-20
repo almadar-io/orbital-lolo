@@ -238,7 +238,7 @@ pub(crate) fn lower_call_site_overrides(
     listens: &[Listen],
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,
-) -> CallSiteOverrides {
+) -> Result<CallSiteOverrides, LowerError> {
     let events = if ref_data.events.is_empty() {
         None
     } else {
@@ -325,7 +325,7 @@ pub(crate) fn lower_call_site_overrides(
                 // aliases (e.g. `[StepCard]`) resolve to full `items`/
                 // `properties` schemas instead of the string fallback.
                 let (_, _, items, properties, _) =
-                    lower_type_expr(cf.type_expr.peel(), aliases, entity_names);
+                    lower_type_expr(cf.type_expr.peel(), aliases, entity_names, &[])?;
                 SchemaConfigField {
                     field_type: type_expr_to_config_string(cf.type_expr.peel()),
                     default: canonicalize_unbound_trait_default(
@@ -364,13 +364,13 @@ pub(crate) fn lower_call_site_overrides(
         )
     };
 
-    CallSiteOverrides {
+    Ok(CallSiteOverrides {
         events,
         listens,
         emits_scope,
         config,
         fields,
-    }
+    })
 }
 
 /// Build a `TraitReference::Reference` from a parsed `trait Name = Alias.X { ... }`.
@@ -417,7 +417,7 @@ pub(crate) fn lower_trait_reference(
         emits_scope,
         config,
         fields,
-    } = lower_call_site_overrides(ref_data, &t.listens, aliases, entity_names);
+    } = lower_call_site_overrides(ref_data, &t.listens, aliases, entity_names)?;
 
     Ok(TraitReference::Reference {
         local: t.local,

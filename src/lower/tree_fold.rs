@@ -28,9 +28,9 @@ fn definition(
     shape: &str,
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,
-) -> String {
+) -> Result<String, LowerError> {
     let (field_type, values, items, properties, relation) =
-        lower_type_expr(&TypeExpr::Named(shape.to_string()), aliases, entity_names);
+        lower_type_expr(&TypeExpr::Named(shape.to_string()), aliases, entity_names, &[])?;
     let def = FieldDefinition {
         merged_from: None,
         name: Some(shape.to_string()),
@@ -50,7 +50,7 @@ fn definition(
         projected_from: None,
     };
     let json = serde_json::to_value(&def).expect("a field definition serializes to JSON");
-    sorted(json).to_string()
+    Ok(sorted(json).to_string())
 }
 
 fn bake(
@@ -72,7 +72,7 @@ fn bake(
                             span,
                         }));
                     }
-                    let text = definition(shape, aliases, entity_names);
+                    let text = definition(shape, aliases, entity_names)?;
                     items.push(J::String(text));
                     changed = true;
                 }
@@ -229,17 +229,38 @@ mod tests {
 
     #[test]
     fn unlowering_drops_the_definition_and_relowering_bakes_it_again() {
-        let schema = crate::parse_and_lower_str(&program(PREDICATE, "Pred")).expect("lowers");
-        let lolo = crate::schema_to_lolo(&schema).expect("unlowers");
-        assert!(lolo.contains("(tree/fold @payload.v"), "{lolo}");
+        for (types, shape) in [
+            ("type Node = { label : string!, kids : [Node] }", "Node"),
+            (PREDICATE, "Pred"),
+        ] {
+            let schema = crate::parse_and_lower_str(&program(types, shape)).expect("lowers");
+            let lolo = crate::schema_to_lolo(&schema).expect("unlowers");
+            assert!(lolo.contains(&format!("(fn (n k) @n.label) {shape}))")), "{lolo}");
+            assert!(
+                !lolo.contains("\\\"union\\\""),
+                "the definition is not source: {lolo}"
+            );
+            let relowered = crate::parse_and_lower_str(&lolo)
+                .unwrap_or_else(|e| panic!("relowers: {e}\n{lolo}"));
+            assert_eq!(
+                serde_json::to_value(&relowered).unwrap(),
+                serde_json::to_value(&schema).unwrap(),
+                "{lolo}"
+            );
+            assert_eq!(crate::schema_to_lolo(&relowered).unwrap(), lolo, "byte-stable");
+        }
+    }
+
+    #[test]
+    fn an_inline_union_back_into_a_variant_is_refused_not_overflowed() {
+        let types = "type Leaf = { kind : \"leaf\"!, label : string! }\ntype Not = { kind : \"not\"!, of : Leaf | Not! }\ntype Pred = Leaf | Not";
+        let err = crate::parse_and_lower_str(&program(types, "Pred")).unwrap_err();
+        let LoloError::Lower { inner, .. } = &err else {
+            panic!("a lowering error, got {err:?}");
+        };
         assert!(
-            !lolo.contains("\\\"union\\\""),
-            "the definition is not source: {lolo}"
-        );
-        let relowered = crate::parse_and_lower_str(&lolo).expect("relowers");
-        assert_eq!(
-            serde_json::to_value(&relowered).unwrap(),
-            serde_json::to_value(&schema).unwrap()
+            matches!(inner.innermost(), LowerError::Type(TypeError::CircularType { .. })),
+            "ORB_T_TYPE_CYCLE, got {err:?}"
         );
     }
 }

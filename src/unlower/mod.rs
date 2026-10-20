@@ -71,6 +71,35 @@ fn strip_baked_list_paths(value: &mut serde_json::Value) {
     }
 }
 
+/// Each baked `(tree/fold v step Shape definition)` definition: it keeps the by-name back-references the
+/// orbital `types` section expands.
+fn baked_fold_definitions(
+    value: &serde_json::Value,
+    out: &mut Vec<orbital_core_base::schema::FieldDefinition>,
+) -> Result<(), UnlowerError> {
+    match value {
+        serde_json::Value::Array(items) => {
+            if let [op, _, _, _, serde_json::Value::String(text)] = items.as_slice() {
+                if op.as_str() == Some("tree/fold") {
+                    out.push(
+                        serde_json::from_str(text).map_err(|e| UnlowerError::new(e.to_string()))?,
+                    );
+                }
+            }
+            for item in items {
+                baked_fold_definitions(item, out)?;
+            }
+        }
+        serde_json::Value::Object(map) => {
+            for v in map.values() {
+                baked_fold_definitions(v, out)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
 /// The lowerer qualifies every `(i18n/t "key")` with the program name; the
 /// source spelling is the bare key.
 fn without_namespace(schema: &OrbitalSchema) -> Result<OrbitalSchema, UnlowerError> {
@@ -127,6 +156,11 @@ pub fn print_trait(
 }
 
 pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
+    let mut fold_shapes = Vec::new();
+    baked_fold_definitions(
+        &serde_json::to_value(schema).map_err(|e| UnlowerError::new(e.to_string()))?,
+        &mut fold_shapes,
+    )?;
     let schema = &without_namespace(schema)?;
     let app = AppHeader {
         name: schema.name.clone(),
@@ -151,6 +185,9 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
         span: Span::dummy(),
     };
     let mut global = types::AliasShapes::default();
+    for def in &fold_shapes {
+        types::collect_field_shapes(def, &mut global)?;
+    }
     if let Some(cfg) = &schema.config {
         for cf in cfg.values() {
             types::collect_config_shapes(cf, &mut global)?;
@@ -182,7 +219,7 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
         .collect::<Result<Vec<_>, _>>()?;
     let mut orbitals = orbitals;
     let uses = hoist_common_uses(&mut orbitals, &schema.orbitals)?;
-    let type_aliases = hoist_common_aliases(&mut orbitals, &app, &global);
+    let type_aliases = hoist_common_aliases(&mut orbitals, &app, &global)?;
     Ok(Program {
         app,
         type_aliases,
@@ -258,7 +295,7 @@ fn hoist_common_aliases(
     orbitals: &mut [crate::ast::Orbital],
     app: &AppHeader,
     global: &types::AliasShapes,
-) -> Vec<crate::ast::TypeAlias> {
+) -> Result<Vec<crate::ast::TypeAlias>, UnlowerError> {
     let mut hoisted: Vec<crate::ast::TypeAlias> = Vec::new();
     if orbitals.len() > 1 || !app.config.is_empty() {
         if let Some(first) = orbitals.iter().find(|o| o.reference.is_none()) {
@@ -276,28 +313,40 @@ fn hoist_common_aliases(
                 .retain(|b| !hoisted.iter().any(|h| h.name == b.name));
         }
     }
-    let mut used = std::collections::BTreeSet::new();
+    // A name the app config uses that no inline orbital declares comes back from the config's own recorded shape.
+    let mut pending = std::collections::BTreeSet::new();
     for cf in &app.config {
-        orbital::collect_named(&cf.type_expr, &mut used);
+        orbital::collect_named(&cf.type_expr, &mut pending);
     }
-    for n in used {
-        let declared = hoisted.iter().any(|h| h.name == n);
-        if !declared
-            && !global.entities.contains(&n)
-            && crate::lower::primitive_field_type(&n).is_none()
+    while let Some(n) = pending.pop_first() {
+        if hoisted.iter().any(|h| h.name == n)
+            || global.entities.contains(&n)
+            || crate::lower::primitive_field_type(&n).is_some()
         {
-            hoisted.push(crate::ast::TypeAlias {
-                name: n,
-                type_param: None,
-                type_param_kind: None,
-                body: crate::ast::TypeBody::Alias(crate::ast::TypeExpr::Primitive(
-                    "string".to_string(),
-                )),
-                span: Span::dummy(),
-            });
+            continue;
         }
+        let body = if let Some(members) = global.structs.get(&n) {
+            for (_, t, _) in members {
+                orbital::collect_named(t, &mut pending);
+            }
+            crate::ast::TypeBody::Struct(members.clone())
+        } else if let Some(variants) = global.unions.get(&n) {
+            pending.extend(variants.iter().cloned());
+            crate::ast::TypeBody::Enum(variants.clone())
+        } else {
+            return Err(UnlowerError::new(format!(
+                "app config names type `{n}`, which the IR records nowhere"
+            )));
+        };
+        hoisted.push(crate::ast::TypeAlias {
+            name: n,
+            type_param: None,
+            type_param_kind: None,
+            body,
+            span: Span::dummy(),
+        });
     }
-    hoisted
+    Ok(hoisted)
 }
 
 fn strip_ids(value: serde_json::Value) -> serde_json::Value {

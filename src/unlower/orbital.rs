@@ -521,6 +521,12 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
     }
 
     if o.is_spec() {
+        let mut enums: BTreeMap<String, TypeExpr> = BTreeMap::new();
+        declared_type_aliases(o, global, &mut out, &mut enums)?;
+        for (name, body) in enums {
+            out.type_aliases
+                .push(type_alias(&name, TypeBody::Alias(body)));
+        }
         return Ok(out);
     }
     out.theme = o.theme.as_ref().map(theme_decl).transpose()?;
@@ -554,32 +560,7 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
 
     let shapes = alias_shapes(o, global)?;
     let mut enums: BTreeMap<String, TypeExpr> = BTreeMap::new();
-    if let Some(types) = &o.types {
-        for (name, fields) in types {
-            // A dictionary, list or union alias is one entry with the empty name: the alias's value is its type.
-            if let [only] = fields.as_slice() {
-                if only.name.is_empty() {
-                    let value = event_fields(fields)?.remove(0).type_expr;
-                    out.type_aliases.push(type_alias(name, TypeBody::Alias(value)));
-                    continue;
-                }
-            }
-            let richer = global.structs.get(name).cloned().unwrap_or_default();
-            let members = event_fields(fields)?
-                .into_iter()
-                .map(|f| match richer.iter().find(|(n, _, _)| *n == f.name) {
-                    Some((_, ty, _)) => (
-                        f.name,
-                        merge_member(f.type_expr, ty, &mut enums),
-                        f.required,
-                    ),
-                    None => (f.name, f.type_expr, f.required),
-                })
-                .collect();
-            out.type_aliases
-                .push(type_alias(name, TypeBody::Struct(members)));
-        }
-    }
+    declared_type_aliases(o, global, &mut out, &mut enums)?;
     for (name, variants) in shapes.unions.into_iter().chain(hinted_unions) {
         if !out.type_aliases.iter().any(|t| t.name == name) {
             out.type_aliases
@@ -605,8 +586,44 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
             },
         ));
     }
-    declare_opaque_names(&mut out, global);
     Ok(out)
+}
+
+/// The orbital's recorded `types` as source aliases; member types the payload
+/// form erased come back from the definition-side shape (`merge_member`).
+fn declared_type_aliases(
+    o: &CoreOrbital,
+    global: &AliasShapes,
+    out: &mut Orbital,
+    enums: &mut BTreeMap<String, TypeExpr>,
+) -> Result<(), UnlowerError> {
+    if let Some(types) = &o.types {
+        for (name, fields) in types {
+            // A dictionary, list or union alias is one entry with the empty name: the alias's value is its type.
+            if let [only] = fields.as_slice() {
+                if only.name.is_empty() {
+                    let value = event_fields(fields)?.remove(0).type_expr;
+                    out.type_aliases.push(type_alias(name, TypeBody::Alias(value)));
+                    continue;
+                }
+            }
+            let richer = global.structs.get(name).cloned().unwrap_or_default();
+            let members = event_fields(fields)?
+                .into_iter()
+                .map(|f| match richer.iter().find(|(n, _, _)| *n == f.name) {
+                    Some((_, ty, _)) => (
+                        f.name,
+                        merge_member(f.type_expr, ty, enums),
+                        f.required,
+                    ),
+                    None => (f.name, f.type_expr, f.required),
+                })
+                .collect();
+            out.type_aliases
+                .push(type_alias(name, TypeBody::Struct(members)));
+        }
+    }
+    Ok(())
 }
 
 /// Authored member type from its payload-flattened form (which keeps the
@@ -650,7 +667,7 @@ fn merge_member(
                 })
                 .collect(),
         ),
-        (TypeExpr::Object(_), r @ TypeExpr::Named(_)) => r.clone(),
+        (TypeExpr::Object(_) | TypeExpr::Union(_), r @ TypeExpr::Named(_)) => r.clone(),
         (p, _) => p,
     }
 }
@@ -677,56 +694,3 @@ pub(super) fn collect_named(te: &TypeExpr, out: &mut BTreeSet<String>) {
     }
 }
 
-/// A type name the lowerer leaves in a config or payload type string without
-/// resolving it (an enum alias, a union alias used in a payload) needs some
-/// alias in scope for the printed source to type-check; `= string` lowers to
-/// the same IR, since those positions only record the name.
-fn declare_opaque_names(out: &mut Orbital, global: &AliasShapes) {
-    let mut used = BTreeSet::new();
-    let mut params: BTreeSet<String> = BTreeSet::new();
-    let mut fields: Vec<&[crate::ast::ConfigField]> = vec![&out.config];
-    for t in &out.traits {
-        params.extend(t.type_params.iter().map(|p| p.name.clone()));
-        fields.push(&t.config);
-        for e in &t.emits {
-            e.payload
-                .iter()
-                .for_each(|f| collect_named(&f.type_expr, &mut used));
-        }
-        for l in &t.listens {
-            l.payload
-                .iter()
-                .for_each(|f| collect_named(&f.type_expr, &mut used));
-        }
-        if let Some(r) = &t.reference {
-            fields.push(&r.config);
-        }
-    }
-    for list in fields {
-        list.iter()
-            .for_each(|c| collect_named(&c.type_expr, &mut used));
-    }
-    let declared: BTreeSet<&str> = out.type_aliases.iter().map(|a| a.name.as_str()).collect();
-    let mut entities: BTreeSet<&str> = global.entities.iter().map(String::as_str).collect();
-    entities.extend(
-        out.entity
-            .iter()
-            .chain(&out.extra_entities)
-            .map(|e| e.name.as_str()),
-    );
-    let missing: Vec<String> = used
-        .into_iter()
-        .filter(|n| {
-            !declared.contains(n.as_str())
-                && !entities.contains(n.as_str())
-                && !params.contains(n)
-                && crate::lower::primitive_field_type(n).is_none()
-        })
-        .collect();
-    for n in missing {
-        out.type_aliases.push(type_alias(
-            &n,
-            TypeBody::Alias(TypeExpr::Primitive("string".to_string())),
-        ));
-    }
-}

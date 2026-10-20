@@ -229,12 +229,12 @@ fn import_body_retype_round_trips() {
         return;
     };
     round_trip(
-        &import("  retype {\n    title : text = \"untitled\"\n    pinned : boolean = true\n  }\n"),
+        &import("  retype {\n    title : string = \"untitled\"\n    pinned : boolean = true\n  }\n"),
         &options,
     )
     .unwrap();
     round_trip(
-        &import("  extend {\n    dueDate : date = null\n  }\n  retype {\n    title : text\n  }\n"),
+        &import("  extend {\n    dueDate : date = null\n  }\n  retype {\n    title : string\n  }\n"),
         &options,
     )
     .unwrap();
@@ -303,6 +303,132 @@ fn control_recursive_alias_direct_payload_round_trips() {
         return;
     };
     round_trip(&recursive_alias_program("fields : [ToolField]"), &options).unwrap();
+}
+
+fn json_value_program(arguments: &str) -> String {
+    format!(
+        r#"app Probe
+type JsonValue = string | number | boolean | [JsonValue] | Map string JsonValue
+type ToolArguments = {arguments}
+type ToolCall = {{ id : string!, arguments : ToolArguments }}
+orbital CallOrbital {{
+  entity Call [runtime] {{
+    id : string!
+  }}
+  trait CallBrowse -> Call [interaction] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+    }}
+    emits {{
+      CALLED -> external {{
+        calls : [ToolCall]
+      }}
+    }}
+  }}
+  page "/" -> CallBrowse [initial]
+}}"#
+    )
+}
+
+#[test]
+fn recursive_primitive_union_alias_round_trips_as_declared() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = json_value_program("Map string JsonValue");
+    round_trip(&source, &options).unwrap();
+    let schema = parse_and_lower_str_with(&source, &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert!(
+        printed.contains("type JsonValue = string | number | boolean | [JsonValue] | Map string JsonValue"),
+        "{printed}"
+    );
+}
+
+#[test]
+fn control_alias_without_union_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&json_value_program("Map string number"), &options).unwrap();
+}
+
+fn app_config_program(knob: &str) -> String {
+    format!(
+        r#"app Probe
+config {{
+  {knob}
+}}
+type Mode = "list" | "grid"
+type NavLink = {{ label : string!, href : string! }}
+type JsonValue = string | number | boolean | [JsonValue] | Map string JsonValue
+orbital LinkOrbital {{
+  entity Link [runtime] {{
+    id : string!
+  }}
+  trait LinkBrowse -> Link [interaction] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+    }}
+  }}
+  page "/" -> LinkBrowse [initial]
+}}"#
+    )
+}
+
+#[test]
+fn app_config_alias_knobs_round_trip() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    for knob in [
+        "mode : Mode = grid",
+        "home : NavLink",
+        "links : [NavLink] = []",
+        "extra : Map string JsonValue",
+    ] {
+        round_trip(&app_config_program(knob), &options).unwrap_or_else(|e| panic!("{knob}: {e}"));
+    }
+}
+
+#[test]
+fn control_app_config_primitive_knob_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&app_config_program("pageSize : number = 5"), &options).unwrap();
+}
+
+fn spec_payload_program(claims: &str) -> String {
+    format!(
+        r#"app ProbeSpec
+type KeyClaim = {{ name : string!, value : string! }}
+orbital ProbeSpecOrbital {{
+  expects trait Verifier {{
+    emits {{
+      VERIFIED {{ owner : string!  {claims} }}
+    }}
+  }}
+}}"#
+    )
+}
+
+#[test]
+fn spec_expects_payload_struct_alias_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&spec_payload_program("claims : [KeyClaim]!"), &options).unwrap();
+}
+
+#[test]
+fn control_spec_expects_payload_primitive_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&spec_payload_program("claims : [string]!"), &options).unwrap();
 }
 
 fn bytes_program(field_type: &str) -> String {

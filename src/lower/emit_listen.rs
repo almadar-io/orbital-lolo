@@ -868,7 +868,7 @@ pub(crate) fn union_payload_variants(
     let parts: &Vec<TypeExpr> = match te {
         TypeExpr::Union(parts) => parts,
         TypeExpr::Named(n) => match aliases.get(n) {
-            Some(TypeAliasResolved::Type(TypeExpr::Union(parts))) => parts,
+            Some(TypeAliasResolved::Type(TypeExpr::Union(parts), _)) => parts,
             _ => return None,
         },
         _ => return None,
@@ -900,6 +900,7 @@ pub(crate) fn union_payload_variants(
                 None => (n.clone(), type_expr_to_string(p), None),
             },
             TypeExpr::Primitive(n) => (n.clone(), type_expr_to_string(p), None),
+            TypeExpr::Map(..) => ("object".to_string(), type_expr_to_string(p), None),
             _ => return None,
         };
         out.push(PayloadField {
@@ -929,7 +930,7 @@ pub(crate) fn union_container(
 ) -> Option<(String, Box<PayloadField>)> {
     let body = match ty.peel() {
         TypeExpr::Named(n) => match aliases.get(n) {
-            Some(TypeAliasResolved::Type(t)) => t,
+            Some(TypeAliasResolved::Type(t, _)) => t,
             _ => return None,
         },
         other => other,
@@ -989,7 +990,7 @@ pub(crate) fn struct_payload_properties(
     let (guard_name, items): (Option<&str>, &Vec<(String, TypeExpr, bool)>) = match te.peel() {
         TypeExpr::Object(items) => (None, items),
         TypeExpr::Named(n) => match aliases.get(n) {
-            Some(TypeAliasResolved::Type(TypeExpr::Object(items))) => (Some(n.as_str()), items),
+            Some(TypeAliasResolved::Type(TypeExpr::Object(items), _)) => (Some(n.as_str()), items),
             _ => return None,
         },
         _ => return None,
@@ -1103,7 +1104,7 @@ pub(crate) fn payload_literal_values(
         TypeExpr::Union(parts) => literals(parts),
         TypeExpr::Named(n) => match aliases.get(n) {
             Some(TypeAliasResolved::Enum(values)) => Some(values.clone()),
-            Some(TypeAliasResolved::Type(TypeExpr::Union(parts))) => literals(parts),
+            Some(TypeAliasResolved::Type(TypeExpr::Union(parts), _)) => literals(parts),
             _ => None,
         },
         TypeExpr::Array(inner) => payload_literal_values(inner, aliases),
@@ -1126,7 +1127,7 @@ fn enum_alias_payload_type(
     match ty.peel() {
         TypeExpr::Named(n) => match aliases.get(n) {
             Some(TypeAliasResolved::Enum(_)) => Some("string".to_string()),
-            Some(TypeAliasResolved::Type(TypeExpr::Union(parts))) if literal_union(parts) => {
+            Some(TypeAliasResolved::Type(TypeExpr::Union(parts), _)) if literal_union(parts) => {
                 Some("string".to_string())
             }
             _ => None,
@@ -1259,7 +1260,7 @@ mod recursive_struct_payload_tests {
                     TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
                     false,
                 ),
-            ])),
+            ]), None),
         );
         aliases
     }
@@ -1414,7 +1415,7 @@ mod recursive_struct_payload_tests {
                 TypeExpr::Primitive("number".to_string()),
                 true,
             ),
-        ]));
+        ]), None);
         let container_item = TypeAliasResolved::Type(TypeExpr::Object(vec![
             (
                 "id".to_string(),
@@ -1426,7 +1427,7 @@ mod recursive_struct_payload_tests {
                 TypeExpr::Array(Box::new(TypeExpr::Named("PortItem".to_string()))),
                 true,
             ),
-        ]));
+        ]), None);
         let mut aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
         aliases.insert("PortItem".to_string(), port_item);
         aliases.insert("ContainerItem".to_string(), container_item);
@@ -1572,7 +1573,7 @@ mod recursive_struct_payload_tests {
         let mut aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
         aliases.insert(
             "S".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(s_fields.clone())),
+            TypeAliasResolved::Type(TypeExpr::Object(s_fields.clone()), None),
         );
 
         let mut entities_by_name: BTreeMap<String, Vec<(String, TypeExpr, bool)>> = BTreeMap::new();
@@ -1712,7 +1713,7 @@ mod recursive_struct_payload_tests {
         let mut aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
         aliases.insert(
             "QueueJob".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(queue_job_fields)),
+            TypeAliasResolved::Type(TypeExpr::Object(queue_job_fields), None),
         );
         let entities_by_name: BTreeMap<String, Vec<(String, TypeExpr, bool)>> = BTreeMap::new();
 
@@ -1980,14 +1981,14 @@ mod struct_payload_enum_alias_tests {
             TypeAliasResolved::Type(TypeExpr::Union(vec![
                 TypeExpr::StringLiteral("input".to_string()),
                 TypeExpr::StringLiteral("read".to_string()),
-            ])),
+            ]), None),
         );
         aliases.insert(
             "Shape".to_string(),
             TypeAliasResolved::Type(TypeExpr::Union(vec![
                 TypeExpr::Named("Point".to_string()),
                 TypeExpr::Named("Other".to_string()),
-            ])),
+            ]), None),
         );
         aliases.insert(
             "Other".to_string(),
@@ -1995,7 +1996,7 @@ mod struct_payload_enum_alias_tests {
                 "y".to_string(),
                 TypeExpr::Primitive("number".to_string()),
                 true,
-            )])),
+            )]), None),
         );
         aliases.insert(
             "Point".to_string(),
@@ -2003,7 +2004,7 @@ mod struct_payload_enum_alias_tests {
                 "x".to_string(),
                 TypeExpr::Primitive("number".to_string()),
                 true,
-            )])),
+            )]), None),
         );
         aliases.insert(
             "Activity".to_string(),
@@ -2042,7 +2043,7 @@ mod struct_payload_enum_alias_tests {
                     TypeExpr::Named("Shape".to_string()),
                     false,
                 ),
-            ])),
+            ]), None),
         );
         aliases
     }

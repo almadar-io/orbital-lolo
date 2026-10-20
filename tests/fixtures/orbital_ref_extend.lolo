@@ -6,7 +6,7 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
     periodStart: from
   }
   extend {
-    workspaceId : Workspace! @description "Workspace"
+    workspaceId : string! @description "Workspace"
     overtimeHours : number @description "Overtime hours" = 0
   }
   roles {

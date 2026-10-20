@@ -1293,15 +1293,6 @@ fn check_event_ref_positions(cf: &ConfigField, ctx: &ResolveCtx<'_>) -> Result<(
 }
 
 pub fn check_program(program: &Program) -> Result<(), TypeError> {
-    check_program_in_scope(program, &BTreeSet::new())
-}
-
-/// [`check_program`] with the type names the file's `uses`-imported behaviors
-/// declare (transitively) in scope as references.
-pub fn check_program_in_scope(
-    program: &Program,
-    imported_types: &BTreeSet<String>,
-) -> Result<(), TypeError> {
     let mut file = TypeRegistry::new();
     for ta in &program.type_aliases {
         reject_generic_alias_body(ta)?;
@@ -1322,7 +1313,6 @@ pub fn check_program_in_scope(
     for o in &program.orbitals {
         entity_names.extend(expected_entity_names(o).into_iter().map(str::to_string));
     }
-    entity_names.extend(imported_types.iter().cloned());
     let file_ctx = ResolveCtx {
         file: &file,
         orbital: None,
@@ -1509,17 +1499,25 @@ pub fn check_program_in_scope(
             }
         }
         for exp in &orb.expects {
-            let shape = match &exp.kind {
+            let members: Vec<(&str, &TypeExpr, Span)> = match &exp.kind {
                 crate::ast::ExpectsKind::Identity { shape, .. }
-                | crate::ast::ExpectsKind::Entity { shape, .. } => shape.as_ref(),
-                _ => None,
+                | crate::ast::ExpectsKind::Entity { shape, .. } => shape
+                    .iter()
+                    .flatten()
+                    .map(|f| (f.name.as_str(), &f.type_expr, f.span))
+                    .collect(),
+                crate::ast::ExpectsKind::Event { payload, .. } => payload
+                    .iter()
+                    .map(|f| (f.name.as_str(), &f.type_expr, f.span))
+                    .collect(),
+                crate::ast::ExpectsKind::Config { field } => {
+                    vec![(field.name.as_str(), &field.type_expr, field.span)]
+                }
+                _ => Vec::new(),
             };
-            for f in shape.into_iter().flatten() {
-                reject_generic_types(
-                    &f.type_expr,
-                    &format!("expects contract field {:?}", f.name),
-                    f.span,
-                )?;
+            for (name, type_expr, span) in members {
+                reject_generic_types(type_expr, &format!("expects contract field {name:?}"), span)?;
+                check_field_type_refs(type_expr, span, &ctx, &entity_names, &BTreeSet::new())?;
             }
         }
     }
@@ -1921,6 +1919,49 @@ orbital OrbF {
 "#;
         let err = check(src).unwrap_err();
         assert!(matches!(err, TypeError::UnknownType { .. }), "got {err:?}");
+    }
+
+    fn spec_with(shape: &str, payload: &str, knob: &str) -> String {
+        format!(
+            r#"
+type KeyClaim = {{ name : string!, value : string! }}
+orbital VerifierSpec {{
+  expects entity KeyRecord {{
+    id : string!
+    {shape}
+  }}
+  expects trait Verifier {{
+    emits {{
+      VERIFIED {{ owner : string!  {payload} }}
+    }}
+  }}
+  expects config {{ {knob} }}
+}}
+"#
+        )
+    }
+
+    #[test]
+    fn err_expects_contract_names_undeclared_type() {
+        let ok = "claims : [KeyClaim]";
+        let bad = "claims : [Undeclared]";
+        for (at, src) in [
+            ("entity shape", spec_with(bad, ok, ok)),
+            ("event payload", spec_with(ok, bad, ok)),
+            ("config", spec_with(ok, ok, bad)),
+        ] {
+            let err = check(&src).unwrap_err();
+            assert!(
+                matches!(err, TypeError::UnknownType { ref name, .. } if name == "Undeclared"),
+                "{at}: got {err:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn ok_expects_contract_names_declared_type() {
+        let ok = "claims : [KeyClaim]";
+        check(&spec_with(ok, ok, ok)).unwrap();
     }
 
     #[test]
@@ -2403,32 +2444,17 @@ orbital OrbU {{
         }
     }
 
-    /// Type names a `uses`-imported behavior declares (transitively) are in
-    /// scope; any other undeclared name stays `UnknownType`.
+    /// Types are per-file: a name the file uses but doesn't declare is
+    /// `UnknownType` even when a `uses`-imported behavior declares it.
     #[test]
-    fn imported_type_names_are_in_scope_and_nothing_else() {
-        let src = undefined_type_src(
-            "type Hit = { row : PrefRow }",
-            "rows : [PrefRow]",
-            "rows : [PrefRow]!",
-            "data : [PrefRow], result : DescribedSubject!",
-        );
-        let program = parse_str(&src).expect("parse");
-        let imported: BTreeSet<String> = ["PrefRow", "DescribedSubject"]
-            .into_iter()
-            .map(str::to_string)
-            .collect();
-        check_program_in_scope(&program, &imported).unwrap();
-        let err = check_program(&program).unwrap_err();
+    fn a_type_declared_only_by_an_imported_behavior_is_unknown() {
+        let src = undefined_type_src("", "", "", "data : [PrefRow]");
+        let err = check(&src).unwrap_err();
         assert!(
             matches!(err, TypeError::UnknownType { ref name, .. } if name == "PrefRow"),
-            "control: without the import the name is unknown, got {err:?}"
+            "got {err:?}"
         );
-        let other = parse_str(&undefined_type_src("", "", "", "data : [AuditRow]")).expect("parse");
-        let err = check_program_in_scope(&other, &imported).unwrap_err();
-        assert!(
-            matches!(err, TypeError::UnknownType { ref name, .. } if name == "AuditRow"),
-            "control: a name no import declares stays unknown, got {err:?}"
-        );
+        check(&undefined_type_src("type PrefRow = { id : string! }", "", "", "data : [PrefRow]"))
+            .expect("control: the file's own copy is in scope");
     }
 }

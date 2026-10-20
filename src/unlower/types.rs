@@ -363,7 +363,10 @@ pub(super) fn config_field(
     name: &str,
     cf: &SchemaConfigField,
 ) -> Result<ConfigField, UnlowerError> {
-    let base = if cf.field_type == "object" {
+    // A call-site `key: value` override carries the parser's `"unknown"` sentinel, not a type.
+    let base = if cf.field_type == "unknown" {
+        TypeExpr::Primitive("unknown".to_string())
+    } else if cf.field_type == "object" {
         match &cf.properties {
             Some(props) => TypeExpr::Object(object_members(props)?),
             None => primitive("object"),

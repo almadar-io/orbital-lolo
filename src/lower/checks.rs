@@ -626,7 +626,7 @@ fn type_union_member_strs(
             Some(parts.iter().map(type_expr_to_compat_str).collect())
         }
         TypeExpr::Named(n) => match aliases.get(n) {
-            Some(TypeAliasResolved::Type(inner)) => type_union_member_strs(inner, aliases),
+            Some(TypeAliasResolved::Type(inner, _)) => type_union_member_strs(inner, aliases),
             _ => None,
         },
         TypeExpr::Optional(inner) => type_union_member_strs(inner, aliases),
@@ -665,7 +665,7 @@ fn enum_members_of(
         // falls through to `None`, exactly like the inline case above.
         TypeExpr::Named(n) => match aliases.get(n) {
             Some(TypeAliasResolved::Enum(members)) if members.len() >= 2 => Some(members.clone()),
-            Some(TypeAliasResolved::Type(inner)) => enum_members_of(inner, aliases),
+            Some(TypeAliasResolved::Type(inner, _)) => enum_members_of(inner, aliases),
             _ => None,
         },
         TypeExpr::Optional(inner) => enum_members_of(inner, aliases),
@@ -861,7 +861,7 @@ fn tagged_struct_union_variants<'a>(
     match ty {
         TypeExpr::Optional(inner) => tagged_struct_union_variants(inner, aliases),
         TypeExpr::Named(n) => match aliases.get(n) {
-            Some(TypeAliasResolved::Type(inner)) => tagged_struct_union_variants(inner, aliases),
+            Some(TypeAliasResolved::Type(inner, _)) => tagged_struct_union_variants(inner, aliases),
             _ => None,
         },
         TypeExpr::Union(parts) if crate::lower::entity::is_type_union(parts, aliases) => {
@@ -870,7 +870,7 @@ fn tagged_struct_union_variants<'a>(
                 let TypeExpr::Named(name) = p else {
                     return None;
                 };
-                let Some(TypeAliasResolved::Type(TypeExpr::Object(fields))) = aliases.get(name)
+                let Some(TypeAliasResolved::Type(TypeExpr::Object(fields), _)) = aliases.get(name)
                 else {
                     return None;
                 };
@@ -2378,7 +2378,7 @@ mod recursive_type_safety_tests {
                     TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
                     false,
                 ),
-            ])),
+            ]), None),
         );
         assert_eq!(
             enum_members_of(&TypeExpr::Named("MenuItem".to_string()), &aliases),

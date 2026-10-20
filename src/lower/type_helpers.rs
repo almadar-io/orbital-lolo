@@ -322,7 +322,7 @@ pub(crate) fn lower_config_fields_to_map(
             (s, None, None, None)
         } else {
             let (_, _, items, properties, _) =
-                lower_type_expr(cf.type_expr.peel(), aliases, entity_names);
+                lower_type_expr(cf.type_expr.peel(), aliases, entity_names, type_params)?;
             (
                 type_expr_to_config_string(cf.type_expr.peel()),
                 items,

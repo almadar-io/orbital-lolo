@@ -18,7 +18,7 @@
 use orbital_core_base::behavior_packages::{BehaviorPackage, RegistrySource};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
-use std::collections::{BTreeSet, HashMap};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
 use thiserror::Error;
@@ -45,10 +45,6 @@ pub struct Behavior {
     /// their lolo type, for typed `uses … { config { … } }` override checks.
     #[serde(default, rename = "appConfig")]
     pub app_config: HashMap<String, String>,
-    /// The type names this behavior declares, and those of every behavior it
-    /// `uses` (transitively): the type scope it lends an importing file.
-    #[serde(default)]
-    pub types: BTreeSet<String>,
 }
 
 /// A single trait's parse-time-checkable contract.
@@ -223,42 +219,23 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
     let lowered = crate::parse_str(&source)
         .map_err(|e| e.to_string())
         .and_then(|ast| {
-            let schema = crate::lower::lower_to_orb_with(
+            crate::lower::lower_to_orb_with(
                 &ast,
                 &crate::LowerOptions {
                     packages: packages.to_vec(),
                 },
             )
-            .map_err(|e| e.to_string())?;
-            let mut types: BTreeSet<String> = ast
-                .type_aliases
-                .iter()
-                .chain(ast.orbitals.iter().flat_map(|o| o.type_aliases.iter()))
-                .map(|ta| ta.name.clone())
-                .collect();
-            let contracts = LoloContracts::load_shared(packages).map_err(|e| e.to_string())?;
-            types.extend(
-                contracts.imported_type_names(
-                    ast.uses
-                        .iter()
-                        .chain(ast.orbitals.iter().flat_map(|o| o.uses.iter()))
-                        .map(|u| u.path.as_str()),
-                ),
-            );
-            Ok((schema, types))
+            .map_err(|e| e.to_string())
         });
     LOWERING.with(|l| l.borrow_mut().remove(path));
-    let (schema, types) = match lowered {
-        Ok(lowered) => lowered,
+    let schema = match lowered {
+        Ok(schema) => schema,
         Err(e) => {
             tracing::warn!(path = %path.display(), error = %e, "live behavior did not lower; its contract is unknown");
             return None;
         }
     };
-    let behavior = Arc::new(Behavior {
-        types,
-        ..Behavior::from_program(&schema)
-    });
+    let behavior = Arc::new(Behavior::from_program(&schema));
     cache
         .lock()
         .expect("live contract cache poisoned")
@@ -377,16 +354,6 @@ impl LoloContracts {
             }
         }
         Ok(found.map(|(_, behavior)| behavior))
-    }
-
-    /// The type names the behaviors at these `uses` paths declare, transitively.
-    /// A path with no known contract (a local file, an import cycle, an
-    /// ambiguous name) lends none.
-    pub fn imported_type_names<'a>(&self, paths: impl Iterator<Item = &'a str>) -> BTreeSet<String> {
-        paths
-            .filter_map(|p| self.get_behavior(behavior_key_from_path(p)).ok().flatten())
-            .flat_map(|b| b.types.iter().cloned().collect::<Vec<_>>())
-            .collect()
     }
 
     /// Contracts assembled in memory (tests; callers that already hold the maps).
@@ -575,7 +542,6 @@ impl Behavior {
             pages,
             orbitals,
             app_config: config_types(schema.config.as_ref()),
-            types: BTreeSet::new(),
         }
     }
 }

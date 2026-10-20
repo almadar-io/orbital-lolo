@@ -221,7 +221,7 @@ pub(crate) fn lower_orbital_reference(
                     &t.body.listens,
                     aliases,
                     entity_names,
-                );
+                )?;
                 map.insert(
                     t.trait_name.clone(),
                     orbital_core_base::schema::OrbitalRefTraitOverride {

@@ -8,7 +8,7 @@ use crate::ast::*;
 use crate::error::{Located, LowerError};
 use crate::patterns_meta::event_prop_names;
 use crate::registry::LoloContracts;
-use crate::types::check_program_in_scope;
+use crate::types::check_program;
 use orbital_core_base::behavior_packages::BehaviorPackage;
 use orbital_core_base::effect_row::{EffectRow, EffectRowBuilder, EffectSite};
 use orbital_core_base::schema::{
@@ -229,18 +229,12 @@ fn lower_to_orb_names_only(
     // as `LowerError::Type(..)` before lowering proceeds. Types are stripped
     // after this — the emitted `.orb` is byte-identical to a `.lolo` that
     // declared no types at all.
-    let imported_types = contracts.imported_type_names(
-        ast.uses
-            .iter()
-            .chain(ast.orbitals.iter().flat_map(|o| o.uses.iter()))
-            .map(|u| u.path.as_str()),
-    );
-    check_program_in_scope(ast, &imported_types).map_err(LowerError::Type)?;
+    check_program(ast).map_err(LowerError::Type)?;
 
     // Build a global map of type aliases (file-level) for enum substitution.
     let mut type_aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
     for ta in &ast.type_aliases {
-        type_aliases.insert(ta.name.clone(), resolve_type_alias(&ta.body));
+        type_aliases.insert(ta.name.clone(), resolve_type_alias(&ta.body, ta.type_param.as_ref()));
     }
     reclassify_struct_unions(&mut type_aliases);
 
@@ -301,7 +295,7 @@ fn lower_to_orb_names_only(
         // Merge orbital-scoped type aliases on top of file-level ones.
         let mut local_aliases = type_aliases.clone();
         for ta in &orb.type_aliases {
-            local_aliases.insert(ta.name.clone(), resolve_type_alias(&ta.body));
+            local_aliases.insert(ta.name.clone(), resolve_type_alias(&ta.body, ta.type_param.as_ref()));
         }
         reclassify_struct_unions(&mut local_aliases);
         let mut local_entities = file_entity_bodies.clone();
@@ -532,8 +526,9 @@ pub(crate) enum TypeAliasResolved {
     /// `type X = a | b | c` lowers to a string field with values [...].
     Enum(Vec<String>),
     /// Other type aliases are passthrough — we record the resolved type
-    /// expression and re-evaluate it on demand.
-    Type(TypeExpr),
+    /// expression and re-evaluate it on demand, with the alias's own type
+    /// parameter (`T` in `type Box T = { v : T }`), which is in scope in it.
+    Type(TypeExpr, Option<String>),
 }
 
 /// Phase 2.5: resolved event type alias.
@@ -647,19 +642,21 @@ fn reclassify_struct_unions(aliases: &mut BTreeMap<String, TypeAliasResolved>) {
         rewrites.push((name.clone(), TypeExpr::Union(parts)));
     }
     for (name, ty) in rewrites {
-        aliases.insert(name, TypeAliasResolved::Type(ty));
+        aliases.insert(name, TypeAliasResolved::Type(ty, None));
     }
 }
 
-fn resolve_type_alias(body: &TypeBody) -> TypeAliasResolved {
+fn resolve_type_alias(body: &TypeBody, param: Option<&String>) -> TypeAliasResolved {
     match body {
         TypeBody::Enum(v) => TypeAliasResolved::Enum(v.clone()),
-        TypeBody::Alias(t) => TypeAliasResolved::Type(t.clone()),
+        TypeBody::Alias(t) => TypeAliasResolved::Type(t.clone(), param.cloned()),
         // Preserve struct field shape by re-projecting onto TypeExpr::Object
         // — `TypeExpr::Object` and `TypeBody::Struct` share `Vec<(String, TypeExpr)>`,
         // so referenced struct aliases lower to a structured object instead of
         // a flat `object` primitive (which previously collapsed to `Json`).
-        TypeBody::Struct(items) => TypeAliasResolved::Type(TypeExpr::Object(items.clone())),
+        TypeBody::Struct(items) => {
+            TypeAliasResolved::Type(TypeExpr::Object(items.clone()), param.cloned())
+        }
         // Shape aliases (Entity/Trait/Page/Orbital/Composition) are not
         // field-type-resolvable — they live in the type-check pass, not in
         // field lowering. Treat them as opaque object for any accidental
@@ -670,7 +667,7 @@ fn resolve_type_alias(body: &TypeBody) -> TypeAliasResolved {
         | TypeBody::Orbital { .. }
         | TypeBody::Event { .. }
         | TypeBody::Composition(_) => {
-            TypeAliasResolved::Type(TypeExpr::Primitive("object".to_string()))
+            TypeAliasResolved::Type(TypeExpr::Primitive("object".to_string()), None)
         }
     }
 }
@@ -836,10 +833,115 @@ fn lower_spec_orbital(
         os_grants: None,
         design: None,
         id: None,
-        types: None,
+        types: orbital_types(aliases),
         reference: None,
         config: None,
     })
+}
+
+fn vocabulary_values(te: &TypeExpr) -> Option<Vec<String>> {
+    match te {
+        TypeExpr::Union(parts) => parts
+            .iter()
+            .map(|p| match p {
+                TypeExpr::Named(n) | TypeExpr::Primitive(n) | TypeExpr::StringLiteral(n) => {
+                    Some(n.clone())
+                }
+                _ => None,
+            })
+            .collect(),
+        _ => None,
+    }
+}
+
+fn vocabulary_entry(values: Vec<String>) -> PayloadField {
+    PayloadField {
+        values: Some(values),
+        name: String::new(),
+        field_type: "string".to_string(),
+        required: None,
+        description: None,
+        properties: None,
+        type_when: None,
+        entity: None,
+        projected_from: None,
+        items: None,
+    }
+}
+
+fn orbital_types(
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Option<BTreeMap<String, Vec<PayloadField>>> {
+    // Gap A: carry every struct-shaped alias visible in this orbital's scope
+    // (file-level + orbital-local, already merged into `aliases`) so a `::`
+    // type-param arg naming a local struct alias survives L1 — the `.orb`
+    // otherwise has no record of type aliases at all. Enum/primitive/entity
+    // aliases are not legal `::` args and are excluded.
+    let mut types_map: BTreeMap<String, Vec<PayloadField>> = BTreeMap::new();
+    for (name, resolved) in aliases {
+        match resolved {
+            TypeAliasResolved::Type(te @ TypeExpr::Object(_), _) => {
+                if let Some(props) = struct_payload_properties(te, aliases, &[]) {
+                    types_map.insert(name.clone(), props);
+                }
+            }
+            // A dictionary or list alias is not a struct: it is recorded as ONE entry with the empty name (no field
+            // has one) whose type string is the alias's value, so `json/parse x Row` can name it as a shape.
+            TypeAliasResolved::Type(
+                te @ (TypeExpr::Map(..) | TypeExpr::Array(_) | TypeExpr::SExpr),
+                _,
+            ) => {
+                types_map.insert(
+                    name.clone(),
+                    vec![PayloadField {
+                        values: None,
+                        name: String::new(),
+                        field_type: type_expr_to_string(te),
+                        required: None,
+                        description: None,
+                        properties: None,
+                        type_when: None,
+                        entity: None,
+                        projected_from: None,
+                        items: None,
+                    }],
+                );
+            }
+            // A tagged union is recorded as ONE entry with the empty name, typed `union`, whose properties are its
+            // variants: a payload field named by the alias resolves to that union and its members can be read.
+            TypeAliasResolved::Type(te @ TypeExpr::Union(_), _) => {
+                if let Some(variants) = crate::lower::emit_listen::union_payload_variants(te, aliases, &[]) {
+                    types_map.insert(
+                        name.clone(),
+                        vec![PayloadField {
+                            values: None,
+                            name: String::new(),
+                            field_type: "union".to_string(),
+                            required: None,
+                            description: None,
+                            properties: Some(variants),
+                            type_when: None,
+                            entity: None,
+                            projected_from: None,
+                            items: None,
+                        }],
+                    );
+                } else if let Some(values) = vocabulary_values(te) {
+                    types_map.insert(name.clone(), vec![vocabulary_entry(values)]);
+                }
+            }
+            // A closed vocabulary (`"list" | "grid"`, `"x"`) is ONE empty-name `string` entry carrying its words.
+            TypeAliasResolved::Type(TypeExpr::StringLiteral(word), _) => {
+                types_map.insert(name.clone(), vec![vocabulary_entry(vec![word.clone()])]);
+            }
+            _ => {}
+        }
+    }
+    if types_map.is_empty() {
+        None
+    } else {
+        Some(types_map)
+    }
 }
 
 /// The IR requires an entity on every orbital; a spec's is an empty, field-less shell named after
@@ -1123,69 +1225,7 @@ fn lower_orbital(
         Some(orb.pages.iter().map(lower_page_decl).collect::<Vec<_>>())
     };
 
-    // Gap A: carry every struct-shaped alias visible in this orbital's scope
-    // (file-level + orbital-local, already merged into `aliases`) so a `::`
-    // type-param arg naming a local struct alias survives L1 — the `.orb`
-    // otherwise has no record of type aliases at all. Enum/primitive/entity
-    // aliases are not legal `::` args and are excluded.
-    let mut types_map: BTreeMap<String, Vec<PayloadField>> = BTreeMap::new();
-    for (name, resolved) in aliases {
-        match resolved {
-            TypeAliasResolved::Type(te @ TypeExpr::Object(_)) => {
-                if let Some(props) = struct_payload_properties(te, aliases, &[]) {
-                    types_map.insert(name.clone(), props);
-                }
-            }
-            // A dictionary or list alias is not a struct: it is recorded as ONE entry with the empty name (no field
-            // has one) whose type string is the alias's value, so `json/parse x Row` can name it as a shape.
-            TypeAliasResolved::Type(
-                te @ (TypeExpr::Map(..) | TypeExpr::Array(_) | TypeExpr::SExpr),
-            ) => {
-                types_map.insert(
-                    name.clone(),
-                    vec![PayloadField {
-                        values: None,
-                        name: String::new(),
-                        field_type: type_expr_to_string(te),
-                        required: None,
-                        description: None,
-                        properties: None,
-                        type_when: None,
-                        entity: None,
-                        projected_from: None,
-                        items: None,
-                    }],
-                );
-            }
-            // A tagged union is recorded as ONE entry with the empty name, typed `union`, whose properties are its
-            // variants: a payload field named by the alias resolves to that union and its members can be read.
-            TypeAliasResolved::Type(te @ TypeExpr::Union(_)) => {
-                if let Some(variants) = crate::lower::emit_listen::union_payload_variants(te, aliases, &[]) {
-                    types_map.insert(
-                        name.clone(),
-                        vec![PayloadField {
-                            values: None,
-                            name: String::new(),
-                            field_type: "union".to_string(),
-                            required: None,
-                            description: None,
-                            properties: Some(variants),
-                            type_when: None,
-                            entity: None,
-                            projected_from: None,
-                            items: None,
-                        }],
-                    );
-                }
-            }
-            _ => {}
-        }
-    }
-    let types = if types_map.is_empty() {
-        None
-    } else {
-        Some(types_map)
-    };
+    let types = orbital_types(aliases);
 
     Ok(CoreOrbital {
         name: orb.name.clone(),
@@ -2621,8 +2661,11 @@ mod tests {
         }
         assert!(matches!(&expects[1], ExpectDeclaration::Config { name, knob, .. } if name == "retries" && knob.default.is_none()));
         let reformatted = crate::format::format_program(&parse_str(src).expect("parses"));
-        assert!(reformatted.contains("expects config { stdio : string = \"pipe\" }"), "{reformatted}");
-        assert_eq!(lower(&reformatted).orbitals[0].expects.as_ref().map(Vec::len), Some(2));
+        assert!(reformatted.contains("expects config { stdio : string = pipe }"), "{reformatted}");
+        let relowered = lower(&reformatted);
+        let again = relowered.orbitals[0].expects.as_ref().expect("expects re-lowered");
+        assert_eq!(again.len(), 2);
+        assert!(matches!(&again[0], ExpectDeclaration::Config { knob, .. } if knob.default == Some(SExpression::String("pipe".to_string()))));
     }
 
     #[test]
