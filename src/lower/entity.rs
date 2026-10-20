@@ -740,6 +740,68 @@ mod tests {
             "a back-reference carries NO properties — unchanged from before this feature"
         );
     }
+
+    fn assert_backref(field: &FieldDefinition, name: &str) {
+        assert!(matches!(field.field_type, FieldType::Union), "{field:?}");
+        assert_eq!(field.values.as_deref(), Some([name.to_string()].as_slice()));
+        assert!(field.properties.is_none());
+        assert_eq!(field.by_name_reference(), Some(name));
+    }
+
+    /// `type RowCell = string | number | [RowCell] | Map string RowCell`: a type
+    /// union (a `Map` member is structural, never a vocabulary word) whose list and
+    /// map variants re-enter `RowCell` by name.
+    #[test]
+    fn recursive_union_through_list_and_map_lowers_to_by_name_refs() {
+        let row_cell = |value: TypeExpr| {
+            TypeExpr::Union(vec![
+                TypeExpr::Primitive("string".to_string()),
+                TypeExpr::Primitive("number".to_string()),
+                TypeExpr::Array(Box::new(value.clone())),
+                TypeExpr::Map(
+                    Box::new(TypeExpr::Primitive("string".to_string())),
+                    Box::new(value),
+                ),
+            ])
+        };
+        let mut aliases = BTreeMap::new();
+        aliases.insert(
+            "RowCell".to_string(),
+            TypeAliasResolved::Type(row_cell(TypeExpr::Named("RowCell".to_string()))),
+        );
+        let (ft, values, _items, props, _rel) = lower_type_expr(
+            &TypeExpr::Named("RowCell".to_string()),
+            &aliases,
+            &HashSet::new(),
+        );
+        assert!(matches!(ft, FieldType::Union), "got {ft:?}");
+        assert_eq!(
+            values.as_deref(),
+            Some(
+                ["string", "number", "array", "map"]
+                    .map(str::to_string)
+                    .as_slice()
+            )
+        );
+        let props = props.expect("variant shapes");
+        let list = props.get("array").expect("list variant");
+        assert!(matches!(list.field_type, FieldType::Array));
+        assert_backref(list.items.as_deref().expect("list element"), "RowCell");
+        let map = props.get("map").expect("map variant");
+        assert!(matches!(map.field_type, FieldType::Object));
+        assert_backref(map.items.as_deref().expect("map value"), "RowCell");
+
+        // Control: the same union over a non-recursive value expands it inline.
+        let (_, _, _, plain, _) = lower_type_expr(
+            &row_cell(TypeExpr::Primitive("number".to_string())),
+            &BTreeMap::new(),
+            &HashSet::new(),
+        );
+        let plain = plain.expect("variant shapes");
+        let value = plain["map"].items.as_deref().expect("map value");
+        assert!(matches!(value.field_type, FieldType::Number));
+        assert_eq!(value.by_name_reference(), None);
+    }
 }
 
 /// Does `parts` read as a TYPE union rather than a string enum?
@@ -762,7 +824,7 @@ mod tests {
 /// all-primitive members, and it was inside a `@description` string.
 ///
 /// A member counts as a type when it is a struct alias, a primitive name, or a
-/// structural expression (`[string]`), which needs no alias to be unambiguous.
+/// structural expression (`[string]`, `Map K V`), which needs no alias to be unambiguous.
 pub(crate) fn is_type_union(
     parts: &[TypeExpr],
     aliases: &BTreeMap<String, TypeAliasResolved>,
@@ -791,7 +853,7 @@ pub(crate) fn is_type_union_with(
                 None => primitive_field_type(name).is_some(),
             },
             TypeExpr::Primitive(name) => primitive_field_type(name).is_some(),
-            TypeExpr::Array(_) => true,
+            TypeExpr::Array(_) | TypeExpr::Map(..) => true,
             _ => false,
         })
 }
@@ -835,6 +897,7 @@ fn struct_union_variants(
             }
             // `[string]` and friends — a structural variant needs no alias.
             TypeExpr::Array(_) => ("array".to_string(), p.clone()),
+            TypeExpr::Map(..) => ("map".to_string(), p.clone()),
             _ => return None,
         };
         let name = &variant_name;

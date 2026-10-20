@@ -613,6 +613,9 @@ pub enum ExpectsKind {
         to: String,
         ensures: Vec<SExpression>,
     },
+    /// `expects config { stdio : string = "pipe" }` — one per knob: a trait of the program declares it, of this type
+    /// and, when stated, with this default.
+    Config { field: ConfigField },
 }
 
 /// `entity Name [:: TypeAnnotation] [persistence] { fields... }`.

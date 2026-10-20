@@ -1,0 +1,245 @@
+//! `(tree/fold value step Shape)` lowers to `(tree/fold value step Shape definition)`: `definition` is the
+//! shape's `.orb` field definition as JSON text, built from the alias table so every recursive back-reference
+//! keeps the by-name form `{type: union, values: [Shape]}` the kernel reads child positions from
+//! (`orbital_core_eval` `operators::tree`). The orbital `types` section cannot serve: it expands one level.
+
+use super::entity::lower_type_expr;
+use super::TypeAliasResolved;
+use crate::ast::{Span, TypeExpr};
+use crate::error::{LowerError, TypeError};
+use orbital_core_base::schema::{FieldDefinition, Orbital as CoreOrbital};
+use serde_json::Value as J;
+use std::collections::{BTreeMap, HashSet};
+
+/// Object keys sorted at every depth, so the baked text is byte-stable (`properties` is a hash map).
+fn sorted(value: J) -> J {
+    match value {
+        J::Object(map) => {
+            let mut entries: Vec<(String, J)> = map.into_iter().collect();
+            entries.sort_by(|a, b| a.0.cmp(&b.0));
+            J::Object(entries.into_iter().map(|(k, v)| (k, sorted(v))).collect())
+        }
+        J::Array(items) => J::Array(items.into_iter().map(sorted).collect()),
+        other => other,
+    }
+}
+
+fn definition(
+    shape: &str,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+) -> String {
+    let (field_type, values, items, properties, relation) =
+        lower_type_expr(&TypeExpr::Named(shape.to_string()), aliases, entity_names);
+    let def = FieldDefinition {
+        merged_from: None,
+        name: Some(shape.to_string()),
+        field_type,
+        required: None,
+        primary_key: None,
+        unique: None,
+        default: None,
+        values,
+        relation,
+        items,
+        properties,
+        intrinsic: None,
+        description: None,
+        synonyms: None,
+        mock: None,
+        projected_from: None,
+    };
+    let json = serde_json::to_value(&def).expect("a field definition serializes to JSON");
+    sorted(json).to_string()
+}
+
+fn bake(
+    node: &mut J,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+    span: Span,
+) -> Result<bool, LowerError> {
+    let mut changed = false;
+    match node {
+        J::Array(items) => {
+            if let [J::String(op), _, _, J::String(shape)] = items.as_slice() {
+                if op == "tree/fold" {
+                    if !aliases.contains_key(shape) {
+                        let known: Vec<String> = aliases.keys().cloned().collect();
+                        return Err(LowerError::Type(TypeError::UnknownType {
+                            name: shape.clone(),
+                            suggestion: crate::types::closest_name(shape, &known),
+                            span,
+                        }));
+                    }
+                    let text = definition(shape, aliases, entity_names);
+                    items.push(J::String(text));
+                    changed = true;
+                }
+            }
+            for item in items.iter_mut() {
+                changed |= bake(item, aliases, entity_names, span)?;
+            }
+        }
+        J::Object(map) => {
+            for child in map.values_mut() {
+                changed |= bake(child, aliases, entity_names, span)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(changed)
+}
+
+/// Write the shape definition into every `(tree/fold value step Shape)` of `orbital`. A `Shape` no alias in scope
+/// declares is `ORB_T_TYPE_UNKNOWN`.
+pub(crate) fn bake_tree_fold_definitions(
+    orbital: &mut CoreOrbital,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+    span: Span,
+) -> Result<(), LowerError> {
+    let mut tree = serde_json::to_value(&*orbital).expect("an orbital serializes to JSON");
+    if bake(&mut tree, aliases, entity_names, span)? {
+        *orbital = serde_json::from_value(tree).expect("a baked orbital reads back");
+    }
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::error::{LoloError, LowerError, TypeError};
+    use orbital_core_base::schema::{FieldDefinition, FieldType};
+    use serde_json::Value as J;
+
+    fn program(types: &str, shape: &str) -> String {
+        format!(
+            "app tf [\n  version: \"1.0.0\",\n  description: \"x\"\n]\n{types}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    out : string\n  }}\n  trait T -> E [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (set @entity.out (tree/fold @payload.v (fn (n k) @n.label) {shape}))\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
+        )
+    }
+
+    const TREE: &str = "type Tree = { label : string!, kids : [Tree], parent : Tree, named : Map string Tree, tags : [string] }";
+    const PREDICATE: &str = "type Leaf = { kind : \"leaf\"!, label : string! }\ntype Not = { kind : \"not\"!, of : Pred! }\ntype All = { kind : \"all\"!, of : [Pred]! }\ntype Pred = Leaf | Not | All";
+
+    fn fold_call(source: &str) -> J {
+        let lowered =
+            serde_json::to_value(crate::parse_and_lower_str(source).expect("lowers")).unwrap();
+        lowered["orbitals"][0]["traits"][0]["stateMachine"]["transitions"][0]["effects"][0][2]
+            .clone()
+    }
+
+    fn baked_definition(source: &str) -> FieldDefinition {
+        let call = fold_call(source);
+        let items = call.as_array().expect("the fold is a call");
+        assert_eq!(items.len(), 5, "the definition is appended: {call}");
+        serde_json::from_str(items[4].as_str().expect("the definition is JSON text")).unwrap()
+    }
+
+    #[test]
+    fn a_recursive_struct_bakes_its_child_positions_as_by_name_references() {
+        let def = baked_definition(&program(TREE, "Tree"));
+        assert_eq!(def.name.as_deref(), Some("Tree"));
+        let props = def.properties.expect("a struct declares its fields");
+        assert_eq!(
+            props["kids"]
+                .items
+                .as_deref()
+                .and_then(|i| i.by_name_reference()),
+            Some("Tree")
+        );
+        assert_eq!(props["parent"].by_name_reference(), Some("Tree"));
+        assert_eq!(
+            props["named"]
+                .items
+                .as_deref()
+                .and_then(|i| i.by_name_reference()),
+            Some("Tree")
+        );
+        assert_eq!(
+            props["tags"]
+                .items
+                .as_deref()
+                .and_then(|i| i.by_name_reference()),
+            None,
+            "control"
+        );
+    }
+
+    #[test]
+    fn a_tagged_union_bakes_its_variants_with_by_name_back_references() {
+        let def = baked_definition(&program(PREDICATE, "Pred"));
+        assert!(matches!(def.field_type, FieldType::Union));
+        let variants = def
+            .properties
+            .expect("a tagged union declares its variants");
+        let not = variants["Not"].properties.as_ref().unwrap();
+        assert_eq!(not["of"].by_name_reference(), Some("Pred"));
+        let all = variants["All"].properties.as_ref().unwrap();
+        assert_eq!(
+            all["of"]
+                .items
+                .as_deref()
+                .and_then(|i| i.by_name_reference()),
+            Some("Pred")
+        );
+        assert!(variants["Leaf"].properties.as_ref().unwrap()["label"]
+            .by_name_reference()
+            .is_none());
+    }
+
+    #[test]
+    fn the_baked_text_is_byte_stable() {
+        let source = program(PREDICATE, "Pred");
+        let first = fold_call(&source);
+        for _ in 0..4 {
+            assert_eq!(fold_call(&source), first);
+        }
+    }
+
+    #[test]
+    fn control_a_non_recursive_shape_is_baked_with_no_back_reference() {
+        let def = baked_definition(&program(
+            "type Note = { label : string!, tags : [string] }",
+            "Note",
+        ));
+        let props = def.properties.unwrap();
+        assert!(props.values().all(|p| p.by_name_reference().is_none()
+            && p.items
+                .as_deref()
+                .and_then(|i| i.by_name_reference())
+                .is_none()));
+    }
+
+    #[test]
+    fn an_undeclared_shape_is_an_unknown_type() {
+        let err = crate::parse_and_lower_str(&program(TREE, "Tre")).unwrap_err();
+        let LoloError::Lower { inner, .. } = &err else {
+            panic!("a lowering error, got {err:?}");
+        };
+        match inner.innermost() {
+            LowerError::Type(TypeError::UnknownType {
+                name, suggestion, ..
+            }) => {
+                assert_eq!(name, "Tre");
+                assert_eq!(suggestion.as_deref(), Some("Tree"));
+            }
+            other => panic!("ORB_T_TYPE_UNKNOWN, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn unlowering_drops_the_definition_and_relowering_bakes_it_again() {
+        let schema = crate::parse_and_lower_str(&program(PREDICATE, "Pred")).expect("lowers");
+        let lolo = crate::schema_to_lolo(&schema).expect("unlowers");
+        assert!(lolo.contains("(tree/fold @payload.v"), "{lolo}");
+        assert!(
+            !lolo.contains("\\\"union\\\""),
+            "the definition is not source: {lolo}"
+        );
+        let relowered = crate::parse_and_lower_str(&lolo).expect("relowers");
+        assert_eq!(
+            serde_json::to_value(&relowered).unwrap(),
+            serde_json::to_value(&schema).unwrap()
+        );
+    }
+}

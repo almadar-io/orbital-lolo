@@ -1572,6 +1572,8 @@ impl Parser {
                     })
                 }
             }
+        } else if self.check_ident("config") {
+            self.parse_expects_config()?
         } else if self.check_ident("identity") {
             let at = self.peek_span();
             self.advance();
@@ -1595,7 +1597,7 @@ impl Parser {
             });
         } else {
             return Err(ParseError::UnexpectedToken {
-                expected: "entity, trait, or page after `expects`".to_string(),
+                expected: "entity, trait, page, or config after `expects`".to_string(),
                 got: format!("{:?}", self.peek()),
                 span: self.peek_span(),
             });
@@ -1605,6 +1607,33 @@ impl Parser {
             .into_iter()
             .map(|kind| ExpectsDecl { kind, span })
             .collect())
+    }
+
+    /// `expects config { name : type [= default] … }`: the real `config` block, restricted to each knob's name, type
+    /// and default (annotations describe a provider, not a requirement).
+    fn parse_expects_config(&mut self) -> Result<Vec<ExpectsKind>, ParseError> {
+        let span = self.peek_span();
+        let fields = self.parse_config_block()?;
+        if fields.is_empty() {
+            return Err(ParseError::InvalidType {
+                span,
+                message: "`expects config` must name at least one knob".to_string(),
+            });
+        }
+        let mut out = Vec::with_capacity(fields.len());
+        for field in fields {
+            if field.label.is_some() || field.description.is_some() || field.synonyms.is_some() || field.tier.is_some() {
+                return Err(ParseError::InvalidType {
+                    span: field.span,
+                    message: format!(
+                        "an `expects config` knob names its type and default only — annotations on `{}` describe a provider, not a requirement",
+                        field.name
+                    ),
+                });
+            }
+            out.push(ExpectsKind::Config { field });
+        }
+        Ok(out)
     }
 
     /// The header tags an `expects entity` takes: `identity` (the viewer's roster) or the storage facts of the real
@@ -1877,6 +1906,9 @@ fn expects_duplicate(existing: &[ExpectsDecl], new: &ExpectsDecl) -> Option<Stri
         ) if ta == tb && ea == eb => Some(format!("`expects trait {tb} {{ emits {{ {eb} }} }}`")),
         (ExpectsKind::Page { path: a, .. }, ExpectsKind::Page { path: b, .. }) if a == b => {
             Some(format!("`expects page \"{b}\"`"))
+        }
+        (ExpectsKind::Config { field: a }, ExpectsKind::Config { field: b }) if a.name == b.name => {
+            Some(format!("`expects config {{ {} }}`", b.name))
         }
         _ => None,
     })

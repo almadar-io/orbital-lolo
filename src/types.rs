@@ -370,7 +370,11 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::Array(inner) => format!("[{}]", format_type_expr(inner)),
         TypeExpr::Tuple(slots) => format!(
             "[{}]",
-            slots.iter().map(format_type_expr).collect::<Vec<_>>().join(", ")
+            slots
+                .iter()
+                .map(format_type_expr)
+                .collect::<Vec<_>>()
+                .join(", ")
         ),
         TypeExpr::Map(key, value) => {
             format!("map:{}:{}", format_type_expr(key), format_type_expr(value))
@@ -511,10 +515,16 @@ fn collect_refs(body: &TypeBody) -> BTreeSet<String> {
     refs
 }
 
+/// The names an alias body reaches without passing through a constructor. A
+/// cycle is legal only through a constructor (a list, a `Map`, a struct field),
+/// so only these edges count; a bare-name union stays a bare edge.
 fn visit_refs(body: &TypeBody, out: &mut BTreeSet<String>) {
     match body {
-        TypeBody::Enum(_) | TypeBody::Struct(_) => {}
-        TypeBody::Alias(te) => visit_expr_refs(te, out),
+        TypeBody::Struct(_) => {}
+        TypeBody::Enum(members) => {
+            out.extend(members.iter().filter(|m| !is_primitive(m)).cloned());
+        }
+        TypeBody::Alias(te) => visit_bare_expr_refs(te, out),
         TypeBody::Entity { fields, .. } => {
             for f in fields {
                 visit_expr_refs(&f.type_expr, out);
@@ -551,6 +561,19 @@ fn visit_refs(body: &TypeBody, out: &mut BTreeSet<String>) {
                 visit_refs(p, out);
             }
         }
+    }
+}
+
+fn visit_bare_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
+    match te {
+        TypeExpr::Array(_) | TypeExpr::Map(..) | TypeExpr::Object(_) => {}
+        TypeExpr::Union(parts) | TypeExpr::Tuple(parts) => {
+            for p in parts {
+                visit_bare_expr_refs(p, out);
+            }
+        }
+        TypeExpr::Optional(inner) => visit_bare_expr_refs(inner, out),
+        other => visit_expr_refs(other, out),
     }
 }
 
@@ -620,6 +643,11 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
     }
 }
 
+/// A language program value type (`Viewer`, `BehaviorRef`, …); a file-local definition of the name is looked up first.
+pub(crate) fn is_program_type(name: &str) -> bool {
+    orbital_core_base::language::program_types::program_type(name).is_some()
+}
+
 fn is_primitive(name: &str) -> bool {
     // Single source of truth: the lowerer's primitive set (Gap
     // G-LOLO-TYPENAME-SILENT-FALLBACK — the checker and lowerer must agree on
@@ -643,9 +671,13 @@ fn check_field_type_refs(
     trait_type_params: &BTreeSet<String>,
 ) -> Result<(), TypeError> {
     let mut refs = BTreeSet::new();
-    visit_expr_refs(type_expr, &mut refs);
+    visit_type_refs(type_expr, ctx, &mut refs);
     for r in &refs {
-        if ctx.lookup(r).is_some() || entity_names.contains(r) || trait_type_params.contains(r) {
+        if ctx.lookup(r).is_some()
+            || entity_names.contains(r)
+            || trait_type_params.contains(r)
+            || is_program_type(r)
+        {
             continue;
         }
         let mut haystack = ctx.known_names();
@@ -657,6 +689,54 @@ fn check_field_type_refs(
         });
     }
     Ok(())
+}
+
+/// The type names `te` references, reading each union through the one
+/// lowering predicate: a vocabulary union (`h3 | avatar`) names words, not types.
+fn visit_type_refs(te: &TypeExpr, ctx: &ResolveCtx<'_>, out: &mut BTreeSet<String>) {
+    match te {
+        TypeExpr::Union(parts) => {
+            if crate::lower::entity::is_type_union_with(parts, |n| {
+                ctx.lookup(n).map(|a| matches!(&a.body, TypeBody::Struct(_)))
+            }) {
+                parts.iter().for_each(|p| visit_type_refs(p, ctx, out));
+            }
+        }
+        TypeExpr::Array(inner) | TypeExpr::Optional(inner) => visit_type_refs(inner, ctx, out),
+        TypeExpr::Tuple(slots) => slots.iter().for_each(|p| visit_type_refs(p, ctx, out)),
+        TypeExpr::Map(key, value) => {
+            visit_type_refs(key, ctx, out);
+            visit_type_refs(value, ctx, out);
+        }
+        TypeExpr::Object(fields) => fields.iter().for_each(|(_, v, _)| visit_type_refs(v, ctx, out)),
+        TypeExpr::Match { arms, .. } => arms.iter().for_each(|a| visit_type_refs(&a.ty, ctx, out)),
+        other => visit_expr_refs(other, out),
+    }
+}
+
+/// Every type name a type alias body references must resolve, like a field
+/// type: an undeclared name in a struct field, nominal alias, entity field or
+/// event payload is `UnknownType`, never passed through as a bare type string.
+/// The alias's own type parameter is in scope; a vocabulary union body
+/// (`up | down`) names words, not types.
+fn check_alias_body_refs(
+    ta: &TypeAlias,
+    ctx: &ResolveCtx<'_>,
+    entity_names: &BTreeSet<String>,
+) -> Result<(), TypeError> {
+    let params: BTreeSet<String> = ta.type_param.iter().cloned().collect();
+    let check = |te: &TypeExpr| check_field_type_refs(te, ta.span, ctx, entity_names, &params);
+    match &ta.body {
+        TypeBody::Struct(fields) => fields.iter().try_for_each(|(_, te, _)| check(te)),
+        TypeBody::Alias(te) => check(te),
+        TypeBody::Entity { fields, .. } => fields.iter().try_for_each(|f| check(&f.type_expr)),
+        TypeBody::Event { payload, .. } => check(payload),
+        TypeBody::Enum(_)
+        | TypeBody::Trait { .. }
+        | TypeBody::Page { .. }
+        | TypeBody::Orbital { .. }
+        | TypeBody::Composition(_) => Ok(()),
+    }
 }
 
 pub(crate) fn closest_name(needle: &str, haystack: &[String]) -> Option<String> {
@@ -735,7 +815,10 @@ fn check_named_payload_ref(
     own_entity_names: &BTreeSet<String>,
     trait_type_params: &BTreeSet<String>,
 ) -> Result<(), TypeError> {
-    if own_entity_names.contains(name) || trait_type_params.contains(name) {
+    if own_entity_names.contains(name)
+        || trait_type_params.contains(name)
+        || (ctx.lookup(name).is_none() && is_program_type(name))
+    {
         return Ok(());
     }
     let resolved = resolve_named(name, &[], ctx, span)?;
@@ -929,7 +1012,8 @@ pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
             ExpectsKind::Event { .. }
             | ExpectsKind::Page { .. }
             | ExpectsKind::State { .. }
-            | ExpectsKind::Transition { .. } => None,
+            | ExpectsKind::Transition { .. }
+            | ExpectsKind::Config { .. } => None,
         }))
         .collect()
 }
@@ -1209,6 +1293,15 @@ fn check_event_ref_positions(cf: &ConfigField, ctx: &ResolveCtx<'_>) -> Result<(
 }
 
 pub fn check_program(program: &Program) -> Result<(), TypeError> {
+    check_program_in_scope(program, &BTreeSet::new())
+}
+
+/// [`check_program`] with the type names the file's `uses`-imported behaviors
+/// declare (transitively) in scope as references.
+pub fn check_program_in_scope(
+    program: &Program,
+    imported_types: &BTreeSet<String>,
+) -> Result<(), TypeError> {
     let mut file = TypeRegistry::new();
     for ta in &program.type_aliases {
         reject_generic_alias_body(ta)?;
@@ -1229,10 +1322,24 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
     for o in &program.orbitals {
         entity_names.extend(expected_entity_names(o).into_iter().map(str::to_string));
     }
+    entity_names.extend(imported_types.iter().cloned());
     let file_ctx = ResolveCtx {
         file: &file,
         orbital: None,
     };
+    let file_alias_scope: BTreeSet<String> = entity_names
+        .iter()
+        .cloned()
+        .chain(
+            program
+                .orbitals
+                .iter()
+                .flat_map(|o| o.type_aliases.iter().map(|ta| ta.name.clone())),
+        )
+        .collect();
+    for ta in &program.type_aliases {
+        check_alias_body_refs(ta, &file_ctx, &file_alias_scope)?;
+    }
     for cf in &program.app.config {
         reject_generic_types(&cf.type_expr, &format!("app config {:?}", cf.name), cf.span)?;
         check_field_type_refs(
@@ -1258,6 +1365,9 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
             orbital: Some(&orbital),
         };
         detect_cycles(&ctx)?;
+        for ta in &orb.type_aliases {
+            check_alias_body_refs(ta, &ctx, &entity_names)?;
+        }
         if let Some(ann) = &orb.type_annotation {
             check_orbital_annotation(ann, orb, &ctx)?;
         }
@@ -1309,6 +1419,7 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
                     if is_primitive(default)
                         || entity_names.contains(default)
                         || ctx.lookup(default).is_some()
+                        || is_program_type(default)
                     {
                         continue;
                     }
@@ -1347,6 +1458,13 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
                         ),
                         f.span,
                     )?;
+                    check_field_type_refs(
+                        &f.type_expr,
+                        f.span,
+                        &ctx,
+                        &entity_names,
+                        &trait_type_params,
+                    )?;
                 }
             }
             for listen in &trt.listens {
@@ -1358,6 +1476,13 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
                             trt.name, listen.event, f.name
                         ),
                         f.span,
+                    )?;
+                    check_field_type_refs(
+                        &f.type_expr,
+                        f.span,
+                        &ctx,
+                        &entity_names,
+                        &trait_type_params,
                     )?;
                 }
             }
@@ -2018,7 +2143,7 @@ orbital OrbW {
         let src = r#"
 type Wrapped (e : Entity) = Entity {
   id : string!
-  payload : E
+  payload : e
 }
 
 orbital OrbP {
@@ -2049,5 +2174,261 @@ orbital Dummy {
 "#;
         let err = check(src).unwrap_err();
         assert!(matches!(err, TypeError::CircularType { .. }));
+    }
+
+    fn alias_only_src(types: &str) -> String {
+        undefined_type_src(types, "", "", "")
+    }
+
+    #[test]
+    fn ok_recursion_through_a_constructor() {
+        let cases = [
+            ("list", "type Rows = [Rows]"),
+            ("map", "type Dict = Map string Dict"),
+            ("struct field", "type Tree = { label : string!, kids : [Tree] }"),
+            ("struct field direct", "type Chain = { next : Chain }"),
+            (
+                "union through list and map",
+                "type RowCell = string | number | [RowCell] | Map string RowCell",
+            ),
+            (
+                "mutual through struct",
+                "type Doc = { body : Section! }\ntype Section = { parent : Doc }",
+            ),
+            (
+                "bare union into a struct",
+                "type Node = Leaf | number\ntype Leaf = { up : Node }",
+            ),
+            (
+                "tagged union of named struct variants",
+                "type RowCell = string | number | [RowCell] | Map string RowCell\n\
+                 type All = { kind : \"all\"!, of : [RowPredicate] }\n\
+                 type Cmp = { kind : \"compare\"!, field : string!, op : \"==\" | \"!=\", value : RowCell! }\n\
+                 type RowPredicate = All | Cmp",
+            ),
+        ];
+        for (label, types) in cases {
+            check(&alias_only_src(types)).unwrap_or_else(|e| panic!("{label}: {e:?}"));
+        }
+    }
+
+    #[test]
+    fn err_bare_cycle_without_a_constructor() {
+        let cases = [
+            ("self", "type A = A"),
+            ("mutual", "type A = B\ntype B = A"),
+            ("union of names", "type A = B | string\ntype B = A | number"),
+            ("optional", "type A = A?"),
+            ("union self", "type A = string | A"),
+            ("tuple slot", "type A = [string, A]"),
+        ];
+        for (label, types) in cases {
+            let err = check(&alias_only_src(types)).unwrap_err();
+            assert!(
+                matches!(err, TypeError::CircularType { .. }),
+                "{label}: got {err:?}"
+            );
+        }
+    }
+
+    fn undefined_type_src(
+        types: &str,
+        entity_field: &str,
+        emit_field: &str,
+        listen_field: &str,
+    ) -> String {
+        format!(
+            r#"
+{types}
+orbital OrbU {{
+  entity Rec [persistent: recs] {{
+    id : string!
+    {entity_field}
+  }}
+  trait RecTrait -> Rec [interaction] {{
+    emits {{ DONE -> external {{ {emit_field} }} }}
+    listens {{ GOT {{ {listen_field} }} }}
+    state idle {{ INIT -> idle (ref Rec) }}
+  }}
+  page "/recs" -> RecTrait
+}}
+"#
+        )
+    }
+
+    /// An undefined type name in an event payload, entity field or type alias
+    /// body is `UnknownType` (`ORB_T_TYPE_UNKNOWN`) in every nesting — never
+    /// passed through verbatim as a type string the validator accepts.
+    #[test]
+    fn err_undefined_type_name_in_every_type_position() {
+        let hit = "type Hit = { name : string! }";
+        let cases = [
+            ("listen payload list", hit, "", "", "result : [Missing]!"),
+            ("listen payload named", hit, "", "", "result : Missing!"),
+            (
+                "listen payload map value",
+                hit,
+                "",
+                "",
+                "result : Map string Missing",
+            ),
+            ("emit payload list", hit, "", "result : [Missing]!", ""),
+            (
+                "emit payload map value",
+                hit,
+                "",
+                "result : Map string Missing",
+                "",
+            ),
+            ("entity field list", hit, "hits : [Missing]", "", ""),
+            (
+                "struct alias field",
+                "type Hit = { inner : Missing }",
+                "",
+                "",
+                "",
+            ),
+            (
+                "struct alias list field",
+                "type Hit = { inner : [Missing]! }",
+                "",
+                "",
+                "",
+            ),
+            ("nominal alias", "type Hit = [Missing]", "", "", ""),
+        ];
+        for (label, types, ef, emf, lf) in cases {
+            let err = check(&undefined_type_src(types, ef, emf, lf)).unwrap_err();
+            assert!(
+                matches!(err, TypeError::UnknownType { ref name, .. } if name == "Missing"),
+                "{label}: got {err:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn ok_defined_and_builtin_type_names_in_every_type_position() {
+        let types = "type Hit = { name : string!, tags : [string], score : Map string number, rec : Rec, self_list : [Hit] }\ntype Hits = [Hit]";
+        check(&undefined_type_src(
+            types,
+            "hits : [Hit]",
+            "result : [Hit]!, count : number!, row : Rec",
+            "result : [Hit]!, by : Map string [Hit], tree : SExpr, at : string, all : Hits",
+        ))
+        .unwrap();
+    }
+
+    #[test]
+    fn ok_language_program_type_names_in_every_type_position() {
+        check(&undefined_type_src(
+            "type Hit = { ref : BehaviorRef }",
+            "refs : [BehaviorRef]",
+            "ref : BehaviorRef!",
+            "refs : [BehaviorRef]",
+        ))
+        .unwrap();
+        let hit = "type Hit = { who : Viewer, ref : BehaviorRef }";
+        check(&undefined_type_src(
+            hit,
+            "viewers : [Viewer]",
+            "who : Viewer!, all : [Viewer]",
+            "who : Viewer!, refs : [BehaviorRef]",
+        ))
+        .unwrap();
+        check(&undefined_type_src(
+            "type Seen = Viewer\ntype Crowd = [Viewer]",
+            "who : Viewer",
+            "",
+            "",
+        ))
+        .unwrap();
+        let err = check(&undefined_type_src("", "who : Viewr", "", "")).unwrap_err();
+        assert!(
+            matches!(err, TypeError::UnknownType { ref name, .. } if name == "Viewr"),
+            "control: a name neither local nor a program type stays unknown, got {err:?}"
+        );
+    }
+
+    #[test]
+    fn a_local_type_shadows_a_language_program_type() {
+        let local = "type Viewer = { seat : number! }\ntype Hit = { at : Viewer }";
+        check(&undefined_type_src(
+            local,
+            "who : Viewer",
+            "who : Viewer!",
+            "",
+        ))
+        .unwrap();
+        let err = check(&undefined_type_src(
+            "type Viewer = [Missing]",
+            "who : Viewer",
+            "",
+            "",
+        ))
+        .unwrap_err();
+        assert!(
+            matches!(err, TypeError::UnknownType { ref name, .. } if name == "Missing"),
+            "the local definition is the one checked, got {err:?}"
+        );
+    }
+
+    /// A bare-word union is a vocabulary in every type position when the one
+    /// lowering predicate (`is_type_union_with`) reads it as one: its words
+    /// are literals, not type references.
+    #[test]
+    fn ok_vocabulary_union_in_every_type_position() {
+        check(&undefined_type_src(
+            "type FieldSpec = { name : string!, variant : h3 | avatar | body, format : date | currency | number }\ntype Align = left | center",
+            "kind : avatar | body",
+            "mode : avatar | body",
+            "look : [avatar | body]",
+        ))
+        .unwrap();
+    }
+
+    #[test]
+    fn err_unknown_name_inside_a_type_union_is_still_a_reference() {
+        let cases = [
+            ("struct field", "type Hit = { value : string | [Missing] }", "", "", ""),
+            ("alias body", "type Hit = string | [Missing]", "", "", ""),
+            ("entity field", "", "value : number | [Missing]", "", ""),
+            ("listen payload", "", "", "", "value : string | Map string Missing"),
+        ];
+        for (label, types, ef, emf, lf) in cases {
+            let err = check(&undefined_type_src(types, ef, emf, lf)).unwrap_err();
+            assert!(
+                matches!(err, TypeError::UnknownType { ref name, .. } if name == "Missing"),
+                "{label}: got {err:?}"
+            );
+        }
+    }
+
+    /// Type names a `uses`-imported behavior declares (transitively) are in
+    /// scope; any other undeclared name stays `UnknownType`.
+    #[test]
+    fn imported_type_names_are_in_scope_and_nothing_else() {
+        let src = undefined_type_src(
+            "type Hit = { row : PrefRow }",
+            "rows : [PrefRow]",
+            "rows : [PrefRow]!",
+            "data : [PrefRow], result : DescribedSubject!",
+        );
+        let program = parse_str(&src).expect("parse");
+        let imported: BTreeSet<String> = ["PrefRow", "DescribedSubject"]
+            .into_iter()
+            .map(str::to_string)
+            .collect();
+        check_program_in_scope(&program, &imported).unwrap();
+        let err = check_program(&program).unwrap_err();
+        assert!(
+            matches!(err, TypeError::UnknownType { ref name, .. } if name == "PrefRow"),
+            "control: without the import the name is unknown, got {err:?}"
+        );
+        let other = parse_str(&undefined_type_src("", "", "", "data : [AuditRow]")).expect("parse");
+        let err = check_program_in_scope(&other, &imported).unwrap_err();
+        assert!(
+            matches!(err, TypeError::UnknownType { ref name, .. } if name == "AuditRow"),
+            "control: a name no import declares stays unknown, got {err:?}"
+        );
     }
 }

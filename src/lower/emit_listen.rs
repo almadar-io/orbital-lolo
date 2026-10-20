@@ -266,7 +266,14 @@ pub(crate) fn lower_emit(
                 projected_from: projected.clone(),
                 items: None,
             });
-        } else if let TypeExpr::Named(type_name) = ty {
+        } else if let Some(type_name) = match ty {
+            TypeExpr::Named(n)
+                if entities_by_name.contains_key(n) || !crate::types::is_program_type(n) =>
+            {
+                Some(n)
+            }
+            _ => None,
+        } {
             // Scalar entity reference (`row : Note`) — resolve through
             // `entities_by_name` only (not `aliases`; struct aliases are
             // handled above), so `type_name` is a declared entity. Stamp it
@@ -1905,6 +1912,56 @@ mod entity_payload_marker_tests {
         let row = fields.iter().find(|f| f.name == "row").expect("row field");
         assert_eq!(row.field_type, "object");
         assert_eq!(row.entity.as_deref(), Some("Note"));
+    }
+
+    fn emit_with(field: &str, ty: TypeExpr) -> Emit {
+        Emit {
+            event: "TICKET_TAKEN".to_string(),
+            scope: None,
+            payload: vec![EventField {
+                name: field.to_string(),
+                type_expr: ty,
+                required: true,
+                span: Span::dummy(),
+            }],
+            description: None,
+            synonyms: None,
+            tier: None,
+            span: Span::dummy(),
+        }
+    }
+
+    #[test]
+    fn language_program_type_names_an_emit_payload_field() {
+        let entities_by_name = note_entities();
+        let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        let event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
+        let lower = |e: &Emit| lower_emit(e, &aliases, &entities_by_name, &event_aliases, &[]);
+
+        let def = lower(&emit_with("viewer", TypeExpr::Named("Viewer".to_string())))
+            .expect("a language program type is a known payload type");
+        let viewer = &def.payload_schema.expect("payload present")[0];
+        assert_eq!(viewer.field_type, "Viewer");
+        assert_eq!(viewer.entity, None, "a program type is not an entity");
+        assert_eq!(viewer.required, Some(true));
+
+        let def = lower(&emit_with(
+            "viewers",
+            TypeExpr::Array(Box::new(TypeExpr::Named("Viewer".to_string()))),
+        ))
+        .expect("an array of a program type lowers");
+        assert_eq!(def.payload_schema.expect("payload")[0].field_type, "[Viewer]");
+
+        let err = lower(&emit_with("viewer", TypeExpr::Named("Viewr".to_string())))
+            .expect_err("control: a name neither entity nor program type stays unknown");
+        assert!(
+            matches!(err, LowerError::UnknownPayloadType { ref name } if name == "Viewr"),
+            "got {err:?}"
+        );
+
+        let def = lower(&emit_with("row", TypeExpr::Named("Note".to_string())))
+            .expect("control: an entity still lowers");
+        assert_eq!(def.payload_schema.expect("payload")[0].entity.as_deref(), Some("Note"));
     }
 }
 

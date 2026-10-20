@@ -47,13 +47,16 @@ fn strip_namespace(value: &mut serde_json::Value, prefix: &str) {
     }
 }
 
-/// The lowerer bakes each `(xml/parse s Shape)` call's list paths from the shape; the source
-/// spelling has only the shape.
+/// The lowerer bakes each `(xml/parse s Shape)` call's list paths and each `(tree/fold v step Shape)` call's
+/// definition from the shape; the source spelling has only the shape.
 fn strip_baked_list_paths(value: &mut serde_json::Value) {
     match value {
         serde_json::Value::Array(items) => {
             if items.len() == 4 && items[0].as_str() == Some("xml/parse") {
                 items.truncate(3);
+            }
+            if items.len() == 5 && items[0].as_str() == Some("tree/fold") {
+                items.truncate(4);
             }
             for item in items {
                 strip_baked_list_paths(item);

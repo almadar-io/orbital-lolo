@@ -5,7 +5,7 @@
 //! lexer captures them as trivia and the formatter re-interleaves them by source
 //! line before the node that follows them (re-indented to the output).
 
-use orbital_core_base::os_grants::{DesktopKind, FsMode, NetKind, OsGrants, StdioKind, SysKind};
+use orbital_core_base::os_grants::{DesktopKind, FsMode, NetKind, NetPart, OsGrants, StdioKind, SysKind};
 use orbital_core_base::schema::SExpression;
 use std::collections::HashMap;
 
@@ -423,40 +423,91 @@ impl Formatter {
             f.output.push(']');
         }
         let mut entries: Vec<ModifierEntry<'_>> = Vec::new();
-        if !grants.fs.is_empty() {
+        if !grants.fs.is_empty() || !grants.anchored.fs.is_empty() {
             entries.push((
                 "fs",
                 Box::new(move |f: &mut Self| {
                     f.output.push_str("{ ");
-                    for (i, g) in grants.fs.iter().enumerate() {
-                        if i > 0 {
+                    let mut first = true;
+                    let mut sep = |f: &mut Self| {
+                        if !first {
                             f.output.push_str(", ");
                         }
+                        first = false;
+                    };
+                    for g in &grants.fs {
+                        sep(f);
                         f.write_quoted_string(&g.glob);
-                        f.output.push_str(": [");
-                        f.output.push_str(&names(&g.modes, FsMode::name));
-                        f.output.push(']');
+                        f.output.push_str(&format!(": [{}]", names(&g.modes, FsMode::name)));
+                    }
+                    for g in &grants.anchored.fs {
+                        sep(f);
+                        f.output.push_str(&format!("{}: ", g.anchor.label()));
+                        f.write_quoted_string(&g.glob);
+                        f.output.push_str(&format!(": [{}]", names(&g.modes, FsMode::name)));
                     }
                     f.output.push_str(" }");
                 }),
             ));
         }
-        if !grants.exec.is_empty() {
-            entries.push(("exec", Box::new(move |f: &mut Self| strings(f, &grants.exec))));
+        if !grants.exec.is_empty() || !grants.anchored.exec.is_empty() {
+            entries.push((
+                "exec",
+                Box::new(move |f: &mut Self| {
+                    f.output.push('[');
+                    let mut first = true;
+                    for command in &grants.exec {
+                        if !first {
+                            f.output.push_str(", ");
+                        }
+                        first = false;
+                        f.write_quoted_string(command);
+                    }
+                    for e in &grants.anchored.exec {
+                        if !first {
+                            f.output.push_str(", ");
+                        }
+                        first = false;
+                        f.output.push_str(&e.anchor.label());
+                        if let Some(path) = &e.path {
+                            f.output.push(' ');
+                            f.write_quoted_string(path);
+                        }
+                    }
+                    f.output.push(']');
+                }),
+            ));
         }
-        if !grants.net.is_empty() {
+        if !grants.net.is_empty() || !grants.anchored.net.is_empty() {
             entries.push((
                 "net",
                 Box::new(move |f: &mut Self| {
+                    fn part(f: &mut Formatter, part: &NetPart, port: bool) {
+                        match part {
+                            NetPart::Anchor(anchor) => f.output.push_str(&anchor.label()),
+                            NetPart::Literal(text) if port && text.parse::<u16>().is_ok() => f.output.push_str(text),
+                            NetPart::Literal(text) => f.write_quoted_string(text),
+                        }
+                    }
                     f.output.push_str("{ ");
-                    for (i, g) in grants.net.iter().enumerate() {
-                        if i > 0 {
+                    let mut first = true;
+                    for g in &grants.net {
+                        if !first {
                             f.output.push_str(", ");
                         }
+                        first = false;
                         f.write_quoted_string(&g.target);
-                        f.output.push_str(": [");
-                        f.output.push_str(&names(&g.kinds, NetKind::name));
-                        f.output.push(']');
+                        f.output.push_str(&format!(": [{}]", names(&g.kinds, NetKind::name)));
+                    }
+                    for g in &grants.anchored.net {
+                        if !first {
+                            f.output.push_str(", ");
+                        }
+                        first = false;
+                        part(f, &g.host, false);
+                        f.output.push_str(", ");
+                        part(f, &g.port, true);
+                        f.output.push_str(&format!(": [{}]", names(&g.kinds, NetKind::name)));
                     }
                     f.output.push_str(" }");
                 }),
@@ -1684,6 +1735,11 @@ impl Formatter {
                     self.fmt_sexpr(p);
                 }
                 self.output.push_str(" } }");
+            }
+            ExpectsKind::Config { field } => {
+                self.output.push_str("config { ");
+                self.fmt_config_field(field);
+                self.output.push_str(" }");
             }
         }
     }

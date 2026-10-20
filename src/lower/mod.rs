@@ -8,7 +8,7 @@ use crate::ast::*;
 use crate::error::{Located, LowerError};
 use crate::patterns_meta::event_prop_names;
 use crate::registry::LoloContracts;
-use crate::types::check_program;
+use crate::types::check_program_in_scope;
 use orbital_core_base::behavior_packages::BehaviorPackage;
 use orbital_core_base::effect_row::{EffectRow, EffectRowBuilder, EffectSite};
 use orbital_core_base::schema::{
@@ -34,6 +34,7 @@ mod payload_contract;
 mod config_knob_read;
 mod render_prop_types;
 mod r#trait;
+mod tree_fold;
 mod type_helpers;
 
 pub(crate) use checks::{
@@ -228,7 +229,13 @@ fn lower_to_orb_names_only(
     // as `LowerError::Type(..)` before lowering proceeds. Types are stripped
     // after this — the emitted `.orb` is byte-identical to a `.lolo` that
     // declared no types at all.
-    check_program(ast).map_err(LowerError::Type)?;
+    let imported_types = contracts.imported_type_names(
+        ast.uses
+            .iter()
+            .chain(ast.orbitals.iter().flat_map(|o| o.uses.iter()))
+            .map(|u| u.path.as_str()),
+    );
+    check_program_in_scope(ast, &imported_types).map_err(LowerError::Type)?;
 
     // Build a global map of type aliases (file-level) for enum substitution.
     let mut type_aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
@@ -335,6 +342,9 @@ fn lower_to_orb_names_only(
             )
             .located(orb.span)?,
         );
+        if let Some(lowered) = orbitals.last_mut() {
+            tree_fold::bake_tree_fold_definitions(lowered, &local_aliases, &local_entity_names, orb.span)?;
+        }
     }
 
     check_listens_integrity(&orbitals)?;
@@ -769,6 +779,18 @@ pub(crate) fn lower_expects_decl(
             ensures: (!ensures.is_empty()).then(|| ensures.clone()),
             strict,
         },
+        ExpectsKind::Config { field } => {
+            let mut lowered = lower_config_fields_to_map(std::slice::from_ref(field), "expects config", false, &[], aliases, entity_names)?
+                .unwrap_or_default();
+            let knob = lowered
+                .remove(&field.name)
+                .ok_or_else(|| LowerError::Internal(format!("expects config `{}` lowered to no knob", field.name)))?;
+            ExpectDeclaration::Config {
+                name: field.name.clone(),
+                knob,
+                strict,
+            }
+        }
     })
 }
 
@@ -2580,6 +2602,41 @@ mod tests {
             other => panic!("expected an event with a payload, got {other:?}"),
         }
         assert!(matches!(&expects[1], ExpectDeclaration::Event { payload: None, .. }), "control: a bare event has no payload");
+    }
+
+    #[test]
+    fn an_expects_config_lowers_one_knob_obligation_per_knob() {
+        let src = "orbital CliSpec {\n  expects config {\n    stdio : string = \"pipe\"\n    retries : number\n  }\n}";
+        let s = lower(src);
+        let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
+        assert_eq!(expects.len(), 2);
+        match &expects[0] {
+            ExpectDeclaration::Config { name, knob, strict } => {
+                assert_eq!(name, "stdio");
+                assert_eq!(knob.field_type, "string");
+                assert_eq!(knob.default, Some(SExpression::String("pipe".to_string())));
+                assert!(*strict);
+            }
+            other => panic!("expected a config obligation, got {other:?}"),
+        }
+        assert!(matches!(&expects[1], ExpectDeclaration::Config { name, knob, .. } if name == "retries" && knob.default.is_none()));
+        let reformatted = crate::format::format_program(&parse_str(src).expect("parses"));
+        assert!(reformatted.contains("expects config { stdio : string = \"pipe\" }"), "{reformatted}");
+        assert_eq!(lower(&reformatted).orbitals[0].expects.as_ref().map(Vec::len), Some(2));
+    }
+
+    #[test]
+    fn an_expects_config_knob_carries_no_annotations() {
+        let err = parse_str("orbital CliSpec {\n  expects config {\n    stdio : string = \"pipe\"\n      @label \"Streams\"\n  }\n}")
+            .expect_err("an annotation describes a provider");
+        assert!(err.to_string().contains("expects config"), "{err}");
+    }
+
+    #[test]
+    fn a_repeated_expects_config_knob_is_a_duplicate() {
+        let err = parse_str("orbital CliSpec {\n  expects config { stdio : string }\n  expects config { stdio : string = \"pipe\" }\n}")
+            .expect_err("one obligation per knob");
+        assert!(err.to_string().contains("stdio"), "{err}");
     }
 
     #[test]

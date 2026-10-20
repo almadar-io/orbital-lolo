@@ -591,6 +591,7 @@ mod tests {
                 pages: vec![],
                 orbitals: HashMap::new(),
                 app_config: HashMap::new(),
+                types: Default::default(),
             },
         );
         let mut io = HashMap::new();
@@ -606,6 +607,7 @@ mod tests {
                     },
                 )]),
                 app_config: HashMap::new(),
+                types: Default::default(),
             },
         );
         LoloContracts::from_parts(

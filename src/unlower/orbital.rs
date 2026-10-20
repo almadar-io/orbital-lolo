@@ -243,6 +243,9 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
             to: to.clone(),
             ensures: ensures.clone().unwrap_or_default(),
         },
+        ExpectDeclaration::Config { name, knob, .. } => ExpectsKind::Config {
+            field: super::types::config_field(name, knob)?,
+        },
     };
     Ok(ExpectsDecl {
         kind,
