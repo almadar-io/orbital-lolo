@@ -244,7 +244,7 @@ mod supervisor {
 
     fn lowered(strategy: &str, children: Json, max_restarts: u32) -> OrbitalSchema {
         let atom = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../../packages/almadar-std/behaviors/lolo/infra/atoms/std-supervisor.lolo");
+            .join("../../../packages/almadar-std/behaviors/lolo/flow/atoms/std-supervisor.lolo");
         let mut schema = parse_and_lower(&atom).expect("std-supervisor lowers");
         let mut grants = schema.os_grants.clone().unwrap_or_default();
         grants.exec.push("/bin/sleep".to_string());

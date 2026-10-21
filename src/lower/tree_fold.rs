@@ -263,4 +263,157 @@ mod tests {
             "ORB_T_TYPE_CYCLE, got {err:?}"
         );
     }
+
+    /// The `.lolo` port of `SExpression::is_statically_false` (plus a node count) over `type Expr`, the shape of
+    /// an S-expression as data: atoms and lists of `Expr` (G-ORB-433).
+    const EXPR_PROGRAM: &str = r#"app tf [
+  version: "1.0.0",
+  description: "x"
+]
+type Expr = string | number | boolean | [Expr]
+type Verdict = { f : boolean!, t : boolean!, lit : boolean! }
+orbital O {
+  entity E [runtime] {
+    id : string!
+    out : Verdict
+    count : number = 0
+  }
+  trait T -> E [interaction, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (set @entity.out (tree/fold @payload.v (fn (n k)
+          (if (validate/array @n)
+            (let ((call (and (> (array/len @n) 0) (validate/string (array/first @n))))
+                  (op (if (and (> (array/len @n) 0) (validate/string (array/first @n))) (array/first @n) ""))
+                  (args (array/map (array/drop @k 1) (fn c (if (= @c null) { f: true, t: false, lit: true } @c)))))
+              (if (not @call) { f: (= (array/len @n) 0), t: (> (array/len @n) 0), lit: false }
+              (if (= @op "and") { f: (array/some @args (fn a (object/get @a "f"))), t: (and (> (array/len @args) 0) (array/every @args (fn a (object/get @a "t")))), lit: false }
+              (if (= @op "or") { f: (and (> (array/len @args) 0) (array/every @args (fn a (object/get @a "f")))), t: (array/some @args (fn a (object/get @a "t"))), lit: false }
+              (if (= @op "not") { f: (and (= (array/len @args) 1) (object/get (array/first @args) "t")), t: (and (= (array/len @args) 1) (object/get (array/first @args) "f")), lit: false }
+              (if (or (= @op "=") (= @op "==") (= @op "!="))
+                (let ((both (and (= (array/len @args) 2) (array/every @args (fn a (object/get @a "lit")))))
+                      (eq (= (array/nth @n 1) (array/nth @n 2))))
+                  { f: (and @both (= @eq (= @op "!="))), t: (and @both (= @eq (!= @op "!="))), lit: false })
+                { f: false, t: false, lit: false }))))))
+            { f: (or (= @n false) (and (validate/number @n) (= @n 0)) (= @n "")),
+              t: (or (= @n true) (and (validate/number @n) (!= @n 0)) (and (validate/string @n) (!= @n "") (not (str/startsWith @n "@")))),
+              lit: (or (validate/boolean @n) (validate/number @n) (and (validate/string @n) (not (str/startsWith @n "@")))) }))
+          Expr))
+        (set @entity.count (tree/fold @payload.v (fn (n k) (if (validate/array @n) (+ 1 (array/sum @k)) 1)) Expr))
+    }
+  }
+  page "/" -> T
+}
+"#;
+
+    fn expr_folds() -> (orbital_core_base::schema::sexpr::SExpression, orbital_core_base::schema::sexpr::SExpression) {
+        let lowered = serde_json::to_value(crate::parse_and_lower_str(EXPR_PROGRAM).expect("lowers")).unwrap();
+        let effects = &lowered["orbitals"][0]["traits"][0]["stateMachine"]["transitions"][0]["effects"];
+        let call = |i: usize| serde_json::from_value(effects[i][2].clone()).expect("the fold is an S-expression");
+        (call(0), call(1))
+    }
+
+    fn run_fold(
+        call: &orbital_core_base::schema::sexpr::SExpression,
+        v: orbital_core_base::value::Value,
+    ) -> Result<orbital_core_base::value::Value, String> {
+        let mut payload = orbital_core_base::value::ValueMap::new();
+        payload.insert("v".to_string(), v);
+        let ctx = orbital_core_eval::evaluator::BindingContextBuilder::new()
+            .payload(orbital_core_base::value::Value::Object(payload))
+            .build();
+        orbital_core_eval::evaluator::Evaluator::new()
+            .evaluate(call, &ctx)
+            .map_err(|e| e.to_string())
+    }
+
+    fn value(json: J) -> orbital_core_base::value::Value {
+        serde_json::from_value(json).unwrap()
+    }
+
+    #[test]
+    fn a_nested_s_expression_folds_through_its_list_variant() {
+        let (_, count) = expr_folds();
+        let guard = serde_json::json!(["and", ["=", 1, 2], ["or", false, ["not", true]]]);
+        assert_eq!(run_fold(&count, value(guard)).unwrap(), value(serde_json::json!(12)));
+    }
+
+    #[test]
+    fn the_lolo_dead_guard_port_agrees_with_is_statically_false() {
+        let (dead, _) = expr_folds();
+        let cases = [
+            serde_json::json!(["and", false, "@entity.x"]),
+            serde_json::json!(["and", "@entity.x", true]),
+            serde_json::json!(["or", false, false]),
+            serde_json::json!(["or", false, "@entity.x"]),
+            serde_json::json!(["or"]),
+            serde_json::json!(["not", true]),
+            serde_json::json!(["not", ["=", 1, 2]]),
+            serde_json::json!(["not", "@entity.x"]),
+            serde_json::json!(["=", 1, 2]),
+            serde_json::json!(["==", "a", "a"]),
+            serde_json::json!(["!=", "a", "a"]),
+            serde_json::json!(["=", "@entity.a", 1]),
+            serde_json::json!(["and", ["not", ["=", 1, 1]], "@entity.x"]),
+            serde_json::json!(["or", ["and", false, true], ["!=", 2, 2]]),
+            serde_json::json!(["foo", false]),
+            serde_json::json!([]),
+            serde_json::json!([1, 2]),
+            serde_json::json!(false),
+            serde_json::json!(true),
+            serde_json::json!(0),
+            serde_json::json!(3),
+            serde_json::json!(""),
+            serde_json::json!("@entity.x"),
+            serde_json::json!("open"),
+        ];
+        for case in cases {
+            let rust: orbital_core_base::schema::sexpr::SExpression = serde_json::from_value(case.clone()).unwrap();
+            let verdict = run_fold(&dead, value(case.clone())).unwrap_or_else(|e| panic!("{case}: {e}"));
+            let orbital_core_base::value::Value::Object(verdict) = verdict else {
+                panic!("{case}: a verdict object");
+            };
+            assert_eq!(
+                verdict.get("f"),
+                Some(&orbital_core_base::value::Value::Bool(rust.is_statically_false())),
+                "{case}"
+            );
+            assert_eq!(
+                verdict.get("t"),
+                Some(&orbital_core_base::value::Value::Bool(rust.is_statically_true())),
+                "{case}"
+            );
+        }
+    }
+
+    #[test]
+    fn control_a_flat_list_and_an_atom_fold_once_per_node() {
+        let (_, count) = expr_folds();
+        assert_eq!(run_fold(&count, value(serde_json::json!(["a", "b", "c"]))).unwrap(), value(serde_json::json!(4)));
+        assert_eq!(run_fold(&count, value(serde_json::json!("a"))).unwrap(), value(serde_json::json!(1)));
+        let err = run_fold(&count, value(serde_json::json!({ "kind": "x" }))).unwrap_err();
+        assert!(err.contains("no variant"), "control: an object is no variant of Expr: {err}");
+    }
+
+    #[test]
+    fn a_thousand_deep_s_expression_folds_on_a_small_stack() {
+        use orbital_core_base::value::Value;
+        let worker = std::thread::Builder::new()
+            .stack_size(1024 * 1024)
+            .spawn(|| {
+                let (_, count) = expr_folds();
+                let mut nested = Value::Bool(true);
+                for _ in 0..1000 {
+                    nested = Value::Array(vec![Value::String("not".to_string()), nested]);
+                }
+                let out = run_fold(&count, nested);
+                out.map(|v| match v {
+                    Value::Number(n) => Some(n),
+                    _ => None,
+                })
+            })
+            .unwrap();
+        assert_eq!(worker.join().expect("no stack overflow").unwrap(), Some(2001.0));
+    }
 }
