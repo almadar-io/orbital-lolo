@@ -211,6 +211,8 @@ orbital BoardOrbital {{
     initial: idle
     state idle {{
       INIT -> idle
+        (set @entity.byKey {{}})
+        (set @entity.nested {{}})
       PICK -> idle
         {effect}
     }}
