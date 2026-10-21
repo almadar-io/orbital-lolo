@@ -169,3 +169,121 @@ mod tests {
         assert!(construct("NoSuchConstruct").is_none());
     }
 }
+
+/// The language reference as installed language data (G-ORB-442): `@almadar/core`
+/// ships these files under `orbLanguage.{vocabulary,constructs,validationCodes}` so a
+/// `.lolo` program reads the parser's own lists. The Rust here stays the source of
+/// truth; `language_reference_json_is_current` fails when the committed copy drifts.
+#[cfg(test)]
+mod language_data_export {
+    use std::path::PathBuf;
+
+    #[derive(serde::Serialize)]
+    struct ValidationCode {
+        code: &'static str,
+        category: &'static str,
+        description: &'static str,
+    }
+
+    fn pretty<T: serde::Serialize + ?Sized>(value: &T) -> String {
+        format!(
+            "{}\n",
+            serde_json::to_string_pretty(value).expect("serializes")
+        )
+    }
+
+    fn validation_codes() -> Vec<ValidationCode> {
+        orbital_compiler::phases::validation::ErrorCode::ALL
+            .iter()
+            .map(|c| ValidationCode {
+                code: c.as_str(),
+                category: c.category(),
+                description: c.description(),
+            })
+            .collect()
+    }
+
+    /// `(file name, generated JSON)` for the three datasets.
+    fn generated() -> Vec<(&'static str, String)> {
+        vec![
+            ("vocabulary.json", pretty(crate::keywords::vocabulary())),
+            ("constructs.json", pretty(super::constructs())),
+            ("validation-codes.json", pretty(&validation_codes())),
+        ]
+    }
+
+    fn core_dir() -> PathBuf {
+        PathBuf::from(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../packages/almadar-core"
+        ))
+    }
+
+    fn generated_dir() -> PathBuf {
+        core_dir().join("src/generated/language")
+    }
+
+    /// Every file whose committed text differs from `generated`, with the reason.
+    fn drift(generated: &[(&str, String)], dir: &std::path::Path) -> Vec<String> {
+        generated
+            .iter()
+            .filter_map(
+                |(name, text)| match std::fs::read_to_string(dir.join(name)) {
+                    Ok(committed) if &committed == text => None,
+                    Ok(_) => Some(format!("{name} is stale")),
+                    Err(_) => Some(format!("{name} is missing")),
+                },
+            )
+            .collect()
+    }
+
+    const REGENERATE: &str =
+        "LANGUAGE_REFERENCE_WRITE=1 cargo test -p orbital-lolo --lib language_reference_json";
+
+    #[test]
+    fn language_reference_json_is_current() {
+        let dir = generated_dir();
+        let files = generated();
+        if std::env::var("LANGUAGE_REFERENCE_WRITE").as_deref() == Ok("1") {
+            std::fs::create_dir_all(&dir).unwrap();
+            for (name, text) in &files {
+                std::fs::write(dir.join(name), text).unwrap();
+            }
+            return;
+        }
+        // A standalone orbital-rust clone has no @almadar/core to check against.
+        if !core_dir().join("package.json").exists() {
+            return;
+        }
+        let problems = drift(&files, &dir);
+        assert!(problems.is_empty(), "{problems:?}: {REGENERATE}");
+    }
+
+    #[test]
+    fn language_reference_json_drift_catches_a_changed_keyword() {
+        let dir = tempfile::tempdir().unwrap();
+        let files = generated();
+        for (name, text) in &files {
+            std::fs::write(dir.path().join(name), text).unwrap();
+        }
+        assert!(drift(&files, dir.path()).is_empty());
+
+        let vocabulary = crate::keywords::vocabulary();
+        let mut keywords: Vec<&str> = vocabulary.keywords.to_vec();
+        keywords.push("zzNotAKeyword");
+        let mut changed = serde_json::to_value(vocabulary).unwrap();
+        changed["keywords"] = serde_json::json!(keywords);
+        let mut mutated = files.clone();
+        mutated[0].1 = pretty(&changed);
+        assert_eq!(
+            drift(&mutated, dir.path()),
+            vec!["vocabulary.json is stale".to_string()]
+        );
+
+        std::fs::remove_file(dir.path().join("constructs.json")).unwrap();
+        assert_eq!(
+            drift(&files, dir.path()),
+            vec!["constructs.json is missing".to_string()]
+        );
+    }
+}

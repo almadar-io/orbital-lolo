@@ -7,6 +7,8 @@
 //! first, at the parser's own call sites (`debug_assert!` in
 //! `expect_keyword`/`check_ident`).
 
+#[derive(serde::Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Vocabulary {
     pub keywords: &'static [&'static str],
     pub shapes: &'static [&'static str],
@@ -77,6 +79,7 @@ const KEYWORDS: &[&str] = &[
     "stdio",
     "sys",
     "desktop",
+    "kv",
     "on",
     "name",
     "fields",

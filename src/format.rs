@@ -5,7 +5,7 @@
 //! lexer captures them as trivia and the formatter re-interleaves them by source
 //! line before the node that follows them (re-indented to the output).
 
-use orbital_core_base::os_grants::{DesktopKind, FsMode, NetKind, NetPart, OsGrants, StdioKind, SysKind};
+use orbital_core_base::os_grants::{DesktopKind, FsMode, KvMode, NetKind, NetPart, OsGrants, StdioKind, SysKind};
 use orbital_core_base::schema::SExpression;
 use std::collections::HashMap;
 
@@ -541,6 +541,22 @@ impl Formatter {
                 Box::new(move |f: &mut Self| {
                     f.output
                         .push_str(&format!("[{}]", names(&grants.desktop, DesktopKind::name)))
+                }),
+            ));
+        }
+        if !grants.kv.is_empty() {
+            entries.push((
+                "kv",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str("{ ");
+                    for (i, (store, modes)) in grants.kv.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(store);
+                        f.output.push_str(&format!(": [{}]", names(modes, KvMode::name)));
+                    }
+                    f.output.push_str(" }");
                 }),
             ));
         }

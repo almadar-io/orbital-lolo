@@ -3,11 +3,11 @@
 
 use super::*;
 use orbital_core_base::os_grants::{
-    AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, DesktopKind, FsGrant, FsMode, GrantAnchor, NetGrant, NetKind,
+    AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, DesktopKind, FsGrant, FsMode, GrantAnchor, KvMode, NetGrant, NetKind,
     NetPart, OsGrants, StdioKind, SysKind,
 };
 
-pub(crate) const GRANT_KEYS: &[&str] = &["fs", "exec", "net", "env", "stdio", "sys", "desktop"];
+pub(crate) const GRANT_KEYS: &[&str] = &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv"];
 
 const ENTRY_INVALID: &str = "ORB_OS_GRANT_ENTRY_INVALID";
 
@@ -35,6 +35,7 @@ impl Parser {
             "desktop" => {
                 grants.desktop = self.parse_grant_words(key, DesktopKind::ALL, |k| k.name())?
             }
+            "kv" => self.parse_kv_grants(grants)?,
             _ => unreachable!("GRANT_KEYS covers every key"),
         }
         Ok(())
@@ -96,6 +97,36 @@ impl Parser {
                 let modes = self.parse_grant_words("fs", FsMode::ALL, |k| k.name())?;
                 grants.fs.push(FsGrant { glob, modes });
             }
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+    }
+
+    /// `{ store: [read, write], "store-glob*": [read], … }`.
+    fn parse_kv_grants(&mut self, grants: &mut OsGrants) -> Result<(), ParseError> {
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                return Ok(());
+            }
+            let span = self.peek_span();
+            let store = match self.peek().clone() {
+                TokenKind::String(s) => {
+                    self.advance();
+                    s
+                }
+                _ => self.expect_ident()?,
+            };
+            if grants.kv.contains_key(&store) {
+                return Err(ParseError::DuplicateOption { key: store, context: "kv", span });
+            }
+            self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
+            let modes = self.parse_grant_words("kv", KvMode::ALL, |k| k.name())?;
+            grants.kv.insert(store, modes);
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();

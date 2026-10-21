@@ -495,3 +495,26 @@ fn grant_brackets_reject_unknown_and_repeated_keys_like_the_app_bracket() {
     let err = grants_error(&GRANTS_PROGRAM.replace("web: [Storefront]", "api: [Storefront]"));
     assert!(err.contains("ORB_L_OPTION_DUPLICATE"), "{err}");
 }
+
+#[test]
+fn a_kv_grant_lowers_per_store_and_mode_and_survives_format_and_unlower() {
+    use orbital_core_base::os_grants::KvMode;
+    let source = GRANTS_PROGRAM.replace("  desktop: [notify]\n", "  desktop: [notify],\n  kv: { rows: [read, write], \"rows-log*\": [read] }\n");
+    let schema = parse_and_lower_str(&source).expect("lower");
+    let orders = schema.orbitals[0].os_grants.as_ref().expect("orbital grants");
+    assert!(orders.kv_allows("rows", KvMode::Write) && orders.kv_allows("rows-log-2", KvMode::Read));
+    assert!(!orders.kv_allows("rows-log-2", KvMode::Write), "control: the glob grants read only");
+    assert!(!orders.kv_allows("other", KvMode::Read), "control: an unnamed store");
+    assert!(schema.os_grants.as_ref().expect("app grants").kv.is_empty(), "control: the app level declares none");
+
+    let formatted = format_program(&parse_str(&source).expect("parse"));
+    assert!(formatted.contains(r#"kv: { "rows": [read, write], "rows-log*": [read] }"#), "{formatted}");
+    assert_eq!(parse_and_lower_str(&formatted).expect("reparse").orbitals[0].os_grants, schema.orbitals[0].os_grants);
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert_eq!(parse_and_lower_str(&text).expect("lower the unlowered text").orbitals[0].os_grants, schema.orbitals[0].os_grants);
+
+    let err = grants_error(&source.replace("[read, write]", "[read, wrte]"));
+    assert!(err.contains("ORB_OS_GRANT_ENTRY_INVALID"), "{err}");
+    let err = grants_error(&source.replace("kv: { rows: [read, write],", "kv: { rows: [read, write], rows: [read],"));
+    assert!(err.contains("ORB_L_OPTION_DUPLICATE"), "edge: a store named twice: {err}");
+}
