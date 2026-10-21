@@ -196,25 +196,73 @@ orbital KeyOrbital {{
 #[test]
 fn a_bare_field_name_in_a_key_position_stays_a_literal_key() {
     for field in ["state", "now"] {
-        let lowered = lowered_fetch_filter(&format!(r#"["=", (object/get @entity {field}), "x"]"#));
+        let lowered = lowered_fetch_filter(&format!(r#"(= (object/get @entity {field}) "x")"#));
         assert!(lowered.contains(&format!(r#"["object/get","@entity","{field}"]"#)), "{field}: {lowered}");
     }
-    let lowered = lowered_fetch_filter(r#"["=", (object/has @entity state), true]"#);
+    let lowered = lowered_fetch_filter(r#"(= (object/has @entity state) true)"#);
     assert!(lowered.contains(r#"["object/has","@entity","state"]"#), "{lowered}");
 }
 
 #[test]
 fn control_a_bare_state_in_a_value_position_is_still_the_binding() {
-    let lowered = lowered_fetch_filter(r#"["=", (object/get @entity id), state]"#);
+    let lowered = lowered_fetch_filter(r#"(= (object/get @entity id) state)"#);
     assert!(lowered.contains(r#""@state""#), "{lowered}");
-    let explicit = lowered_fetch_filter(r#"["=", (object/get @entity @state), "x"]"#);
+    let explicit = lowered_fetch_filter(r#"(= (object/get @entity @state) "x")"#);
     assert!(explicit.contains(r#"["object/get","@entity","@state"]"#), "{explicit}");
 }
 
 #[test]
 fn a_backslash_dot_in_a_key_string_reaches_the_path_splitter_as_backslash_dot() {
-    let lowered = lowered_fetch_filter(r#"["=", (object/get @entity "http\.method"), "x"]"#);
+    let lowered = lowered_fetch_filter(r#"(= (object/get @entity "http\.method") "x")"#);
     assert!(lowered.contains(r#"["object/get","@entity","http\\.method"]"#), "{lowered}");
-    let doubled = lowered_fetch_filter(r#"["=", (object/get @entity "a\\.b"), "x"]"#);
+    let doubled = lowered_fetch_filter(r#"(= (object/get @entity "a\\.b") "x")"#);
     assert!(doubled.contains(r#"["object/get","@entity","a\\.b"]"#), "control: `\\\\.` lexes to the same backslash-dot: {doubled}");
+}
+
+fn lowered_set_value(value: &str) -> serde_json::Value {
+    let source = program(&format!("(set @entity.items {value})"))
+        .replace("items : [any] = []", "items : [string] = []\n    found : boolean = false")
+        .replace("@entity.items (array/includes", "@entity.found (array/includes");
+    let orb = orbital_lolo::parse_and_lower_str(&source).unwrap();
+    let json = serde_json::to_value(&orb).unwrap();
+    let transitions = json["orbitals"][0]["traits"][0]["stateMachine"]["transitions"].as_array().unwrap().clone();
+    let run = transitions.iter().find(|t| t["event"] == "RUN").expect("RUN transition");
+    run["effects"][0][2].clone()
+}
+
+#[test]
+fn a_bracket_headed_by_an_operator_word_is_data() {
+    let value = lowered_set_value(r#"(array/includes ["path", "size"] "size")"#);
+    let sexpr: orbital_core_base::schema::SExpression = serde_json::from_value(value.clone()).unwrap();
+    let got = orbital_core_eval::evaluator::operators::eval_expr(&sexpr, &orbital_core_eval::evaluator::BindingContext::new());
+    assert!(matches!(got, Ok(orbital_core_base::value::Value::Bool(true))), "lowered: {value}, got: {got:?}");
+}
+
+#[test]
+fn control_a_bracket_without_an_operator_head_stays_a_plain_array() {
+    assert_eq!(lowered_set_value(r#"["idle", "walk"]"#), serde_json::json!(["idle", "walk"]));
+}
+
+#[test]
+fn a_quoted_template_keeps_its_brackets_as_json() {
+    let value = lowered_set_value(r#"(quote ["=", a, 0])"#).to_string();
+    assert!(!value.contains("list"), "{value}");
+}
+
+#[test]
+fn an_old_form_call_in_a_guard_is_a_type_error() {
+    let source = program("(set @entity.total 1)").replace("RUN -> idle", r#"RUN -> idle when ["=", @entity.total, 0]"#);
+    let err = format!("{:?}", parse_str(&source).expect_err("list in a guard"));
+    assert!(err.contains("ELOLO_LIST_IN_BOOLEAN_SLOT"), "{err}");
+    let nested = program("(set @entity.total 1)").replace("RUN -> idle", r#"RUN -> idle when (and true ["=", @entity.total, 0])"#);
+    assert!(format!("{:?}", parse_str(&nested).expect_err("nested")).contains("ELOLO_LIST_IN_BOOLEAN_SLOT"));
+    let ok = program("(set @entity.total 1)").replace("RUN -> idle", r#"RUN -> idle when (= @entity.total 0)"#);
+    parse_str(&ok).expect("call-form guard parses");
+}
+
+#[test]
+fn an_old_form_call_in_a_fetch_filter_is_a_type_error() {
+    let source = program(r#"(fetch Probe { filter: ["=", @entity.total, 0], emit: { success: RUN, failure: RUN } })"#);
+    let err = format!("{:?}", parse_str(&source).expect_err("list in a filter"));
+    assert!(err.contains("ELOLO_LIST_IN_BOOLEAN_SLOT"), "{err}");
 }

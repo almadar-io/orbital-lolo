@@ -41,7 +41,7 @@ pub(super) fn field_def_type(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerEr
             resolved: None,
         });
     }
-    Ok(match fd.field_type {
+    Ok(match &fd.field_type {
         FieldType::String => match &fd.values {
             Some(values) if !values.is_empty() => values_union(values),
             _ => primitive("string"),
@@ -73,12 +73,17 @@ pub(super) fn field_def_type(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerEr
         FieldType::Pattern => TypeExpr::Pattern,
         FieldType::Event => TypeExpr::EventRef,
         FieldType::EventAddress => TypeExpr::EventAddress,
+        FieldType::TypeVar(v) => TypeExpr::Named(v.0.clone()),
         FieldType::Array => match &fd.items {
             Some(item) => TypeExpr::Array(Box::new(field_def_type(item)?)),
             None => TypeExpr::Array(Box::new(primitive("string"))),
         },
         FieldType::Object => match (&fd.properties, &fd.items) {
-            (Some(props), _) => match props.values().find_map(back_reference) {
+            (Some(props), _) => match props
+                .values()
+                .find_map(back_reference)
+                .or_else(|| program_type_name(fd))
+            {
                 Some(alias) => TypeExpr::Named(alias.to_string()),
                 None => TypeExpr::Object(object_members(props)?),
             },
@@ -464,6 +469,19 @@ fn walk_field(fd: &FieldDefinition, out: &mut AliasShapes) -> Result<(), Unlower
 
 /// A by-name back-reference the lowerer leaves where an alias recurses: the
 /// object that holds it is that alias's own body.
+/// The installed program type (`Viewer`, …) whose definition `fd` carries verbatim: a `Named` program type lowers
+/// to a copy of its members, so the printer names it again instead of spelling the record inline.
+fn program_type_name(fd: &FieldDefinition) -> Option<&'static str> {
+    let shape = |f: &FieldDefinition| {
+        serde_json::to_value((&f.field_type, &f.values, &f.items, &f.properties)).ok()
+    };
+    let own = shape(fd)?;
+    orbital_core_base::language::program_types::program_type_fields()
+        .iter()
+        .find(|(_, def)| shape(def).as_ref() == Some(&own))
+        .map(|(name, _)| name.as_str())
+}
+
 fn back_reference(fd: &FieldDefinition) -> Option<&str> {
     fn marker(f: &FieldDefinition) -> Option<&str> {
         match (&f.field_type, f.properties.as_ref(), f.values.as_deref()) {

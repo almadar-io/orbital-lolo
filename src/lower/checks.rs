@@ -2609,3 +2609,49 @@ mod button_transition_embed_tests {
         ));
     }
 }
+
+#[cfg(test)]
+mod emit_program_type_literal_tests {
+    use crate::lower::lower_to_orb;
+    use crate::parser::parse_str;
+
+    fn lower_emit(value: &str) -> Result<(), crate::error::LowerError> {
+        let src = format!(
+            r#"
+            orbital TicketOrbital {{
+                entity Ticket {{ id : string! }}
+                trait TicketMint -> Ticket [interaction] {{
+                    initial: idle
+                    state idle {{
+                        MINT -> idle
+                            (emit MINT_REQUESTED {{ viewer: {value} }})
+                    }}
+                    emits {{
+                        MINT_REQUESTED {{ viewer : Viewer! }}
+                    }}
+                }}
+            }}
+        "#
+        );
+        let ast = parse_str(&src).expect("parse");
+        lower_to_orb(&ast).map(|_| ()).map_err(|e| e.innermost().clone())
+    }
+
+    #[test]
+    fn a_record_literal_fills_a_program_type_slot() {
+        lower_emit(r#"{ id: "anonymous", role: "anonymous", permissions: [] }"#)
+            .expect("a record literal is a Viewer at L1; its shape is L2's check");
+    }
+
+    #[test]
+    fn a_scalar_literal_never_fills_a_program_type_slot() {
+        match lower_emit("5") {
+            Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => assert_eq!(actual, "number"),
+            other => panic!("expected EmitPayloadFieldTypeMismatch, got {other:?}"),
+        }
+        match lower_emit(r#""anonymous""#) {
+            Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => assert_eq!(actual, "string"),
+            other => panic!("expected EmitPayloadFieldTypeMismatch, got {other:?}"),
+        }
+    }
+}

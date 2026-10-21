@@ -169,6 +169,7 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
         theme: schema.theme.as_ref().map(theme::theme_decl).transpose()?,
         themes: schema.themes.clone().unwrap_or_default(),
         locales: schema.locales.clone().unwrap_or_default(),
+        store: schema.store.clone(),
         egress: schema.egress.clone().unwrap_or_default(),
         inbound: schema.inbound.clone().unwrap_or_default(),
         os_grants: schema.os_grants.clone().unwrap_or_default(),

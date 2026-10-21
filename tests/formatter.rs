@@ -467,10 +467,10 @@ fn access_directives_survive_reformat() {
 "Access directive round-trip."
 orbital TicketOrbital {
   entity Ticket [persistent: tickets] {
-    @read (or ["=", @user.role, "supervisor"] ["=", @entity.assignee, @user.id])
-    @create ["=", @user.role, "supervisor"]
-    @update ["=", @entity.assignee, @user.id]
-    @delete ["=", @user.role, "supervisor"]
+    @read (or (= @user.role "supervisor") (= @entity.assignee @user.id))
+    @create (= @user.role "supervisor")
+    @update (= @entity.assignee @user.id)
+    @delete (= @user.role "supervisor")
     id : string!
     assignee : string!
   }
@@ -530,8 +530,8 @@ fn duplicate_access_directive_is_rejected() {
 "Duplicate directive rejection."
 orbital TicketOrbital {
   entity Ticket [persistent: tickets] {
-    @read ["=", @user.id, @entity.assignee]
-    @read ["=", @user.id, @entity.assignee]
+    @read (= @user.id @entity.assignee)
+    @read (= @user.id @entity.assignee)
     id : string!
     assignee : string!
   }
@@ -1011,4 +1011,40 @@ fn a_spec_with_storage_access_pages_and_edges_survives_reformat() {
     }
     let again = format_program(&parse_str(&formatted).expect("reparse"));
     assert_eq!(formatted, again);
+}
+
+/// A bracket is data (G-ORB-407): the formatter prints a data list as `[…]`, including one whose
+/// first element is an operator word, and never turns `["idle", "walk"]` into a call.
+#[test]
+fn data_lists_round_trip_as_brackets() {
+    let source = r#"app test-lists "1.0.0"
+"Data list round-trip."
+orbital ListOrbital {
+  entity Row [runtime] {
+    id : string!
+    frames : [string] = ["idle", "walk"]
+    keys : [string] = []
+  }
+  trait V -> Row [interaction, instance] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (set @entity.frames ["idle", "walk"])
+        (set @entity.keys ["path", "size"])
+      PICK -> idle
+        (set @entity.keys ["array/len", "count"])
+    }
+  }
+  page "/a" as A -> V
+}
+"#;
+    let ast = parse_str(source).expect("parse original");
+    let formatted = format_program(&ast);
+    assert!(!formatted.contains("(idle walk)") && !formatted.contains("(array/len"), "a data list printed as a call:\n{formatted}");
+    let schema1 = parse_and_lower_str(source).expect("lower original");
+    let schema2 = parse_and_lower_str(&formatted).expect("lower formatted");
+    let v1 = canonicalize(strip_nulls(serde_json::to_value(&schema1).unwrap()));
+    let v2 = canonicalize(strip_nulls(serde_json::to_value(&schema2).unwrap()));
+    assert_eq!(v1, v2, "a data list changed meaning across a reformat");
+    assert_eq!(formatted, format_program(&parse_str(&formatted).expect("reparse")));
 }

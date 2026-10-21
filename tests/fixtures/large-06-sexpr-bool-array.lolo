@@ -126,8 +126,8 @@ orbital NoteOrbital {
       title: "Notes",
       metrics: [
         { aggregation: "count", label: "Total",      icon: "file-text", variant: "primary", format: "number" },
-        { aggregation: "count", label: "Favorites",  icon: "star",      variant: "warning", format: "number", filter: ["fn", "row", ["=", "@row.isFavorite", true]] },
-        { aggregation: "count", label: "Top-level",  icon: "folder",    variant: "info",    format: "number", filter: ["fn", "row", ["=", "@row.parentId", ""]] }
+        { aggregation: "count", label: "Favorites",  icon: "star",      variant: "warning", format: "number", filter: (fn "row" (= "@row.isFavorite" true)) },
+        { aggregation: "count", label: "Top-level",  icon: "folder",    variant: "info",    format: "number", filter: (fn "row" (= "@row.parentId" "")) }
       ]
     }
     listens {

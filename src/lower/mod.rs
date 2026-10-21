@@ -283,6 +283,8 @@ fn lower_to_orb_names_only(
                 .into_iter()
                 .map(str::to_string),
         );
+        // An import's `entity X` rebind names the materialized primary entity.
+        file_entity_names.extend(orb.entity_rebind.iter().cloned());
     }
     for ta in &ast.type_aliases {
         if matches!(ta.body, TypeBody::Entity { .. }) {
@@ -360,6 +362,7 @@ fn lower_to_orb_names_only(
     )?;
 
     let mut schema = OrbitalSchema {
+        store: ast.app.store.clone(),
         theme_definitions: None,
         themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.clone()),
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
@@ -948,6 +951,7 @@ fn orbital_types(
 /// the spec, never matched by a real expectation.
 fn spec_placeholder_entity(name: &str) -> EntityDefinition {
     EntityDefinition {
+        store: None,
         shared: false,
         identity: false,
         local: false,

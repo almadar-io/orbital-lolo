@@ -470,6 +470,28 @@ fn control_string_entity_field_does_not_lower_to_bytes() {
     assert!(!serde_json::to_string(&schema).unwrap().contains(r#""type":"bytes""#));
 }
 
+#[test]
+fn a_program_type_field_prints_by_name_and_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = bytes_program("Viewer!");
+    let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
+    assert!(printed.contains("payload : Viewer!"), "Viewer must print by name:\n{printed}");
+    round_trip(&source, &options).unwrap();
+}
+
+#[test]
+fn control_an_inline_record_stays_inline() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = bytes_program("{ name : string!, value : number }");
+    let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
+    assert!(printed.contains("payload : { name : string!, value : number }"), "got:\n{printed}");
+    round_trip(&source, &options).unwrap();
+}
+
 const SPEC_PROGRAM: &str = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order { total : number }\n  expects trait Checkout { emits { PLACED } }\n  expects page \"/orders\"\n}\n";
 
 #[test]

@@ -1312,6 +1312,8 @@ pub fn check_program(program: &Program) -> Result<(), TypeError> {
         .collect();
     for o in &program.orbitals {
         entity_names.extend(expected_entity_names(o).into_iter().map(str::to_string));
+        // An import's `entity X` rebind names the materialized primary entity.
+        entity_names.extend(o.entity_rebind.iter().cloned());
     }
     let file_ctx = ResolveCtx {
         file: &file,

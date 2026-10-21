@@ -71,6 +71,8 @@ pub struct AppHeader {
     pub themes: Vec<String>,
     /// `locales [en, ar, sl]` — the locales this program ships.
     pub locales: Vec<String>,
+    /// `store: Driver` — the default store-driver orbital for persistent entities that name none.
+    pub store: Option<String>,
     /// `egress: ["https://host", …]` — the origins `http` may reach.
     pub egress: Vec<String>,
     /// `inbound: ["name", …]` — the hook names (`/api/hooks/<name>`) the program accepts.
@@ -638,6 +640,8 @@ pub struct Entity {
     pub local: bool,
     /// `mock` header tag — seed an empty browser store from the shared mock seeder.
     pub seed_mock: bool,
+    /// `store: Driver` header tag — the store-driver orbital answering this entity's row asks.
+    pub store: Option<String>,
     /// `instances [ { … }, … ]` — written-out rows the entity starts with.
     pub instances: Vec<orbital_core_base::schema::SObject>,
     /// `instances <lang> [ … ]` — the written-out rows for one declared locale.

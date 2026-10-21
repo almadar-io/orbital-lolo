@@ -245,15 +245,23 @@ impl Parser {
         // `TypeBody::Entity` (the `type X = Entity [...] { ... }` alias shape)
         // has no `shared`/`identity` field yet — only orbital-level `entity`
         // headers carry those through to `EntityDefinition` (lower/entity.rs).
+        let tags_span = self.peek_span();
         let EntityTags {
             persistence,
             collection,
+            store,
             ..
         } = if matches!(self.peek(), TokenKind::LBracket) {
             self.parse_persistence_tag()?
         } else {
             EntityTags::default()
         };
+        if store.is_some() {
+            return Err(ParseError::InvalidType {
+                span: tags_span,
+                message: "`store:` binds an orbital's entity to its driver: write it on the `entity` header, not a type alias".to_string(),
+            });
+        }
         let mut fields = Vec::new();
         if matches!(self.peek(), TokenKind::LBrace) {
             self.advance();

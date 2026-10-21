@@ -164,3 +164,43 @@ fn the_formatter_round_trips_locale_blocks() {
     };
     assert_eq!(entity(before), entity(after), "{formatted}");
 }
+
+// EXEC-STORE-4: `store: Driver` binds an entity's row asks to a store-driver orbital.
+#[test]
+fn store_tag_and_app_key_lower_to_the_driver_binding() {
+    let entity = parse_and_lower_str(&program("persistent: invoices, store: Rows", "")).unwrap();
+    assert_eq!(primary(&entity).store.as_deref(), Some("Rows"));
+    assert_eq!(primary(&entity).collection.as_deref(), Some("invoices"));
+    assert_eq!(entity.store, None);
+    let app = parse_and_lower_str(&program("persistent: invoices", "").replace(
+        "app fixture \"1.0.0\"\n\"Fixture.\"",
+        "app fixture [version: \"1.0.0\", description: \"Fixture.\", store: Rows]",
+    ))
+    .unwrap();
+    assert_eq!(app.store.as_deref(), Some("Rows"));
+    assert_eq!(primary(&app).store, None);
+    let control = parse_and_lower_str(&program("persistent: invoices", "")).unwrap();
+    assert_eq!((control.store.as_deref(), primary(&control).store.as_deref()), (None, None));
+}
+
+#[test]
+fn store_is_refused_where_it_binds_nothing() {
+    let source = "orbital O {\n  expects entity Invoice [persistent, store: Rows]\n  entity E { id : string! }\n}\n";
+    let err = parse_and_lower_str(source).unwrap_err().to_string();
+    assert!(err.contains("`store` describe a provider"), "{err}");
+    let err = parse_and_lower_str(&program("persistent, store", "")).unwrap_err().to_string();
+    assert!(err.contains("':' after `store`"), "{err}");
+}
+
+#[test]
+fn the_formatter_round_trips_the_store_binding() {
+    let source = program("persistent: invoices, store: Rows", "").replace(
+        "app fixture \"1.0.0\"\n\"Fixture.\"",
+        "app fixture [version: \"1.0.0\", description: \"Fixture.\", store: Rows]",
+    );
+    let formatted = format_program(&parse_str(&source).unwrap());
+    assert!(formatted.contains("store: Rows]") && formatted.contains("[persistent: invoices, store: Rows]"), "{formatted}");
+    let before = serde_json::to_value(parse_and_lower_str(&source).unwrap()).unwrap();
+    let after = serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap();
+    assert_eq!(before, after);
+}

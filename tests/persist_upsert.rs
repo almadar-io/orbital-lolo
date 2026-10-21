@@ -61,3 +61,19 @@ fn upsert_prints_back_and_lowers_to_the_same_effect() {
     );
     assert_eq!(save_effect(&printed), save_effect(&program("upsert")));
 }
+
+// `where: (fn row …)` on a single delete is the row guard (EXEC-STEP-8): it lowers into the trailing
+// options object as the lambda, and prints back to the same effect.
+#[test]
+fn a_delete_where_guard_lowers_to_the_options_lambda_and_round_trips() {
+    let src = program("upsert").replace(
+        "(persist upsert Mix { id: \"mix\", level: 3 })",
+        "(persist delete Mix \"mix\" { where: (fn row (= @row.level 3)) })",
+    );
+    let effect = save_effect(&src);
+    assert_eq!((effect[1].as_str(), effect[3].as_str()), (Some("delete"), Some("mix")), "{effect}");
+    assert_eq!(effect[4]["where"], serde_json::json!(["fn", "row", ["=", "@row.level", 3.0]]), "{effect}");
+    let schema = parse_and_lower_str(&src).expect("program lowers");
+    let printed = schema_to_lolo(&schema).expect("unlowers");
+    assert_eq!(save_effect(&printed), effect, "{printed}");
+}

@@ -11,6 +11,7 @@ pub(crate) struct EntityTags {
     pub identity: bool,
     pub local: bool,
     pub mock: bool,
+    pub store: Option<String>,
 }
 
 impl Parser {
@@ -29,6 +30,7 @@ impl Parser {
             identity,
             local,
             mock: seed_mock,
+            store,
         } = if matches!(self.peek(), TokenKind::LBracket) {
             self.parse_persistence_tag()?
         } else {
@@ -132,6 +134,7 @@ impl Parser {
             identity,
             local,
             seed_mock,
+            store,
             instances,
             locale_instances,
             read_policy: access.read_policy,
@@ -209,7 +212,7 @@ impl Parser {
             access.access_waivers.push((name.to_string(), reason));
             return Ok(());
         }
-        let expr = self.parse_sexpr_or_value()?;
+        let expr = self.parse_boolean_slot("access policy")?;
         self.expect_newline_or_eof()?;
         if duplicate(access) {
             return Err(dup_error());
@@ -252,6 +255,7 @@ impl Parser {
         let mut identity = false;
         let mut local = false;
         let mut mock = false;
+        let mut store: Option<String> = None;
         loop {
             let tag_span = self.peek_span();
             let kind = self.expect_ident()?;
@@ -265,6 +269,10 @@ impl Parser {
                 "identity" => identity = true,
                 "local" => local = true,
                 "mock" => mock = true,
+                "store" => {
+                    self.expect_kind(&TokenKind::Colon, "':' after `store`")?;
+                    store = Some(self.expect_ident()?);
+                }
                 "persistent" | "runtime" => {
                     let mode = if kind == "persistent" {
                         Persistence::Persistent
@@ -317,6 +325,7 @@ impl Parser {
             identity,
             local,
             mock,
+            store,
         })
     }
 

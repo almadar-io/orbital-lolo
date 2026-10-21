@@ -31,6 +31,7 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "locales",
     "egress",
     "inbound",
+    "store",
     "fs",
     "exec",
     "net",
@@ -149,6 +150,9 @@ struct Parser {
     /// How many `(quasiquote …)` templates enclose the expression being parsed;
     /// an `(unquote e)` is legal only when this is non-zero.
     quasiquote_depth: usize,
+    /// How many `(quote …)`/`(quasiquote …)` bodies enclose the expression being parsed,
+    /// reset to zero inside an `(unquote e)`; a bracket there is template JSON, never `["list", …]`.
+    template_depth: usize,
     /// L2 source-map span capture, active only inside a
     /// [`Self::capture_expr_spans`] window (one per transition guard / effect
     /// / tick guard / tick effect). `None` outside a window — recording is a
@@ -191,6 +195,7 @@ impl Parser {
             inline_ref_counter: 0,
             binding_scopes: Vec::new(),
             quasiquote_depth: 0,
+            template_depth: 0,
             expr_span_capture: None,
             expr_trail: String::new(),
             pattern_type_value: false,
@@ -560,6 +565,7 @@ impl Parser {
                 theme: None,
                 themes: Vec::new(),
                 locales: Vec::new(),
+                store: None,
                 egress: Vec::new(),
                 inbound: Vec::new(),
                 os_grants: orbital_core_base::os_grants::OsGrants::default(),
@@ -638,6 +644,7 @@ impl Parser {
         let mut theme = None;
         let mut themes = Vec::new();
         let mut locales = Vec::new();
+        let mut store = None;
         let mut egress = Vec::new();
         let mut inbound = Vec::new();
         let mut os_grants = orbital_core_base::os_grants::OsGrants::default();
@@ -656,6 +663,7 @@ impl Parser {
                     "locales" => locales = p.parse_locale_items()?,
                     "egress" => egress = p.parse_string_items(key)?,
                     "inbound" => inbound = p.parse_string_items(key)?,
+                    "store" => store = Some(p.expect_ident()?),
                     "deployment" => deployment = p.parse_deployment()?,
                     grant if grants::GRANT_KEYS.contains(&grant) => {
                         p.parse_grant_value(grant, &mut os_grants)?
@@ -727,6 +735,7 @@ impl Parser {
             theme,
             themes,
             locales,
+            store,
             egress,
             inbound,
             os_grants,
@@ -1642,10 +1651,10 @@ impl Parser {
     fn parse_expects_entity_tags(&mut self) -> Result<ExpectedTags, ParseError> {
         let span = self.peek_span();
         let tags = self.parse_persistence_tag()?;
-        if tags.collection.is_some() || tags.mock {
+        if tags.collection.is_some() || tags.mock || tags.store.is_some() {
             return Err(ParseError::InvalidType {
                 span,
-                message: "an `expects entity` header names the storage mode, `shared` or `local` only — a collection name and `mock` describe a provider, not a requirement".to_string(),
+                message: "an `expects entity` header names the storage mode, `shared` or `local` only — a collection name, `mock` and `store` describe a provider, not a requirement".to_string(),
             });
         }
         if tags.identity && (tags.persistence.is_some() || tags.shared || tags.local) {
@@ -2756,6 +2765,69 @@ mod tests {
             "      viewerRole: @user.role",
         );
         parse_str(&src).expect("the same key in two traits must parse");
+    }
+
+    fn config_override_default(entry: &str) -> SExpression {
+        let src = config_dup_src(entry, "      x: 1");
+        let prog = parse_str(&src).unwrap_or_else(|e| panic!("parse failed: {e}"));
+        let cf = &prog.orbitals[0].traits[0]
+            .reference
+            .as_ref()
+            .expect("trait ref")
+            .config[0];
+        assert!(
+            matches!(&cf.type_expr, TypeExpr::Primitive(s) if s == "unknown"),
+            "a nested `=` must not turn wiring into a declaration: {:?}",
+            cf.type_expr
+        );
+        cf.default.clone().expect("wiring value")
+    }
+
+    #[test]
+    fn call_site_config_value_takes_a_nested_paren_equals() {
+        let paren =
+            config_override_default("      allowEdit: (if (= @user.role \"reader\") false true)");
+        assert_eq!(
+            paren,
+            SExpression::Array(vec![
+                SExpression::String("if".into()),
+                SExpression::Array(vec![
+                    SExpression::String("=".into()),
+                    SExpression::String("@user.role".into()),
+                    SExpression::String("reader".into()),
+                ]),
+                SExpression::Bool(false),
+                SExpression::Bool(true),
+            ])
+        );
+    }
+
+    /// G-ORB-407: a bracket is data, so an operator-headed bracket is a `list`, never the call.
+    #[test]
+    fn call_site_config_value_bracket_is_a_data_list() {
+        let paren = config_override_default(
+            "      show: (and (= @user.role \"reader\") (not @entity.locked))",
+        );
+        let bracket = config_override_default(
+            "      show: [\"and\", [\"=\", @user.role, \"reader\"], [\"not\", @entity.locked]]",
+        );
+        assert_ne!(paren, bracket);
+        assert!(
+            matches!(&bracket, SExpression::Array(items) if items.first() == Some(&SExpression::String("list".into()))),
+            "{bracket:?}"
+        );
+    }
+
+    #[test]
+    fn call_site_config_declaration_form_still_parses() {
+        let src = config_dup_src("      k : string = \"a\"", "      x: 1");
+        let prog = parse_str(&src).unwrap_or_else(|e| panic!("parse failed: {e}"));
+        let cf = &prog.orbitals[0].traits[0]
+            .reference
+            .as_ref()
+            .expect("trait ref")
+            .config[0];
+        assert!(matches!(&cf.type_expr, TypeExpr::Primitive(s) if s == "string"));
     }
 
     #[test]

@@ -118,6 +118,7 @@ pub(super) fn entity(
         identity: def.identity,
         local: def.local,
         seed_mock: def.seed_mock,
+        store: def.store.clone(),
         instances: def.instances.clone().unwrap_or_default(),
         locale_instances: def.locale_instances.clone().unwrap_or_default(),
         read_policy: def.read_policy.clone(),

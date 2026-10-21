@@ -709,3 +709,23 @@ fn orbital_ref_mock_rejects_a_duplicate_field_and_a_non_string_value() {
     assert!(parse_str(&IMPORT_MOCK.replace("    name: ", "    role: \"x\"\n    name: ")).is_err());
     assert!(parse_str(&IMPORT_MOCK.replace("\"customer, customer, store-manager\"", "12")).is_err());
 }
+
+/// An import's `entity X` rebind puts `X` in scope as a field type, as a local `entity X` block would.
+#[test]
+fn orbital_ref_entity_rebind_name_is_a_field_type_in_scope() {
+    let source = r#"
+uses Identity from "almadar-behaviors/std-identity"
+
+orbital Profile = Identity.orbitals.IdentityOrbital {
+  entity User
+  expects entity Post {
+    author : User!
+  }
+}
+"#;
+    parse_and_lower_str(source).expect("the rebound entity name resolves as a relation target");
+
+    let control = source.replace("  entity User\n", "");
+    let err = parse_and_lower_str(&control).expect_err("without the rebind, User is undeclared");
+    assert!(format!("{err:?}").contains("\"User\""), "{err:?}");
+}

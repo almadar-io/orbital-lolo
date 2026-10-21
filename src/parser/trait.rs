@@ -810,7 +810,7 @@ impl Parser {
         let mut guard_spans = Vec::new();
         if self.check_ident("when") {
             self.advance();
-            let (g, spans) = self.capture_expr_spans(|p| p.parse_sexpr_or_value())?;
+            let (g, spans) = self.capture_expr_spans(|p| p.parse_boolean_slot("guard"))?;
             guard = Some(g);
             guard_spans = spans;
         }
@@ -1483,7 +1483,7 @@ impl Parser {
                     self.skip_newlines();
                     if self.check_ident("when") {
                         self.advance();
-                        guard = Some(self.parse_sexpr_or_value()?);
+                        guard = Some(self.parse_boolean_slot("guard")?);
                         if matches!(self.peek(), TokenKind::Newline) {
                             self.advance();
                         }
@@ -1581,7 +1581,7 @@ impl Parser {
                 let mut guard_spans = Vec::new();
                 if self.check_ident("when") {
                     self.advance();
-                    let (g, spans) = self.capture_expr_spans(|p| p.parse_sexpr_or_value())?;
+                    let (g, spans) = self.capture_expr_spans(|p| p.parse_boolean_slot("guard"))?;
                     guard = Some(g);
                     guard_spans = spans;
                     if matches!(self.peek(), TokenKind::Newline) {
@@ -1846,15 +1846,20 @@ impl Parser {
     ///
     /// This is a pure-lookahead operation — it does NOT advance the cursor.
     fn has_equals_before_entry_end(&self) -> bool {
-        let mut i = self.pos;
-        let len = self.tokens.len();
-        while i < len {
-            match &self.tokens[i].kind {
-                TokenKind::Equals => return true,
-                TokenKind::Comma | TokenKind::RBrace | TokenKind::Newline | TokenKind::Eof => {
+        // Only a top-level `=` marks a declaration; one nested in a value
+        // (`(if (= a b) …)`) is the equality operator.
+        let mut depth: u32 = 0;
+        for tok in &self.tokens[self.pos..] {
+            match &tok.kind {
+                TokenKind::LParen | TokenKind::LBracket | TokenKind::LBrace => depth += 1,
+                TokenKind::RParen | TokenKind::RBracket => depth = depth.saturating_sub(1),
+                TokenKind::RBrace if depth > 0 => depth -= 1,
+                TokenKind::Eof => return false,
+                TokenKind::Equals if depth == 0 => return true,
+                TokenKind::Comma | TokenKind::RBrace | TokenKind::Newline if depth == 0 => {
                     return false
                 }
-                _ => i += 1,
+                _ => {}
             }
         }
         false

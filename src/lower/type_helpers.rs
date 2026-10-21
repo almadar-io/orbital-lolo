@@ -199,6 +199,8 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
         // variant it satisfies is the L2 emit-payload backstop's check.
         "union" => actual == "object",
         "entity" | "relation" => actual == "object" || actual == "string",
+        // A program type (`Viewer`, `TraitValue`) is a record: a struct literal fills it; its shape is L2's check.
+        named if orbital_core_base::language::program_types::program_type(named).is_some() => actual == "object",
         _ => false,
     }
 }

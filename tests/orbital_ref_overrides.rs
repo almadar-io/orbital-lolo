@@ -112,7 +112,7 @@ fn entity_line_bracket_round_trips_through_format() {
 #[test]
 fn retype_parses_lowers_and_round_trips() {
     let source =
-        import("  retype {\n    title : text = \"untitled\"\n    pinned : boolean = true\n  }\n");
+        import("  retype {\n    title : string = \"untitled\"\n    pinned : boolean = true\n  }\n");
     let program = parse_str(&source).expect("parse");
     assert_eq!(program.orbitals[0].retype_fields.len(), 2);
     let r = reference(&source);
@@ -128,7 +128,7 @@ fn retype_parses_lowers_and_round_trips() {
 #[test]
 fn extend_and_retype_are_independent_blocks() {
     let source =
-        import("  extend {\n    dueDate : date = null\n  }\n  retype {\n    title : text\n  }\n");
+        import("  extend {\n    dueDate : date = null\n  }\n  retype {\n    title : string\n  }\n");
     let r = reference(&source);
     assert_eq!(r.extend.expect("extend").len(), 1);
     assert_eq!(r.retype.expect("retype").len(), 1);

@@ -92,7 +92,7 @@ fn a_waiver_and_a_real_policy_for_the_same_op_collide() {
     // Declaring both is a contradiction: either the rule is expressible or it
     // is not. Same error the duplicate-directive check already raises.
     let err = parse_and_lower_str(&entity_source(
-        "    @read none \"cannot join\"\n    @read [\"=\", (object/get @entity authorId), @user.id]",
+        "    @read none \"cannot join\"\n    @read (= (object/get @entity authorId) @user.id)",
     ))
     .expect_err("must not parse");
     assert!(
@@ -104,7 +104,7 @@ fn a_waiver_and_a_real_policy_for_the_same_op_collide() {
 #[test]
 fn waiving_one_operation_leaves_the_others_enforced() {
     let schema = parse_and_lower_str(&entity_source(
-        "    @read none \"cannot join across entities\"\n    @delete [\"=\", @user.role, \"supervisor\"]",
+        "    @read none \"cannot join across entities\"\n    @delete (= @user.role \"supervisor\")",
     ))
     .expect("parses");
     let entity = ticket_reply(&schema);

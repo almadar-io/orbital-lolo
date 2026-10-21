@@ -35,6 +35,7 @@ pub(crate) fn lower_entity(
         None => None,
     };
     Ok(EntityDefinition {
+        store: entity.store.clone(),
         name: entity.name.clone(),
         collection: entity.collection.clone(),
         persistence,
@@ -283,8 +284,7 @@ pub(crate) fn lower_type_expr(
                     def.relation.clone(),
                 )
             } else if params.contains(&name.as_str()) {
-                // A type variable has no `FieldType` of its own; it keeps the string carrier.
-                (FieldType::String, None, None, None, None)
+                (FieldType::type_var(name), None, None, None, None)
             } else {
                 let mut known: Vec<String> = aliases.keys().cloned().collect();
                 known.extend(entity_names.iter().cloned());
@@ -506,47 +506,7 @@ pub(crate) fn lower_type_expr(
 /// what counts as a primitive. `None` for a non-primitive name (an alias /
 /// entity reference / typo), which the type checker then rejects.
 pub(crate) fn primitive_field_type(name: &str) -> Option<FieldType> {
-    Some(match name {
-        // `icon`/`component` are refinement types over string (validity enforced
-        // at the render-ui layer); they lower to a plain string field.
-        "string" | "any" | "icon" | "component" => FieldType::String,
-        // Promoted 2026-08-20 (was collapsed to String — the schema lied about
-        // the value's shape): money is numeric at rest; file is the canonical
-        // {name, url, mimeType, sizeBytes} struct. The declared type — never a
-        // field-name heuristic — drives currency inputs/formatting and the
-        // upload dropzone + download-chip rendering on both paths.
-        "money" => FieldType::Money,
-        "file" => FieldType::File,
-        "bytes" => FieldType::Bytes,
-        "CallKey" => FieldType::CallKey,
-        // Semantic string domains, now first-class field types rather than
-        // subtypes that erased to `string`. Closes the "no format validation yet"
-        // half of Gap G-LOLO-TYPENAME-SILENT-FALLBACK: the declared domain
-        // survives lowering, so the validator can check a literal default and
-        // codegen can emit the matching zod refinement.
-        "email" => FieldType::Email,
-        "url" => FieldType::Url,
-        "phone" => FieldType::Phone,
-        "uuid" => FieldType::Uuid,
-        "image" => FieldType::Image,
-        // Renderable content is first-class (type-integrity campaign): the
-        // `.orb` carries the honest `node` tag instead of lying `string`.
-        "node" => FieldType::Node,
-        // De-facto accepted config/field types in the std corpus — `json` (free
-        // value), `render-ui` (a render-ui pattern object config), `relation`
-        // (a foreign-key reference). They lowered to a string field via the old
-        // unknown-name fallback; recognized here to preserve that (`json` and
-        // `render-ui` are being ELIMINATED, not re-typed — Gate C tracks them)
-        // while still rejecting genuine typos.
-        "json" | "render-ui" | "relation" => FieldType::String,
-        "int" | "float" | "number" | "duration" => FieldType::Number,
-        "bool" | "boolean" => FieldType::Boolean,
-        "date" => FieldType::Date,
-        "datetime" => FieldType::Datetime,
-        "timestamp" => FieldType::Timestamp,
-        "object" => FieldType::Object,
-        _ => return None,
-    })
+    FieldType::from_primitive_name(name)
 }
 
 pub(crate) fn primitive_to_field_type(name: &str) -> FieldType {
@@ -666,7 +626,7 @@ mod tests {
             lower_type_expr(&TypeExpr::Named("Box".to_string()), &aliases, &HashSet::new(), &[])
                 .expect("Box lowers");
         assert!(matches!(ft, FieldType::Object));
-        assert!(props.expect("Box members").contains_key("v"));
+        assert_eq!(props.expect("Box members")["v"].field_type, FieldType::type_var("T"));
         let outside =
             lower_type_expr(&TypeExpr::Named("T".to_string()), &aliases, &HashSet::new(), &[]);
         assert_eq!(unknown_name(outside), Some("T".to_string()), "control: T is Box's, not global");
@@ -677,9 +637,55 @@ mod tests {
         let list = TypeExpr::Array(Box::new(TypeExpr::Named("t".to_string())));
         let (ft, _, items, _, _) =
             lower_type_expr(&list, &BTreeMap::new(), &HashSet::new(), &["t"]).expect("[t] lowers");
-        assert!(matches!(ft, FieldType::Array) && items.is_some());
+        assert!(matches!(ft, FieldType::Array));
+        assert_eq!(items.expect("[t] item").field_type, FieldType::type_var("t"));
         let unbound = lower_type_expr(&list, &BTreeMap::new(), &HashSet::new(), &["u"]);
         assert_eq!(unknown_name(unbound), Some("t".to_string()), "control: another param");
+    }
+
+    #[test]
+    fn a_generic_alias_lowers_its_variable_and_binds_by_substitution() {
+        let mut aliases = BTreeMap::new();
+        aliases.insert(
+            "Page".to_string(),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![
+                    ("items".to_string(), TypeExpr::Array(Box::new(TypeExpr::Named("t".to_string()))), true),
+                    ("cursor".to_string(), TypeExpr::Optional(Box::new(TypeExpr::Primitive("string".to_string()))), false),
+                ]),
+                Some("t".to_string()),
+            ),
+        );
+        aliases.insert(
+            "Plain".to_string(),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![("n".to_string(), TypeExpr::Primitive("string".to_string()), true)]),
+                None,
+            ),
+        );
+        let entities: HashSet<String> = ["Order".to_string()].into();
+        let (_, _, _, props, _) =
+            lower_type_expr(&TypeExpr::Named("Page".to_string()), &aliases, &entities, &[]).expect("Page");
+        let mut page: FieldDefinition =
+            serde_json::from_value(serde_json::json!({ "type": "object" })).expect("object");
+        page.properties = props;
+        let items = &page.properties.as_ref().expect("members")["items"];
+        assert_eq!(items.items.as_ref().expect("elem").field_type, FieldType::type_var("t"));
+        assert_eq!(page.properties.as_ref().expect("members")["cursor"].field_type, FieldType::String);
+        let (oft, _, _, _, orel) =
+            lower_type_expr(&TypeExpr::Named("Order".to_string()), &aliases, &entities, &[]).expect("Order");
+        let mut order: FieldDefinition =
+            serde_json::from_value(serde_json::json!({ "type": "object" })).expect("object");
+        order.field_type = oft;
+        order.relation = orel;
+        page.substitute_type_vars(&std::collections::HashMap::from([("t".to_string(), order)]));
+        let elem = page.properties.as_ref().expect("members")["items"].items.clone().expect("elem");
+        assert!(matches!(elem.field_type, FieldType::Relation));
+        assert_eq!(elem.relation.expect("rel").entity, "Order");
+        let (pft, _, _, pprops, _) =
+            lower_type_expr(&TypeExpr::Named("Plain".to_string()), &aliases, &entities, &[]).expect("Plain");
+        assert!(matches!(pft, FieldType::Object), "control: a non-generic alias is unchanged");
+        assert!(matches!(pprops.expect("n")["n"].field_type, FieldType::String));
     }
 
     #[test]

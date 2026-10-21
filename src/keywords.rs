@@ -67,6 +67,7 @@ const KEYWORDS: &[&str] = &[
     "answers",
     "verifies",
     "egress",
+    "store",
     "themes",
     "deployment",
     "fs",
@@ -134,6 +135,7 @@ const TAGS: &[&str] = &[
     "background",
     "visible",
     "mock",
+    "store",
 ];
 
 /// `interaction integration lifecycle game-core game-entity game-ui` — the

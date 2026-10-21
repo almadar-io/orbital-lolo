@@ -138,7 +138,14 @@ impl Parser {
                     out.entity_rebind = Some(self.expect_ident()?);
                 }
                 if matches!(self.peek(), TokenKind::LBracket) {
+                    let tags_span = self.peek_span();
                     let tags = self.parse_persistence_tag()?;
+                    if tags.store.is_some() {
+                        return Err(ParseError::InvalidType {
+                            span: tags_span,
+                            message: "`store:` on an imported orbital's entity rebind is not supported yet: bind the store on the entity header".to_string(),
+                        });
+                    }
                     out.entity_rebind_tags = Some(EntityRebindTags {
                         persistence: tags.persistence,
                         collection: tags.collection,

@@ -103,6 +103,12 @@ impl Parser {
         if in_quasiquote {
             self.quasiquote_depth += 1;
         }
+        let outer_template_depth = self.template_depth;
+        match head.as_deref() {
+            Some("quote") | Some("quasiquote") => self.template_depth += 1,
+            Some("unquote") => self.template_depth = 0,
+            _ => {}
+        }
         if head.as_deref() == Some("unquote") && self.quasiquote_depth == 0 {
             return Err(ParseError::InvalidSExpr {
                 message: "ELOLO_UNQUOTE_OUTSIDE_QUASIQUOTE: `(unquote e)` is legal only inside `(quasiquote …)`".to_string(),
@@ -148,6 +154,7 @@ impl Parser {
         if in_quasiquote {
             self.quasiquote_depth -= 1;
         }
+        self.template_depth = outer_template_depth;
         if let (Some(max), Some(h)) = (loop_arg_max, head.as_deref()) {
             if arg_spans.len() > max {
                 let consumed_before_loop = items.len() - 1 - arg_spans.len();
@@ -220,6 +227,15 @@ impl Parser {
         // at the generic bare-atom position (`parse_sexpr_or_value`'s
         // `Identifier` arm never canonicalizes: it can't tell an action
         // word from an ordinary event/entity/slot name at that position).
+        if head.as_deref() == Some("fetch") {
+            for item in &items[1..] {
+                if let SExpression::Object(options) = item {
+                    if let Some(filter) = options.get("filter") {
+                        Self::check_boolean_slot(filter, "fetch filter", span)?;
+                    }
+                }
+            }
+        }
         if head.as_deref() == Some("persist") {
             if let Some(SExpression::String(s)) = items.get_mut(1) {
                 if let Some(canon) = self.lang.canon_capability(s) {
@@ -309,7 +325,7 @@ impl Parser {
         let mut emitted = Vec::new();
         let mut names = Vec::new();
         if matches!(self.peek(), TokenKind::LBracket) {
-            let grouped = self.parse_array_literal()?;
+            let grouped = self.parse_array_items()?;
             if let SExpression::Array(entries) = &grouped {
                 for entry in entries {
                     if let SExpression::String(name) = entry {
@@ -690,7 +706,53 @@ impl Parser {
         Ok(SExpression::Object(map))
     }
 
+    /// A guard, access policy or fetch filter is a `boolean` slot. A bracket there is a data list
+    /// (G-ORB-407), so an old-form `["=", a, b]` would silently become a truthy list.
+    pub(crate) fn parse_boolean_slot(&mut self, slot: &str) -> Result<SExpression, ParseError> {
+        let span = self.peek_span();
+        let expr = self.parse_sexpr_or_value()?;
+        Self::check_boolean_slot(&expr, slot, span)?;
+        Ok(expr)
+    }
+
+    pub(crate) fn check_boolean_slot(expr: &SExpression, slot: &str, span: Span) -> Result<(), ParseError> {
+        let SExpression::Array(items) = expr else {
+            return Ok(());
+        };
+        match items.first() {
+            Some(SExpression::String(head)) if head == "list" => Err(ParseError::InvalidType {
+                span,
+                message: format!(
+                    "ELOLO_LIST_IN_BOOLEAN_SLOT: the {slot} is a list where a boolean is expected; a bracket is data, write the call as `(op …)`"
+                ),
+            }),
+            Some(SExpression::String(head)) if matches!(head.as_str(), "and" | "or" | "not") => {
+                items[1..].iter().try_for_each(|operand| Self::check_boolean_slot(operand, slot, span))
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// A bracket is a data list (G-ORB-407, "Brackets mean data"): when its first element is a
+    /// head the kernel would dispatch, it carries the `["list", …]` marker so it never runs as a
+    /// call. Template bodies (`quote`/`quasiquote`) stay literal JSON.
     pub(crate) fn parse_array_literal(&mut self) -> Result<SExpression, ParseError> {
+        let parsed = self.parse_array_items()?;
+        if self.template_depth > 0
+            || orbital_core_eval::lower::recognized_call_head(&parsed).is_none()
+        {
+            return Ok(parsed);
+        }
+        let SExpression::Array(items) = parsed else {
+            return Ok(parsed);
+        };
+        let mut marked = Vec::with_capacity(items.len() + 1);
+        marked.push(SExpression::String("list".to_string()));
+        marked.extend(items);
+        Ok(SExpression::Array(marked))
+    }
+
+    fn parse_array_items(&mut self) -> Result<SExpression, ParseError> {
         let open_span = self.peek_span();
         self.expect_kind(&TokenKind::LBracket, "[")?;
         let mut items = Vec::new();

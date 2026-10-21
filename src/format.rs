@@ -373,6 +373,9 @@ impl Formatter {
                 }),
             ));
         }
+        if let Some(store) = &app.store {
+            entries.push(("store", Box::new(move |f: &mut Self| f.output.push_str(store))));
+        }
         if let Some(public) = &app.public {
             entries.push((
                 "public",
@@ -744,6 +747,7 @@ impl Formatter {
                 self.fmt_persistence_tag(
                     persistence.as_ref(),
                     collection.as_ref().map(|s| s.as_str()),
+                    None,
                     &[],
                 );
                 self.output.push_str(" {");
@@ -1014,6 +1018,7 @@ impl Formatter {
         &mut self,
         persistence: Option<&Persistence>,
         collection: Option<&str>,
+        store: Option<&str>,
         flags: &[(&str, bool)],
     ) {
         let mut tags = Vec::new();
@@ -1022,6 +1027,9 @@ impl Formatter {
             (Some(Persistence::Persistent), None) => tags.push("persistent".to_string()),
             (Some(Persistence::Runtime), _) => tags.push("runtime".to_string()),
             (None, _) => {}
+        }
+        if let Some(driver) = store {
+            tags.push(format!("store: {driver}"));
         }
         tags.extend(
             flags
@@ -1243,6 +1251,7 @@ impl Formatter {
                 self.fmt_persistence_tag(
                     tags.persistence.as_ref(),
                     tags.collection.as_deref(),
+                    None,
                     &[
                         ("shared", tags.shared),
                         ("identity", tags.identity),
@@ -1842,6 +1851,7 @@ impl Formatter {
         self.fmt_persistence_tag(
             entity.persistence.as_ref(),
             entity.collection.as_ref().map(|s| s.as_str()),
+            entity.store.as_deref(),
             &[
                 ("shared", entity.shared),
                 ("identity", entity.identity),
@@ -2976,7 +2986,9 @@ impl Formatter {
                     true
                 }
             }
-            SExpression::Array(arr) => arr.iter().all(|c| self.is_jsx_renderable(c)),
+            SExpression::Array(arr) => {
+                !is_call_array(arr) && arr.iter().all(|c| self.is_jsx_renderable(c))
+            }
             _ => true,
         }
     }
@@ -3216,13 +3228,43 @@ impl Formatter {
             return;
         }
 
+        // `(match scrutinee (pattern body) …)`: each arm is a paren pair, never data.
+        if matches!(&arr[0], SExpression::String(s) if s == "match") && arr.len() >= 3 {
+            self.output.push_str("(match ");
+            self.fmt_sexpr_inner(&arr[1], false);
+            for arm in &arr[2..] {
+                self.output.push(' ');
+                match arm {
+                    SExpression::Array(arm) => self.fmt_sexpr_array(arm, true),
+                    other => self.fmt_sexpr_inner(other, false),
+                }
+            }
+            self.output.push(')');
+            return;
+        }
+
         // Detect let form
         let is_let = matches!(&arr[0], SExpression::String(s) if s == "let");
         if is_let && arr.len() == 3 {
             self.output.push('(');
             self.output.push_str("let");
             self.output.push(' ');
-            self.fmt_sexpr_inner(&arr[1], true); // binding list forced to paren
+            match &arr[1] {
+                SExpression::Array(pairs) => {
+                    self.output.push('(');
+                    for (i, pair) in pairs.iter().enumerate() {
+                        if i > 0 {
+                            self.output.push(' ');
+                        }
+                        match pair {
+                            SExpression::Array(pair) => self.fmt_sexpr_array(pair, true),
+                            other => self.fmt_sexpr_inner(other, false),
+                        }
+                    }
+                    self.output.push(')');
+                }
+                other => self.fmt_sexpr_inner(other, true),
+            }
             self.output.push(' ');
             // The binding names are in scope for the body only; the list itself
             // is printed first so the names themselves stay unquoted.
@@ -3261,7 +3303,7 @@ impl Formatter {
                 if i > 0 {
                     self.output.push(' ');
                 }
-                self.fmt_sexpr_inner(item, false);
+                self.fmt_sexpr_inner(item, i == 1 && params.len() == 2);
             }
             self.output.push(' ');
             self.binding_scopes.push(names);
@@ -3288,6 +3330,7 @@ impl Formatter {
             }
             self.output.push(')');
         } else {
+            let arr = orbital_core_eval::lower::strip_literal_list_marker(arr);
             self.output.push('[');
             for (i, item) in arr.iter().enumerate() {
                 if i > 0 {
@@ -3472,8 +3515,23 @@ fn is_bare_atom(s: &str) -> bool {
         .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-' || c == '/')
 }
 
+/// A bracket is data (G-ORB-407), so an array prints as `(head …)` only when the kernel would
+/// dispatch its head or the parser reserves it; every other array prints as `[…]`.
 fn is_call_array(arr: &[SExpression]) -> bool {
-    matches!(&arr.first(), Some(SExpression::String(s)) if is_bare_atom(s) || is_operator_symbol(s))
+    let Some(SExpression::String(head)) = arr.first() else {
+        return false;
+    };
+    if head == "list" {
+        return false;
+    }
+    matches!(
+        head.as_str(),
+        "let" | "fn" | "lambda" | "match" | "quote" | "quasiquote" | "unquote" | "render-ui"
+    ) || is_operator_symbol(head)
+        || orbital_core_eval::lower::recognized_call_head(&SExpression::Array(vec![
+            SExpression::String(head.clone()),
+        ]))
+        .is_some()
 }
 
 /// True if `s` is a symbolic operator head (the `OP_SYMBOL` set from the
