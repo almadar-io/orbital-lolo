@@ -330,7 +330,7 @@ pub(crate) fn lower_type_expr(
                 inner.peel(),
                 TypeExpr::Named(p) | TypeExpr::Primitive(p) if p == "json"
             );
-            let (inner_ft, inner_values, inner_items, inner_props, _inner_rel) = if inner_is_json {
+            let (inner_ft, inner_values, inner_items, inner_props, inner_rel) = if inner_is_json {
                 (FieldType::Object, None, None, None, None)
             } else {
                 lower_type_expr(inner, aliases, entity_names, params)?
@@ -345,7 +345,7 @@ pub(crate) fn lower_type_expr(
                 unique: None,
                 default: None,
                 values: inner_values,
-                relation: None,
+                relation: inner_rel,
                 items: inner_items,
                 properties: inner_props,
                 intrinsic: None,
@@ -393,8 +393,10 @@ pub(crate) fn lower_type_expr(
         // `OirType::Map { key, value }`. The `FieldType::Object` tag keeps an
         // entity-level map (rare) as a plain object.
         TypeExpr::Map(_key, value) => {
-            let (v_ft, v_values, v_items, v_props, _v_rel) =
+            let (v_ft, v_values, v_items, v_props, v_rel) =
                 lower_type_expr(value, aliases, entity_names, params)?;
+            // A map keyed to an entity holds that entity's rows, not their ids.
+            let v_intrinsic = v_rel.as_ref().map(|_| true);
             let value_field = FieldDefinition {
                 mock: None,
                 merged_from: None,
@@ -405,10 +407,10 @@ pub(crate) fn lower_type_expr(
                 unique: None,
                 default: None,
                 values: v_values,
-                relation: None,
+                relation: v_rel,
                 items: v_items,
                 properties: v_props,
-                intrinsic: None,
+                intrinsic: v_intrinsic,
                 description: None,
                 synonyms: None,
                 projected_from: value.projection(),
@@ -1034,6 +1036,69 @@ mod tests {
         let value = plain["map"].items.as_deref().expect("map value");
         assert!(matches!(value.field_type, FieldType::Number));
         assert_eq!(value.by_name_reference(), None);
+    }
+
+    fn lower_with_asset(ty: &TypeExpr) -> LoweredType {
+        let entities: HashSet<String> = ["Asset".to_string()].into_iter().collect();
+        lower_type_expr(ty, &BTreeMap::new(), &entities, &[]).expect("lowers")
+    }
+
+    fn map_of(value: TypeExpr) -> TypeExpr {
+        TypeExpr::Map(Box::new(TypeExpr::Primitive("string".to_string())), Box::new(value))
+    }
+
+    fn asset() -> TypeExpr {
+        TypeExpr::Named("Asset".to_string())
+    }
+
+    fn assert_row_relation(value: &FieldDefinition, cardinality: Cardinality) {
+        assert!(matches!(value.field_type, FieldType::Relation), "got {:?}", value.field_type);
+        let rel = value.relation.as_ref().expect("a map value keeps its relation definition");
+        assert_eq!(rel.entity, "Asset");
+        assert_eq!(rel.cardinality, Some(cardinality));
+        assert_eq!(value.intrinsic, Some(true), "a map value holds the row, not its id");
+    }
+
+    #[test]
+    fn map_of_entity_carries_a_row_relation_value() {
+        let (ft, _, items, props, rel) = lower_with_asset(&map_of(asset()));
+        assert!(matches!(ft, FieldType::Object) && props.is_none() && rel.is_none());
+        assert_row_relation(items.as_deref().expect("map value"), Cardinality::One);
+
+        let (_, _, items, _, _) = lower_with_asset(&map_of(TypeExpr::Array(Box::new(asset()))));
+        assert_row_relation(items.as_deref().expect("map value"), Cardinality::Many);
+
+        let (_, _, items, _, _) = lower_with_asset(&map_of(TypeExpr::Primitive("string".to_string())));
+        let control = items.expect("map value");
+        assert!(matches!(control.field_type, FieldType::String));
+        assert!(control.relation.is_none() && control.intrinsic.is_none());
+    }
+
+    #[test]
+    fn nested_map_and_struct_member_of_entity_keep_the_relation() {
+        let (_, _, items, _, _) = lower_with_asset(&map_of(map_of(asset())));
+        let inner = items.expect("outer map value");
+        assert!(matches!(inner.field_type, FieldType::Object) && inner.relation.is_none());
+        assert_row_relation(inner.items.as_deref().expect("inner map value"), Cardinality::One);
+
+        let member = TypeExpr::Object(vec![
+            ("name".to_string(), TypeExpr::Primitive("string".to_string()), false),
+            ("byKey".to_string(), map_of(asset()), false),
+        ]);
+        let (_, _, _, props, _) = lower_with_asset(&member);
+        let props = props.expect("struct members");
+        let by_key = props.get("byKey").expect("byKey member");
+        assert_row_relation(by_key.items.as_deref().expect("member map value"), Cardinality::One);
+
+        let (_, _, items, _, _) = lower_with_asset(&TypeExpr::Array(Box::new(map_of(asset()))));
+        let element = items.expect("list element");
+        assert_row_relation(element.items.as_deref().expect("element map value"), Cardinality::One);
+
+        let (_, _, items, _, _) = lower_with_asset(&TypeExpr::Array(Box::new(TypeExpr::Array(Box::new(asset())))));
+        let element = items.expect("outer list element");
+        let rel = element.relation.as_ref().expect("[[Asset]] element keeps its relation");
+        assert_eq!(rel.cardinality, Some(Cardinality::Many));
+        assert_eq!(element.intrinsic, None, "a list element relation stays an id list");
     }
 }
 

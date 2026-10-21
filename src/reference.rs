@@ -192,6 +192,13 @@ mod language_data_export {
         )
     }
 
+    fn vocabulary_with_orb() -> serde_json::Value {
+        let mut value = serde_json::to_value(crate::keywords::vocabulary()).expect("serializes");
+        let orb = &orbital_core_base::i18n::tables::english().orb;
+        value["orb"] = serde_json::to_value(orb).expect("serializes");
+        value
+    }
+
     fn validation_codes() -> Vec<ValidationCode> {
         orbital_compiler::phases::validation::ErrorCode::ALL
             .iter()
@@ -206,7 +213,7 @@ mod language_data_export {
     /// `(file name, generated JSON)` for the three datasets.
     fn generated() -> Vec<(&'static str, String)> {
         vec![
-            ("vocabulary.json", pretty(crate::keywords::vocabulary())),
+            ("vocabulary.json", pretty(&vocabulary_with_orb())),
             ("constructs.json", pretty(super::constructs())),
             ("validation-codes.json", pretty(&validation_codes())),
         ]
@@ -271,7 +278,7 @@ mod language_data_export {
         let vocabulary = crate::keywords::vocabulary();
         let mut keywords: Vec<&str> = vocabulary.keywords.to_vec();
         keywords.push("zzNotAKeyword");
-        let mut changed = serde_json::to_value(vocabulary).unwrap();
+        let mut changed = vocabulary_with_orb();
         changed["keywords"] = serde_json::json!(keywords);
         let mut mutated = files.clone();
         mutated[0].1 = pretty(&changed);

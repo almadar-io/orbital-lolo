@@ -271,7 +271,7 @@ mod tests {
   description: "x"
 ]
 type Expr = string | number | boolean | [Expr]
-type Verdict = { f : boolean!, t : boolean!, lit : boolean! }
+type Verdict = { f : boolean!, t : boolean!, lit : boolean!, s : string!, str : boolean!, j : string! }
 orbital O {
   entity E [runtime] {
     id : string!
@@ -284,21 +284,24 @@ orbital O {
       INIT -> idle
         (set @entity.out (tree/fold @payload.v (fn (n k)
           (if (validate/array @n)
-            (let ((call (and (> (array/len @n) 0) (validate/string (array/first @n))))
-                  (op (if (and (> (array/len @n) 0) (validate/string (array/first @n))) (array/first @n) ""))
-                  (args (array/map (array/drop @k 1) (fn c (if (= @c null) { f: true, t: false, lit: true } @c)))))
-              (if (not @call) { f: (= (array/len @n) 0), t: (> (array/len @n) 0), lit: false }
-              (if (= @op "and") { f: (array/some @args (fn a (object/get @a "f"))), t: (and (> (array/len @args) 0) (array/every @args (fn a (object/get @a "t")))), lit: false }
-              (if (= @op "or") { f: (and (> (array/len @args) 0) (array/every @args (fn a (object/get @a "f")))), t: (array/some @args (fn a (object/get @a "t"))), lit: false }
-              (if (= @op "not") { f: (and (= (array/len @args) 1) (object/get (array/first @args) "t")), t: (and (= (array/len @args) 1) (object/get (array/first @args) "f")), lit: false }
+            (let ((call (and (> (array/len @k) 0) (object/get (array/first @k) "str")))
+                  (op (if (and (> (array/len @k) 0) (object/get (array/first @k) "str")) (object/get (array/first @k) "s") ""))
+                  (args (array/map (array/drop @k 1) (fn c (if (validate/object @c) @c { f: true, t: false, lit: true, s: "", str: false, j: "null" })))))
+              (if (not @call) { f: (= (array/len @k) 0), t: (> (array/len @k) 0), lit: false, s: "", str: false, j: "" }
+              (if (= @op "and") { f: (array/some @args (fn a (object/get @a "f"))), t: (and (> (array/len @args) 0) (array/every @args (fn a (object/get @a "t")))), lit: false, s: "", str: false, j: "" }
+              (if (= @op "or") { f: (and (> (array/len @args) 0) (array/every @args (fn a (object/get @a "f")))), t: (array/some @args (fn a (object/get @a "t"))), lit: false, s: "", str: false, j: "" }
+              (if (= @op "not") { f: (and (= (array/len @args) 1) (object/get (array/first @args) "t")), t: (and (= (array/len @args) 1) (object/get (array/first @args) "f")), lit: false, s: "", str: false, j: "" }
               (if (or (= @op "=") (= @op "==") (= @op "!="))
                 (let ((both (and (= (array/len @args) 2) (array/every @args (fn a (object/get @a "lit")))))
-                      (eq (= (array/nth @n 1) (array/nth @n 2))))
-                  { f: (and @both (= @eq (= @op "!="))), t: (and @both (= @eq (!= @op "!="))), lit: false })
-                { f: false, t: false, lit: false }))))))
-            { f: (or (= @n false) (and (validate/number @n) (= @n 0)) (= @n "")),
-              t: (or (= @n true) (and (validate/number @n) (!= @n 0)) (and (validate/string @n) (!= @n "") (not (str/startsWith @n "@")))),
-              lit: (or (validate/boolean @n) (validate/number @n) (and (validate/string @n) (not (str/startsWith @n "@")))) }))
+                      (eq (= (object/get (array/first @args) "j") (object/get (array/last @args) "j"))))
+                  { f: (and @both (= @eq (= @op "!="))), t: (and @both (= @eq (!= @op "!="))), lit: false, s: "", str: false, j: "" })
+                { f: false, t: false, lit: false, s: "", str: false, j: "" }))))))
+            { f: (or (and (validate/boolean @n) (not @n)) (and (validate/number @n) (= @n 0)) (and (validate/string @n) (= @n ""))),
+              t: (or (and (validate/boolean @n) @n) (and (validate/number @n) (!= @n 0)) (and (validate/string @n) (!= @n "") (not (str/startsWith @n (str/slice "x@" 1))))),
+              lit: (or (validate/boolean @n) (validate/number @n) (and (validate/string @n) (not (str/startsWith @n (str/slice "x@" 1))))),
+              s: (if (validate/string @n) @n ""),
+              str: (validate/string @n),
+              j: (json/stringify @n) }))
           Expr))
         (set @entity.count (tree/fold @payload.v (fn (n k) (if (validate/array @n) (+ 1 (array/sum @k)) 1)) Expr))
     }

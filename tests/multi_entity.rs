@@ -4,6 +4,8 @@
 //! name aux entities, intrinsic exemptions follow the trait's binding, and
 //! the formatter round-trips extra entity blocks.
 
+use orbital_compiler::{compile_schema, validate_comprehensive_without_services, CompilerOptions};
+use orbital_core_base::ir::OirType;
 use orbital_lolo::types::check_program;
 use orbital_lolo::TypeError;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
@@ -185,5 +187,122 @@ fn multi_entity_orbital_formatter_round_trips() {
     assert_eq!(
         formatted, refmt,
         "formatter not idempotent on multi-entity orbital"
+    );
+}
+
+fn keyed_rows_src(effect: &str) -> String {
+    format!(
+        r#"
+orbital BoardOrbital {{
+  entity Board [runtime] {{
+    id : string!
+    label : string
+    byKey : Map string Asset = {{}}
+    nested : Map string Map string Asset = {{}}
+    lists : Map string [Asset] = {{}}
+    packs : [Pack] = []
+  }}
+  entity Asset [runtime] {{
+    id : string!
+    url : string
+  }}
+  type Pack = {{ name : string  byKey : Map string Asset }}
+  trait BoardTrait -> Board [interaction] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+      PICK -> idle
+        {effect}
+    }}
+  }}
+  page "/board" -> BoardTrait
+}}
+"#
+    )
+}
+
+fn keyed_rows_errors(effect: &str) -> Vec<String> {
+    match parse_and_lower_str(&keyed_rows_src(effect)) {
+        Err(e) => vec![format!("lower: {e}")],
+        Ok(schema) => validate_comprehensive_without_services(&schema)
+            .errors
+            .iter()
+            .map(|e| format!("{}: {}", e.code, e.message))
+            .collect(),
+    }
+}
+
+fn peel(ty: &OirType) -> &OirType {
+    match ty {
+        OirType::Optional { inner } => peel(inner),
+        other => other,
+    }
+}
+
+fn asset_row() -> OirType {
+    OirType::row("Asset")
+}
+
+#[test]
+fn map_of_entity_rows_validates_compiles_and_types_its_reads() {
+    let read = r#"(set @entity.label (object/get (object/get @entity.byKey "k") url))"#;
+    let errors = keyed_rows_errors(read);
+    assert!(
+        errors.is_empty(),
+        "a keyed map of Asset rows with `{{}}` defaults validates: {errors:?}"
+    );
+
+    let schema = parse_and_lower_str(&keyed_rows_src(read)).expect("lowers");
+    let mut options = CompilerOptions::default();
+    options.inline.skip_inline = true;
+    let module =
+        compile_schema(schema, &options).expect("resolves without a relation-definition error");
+    let board = module
+        .entities
+        .iter()
+        .find(|e| e.name == "Board")
+        .expect("Board");
+    let field = |name: &str| {
+        board
+            .fields
+            .iter()
+            .find(|f| f.name == name)
+            .map(|f| peel(&f.field_type).clone())
+    };
+    let map_of = |value: OirType| OirType::map(OirType::String, value);
+    assert_eq!(field("byKey"), Some(map_of(asset_row())));
+    assert_eq!(field("nested"), Some(map_of(map_of(asset_row()))));
+    assert_eq!(field("lists"), Some(map_of(OirType::array(asset_row()))));
+    let Some(OirType::Array { inner }) = field("packs") else {
+        panic!("packs is a list")
+    };
+    let OirType::Struct { fields } = peel(&inner) else {
+        panic!("Pack is a struct, got {inner:?}")
+    };
+    let member = fields
+        .iter()
+        .find(|f| f.name == "byKey")
+        .expect("byKey member");
+    assert_eq!(peel(&member.field_type), &map_of(asset_row()));
+}
+
+#[test]
+fn a_read_of_a_field_the_entity_lacks_is_refused_through_the_map() {
+    let errors = keyed_rows_errors(
+        r#"(set @entity.label (object/get (object/get @entity.byKey "k") nope))"#,
+    );
+    assert!(errors.iter().any(|e| e.contains("nope")), "got {errors:?}");
+
+    let nested =
+        r#"(set @entity.label (object/get (object/get (object/get @entity.nested "a") "b") nope))"#;
+    let errors = keyed_rows_errors(nested);
+    assert!(errors.iter().any(|e| e.contains("nope")), "got {errors:?}");
+
+    let control =
+        r#"(set @entity.label (object/get (object/get (object/get @entity.nested "a") "b") url))"#;
+    let errors = keyed_rows_errors(control);
+    assert!(
+        errors.is_empty(),
+        "control: the nested read of a declared field validates: {errors:?}"
     );
 }
