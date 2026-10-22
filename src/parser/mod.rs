@@ -398,6 +398,14 @@ impl Parser {
         &self.tokens[self.pos].kind
     }
 
+    pub(crate) fn scoped_span(&self, mut span: Span) -> Span {
+        if let Some(last) = self.tokens.iter().take(self.pos).rev()
+            .find(|token| !matches!(token.kind, TokenKind::Newline | TokenKind::Eof)) {
+            span.scope_end = Some((last.span.line, last.span.col + u32::from(last.span.len)));
+        }
+        span
+    }
+
     pub(crate) fn peek_span(&self) -> Span {
         self.tokens[self.pos].span
     }
@@ -1177,7 +1185,7 @@ impl Parser {
             trait_overrides: Vec::new(),
             import_listens: Vec::new(),
             alias_entity_refs: Vec::new(),
-            span,
+            span: self.scoped_span(span),
         })
     }
 

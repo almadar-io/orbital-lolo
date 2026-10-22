@@ -643,7 +643,7 @@ impl Lexer {
                 break;
             }
         }
-        let len = buf.len() as u16;
+        let len = buf.chars().count() as u16;
         let kind = match buf.as_str() {
             "true" => TokenKind::Boolean(true),
             "false" => TokenKind::Boolean(false),
@@ -760,6 +760,13 @@ mod tests {
         let string = tokens.iter().find(|t| matches!(t.kind, TokenKind::String(_))).expect("a string");
         assert_eq!(string.kind, TokenKind::String("two\nlines".to_string()));
         assert_eq!(string.span.len, 11);
+    }
+
+    #[test]
+    fn unicode_identifier_span_length_uses_the_column_unit() {
+        let tokens = tokenize("čelo next").unwrap();
+        assert_eq!(tokens[0].span, Span::new(1, 1, 4));
+        assert_eq!(tokens[1].span, Span::new(1, 6, 4));
     }
 
     #[test]

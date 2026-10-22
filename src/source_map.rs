@@ -3,7 +3,7 @@
 //! diagnostics, e.g. `orbitals[0 (App)].traits[2 (Foo)].stateMachine.transitions[1].effects[0][1]`
 //! — back to the `.lolo` [`Span`] that produced it. Built during lowering
 //! (see [`crate::lower::lower_to_orb_with_map`]) and never enters the
-//! emitted `.orb` JSON — it's a side channel for diagnostics only.
+//! emitted `.orb` JSON — it is a side channel for diagnostics and native source inspection.
 //!
 //! Known degradations (a lookup misses or lands on an ancestor's span, never
 //! a wrong one): `normalize_fn_shapes` can reorder a lowered `fn`'s argument
@@ -14,6 +14,62 @@
 use crate::ast::Span;
 use std::collections::HashMap;
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct SourceRange {
+    pub byte_length: usize,
+    pub end_line: u32,
+    pub end_column: u32,
+}
+
+pub fn source_range(source: &str, span: Span) -> Option<SourceRange> {
+    source_range_until(source, span, None)
+}
+
+pub fn source_scope_range(source: &str, span: Span) -> Option<SourceRange> {
+    source_range_until(source, span, Some(span.scope_end?))
+}
+
+fn source_range_until(source: &str, span: Span, end: Option<(u32, u32)>) -> Option<SourceRange> {
+    if span.line == 0 || span.col == 0 {
+        return None;
+    }
+    let mut chars = source.chars();
+    let mut line = 1;
+    let mut column = 1;
+    while line != span.line || column != span.col {
+        let c = chars.next()?;
+        if c == '\n' {
+            line += 1;
+            column = 1;
+        } else {
+            column += 1;
+        }
+    }
+    let mut byte_length = 0;
+    let mut remaining = span.len;
+    while end
+        .map(|end| (line, column) != end)
+        .unwrap_or(remaining > 0)
+    {
+        let c = chars.next()?;
+        byte_length += c.len_utf8();
+        if c == '\n' {
+            line += 1;
+            column = 1;
+        } else {
+            column += 1;
+        }
+        if remaining > 0 {
+            remaining -= 1;
+        }
+    }
+    Some(SourceRange {
+        byte_length,
+        end_line: line,
+        end_column: column,
+    })
+}
+
 /// See module docs.
 #[derive(Debug, Clone, Default)]
 pub struct LoloSourceMap {
@@ -21,6 +77,12 @@ pub struct LoloSourceMap {
 }
 
 impl LoloSourceMap {
+    pub fn entries(&self) -> impl Iterator<Item = (&str, Span)> {
+        self.entries
+            .iter()
+            .map(|(path, span)| (path.as_str(), *span))
+    }
+
     pub fn new() -> Self {
         Self::default()
     }
@@ -122,6 +184,38 @@ fn strip_last_segment(path: &str) -> Option<&str> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn source_range_converts_scalar_spans_to_original_utf8_bytes() {
+        assert_eq!(
+            source_range(";; 🌱\n  čelo next", Span::new(2, 3, 4)),
+            Some(SourceRange {
+                byte_length: 5,
+                end_line: 2,
+                end_column: 7
+            })
+        );
+        assert_eq!(
+            source_range("\"🌱\nč\"", Span::new(1, 1, 5)),
+            Some(SourceRange {
+                byte_length: 9,
+                end_line: 2,
+                end_column: 3
+            })
+        );
+        assert_eq!(source_range("x", Span::new(2, 1, 1)), None);
+    }
+
+    #[test]
+    fn source_scope_ranges_keep_full_bodies_beyond_token_length() {
+        let source = format!("state s {{\n{}\n}}", " ".repeat(70_000));
+        let mut span = Span::new(1, 1, 5);
+        span.scope_end = Some((3, 2));
+        let scope = source_scope_range(&source, span).unwrap();
+        assert_eq!(scope.byte_length, source.len());
+        assert!(scope.byte_length > usize::from(u16::MAX));
+        assert_eq!(source_range(&source, span).unwrap().byte_length, 5);
+    }
 
     #[test]
     fn normalize_strips_name_annotations() {

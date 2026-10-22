@@ -103,7 +103,7 @@ impl Parser {
             // the override of THAT surface, not a second declaration.
             config: Vec::new(),
             os_grants,
-            span,
+            span: self.scoped_span(span),
         })
     }
 
@@ -604,7 +604,7 @@ impl Parser {
                 trait_name,
                 linked_entity,
                 body,
-                span,
+                span: self.scoped_span(span),
             });
             self.skip_newlines();
         }

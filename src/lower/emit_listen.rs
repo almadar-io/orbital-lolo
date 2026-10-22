@@ -173,6 +173,16 @@ pub(crate) fn lower_emit(
     for f in &e.payload {
         let projected = f.type_expr.payload_projection();
         let ty = f.type_expr.peel();
+        if let Some(mut tuple) = tuple_payload_field(ty, aliases, trait_type_params) {
+            if !seen.insert(f.name.clone()) {
+                return Err(LowerError::PayloadFieldCollision { event: e.event.clone(), field: f.name.clone() });
+            }
+            tuple.name = f.name.clone();
+            tuple.required = if f.required { Some(true) } else { None };
+            tuple.projected_from = projected;
+            fields.push(tuple);
+            continue;
+        }
         // Increment 3-II: a field referencing this trait's OWN declared type
         // parameter (`candidate : V` / `candidate : [V]`) lowers to the
         // `$V` / `[$V]` sentinel — checked first since a param name never
@@ -667,6 +677,15 @@ pub(crate) fn type_expr_to_payload_fields(
             let mut flat: Vec<PayloadField> = Vec::with_capacity(fields.len());
             let mut seen: HashSet<String> = HashSet::new();
             for (fname, ftype, freq) in fields {
+                if let Some(mut tuple) = tuple_payload_field(ftype, aliases, type_params) {
+                    if !seen.insert(fname.clone()) {
+                        return Err(LowerError::PayloadFieldCollision { event: event_name.to_string(), field: fname.clone() });
+                    }
+                    tuple.name = fname.clone();
+                    tuple.required = if *freq { Some(true) } else { None };
+                    flat.push(tuple);
+                    continue;
+                }
                 if !seen.insert(fname.clone()) {
                     return Err(LowerError::PayloadFieldCollision {
                         event: event_name.to_string(),
@@ -982,6 +1001,45 @@ fn is_cyclic_ref(ty: &TypeExpr) -> bool {
     crate::lower::entity::RESOLVING.with(|r| r.borrow().contains(name))
 }
 
+pub(crate) fn tuple_payload_field(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    type_params: &[&str],
+) -> Option<PayloadField> {
+    let (field_type, properties, items) = match ty.peel() {
+        TypeExpr::Tuple(slots) => {
+            let properties = slots
+                .iter()
+                .enumerate()
+                .map(|(index, slot)| {
+                    let member = TypeExpr::Object(vec![(index.to_string(), slot.clone(), false)]);
+                    struct_payload_properties(&member, aliases, type_params)
+                        .and_then(|fields| fields.into_iter().next())
+                })
+                .collect::<Option<Vec<_>>>()?;
+            (type_expr_to_string(ty), Some(properties), None)
+        }
+        TypeExpr::Array(inner) => (
+            "array".to_string(),
+            None,
+            Some(Box::new(tuple_payload_field(inner, aliases, type_params)?)),
+        ),
+        _ => return None,
+    };
+    Some(PayloadField {
+        values: None,
+        name: String::new(),
+        field_type,
+        required: None,
+        description: None,
+        properties,
+        type_when: None,
+        entity: None,
+        projected_from: None,
+        items,
+    })
+}
+
 pub(crate) fn struct_payload_properties(
     te: &TypeExpr,
     aliases: &BTreeMap<String, TypeAliasResolved>,
@@ -1014,6 +1072,13 @@ pub(crate) fn struct_payload_properties(
     for (name, ty, req) in items {
         let projected = ty.payload_projection();
         let ty = ty.peel();
+        if let Some(mut tuple) = tuple_payload_field(ty, aliases, type_params) {
+            tuple.name = name.clone();
+            tuple.required = if *req { Some(true) } else { None };
+            tuple.projected_from = projected;
+            props.push(tuple);
+            continue;
+        }
         // An array-of-struct field (`[StructAlias]` / `[{ … }]`) carries the
         // ELEMENT shape: `field_type` is `[object]` (signals array) and
         // `properties` holds the element's fields — the resolve phase wraps it

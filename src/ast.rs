@@ -12,11 +12,12 @@ pub struct Span {
     pub line: u32,
     pub col: u32,
     pub len: u16,
+    pub scope_end: Option<(u32, u32)>,
 }
 
 impl Span {
     pub fn new(line: u32, col: u32, len: u16) -> Self {
-        Self { line, col, len }
+        Self { line, col, len, scope_end: None }
     }
 
     pub fn dummy() -> Self {

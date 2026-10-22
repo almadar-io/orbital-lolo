@@ -837,8 +837,7 @@ fn check_named_payload_ref(
         {
             Ok(())
         }
-        // `type Step = StepCall | StepResult` parses as a bare-name union; when
-        // every name is a struct it is the same type union (a tagged one).
+        // Bare-name unions of primitives or struct aliases keep their type meaning.
         TypeBody::Enum(names)
             if crate::lower::entity::is_type_union_with(
                 &names
@@ -849,7 +848,7 @@ fn check_named_payload_ref(
                     ctx.lookup(n)
                         .map(|a| matches!(&a.body, TypeBody::Struct(_)))
                 },
-            ) && names.iter().all(|n| ctx.lookup(n).is_some()) =>
+            ) =>
         {
             Ok(())
         }

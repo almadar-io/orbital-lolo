@@ -191,6 +191,14 @@ fn lower_impl(
         .map(|t| t.name.clone())
         .collect();
     orbital_core_base::stamp::stamp_schema_identity(&mut schema, prior, &synthetic_traits);
+    for orbital in &mut schema.orbitals {
+        for reference in &mut orbital.traits {
+            if let orbital_core_base::schema::TraitReference::Inline(definition) = reference {
+                orbital_core_base::schema::capture_trait_source_declaration(definition)
+                    .expect("a lowered trait serializes to JSON");
+            }
+        }
+    }
     Ok((schema, source_map))
 }
 
@@ -891,9 +899,13 @@ fn orbital_types(
             // A dictionary or list alias is not a struct: it is recorded as ONE entry with the empty name (no field
             // has one) whose type string is the alias's value, so `json/parse x Row` can name it as a shape.
             TypeAliasResolved::Type(
-                te @ (TypeExpr::Map(..) | TypeExpr::Array(_) | TypeExpr::SExpr),
+                te @ (TypeExpr::Map(..) | TypeExpr::Array(_) | TypeExpr::Tuple(_) | TypeExpr::SExpr),
                 _,
             ) => {
+                if let Some(tuple) = emit_listen::tuple_payload_field(te, aliases, &[]) {
+                    types_map.insert(name.clone(), vec![tuple]);
+                    continue;
+                }
                 types_map.insert(
                     name.clone(),
                     vec![PayloadField {
@@ -1216,6 +1228,7 @@ fn lower_orbital(
             data_entities: None,
             scope: None,
             local: false,
+            source_declaration: None,
             source_behavior: None,
             source_entity_definition: None,
             id: None,

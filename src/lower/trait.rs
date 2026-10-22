@@ -191,6 +191,7 @@ pub(crate) fn lower_trait_decl(
     source_map: &mut crate::source_map::LoloSourceMap,
     base: &str,
 ) -> Result<TraitReference, LowerError> {
+    source_map.insert(base.to_string(), t.span);
     if let Some(span) = t.linked_entity_span {
         source_map.insert(format!("{base}.linkedEntity"), span);
     }
@@ -471,14 +472,14 @@ pub(crate) fn lower_trait(
 
     for state in &t.states {
         let is_initial = initial_name.as_deref() == Some(state.name.as_str());
-        states.push(StateDefinition {
+        states.push((StateDefinition {
             name: state.name.clone(),
             is_initial: if is_initial { Some(true) } else { None },
             is_terminal: None,
             description: None,
             time_bound_ms: state.time_bound,
             holds: state.holds.clone(),
-        });
+        }, state.span));
 
         for tr in &state.transitions {
             if event_seen.insert(tr.event.clone()) {
@@ -565,7 +566,11 @@ pub(crate) fn lower_trait(
 
     // Sort states so the initial one is first; everyone else in declaration order.
     // (This matches the convention in the existing .orb fixtures.)
-    states.sort_by_key(|s| if s.is_initial == Some(true) { 0 } else { 1 });
+    states.sort_by_key(|(state, _)| if state.is_initial == Some(true) { 0 } else { 1 });
+    let states = states.into_iter().enumerate().map(|(index, (state, span))| {
+        source_map.insert(format!("{base}.stateMachine.states[{index}]"), span);
+        state
+    }).collect();
 
     let entity_hint = t.linked_entity.as_deref();
 
@@ -1048,6 +1053,7 @@ pub(crate) fn lower_trait(
         data_entities: None,
         scope,
         local: t.local,
+        source_declaration: None,
         source_behavior: None,
         source_entity_definition: None,
         id: None,

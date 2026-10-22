@@ -250,7 +250,7 @@ impl Parser {
             listens,
             ticks,
             config,
-            span,
+            span: self.scoped_span(span),
             reference: None,
             is_inline_synthetic: false,
         })
@@ -403,7 +403,7 @@ impl Parser {
             listens: body.listens,
             ticks: Vec::new(),
             config: Vec::new(),
-            span,
+            span: self.scoped_span(span),
             reference: Some(TraitRefData {
                 reference,
                 name_override: body.name_override,
@@ -787,7 +787,7 @@ impl Parser {
             time_bound,
             transitions,
             holds,
-            span,
+            span: self.scoped_span(span),
         })
     }
 
@@ -837,7 +837,7 @@ impl Parser {
                 guard: None,
                 ensures,
                 effects: Vec::new(),
-                span,
+                span: self.scoped_span(span),
                 guard_spans: Vec::new(),
                 effect_spans: Vec::new(),
                 term_match: Some(term_match),
@@ -872,7 +872,7 @@ impl Parser {
             guard,
             ensures,
             effects,
-            span,
+            span: self.scoped_span(span),
             guard_spans,
             effect_spans,
             term_match: None,
