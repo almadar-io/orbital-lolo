@@ -207,14 +207,13 @@ orbital BoardOrbital {{
     url : string
   }}
   type Pack = {{ name : string  byKey : Map string Asset }}
-  trait BoardTrait -> Board [interaction] {{
+  trait BoardTrait -> Board [lifecycle] {{
     initial: idle
     state idle {{
       INIT -> idle
         (set @entity.byKey {{}})
         (set @entity.nested {{}})
-      PICK -> idle
-        {effect}
+      PICK -> idle {effect}
     }}
   }}
   page "/board" -> BoardTrait
@@ -247,7 +246,7 @@ fn asset_row() -> OirType {
 
 #[test]
 fn map_of_entity_rows_validates_compiles_and_types_its_reads() {
-    let read = r#"(set @entity.label (object/get (object/get @entity.byKey "k") url))"#;
+    let read = r#"when (!= (object/get (object/get @entity.byKey "k") url) "")"#;
     let errors = keyed_rows_errors(read);
     assert!(
         errors.is_empty(),
@@ -290,18 +289,17 @@ fn map_of_entity_rows_validates_compiles_and_types_its_reads() {
 
 #[test]
 fn a_read_of_a_field_the_entity_lacks_is_refused_through_the_map() {
-    let errors = keyed_rows_errors(
-        r#"(set @entity.label (object/get (object/get @entity.byKey "k") nope))"#,
-    );
+    let errors =
+        keyed_rows_errors(r#"when (!= (object/get (object/get @entity.byKey "k") nope) "")"#);
     assert!(errors.iter().any(|e| e.contains("nope")), "got {errors:?}");
 
     let nested =
-        r#"(set @entity.label (object/get (object/get (object/get @entity.nested "a") "b") nope))"#;
+        r#"when (!= (object/get (object/get (object/get @entity.nested "a") "b") nope) "")"#;
     let errors = keyed_rows_errors(nested);
     assert!(errors.iter().any(|e| e.contains("nope")), "got {errors:?}");
 
     let control =
-        r#"(set @entity.label (object/get (object/get (object/get @entity.nested "a") "b") url))"#;
+        r#"when (!= (object/get (object/get (object/get @entity.nested "a") "b") url) "")"#;
     let errors = keyed_rows_errors(control);
     assert!(
         errors.is_empty(),

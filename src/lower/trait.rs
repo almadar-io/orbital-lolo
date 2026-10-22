@@ -116,14 +116,21 @@ pub(crate) fn desugar_expr_match(expr: &SExpression) -> SExpression {
 /// `notify` value has already been expanded to the `if` it lands the call in.
 pub(crate) fn desugar_notify(expr: &SExpression) -> Result<SExpression, LowerError> {
     const NOTIFY_LEVELS: [&str; 4] = ["success", "error", "warning", "info"];
-    match expr {
-        SExpression::Array(arr) if matches!(arr.first(), Some(SExpression::String(s)) if s == "notify") =>
-        {
-            if arr.len() != 3 {
-                return Err(LowerError::NotifyInvalidArity { got: arr.len() - 1 });
+    let is_notify = |node: &SExpression| matches!(node.operator(), Some("notify"));
+    expr.try_rewrite(
+        |node| match node {
+            SExpression::Array(arr) if is_notify(node) && arr.len() != 3 => {
+                Err(LowerError::NotifyInvalidArity { got: arr.len() - 1 })
             }
-            let level = desugar_notify(&arr[1])?;
-            let message = desugar_notify(&arr[2])?;
+            _ => Ok(orbital_core_base::schema::RewriteVisit::Descend),
+        },
+        |node| {
+            let mut arr = match node {
+                SExpression::Array(arr) if matches!(arr.first(), Some(SExpression::String(s)) if s == "notify") => arr,
+                other => return Ok(other),
+            };
+            let message = arr.pop().expect("a notify has three parts");
+            let level = arr.pop().expect("a notify has three parts");
             if let SExpression::String(s) = &level {
                 if !s.starts_with('@') && !NOTIFY_LEVELS.contains(&s.as_str()) {
                     return Err(LowerError::NotifyInvalidLevel { level: s.clone() });
@@ -139,17 +146,8 @@ pub(crate) fn desugar_notify(expr: &SExpression) -> Result<SExpression, LowerErr
                 SExpression::String("toast".to_string()),
                 SExpression::Object(props),
             ]))
-        }
-        SExpression::Array(arr) => Ok(SExpression::Array(
-            arr.iter().map(desugar_notify).collect::<Result<_, _>>()?,
-        )),
-        SExpression::Object(obj) => Ok(SExpression::Object(
-            obj.iter()
-                .map(|(k, v)| desugar_notify(v).map(|v| (k.clone(), v)))
-                .collect::<Result<_, _>>()?,
-        )),
-        other => Ok(other.clone()),
-    }
+        },
+    )
 }
 
 /// Build the nested `if`/`==` chain for one expr-match's (already-desugared)
