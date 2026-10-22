@@ -261,7 +261,7 @@ mod language_data_export {
     fn core_dir() -> PathBuf {
         PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),
-            "/../orbital-shell-typescript/renderers/core"
+            "/../orbital-shell-typescript/core"
         ))
     }
 
