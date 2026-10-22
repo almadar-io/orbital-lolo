@@ -46,6 +46,9 @@
           "linkedEntity": "Patient",
           "name": "PatientLoader",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "b911df58997b83a4f37cde5286d59c39fff1897b632f8ad746cdf72e7be6dc01"
+          },
           "stateMachine": {
             "events": [
               {

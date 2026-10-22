@@ -399,8 +399,13 @@ impl Parser {
     }
 
     pub(crate) fn scoped_span(&self, mut span: Span) -> Span {
-        if let Some(last) = self.tokens.iter().take(self.pos).rev()
-            .find(|token| !matches!(token.kind, TokenKind::Newline | TokenKind::Eof)) {
+        if let Some(last) = self
+            .tokens
+            .iter()
+            .take(self.pos)
+            .rev()
+            .find(|token| !matches!(token.kind, TokenKind::Newline | TokenKind::Eof))
+        {
             span.scope_end = Some((last.span.line, last.span.col + u32::from(last.span.len)));
         }
         span
@@ -568,6 +573,7 @@ impl Parser {
             self.parse_app_header()?
         } else {
             AppHeader {
+                declared: false,
                 name: String::new(),
                 version: None,
                 description: None,
@@ -738,6 +744,7 @@ impl Parser {
             Vec::new()
         };
         Ok(AppHeader {
+            declared: true,
             name,
             version: version.or(positional_version),
             description,
@@ -931,7 +938,11 @@ impl Parser {
     ) -> Result<&'static str, ParseError> {
         let span = self.peek_span();
         let raw = self.expect_ident()?;
-        let canon = self.lang.canon_any(&raw).unwrap_or(raw.as_str()).to_string();
+        let canon = self
+            .lang
+            .canon_any(&raw)
+            .unwrap_or(raw.as_str())
+            .to_string();
         allowed
             .iter()
             .find(|a| **a == canon)
@@ -1640,7 +1651,11 @@ impl Parser {
         }
         let mut out = Vec::with_capacity(fields.len());
         for field in fields {
-            if field.label.is_some() || field.description.is_some() || field.synonyms.is_some() || field.tier.is_some() {
+            if field.label.is_some()
+                || field.description.is_some()
+                || field.synonyms.is_some()
+                || field.tier.is_some()
+            {
                 return Err(ParseError::InvalidType {
                     span: field.span,
                     message: format!(
@@ -1683,7 +1698,10 @@ impl Parser {
     /// The body of `expects trait T { … }`: the real trait syntax with every body left off: `emits { E { fields } }`,
     /// `state NAME` and `state NAME { EVENT -> target }` (no guard, no effects), and the spec proposition
     /// `state NAME @holds <expr>`.
-    fn parse_expects_trait_body(&mut self, trait_name: &str) -> Result<Vec<ExpectsKind>, ParseError> {
+    fn parse_expects_trait_body(
+        &mut self,
+        trait_name: &str,
+    ) -> Result<Vec<ExpectsKind>, ParseError> {
         let open = self.peek_span();
         self.expect_kind(&TokenKind::LBrace, "{")?;
         let mut out = Vec::new();
@@ -1758,7 +1776,9 @@ impl Parser {
         if out.is_empty() {
             return Err(ParseError::InvalidType {
                 span: open,
-                message: "`expects trait` must state at least one emitted event, state or transition".to_string(),
+                message:
+                    "`expects trait` must state at least one emitted event, state or transition"
+                        .to_string(),
             });
         }
         Ok(out)
@@ -1798,7 +1818,9 @@ impl Parser {
     /// Optional `{ field_decl+ }` after an `expects entity` header — the §6 entity field-declaration grammar,
     /// verbatim, plus the entity's own `@read|@create|@update|@delete` directives and `@invariant <expr>` lines.
     #[allow(clippy::type_complexity)]
-    fn parse_expects_shape(&mut self) -> Result<(Option<Vec<EntityField>>, ExpectedAccess, Vec<SExpression>), ParseError> {
+    fn parse_expects_shape(
+        &mut self,
+    ) -> Result<(Option<Vec<EntityField>>, ExpectedAccess, Vec<SExpression>), ParseError> {
         let mut access = ExpectedAccess::default();
         let mut invariants = Vec::new();
         if !matches!(self.peek(), TokenKind::LBrace) {
@@ -1821,7 +1843,8 @@ impl Parser {
             }
             if let Some(name) = self.at_access_directive() {
                 self.parse_access_directive(&name, &mut access)?;
-            } else if matches!(self.peek(), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "invariant") {
+            } else if matches!(self.peek(), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "invariant")
+            {
                 self.advance();
                 invariants.push(self.parse_sexpr_or_value()?);
                 self.expect_newline_or_eof()?;
@@ -1925,7 +1948,9 @@ fn expects_duplicate(existing: &[ExpectsDecl], new: &ExpectsDecl) -> Option<Stri
         (ExpectsKind::Page { path: a, .. }, ExpectsKind::Page { path: b, .. }) if a == b => {
             Some(format!("`expects page \"{b}\"`"))
         }
-        (ExpectsKind::Config { field: a }, ExpectsKind::Config { field: b }) if a.name == b.name => {
+        (ExpectsKind::Config { field: a }, ExpectsKind::Config { field: b })
+            if a.name == b.name =>
+        {
             Some(format!("`expects config {{ {} }}`", b.name))
         }
         _ => None,
@@ -2021,23 +2046,30 @@ pub(crate) fn type_expr_config_only_type_allowing(
         // reject the other payload-only sigils above.
         TypeExpr::Match { .. } => Some("match"),
         TypeExpr::Array(inner) => type_expr_config_only_type_allowing(inner, allow),
-        TypeExpr::Tuple(slots) => slots.iter().find_map(|p| type_expr_config_only_type_allowing(p, allow)),
-        TypeExpr::Map(key, value) => {
-            type_expr_config_only_type_allowing(key, allow).or_else(|| type_expr_config_only_type_allowing(value, allow))
-        }
+        TypeExpr::Tuple(slots) => slots
+            .iter()
+            .find_map(|p| type_expr_config_only_type_allowing(p, allow)),
+        TypeExpr::Map(key, value) => type_expr_config_only_type_allowing(key, allow)
+            .or_else(|| type_expr_config_only_type_allowing(value, allow)),
         TypeExpr::Optional(inner) => type_expr_config_only_type_allowing(inner, allow),
-        TypeExpr::Union(parts) => parts.iter().find_map(|p| type_expr_config_only_type_allowing(p, allow)),
+        TypeExpr::Union(parts) => parts
+            .iter()
+            .find_map(|p| type_expr_config_only_type_allowing(p, allow)),
         TypeExpr::Object(fields) => fields
             .iter()
             .find_map(|(_, ty, _)| type_expr_config_only_type_allowing(ty, allow)),
+        TypeExpr::OpenObject { fields, additional } => fields
+            .iter()
+            .find_map(|(_, ty, _)| type_expr_config_only_type_allowing(ty, allow))
+            .or_else(|| type_expr_config_only_type_allowing(additional, allow)),
         TypeExpr::Primitive(_)
         | TypeExpr::Named(_)
         | TypeExpr::StringLiteral(_)
         | TypeExpr::RelationMany(_)
         | TypeExpr::RelationManyNonEmpty(_) => None,
-        TypeExpr::FieldOf { resolved, .. } => {
-            resolved.as_deref().and_then(|r| type_expr_config_only_type_allowing(r, allow))
-        }
+        TypeExpr::FieldOf { resolved, .. } => resolved
+            .as_deref()
+            .and_then(|r| type_expr_config_only_type_allowing(r, allow)),
     };
     found.filter(|ty| !allow.contains(ty))
 }
@@ -2060,6 +2092,10 @@ pub(crate) fn type_expr_contains_match(t: &TypeExpr) -> bool {
         }
         TypeExpr::Union(parts) => parts.iter().any(type_expr_contains_match),
         TypeExpr::Object(fields) => fields.iter().any(|(_, ty, _)| type_expr_contains_match(ty)),
+        TypeExpr::OpenObject { fields, additional } => {
+            fields.iter().any(|(_, ty, _)| type_expr_contains_match(ty))
+                || type_expr_contains_match(additional)
+        }
         _ => false,
     }
 }
@@ -2547,12 +2583,22 @@ mod tests {
         let TypeBody::Struct(fields) = &prog.type_aliases[0].body else {
             panic!("expected a struct");
         };
-        assert!(matches!(&fields[0].1, TypeExpr::Optional(inner) if matches!(**inner, TypeExpr::Primitive(ref n) if n == "number")));
-        assert!(matches!(&fields[1].1, TypeExpr::Optional(inner) if matches!(**inner, TypeExpr::Array(_))));
-        assert!(matches!(&fields[2].1, TypeExpr::Primitive(n) if n == "string"), "control: no question mark, not nullable");
+        assert!(
+            matches!(&fields[0].1, TypeExpr::Optional(inner) if matches!(**inner, TypeExpr::Primitive(ref n) if n == "number"))
+        );
+        assert!(
+            matches!(&fields[1].1, TypeExpr::Optional(inner) if matches!(**inner, TypeExpr::Array(_)))
+        );
+        assert!(
+            matches!(&fields[2].1, TypeExpr::Primitive(n) if n == "string"),
+            "control: no question mark, not nullable"
+        );
         let entity = prog.orbitals[0].entity.as_ref().unwrap();
         assert!(entity.fields[1].nullable);
-        assert!(!entity.fields[0].nullable, "control: a required field is not nullable");
+        assert!(
+            !entity.fields[0].nullable,
+            "control: a required field is not nullable"
+        );
     }
 
     #[test]
@@ -2877,7 +2923,9 @@ mod tests {
             other => panic!("expected entity, got {other:?}"),
         }
         match &expects[3].kind {
-            ExpectsKind::Event { trait_name, event, .. } => {
+            ExpectsKind::Event {
+                trait_name, event, ..
+            } => {
                 assert_eq!(trait_name, "Checkout");
                 assert_eq!(event, "ORDER_PLACED");
             }
@@ -2899,7 +2947,8 @@ mod tests {
 
     #[test]
     fn parse_expects_named_identity_without_shape() {
-        let prog = p("orbital O {\n  expects entity Customer [identity]\n  entity E { id : string! }\n}");
+        let prog =
+            p("orbital O {\n  expects entity Customer [identity]\n  entity E { id : string! }\n}");
         match &prog.orbitals[0].expects[0].kind {
             ExpectsKind::Identity { name, shape } => {
                 assert_eq!(name.as_deref(), Some("Customer"));
@@ -2913,21 +2962,30 @@ mod tests {
     fn expects_entity_with_the_identity_tag_is_an_identity_expectation() {
         let prog = p("orbital O {\n  expects entity Customer [identity] {\n    role : \"admin\" | \"buyer\"\n  }\n  expects entity Cart\n  entity E { id : string! }\n}");
         let expects = &prog.orbitals[0].expects;
-        assert!(matches!(&expects[0].kind, ExpectsKind::Identity { name, shape }
-            if name.as_deref() == Some("Customer") && shape.as_ref().map(Vec::len) == Some(1)));
+        assert!(
+            matches!(&expects[0].kind, ExpectsKind::Identity { name, shape }
+            if name.as_deref() == Some("Customer") && shape.as_ref().map(Vec::len) == Some(1))
+        );
         assert!(matches!(&expects[1].kind, ExpectsKind::Entity { name, .. } if name == "Cart"));
     }
 
     #[test]
     fn expects_entity_identity_tag_may_omit_the_name() {
         let prog = p("orbital O {\n  expects entity [identity]\n  entity E { id : string! }\n}");
-        assert!(matches!(&prog.orbitals[0].expects[0].kind,
-            ExpectsKind::Identity { name: None, shape: None }));
+        assert!(matches!(
+            &prog.orbitals[0].expects[0].kind,
+            ExpectsKind::Identity {
+                name: None,
+                shape: None
+            }
+        ));
     }
 
     #[test]
     fn expects_entity_without_a_name_or_identity_tag_errors() {
-        assert!(parse_str("orbital O {\n  expects entity\n  entity E { id : string! }\n}").is_err());
+        assert!(
+            parse_str("orbital O {\n  expects entity\n  entity E { id : string! }\n}").is_err()
+        );
     }
 
     #[test]
@@ -2935,15 +2993,22 @@ mod tests {
         let prog = p("orbital O {\n  expects trait Checkout {\n    emits {\n      ORDER_PLACED\n      ORDER_CANCELLED\n    }\n  }\n  entity E { id : string! }\n}");
         let expects = &prog.orbitals[0].expects;
         assert_eq!(expects.len(), 2);
-        assert!(matches!(&expects[0].kind, ExpectsKind::Event { trait_name, event, .. }
-            if trait_name == "Checkout" && event == "ORDER_PLACED"));
-        assert!(matches!(&expects[1].kind, ExpectsKind::Event { event, .. } if event == "ORDER_CANCELLED"));
+        assert!(
+            matches!(&expects[0].kind, ExpectsKind::Event { trait_name, event, .. }
+            if trait_name == "Checkout" && event == "ORDER_PLACED")
+        );
+        assert!(
+            matches!(&expects[1].kind, ExpectsKind::Event { event, .. } if event == "ORDER_CANCELLED")
+        );
     }
 
     #[test]
     fn expects_trait_duplicate_event_errors() {
         let src = "orbital O {\n  expects trait T { emits { A } }\n  expects trait T { emits { A } }\n  entity E { id : string! }\n}";
-        assert!(parse_str(src).expect_err("duplicate").to_string().contains("ELOLO_DUPLICATE_EXPECTATION"));
+        assert!(parse_str(src)
+            .expect_err("duplicate")
+            .to_string()
+            .contains("ELOLO_DUPLICATE_EXPECTATION"));
     }
 
     #[test]
@@ -2969,16 +3034,26 @@ mod tests {
 
     #[test]
     fn expects_trait_without_emits_errors() {
-        assert!(parse_str("orbital O {\n  expects trait T { emits { } }\n  entity E { id : string! }\n}").is_err());
+        assert!(parse_str(
+            "orbital O {\n  expects trait T { emits { } }\n  entity E { id : string! }\n}"
+        )
+        .is_err());
     }
 
     #[test]
     fn the_retired_expects_identity_and_event_spellings_name_their_replacement() {
-        let id = parse_str("orbital O {\n  expects identity Customer\n  entity E { id : string! }\n}")
-            .expect_err("retired");
-        assert!(id.to_string().contains("expects entity Customer [identity]"), "{id}");
-        let ev = parse_str("orbital O {\n  expects event Checkout.ORDER_PLACED\n  entity E { id : string! }\n}")
-            .expect_err("retired");
+        let id =
+            parse_str("orbital O {\n  expects identity Customer\n  entity E { id : string! }\n}")
+                .expect_err("retired");
+        assert!(
+            id.to_string()
+                .contains("expects entity Customer [identity]"),
+            "{id}"
+        );
+        let ev = parse_str(
+            "orbital O {\n  expects event Checkout.ORDER_PLACED\n  entity E { id : string! }\n}",
+        )
+        .expect_err("retired");
         assert!(ev.to_string().contains("expects trait Checkout"), "{ev}");
     }
 
@@ -2987,12 +3062,23 @@ mod tests {
         let src = "orbital O {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  entity E { id : string! }\n}";
         let prog = p(src);
         match &prog.orbitals[0].expects[0].kind {
-            ExpectsKind::Entity { name, shape, persistence, shared, local, access, .. } => {
+            ExpectsKind::Entity {
+                name,
+                shape,
+                persistence,
+                shared,
+                local,
+                access,
+                ..
+            } => {
                 assert_eq!(name, "Order");
                 assert_eq!(*persistence, Some(Persistence::Persistent));
                 assert!(*shared && !*local);
                 assert!(access.read_policy.is_some());
-                assert_eq!(access.access_waivers, vec![("update".to_string(), "joins another entity".to_string())]);
+                assert_eq!(
+                    access.access_waivers,
+                    vec![("update".to_string(), "joins another entity".to_string())]
+                );
                 assert_eq!(shape.as_ref().map(Vec::len), Some(2));
             }
             other => panic!("expected an entity, got {other:?}"),
@@ -3024,8 +3110,11 @@ mod tests {
         let prog = p("orbital O {\n  expects page \"/orders\" -> Checkout, Receipt\n  expects page \"/plain\"\n  entity E { id : string! }\n}");
         assert!(matches!(&prog.orbitals[0].expects[0].kind,
             ExpectsKind::Page { path, traits } if path == "/orders" && traits == &vec!["Checkout".to_string(), "Receipt".to_string()]));
-        assert!(matches!(&prog.orbitals[0].expects[1].kind,
-            ExpectsKind::Page { traits, .. } if traits.is_empty()), "control: a bare page names none");
+        assert!(
+            matches!(&prog.orbitals[0].expects[1].kind,
+            ExpectsKind::Page { traits, .. } if traits.is_empty()),
+            "control: a bare page names none"
+        );
     }
 
     #[test]
@@ -3034,8 +3123,10 @@ mod tests {
         let prog = p(src);
         let k = &prog.orbitals[0].expects;
         assert_eq!(k.len(), 3);
-        assert!(matches!(&k[0].kind, ExpectsKind::Transition { trait_name, from, event, to, .. }
-            if trait_name == "Checkout" && from == "idle" && event == "PAY" && to == "paid"));
+        assert!(
+            matches!(&k[0].kind, ExpectsKind::Transition { trait_name, from, event, to, .. }
+            if trait_name == "Checkout" && from == "idle" && event == "PAY" && to == "paid")
+        );
         assert!(matches!(&k[1].kind, ExpectsKind::State { state, .. } if state == "refunded"));
         assert!(matches!(&k[2].kind, ExpectsKind::Event { event, .. } if event == "PLACED"));
     }
@@ -3047,7 +3138,9 @@ mod tests {
             "state idle { PAY -> paid (set @entity.x 1) }",
             "state idle for 5s",
         ] {
-            let src = format!("orbital O {{\n  expects trait T {{ {bad} }}\n  entity E {{ id : string! }}\n}}");
+            let src = format!(
+                "orbital O {{\n  expects trait T {{ {bad} }}\n  entity E {{ id : string! }}\n}}"
+            );
             assert!(parse_str(&src).is_err(), "{bad}");
         }
     }
@@ -3055,7 +3148,10 @@ mod tests {
     #[test]
     fn expects_trait_duplicate_edge_errors() {
         let src = "orbital O {\n  expects trait T { state a { E -> b } }\n  expects trait T { state a { E -> b } }\n  entity E { id : string! }\n}";
-        assert!(parse_str(src).expect_err("duplicate").to_string().contains("ELOLO_DUPLICATE_EXPECTATION"));
+        assert!(parse_str(src)
+            .expect_err("duplicate")
+            .to_string()
+            .contains("ELOLO_DUPLICATE_EXPECTATION"));
     }
 
     #[test]
@@ -3125,14 +3221,18 @@ mod tests {
 fn behavior_value_object(raw: &str) -> Option<SExpression> {
     use orbital_core_base::schema::behavior_value::{OrbitalValueRef, TraitValueRef};
     if let Some(t) = TraitValueRef::parse(raw) {
-        return Some(SExpression::Object(orbital_core_base::schema::SObject::from([
-            ("behavior".to_string(), SExpression::String(t.behavior)),
-            ("trait".to_string(), SExpression::String(t.trait_name)),
-        ])));
+        return Some(SExpression::Object(
+            orbital_core_base::schema::SObject::from([
+                ("behavior".to_string(), SExpression::String(t.behavior)),
+                ("trait".to_string(), SExpression::String(t.trait_name)),
+            ]),
+        ));
     }
     let o = OrbitalValueRef::parse(raw)?;
-    Some(SExpression::Object(orbital_core_base::schema::SObject::from([
-        ("behavior".to_string(), SExpression::String(o.behavior)),
-        ("orbital".to_string(), SExpression::String(o.orbital)),
-    ])))
+    Some(SExpression::Object(
+        orbital_core_base::schema::SObject::from([
+            ("behavior".to_string(), SExpression::String(o.behavior)),
+            ("orbital".to_string(), SExpression::String(o.orbital)),
+        ]),
+    ))
 }

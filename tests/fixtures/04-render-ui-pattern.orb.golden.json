@@ -31,6 +31,9 @@
           "linkedEntity": "Task",
           "name": "TaskList",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "c250d38624872d77d05a9104f11e90d22b9a845f54530a714713de270dc9d8ce"
+          },
           "stateMachine": {
             "events": [
               {

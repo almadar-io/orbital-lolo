@@ -26,6 +26,9 @@
           "linkedEntity": "Toast",
           "name": "Notifier",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "a1ecf09df17843a175739ed822c6ac50c01da24c2df591d7b2a11cc01e876ae3"
+          },
           "stateMachine": {
             "events": [
               {

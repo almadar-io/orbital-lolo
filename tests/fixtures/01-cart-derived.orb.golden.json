@@ -41,6 +41,9 @@
           "linkedEntity": "Cart",
           "name": "CartActions",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "e46b392a3d261df009dca532c81caf0e84bd43885ca22755ff3cac6355e6d571"
+          },
           "stateMachine": {
             "events": [
               {

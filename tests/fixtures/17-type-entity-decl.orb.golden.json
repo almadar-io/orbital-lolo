@@ -44,6 +44,9 @@
           "linkedEntity": "Record",
           "name": "RecordBrowse",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "bdc326ed33fa0374c6b36b8cac358be0cebf034eb18bdbb5cdd7bb0fcea1d930"
+          },
           "stateMachine": {
             "events": [
               {

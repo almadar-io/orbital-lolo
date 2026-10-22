@@ -42,6 +42,9 @@
           "linkedEntity": "Notification",
           "name": "OrderProcessing",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "3e71e4dc37592563be33a788f1657ea5971ac06e60184d6a02f9016b25b76dca"
+          },
           "stateMachine": {
             "events": [
               {
@@ -108,6 +111,9 @@
           ],
           "name": "NotificationHandler",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "2acf7417539f8cb14f40b67e4e6c1eb7c4b42e977c39dba7b7496f85793c3665"
+          },
           "stateMachine": {
             "events": [
               {

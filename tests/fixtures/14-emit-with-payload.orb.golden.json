@@ -47,6 +47,9 @@
           "linkedEntity": "OrderEmit",
           "name": "OrderEmitter",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "e11a28006da82bb2a6d016c7ebf74dc0bb9b362e3d657f9c87eaa795e7ae9712"
+          },
           "stateMachine": {
             "events": [
               {

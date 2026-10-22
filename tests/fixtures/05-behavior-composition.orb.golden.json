@@ -18,6 +18,9 @@
         {
           "linkedEntity": "Cart",
           "name": "__Composition",
+          "sourceDeclaration": {
+            "fingerprint": "2f8c995b4e0cd51adfc6cf772b0b293605a36c44e05376ffb2ae7218b59ade9d"
+          },
           "stateMachine": {
             "events": [
               {

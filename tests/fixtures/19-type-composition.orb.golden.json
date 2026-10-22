@@ -48,6 +48,9 @@
           "linkedEntity": "Rec",
           "name": "RecBrowse",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "1f7a847ea64dbd403706a1daee1b4e6bed8abcab457d6be0b8a83e6991853cfd"
+          },
           "stateMachine": {
             "events": [
               {

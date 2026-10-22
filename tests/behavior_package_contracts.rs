@@ -129,6 +129,7 @@ fn a_behavior_only_in_an_installed_io_package_is_found_and_validates() {
     let pkg = package(tmp.path(), "@almadar-io/behaviors", "almadar-behaviors", "0.0.1", behaviors, true);
     let options = LowerOptions {
         packages: vec![minimal_std_package(tmp.path()), pkg],
+        ..Default::default()
     };
 
     let source = using_lolo("almadar-behaviors/fake-test-widget", "Basic");
@@ -143,6 +144,7 @@ fn an_unknown_member_on_a_live_package_behavior_is_a_hard_error() {
     let pkg = package(tmp.path(), "@almadar-io/behaviors", "almadar-behaviors", "0.0.1", behaviors, true);
     let options = LowerOptions {
         packages: vec![minimal_std_package(tmp.path()), pkg],
+        ..Default::default()
     };
 
     let source = using_lolo("almadar-behaviors/fake-test-widget", "NotReal");
@@ -161,6 +163,7 @@ fn the_same_behavior_name_in_two_non_std_packages_is_ambiguous() {
     let pkg_b = package(tmp.path(), "@fixture/pkg-b", "pkg-b", "1.0.0", behaviors, true);
     let options = LowerOptions {
         packages: vec![minimal_std_package(tmp.path()), pkg_a, pkg_b],
+        ..Default::default()
     };
 
     // L1 resolves by bare behavior name (`behavior_key_from_path`), so which
@@ -184,6 +187,7 @@ fn an_installed_std_package_is_authoritative_with_no_fallback() {
     let pkg = package(tmp.path(), "@almadar/std", "almadar-std", "0.0.1", behaviors, true);
     let options = LowerOptions {
         packages: vec![pkg],
+        ..Default::default()
     };
 
     let source = using_lolo("std/behaviors/std-modal", "ModalRecordModal");
@@ -201,7 +205,7 @@ fn no_installed_std_package_reports_the_install_hint() {
     // EVERY lower (Phase 2, ruling 1) — a completely empty package list
     // fails before any `uses`-import check even runs.
     let source = using_lolo("std/behaviors/std-modal", "ModalRecordModal");
-    let options = LowerOptions { packages: vec![] };
+    let options = LowerOptions { packages: vec![], ..Default::default() };
     let err = lower_error(&source, &options);
     assert!(
         matches!(&err, LowerError::BehaviorPackageNotInstalled { package }
@@ -221,7 +225,7 @@ fn no_installed_std_package_reports_the_install_hint() {
 fn a_package_declaring_no_source_has_no_contracts_and_is_an_error() {
     let tmp = TempDir::new().unwrap();
     let bare = package(tmp.path(), "@almadar-io/behaviors", "almadar-behaviors", "0.0.1", &[], false);
-    let options = LowerOptions { packages: vec![minimal_std_package(tmp.path()), bare] };
+    let options = LowerOptions { packages: vec![minimal_std_package(tmp.path()), bare], ..Default::default() };
     let source = using_lolo("almadar-behaviors/fake-test-widget", "Basic");
     let err = match parse_and_lower_str_with(&source, &options).expect_err("must fail") {
         LoloError::Lower { inner, .. } => inner.innermost().to_string(),

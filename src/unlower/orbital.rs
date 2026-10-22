@@ -8,8 +8,8 @@ use super::types::{
 };
 use super::UnlowerError;
 use crate::ast::{
-    Entity, ExpectedAccess, ExpectsDecl, ExpectsKind, Orbital, Page, Persistence, Span, TypeAlias, TypeBody,
-    TypeExpr, UseDecl,
+    Entity, ExpectedAccess, ExpectsDecl, ExpectsKind, Orbital, Page, Persistence, Span, TypeAlias,
+    TypeBody, TypeExpr, UseDecl,
 };
 use orbital_core_base::schema::{
     EntityDefinition, EntityRef, ExpectDeclaration, FieldDefinition, Orbital as CoreOrbital,
@@ -155,7 +155,7 @@ fn inline_entity(
     }
 }
 
-fn use_decl(u: &UseDeclaration) -> Result<UseDecl, UnlowerError> {
+pub(super) fn use_decl(u: &UseDeclaration) -> Result<UseDecl, UnlowerError> {
     Ok(UseDecl {
         alias: u.alias.clone(),
         path: u.from.clone(),
@@ -224,7 +224,10 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
             traits: traits.clone().unwrap_or_default(),
         },
         ExpectDeclaration::State {
-            trait_name, state, holds, ..
+            trait_name,
+            state,
+            holds,
+            ..
         } => ExpectsKind::State {
             trait_name: trait_name.clone(),
             state: state.clone(),
@@ -598,13 +601,24 @@ fn declared_type_aliases(
     out: &mut Orbital,
     enums: &mut BTreeMap<String, TypeExpr>,
 ) -> Result<(), UnlowerError> {
-    if let Some(types) = &o.types {
+    out.type_aliases
+        .extend(declared_type_aliases_from(o.types.as_ref(), global, enums)?);
+    Ok(())
+}
+
+pub(super) fn declared_type_aliases_from(
+    types: Option<&BTreeMap<String, Vec<orbital_core_base::schema::PayloadField>>>,
+    global: &AliasShapes,
+    enums: &mut BTreeMap<String, TypeExpr>,
+) -> Result<Vec<TypeAlias>, UnlowerError> {
+    let mut aliases = Vec::new();
+    if let Some(types) = types {
         for (name, fields) in types {
             // A dictionary, list or union alias is one entry with the empty name: the alias's value is its type.
             if let [only] = fields.as_slice() {
                 if only.name.is_empty() {
                     let value = event_fields(fields)?.remove(0).type_expr;
-                    out.type_aliases.push(type_alias(name, TypeBody::Alias(value)));
+                    aliases.push(type_alias(name, TypeBody::Alias(value)));
                     continue;
                 }
             }
@@ -612,19 +626,21 @@ fn declared_type_aliases(
             let members = event_fields(fields)?
                 .into_iter()
                 .map(|f| match richer.iter().find(|(n, _, _)| *n == f.name) {
-                    Some((_, ty, _)) => (
-                        f.name,
-                        merge_member(f.type_expr, ty, enums),
-                        f.required,
-                    ),
+                    Some((_, ty, _)) => (f.name, merge_member(f.type_expr, ty, enums), f.required),
                     None => (f.name, f.type_expr, f.required),
                 })
                 .collect();
-            out.type_aliases
-                .push(type_alias(name, TypeBody::Struct(members)));
+            aliases.push(type_alias(
+                name,
+                if super::types::printed_nullable(None) {
+                    TypeBody::Alias(TypeExpr::Optional(Box::new(TypeExpr::Object(members))))
+                } else {
+                    TypeBody::Struct(members)
+                },
+            ));
         }
     }
-    Ok(())
+    Ok(aliases)
 }
 
 /// Authored member type from its payload-flattened form (which keeps the
@@ -687,6 +703,10 @@ pub(super) fn collect_named(te: &TypeExpr, out: &mut BTreeSet<String>) {
             items.iter().for_each(|t| collect_named(t, out))
         }
         TypeExpr::Object(members) => members.iter().for_each(|(_, t, _)| collect_named(t, out)),
+        TypeExpr::OpenObject { fields, additional } => {
+            fields.iter().for_each(|(_, t, _)| collect_named(t, out));
+            collect_named(additional, out);
+        }
         TypeExpr::Match { arms, .. } => arms.iter().for_each(|a| collect_named(&a.ty, out)),
         TypeExpr::FieldOf {
             resolved: Some(r), ..
@@ -694,4 +714,3 @@ pub(super) fn collect_named(te: &TypeExpr, out: &mut BTreeSet<String>) {
         _ => {}
     }
 }
-

@@ -305,7 +305,9 @@ impl Parser {
             if out.iter().any(|(f, _, _)| f == &field) {
                 return Err(ParseError::InvalidType {
                     span: key_span,
-                    message: format!("ELOLO_DUPLICATE_MOCK_FIELD: mock {{}} names `{field}` more than once"),
+                    message: format!(
+                        "ELOLO_DUPLICATE_MOCK_FIELD: mock {{}} names `{field}` more than once"
+                    ),
                 });
             }
             self.expect_kind(&TokenKind::Colon, ":")?;

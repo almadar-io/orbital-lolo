@@ -31,6 +31,9 @@
           "linkedEntity": "User",
           "name": "UserCrud",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "3d53de4de22db97492728fa5d90b6034088c901ec754547b8b69657b59099083"
+          },
           "stateMachine": {
             "events": [
               {

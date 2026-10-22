@@ -10,7 +10,9 @@
 use std::collections::HashSet;
 
 use orbital_core_base::schema::{PayloadField, SExpression, TraitDefinition, TraitReference};
-use orbital_core_base::type_compat::{bound_shape_of_payload_field, record_prop_binding_mismatch, RecordBindingMismatch};
+use orbital_core_base::type_compat::{
+    bound_shape_of_payload_field, record_prop_binding_mismatch, RecordBindingMismatch,
+};
 
 use crate::error::LowerError;
 use crate::patterns_meta::record_prop;
@@ -84,24 +86,36 @@ fn walk_pattern(
             let SExpression::String(binding) = value else {
                 continue;
             };
-            let Some(field) = binding.strip_prefix("@payload.").map(|r| r.split('.').next().unwrap_or(r)) else {
+            let Some(field) = binding
+                .strip_prefix("@payload.")
+                .map(|r| r.split('.').next().unwrap_or(r))
+            else {
                 continue;
             };
             let Some(declared) = payload.iter().find(|d| d.name == field) else {
                 continue;
             };
-            let Some(bound) = bound_shape_of_payload_field(&declared.field_type, declared.entity.as_deref()) else {
+            let Some(bound) =
+                bound_shape_of_payload_field(&declared.field_type, declared.entity.as_deref())
+            else {
                 continue;
             };
-            let linked = trait_def.linked_entity.as_deref().filter(|l| entity_names.contains(*l));
+            let linked = trait_def
+                .linked_entity
+                .as_deref()
+                .filter(|l| entity_names.contains(*l));
             let expected = if entity_kind { linked } else { None };
-            if let Some(m) = record_prop_binding_mismatch(&bound, expected, |n| entity_names.contains(n)) {
+            if let Some(m) =
+                record_prop_binding_mismatch(&bound, expected, |n| entity_names.contains(n))
+            {
                 let (expected_label, actual) = match m {
                     RecordBindingMismatch::CollectionIntoRecord => (
                         linked.unwrap_or("object").to_string(),
                         format!("a collection ({})", declared.field_type),
                     ),
-                    RecordBindingMismatch::WrongEntity { expected, actual } => (expected, format!("a {actual} row")),
+                    RecordBindingMismatch::WrongEntity { expected, actual } => {
+                        (expected, format!("a {actual} row"))
+                    }
                 };
                 return Err(LowerError::RenderPropNotARecord {
                     trait_name: trait_def.name.clone(),

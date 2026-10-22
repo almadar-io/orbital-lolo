@@ -41,6 +41,9 @@
           "linkedEntity": "Inventory",
           "name": "InventoryActions",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "092d5b8fe669cf521b3a573a61cf64fa19876e1e7b8c18b42bb9425eea51a700"
+          },
           "stateMachine": {
             "events": [
               {

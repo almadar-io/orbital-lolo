@@ -3,7 +3,6 @@
 //! keeps the by-name form `{type: union, values: [Shape]}` the kernel reads child positions from
 //! (`orbital_core_eval` `operators::tree`). The orbital `types` section cannot serve: it expands one level.
 
-use super::entity::lower_type_expr;
 use super::TypeAliasResolved;
 use crate::ast::{Span, TypeExpr};
 use crate::error::{LowerError, TypeError};
@@ -31,26 +30,7 @@ fn field_definition(
     entity_names: &HashSet<String>,
     params: &[&str],
 ) -> Result<FieldDefinition, LowerError> {
-    let (field_type, values, items, properties, relation) =
-        lower_type_expr(ty, aliases, entity_names, params)?;
-    Ok(FieldDefinition {
-        merged_from: None,
-        name: None,
-        field_type,
-        required: None,
-        primary_key: None,
-        unique: None,
-        default: None,
-        values,
-        relation,
-        items,
-        properties,
-        intrinsic: None,
-        description: None,
-        synonyms: None,
-        mock: None,
-        projected_from: None,
-    })
+    super::entity::lower_source_field(ty, aliases, entity_names, params)
 }
 
 fn source_type(
@@ -76,7 +56,16 @@ fn source_type(
                 .map(|item| source_type(item, aliases, entity_names, params))
                 .collect::<Result<_, _>>()?,
         },
-        TypeExpr::Object(fields) => OirType::Struct {
+        TypeExpr::Object(fields) | TypeExpr::OpenObject { fields, .. } => OirType::Struct {
+            additional: match ty {
+                TypeExpr::OpenObject { additional, .. } => Some(Box::new(source_type(
+                    additional,
+                    aliases,
+                    entity_names,
+                    params,
+                )?)),
+                _ => None,
+            },
             fields: fields
                 .iter()
                 .map(|(name, ty, required)| {
@@ -189,7 +178,7 @@ pub(crate) fn declared_source_shape(
         None => source_type(ty, aliases, entity_names, params)?,
     };
     let error = std::cell::RefCell::new(None);
-    let shape = DeclaredShape::with_resolver(name, root, |name| {
+    let mut shape = DeclaredShape::with_resolver(name, root, |name| {
         match alias_type(name, aliases, entity_names, params) {
             Ok(shape) => shape,
             Err(found) => {
@@ -198,6 +187,7 @@ pub(crate) fn declared_source_shape(
             }
         }
     });
+    shape.version = Some(1);
     match error.into_inner() {
         Some(error) => Err(error),
         None => Ok(shape),

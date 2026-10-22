@@ -88,6 +88,9 @@
           "linkedEntity": "Row",
           "name": "RowBatch",
           "scope": "collection",
+          "sourceDeclaration": {
+            "fingerprint": "65bb74bc132434c802806e07e887ddbb1c9eabdf4b6269c51f1798721c45d63e"
+          },
           "stateMachine": {
             "events": [
               {

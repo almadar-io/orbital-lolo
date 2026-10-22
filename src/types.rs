@@ -204,6 +204,13 @@ fn substitute_expr(expr: &TypeExpr, binding: &HashMap<String, TypeExpr>) -> Type
         TypeExpr::Union(parts) => {
             TypeExpr::Union(parts.iter().map(|p| substitute_expr(p, binding)).collect())
         }
+        TypeExpr::OpenObject { fields, additional } => TypeExpr::OpenObject {
+            fields: fields
+                .iter()
+                .map(|(k, ty, required)| (k.clone(), substitute_expr(ty, binding), *required))
+                .collect(),
+            additional: Box::new(substitute_expr(additional, binding)),
+        },
         TypeExpr::Object(fields) => TypeExpr::Object(
             fields
                 .iter()
@@ -379,6 +386,11 @@ fn format_type_expr(te: &TypeExpr) -> String {
         TypeExpr::Map(key, value) => {
             format!("map:{}:{}", format_type_expr(key), format_type_expr(value))
         }
+        TypeExpr::OpenObject { fields, additional } => format!(
+            "{}...:{}",
+            format_type_expr(&TypeExpr::Object(fields.clone())),
+            format_type_expr(additional)
+        ),
         TypeExpr::Object(fields) => {
             let mut parts: Vec<String> = fields
                 .iter()
@@ -566,13 +578,20 @@ fn visit_refs(body: &TypeBody, out: &mut BTreeSet<String>) {
 
 fn visit_bare_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
     match te {
-        TypeExpr::Array(_) | TypeExpr::Map(..) | TypeExpr::Object(_) => {}
+        TypeExpr::Array(_)
+        | TypeExpr::Map(..)
+        | TypeExpr::Object(_)
+        | TypeExpr::OpenObject { .. } => {}
         TypeExpr::Union(parts) | TypeExpr::Tuple(parts) => {
             for p in parts {
                 visit_bare_expr_refs(p, out);
             }
         }
         TypeExpr::Optional(inner) => visit_bare_expr_refs(inner, out),
+        TypeExpr::FieldOf {
+            resolved: Some(inner),
+            ..
+        } => visit_bare_expr_refs(inner, out),
         other => visit_expr_refs(other, out),
     }
 }
@@ -606,6 +625,12 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
                 visit_expr_refs(v, out);
             }
         }
+        TypeExpr::OpenObject { fields, additional } => {
+            for (_, ty, _) in fields {
+                visit_expr_refs(ty, out);
+            }
+            visit_expr_refs(additional, out);
+        }
         // Sigil type constructors reference no NAMED type — their argument is a
         // config knob, resolved at compile time, not a type reference.
         TypeExpr::EventPayloadOf(_)
@@ -614,7 +639,13 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         TypeExpr::RelationMany(n) | TypeExpr::RelationManyNonEmpty(n) => {
             out.insert(n.clone());
         }
-        TypeExpr::FieldOf { ty, .. } => {
+        TypeExpr::FieldOf {
+            resolved: Some(inner),
+            ..
+        } => visit_expr_refs(inner, out),
+        TypeExpr::FieldOf {
+            ty, resolved: None, ..
+        } => {
             out.insert(ty.clone());
         }
         // `@entity` references no NAMED type — nothing to collect.
@@ -697,7 +728,11 @@ fn visit_type_refs(te: &TypeExpr, ctx: &ResolveCtx<'_>, out: &mut BTreeSet<Strin
     match te {
         TypeExpr::Union(parts) => {
             if crate::lower::entity::is_type_union_with(parts, |n| {
-                ctx.lookup(n).map(|a| matches!(&a.body, TypeBody::Struct(_)))
+                ctx.lookup(n).map(|a| match &a.body {
+                    TypeBody::Struct(_) => true,
+                    TypeBody::Alias(inner) => inner.record_fields().is_some(),
+                    _ => false,
+                })
             }) {
                 parts.iter().for_each(|p| visit_type_refs(p, ctx, out));
             }
@@ -708,7 +743,15 @@ fn visit_type_refs(te: &TypeExpr, ctx: &ResolveCtx<'_>, out: &mut BTreeSet<Strin
             visit_type_refs(key, ctx, out);
             visit_type_refs(value, ctx, out);
         }
-        TypeExpr::Object(fields) => fields.iter().for_each(|(_, v, _)| visit_type_refs(v, ctx, out)),
+        TypeExpr::Object(fields) => fields
+            .iter()
+            .for_each(|(_, v, _)| visit_type_refs(v, ctx, out)),
+        TypeExpr::OpenObject { fields, additional } => {
+            fields
+                .iter()
+                .for_each(|(_, ty, _)| visit_type_refs(ty, ctx, out));
+            visit_type_refs(additional, ctx, out);
+        }
         TypeExpr::Match { arms, .. } => arms.iter().for_each(|a| visit_type_refs(&a.ty, ctx, out)),
         other => visit_expr_refs(other, out),
     }
@@ -831,8 +874,11 @@ fn check_named_payload_ref(
         // and keeps its enum reading — rejected here as before.
         TypeBody::Alias(TypeExpr::Union(parts))
             if crate::lower::entity::is_type_union_with(&parts, |n| {
-                ctx.lookup(n)
-                    .map(|a| matches!(&a.body, TypeBody::Struct(_)))
+                ctx.lookup(n).map(|a| match &a.body {
+                    TypeBody::Struct(_) => true,
+                    TypeBody::Alias(inner) => inner.record_fields().is_some(),
+                    _ => false,
+                })
             }) =>
         {
             Ok(())
@@ -845,8 +891,11 @@ fn check_named_payload_ref(
                     .map(|n| TypeExpr::Named(n.clone()))
                     .collect::<Vec<_>>(),
                 |n| {
-                    ctx.lookup(n)
-                        .map(|a| matches!(&a.body, TypeBody::Struct(_)))
+                    ctx.lookup(n).map(|a| match &a.body {
+                        TypeBody::Struct(_) => true,
+                        TypeBody::Alias(inner) => inner.record_fields().is_some(),
+                        _ => false,
+                    })
                 },
             ) =>
         {
@@ -1049,6 +1098,12 @@ fn reject_generic_types(te: &TypeExpr, position: &str, span: Span) -> Result<(),
                 reject_generic_types(t, position, span)?;
             }
             Ok(())
+        }
+        TypeExpr::OpenObject { fields, additional } => {
+            for (_, ty, _) in fields {
+                reject_generic_types(ty, position, span)?;
+            }
+            reject_generic_types(additional, position, span)
         }
         TypeExpr::Union(parts) => {
             for t in parts {
@@ -1259,7 +1314,9 @@ fn type_at_trail<'a>(te: &'a TypeExpr, trail: &str, ctx: &ResolveCtx<'a>) -> Opt
     let end = rest.find(['.', '[']).unwrap_or(rest.len());
     let (key, rest) = rest.split_at(end);
     let member = match te {
-        TypeExpr::Object(fields) => fields.iter().find(|(n, _, _)| n == key).map(|(_, t, _)| t),
+        TypeExpr::Object(fields) | TypeExpr::OpenObject { fields, .. } => {
+            fields.iter().find(|(n, _, _)| n == key).map(|(_, t, _)| t)
+        }
         TypeExpr::Named(name) => match &ctx.lookup(name)?.body {
             TypeBody::Struct(fields) => fields.iter().find(|(n, _, _)| n == key).map(|(_, t, _)| t),
             _ => None,
@@ -2431,10 +2488,22 @@ orbital OrbU {{
     #[test]
     fn err_unknown_name_inside_a_type_union_is_still_a_reference() {
         let cases = [
-            ("struct field", "type Hit = { value : string | [Missing] }", "", "", ""),
+            (
+                "struct field",
+                "type Hit = { value : string | [Missing] }",
+                "",
+                "",
+                "",
+            ),
             ("alias body", "type Hit = string | [Missing]", "", "", ""),
             ("entity field", "", "value : number | [Missing]", "", ""),
-            ("listen payload", "", "", "", "value : string | Map string Missing"),
+            (
+                "listen payload",
+                "",
+                "",
+                "",
+                "value : string | Map string Missing",
+            ),
         ];
         for (label, types, ef, emf, lf) in cases {
             let err = check(&undefined_type_src(types, ef, emf, lf)).unwrap_err();
@@ -2455,7 +2524,12 @@ orbital OrbU {{
             matches!(err, TypeError::UnknownType { ref name, .. } if name == "PrefRow"),
             "got {err:?}"
         );
-        check(&undefined_type_src("type PrefRow = { id : string! }", "", "", "data : [PrefRow]"))
-            .expect("control: the file's own copy is in scope");
+        check(&undefined_type_src(
+            "type PrefRow = { id : string! }",
+            "",
+            "",
+            "data : [PrefRow]",
+        ))
+        .expect("control: the file's own copy is in scope");
     }
 }

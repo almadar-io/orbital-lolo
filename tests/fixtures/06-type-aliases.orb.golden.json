@@ -35,6 +35,9 @@
           "linkedEntity": "StatusItem",
           "name": "StatusActions",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "63dd92aa1701ad70a294dd6cc6322c33a75fda2d59c6137105f39bd351a1806c"
+          },
           "stateMachine": {
             "events": [
               {

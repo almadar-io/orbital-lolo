@@ -888,7 +888,8 @@ impl Parser {
             while matches!(self.peek_n(k), TokenKind::Newline) {
                 k += 1;
             }
-            if !matches!(self.peek_n(k), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "ensures") {
+            if !matches!(self.peek_n(k), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "ensures")
+            {
                 return Ok(ensures);
             }
             for _ in 0..=k {
@@ -1360,7 +1361,8 @@ impl Parser {
                     }
                     let answers = self.expect_ident()?;
                     let answers = self.canon_event_name(answers);
-                    let verifies = if matches!(self.peek(), TokenKind::Identifier(w) if self.lang.canon_keyword(w).unwrap_or(w.as_str()) == "verifies") {
+                    let verifies = if matches!(self.peek(), TokenKind::Identifier(w) if self.lang.canon_keyword(w).unwrap_or(w.as_str()) == "verifies")
+                    {
                         self.advance();
                         let mut take = |what: &str| match self.peek().clone() {
                             TokenKind::String(value) => {
@@ -1379,7 +1381,11 @@ impl Parser {
                     } else {
                         None
                     };
-                    Some(InboundListen { name, answers, verifies })
+                    Some(InboundListen {
+                        name,
+                        answers,
+                        verifies,
+                    })
                 } else {
                     None
                 };

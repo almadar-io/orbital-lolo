@@ -26,6 +26,9 @@
           "linkedEntity": "Order",
           "name": "ConfirmFlow",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "9b51a285ebd79bf2f811362f79934233658545e431e996ff6f783895b9afb32c"
+          },
           "stateMachine": {
             "events": [
               {

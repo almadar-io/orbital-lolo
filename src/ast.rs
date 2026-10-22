@@ -18,7 +18,12 @@ pub struct Span {
 
 impl Span {
     pub fn new(line: u32, col: u32, len: u16) -> Self {
-        Self { line, col, len, scope_end: None }
+        Self {
+            line,
+            col,
+            len,
+            scope_end: None,
+        }
     }
 
     pub fn dummy() -> Self {
@@ -61,6 +66,7 @@ pub struct Program {
 /// `app NAME "VERSION" [ modifiers ]` header.
 #[derive(Debug, Clone)]
 pub struct AppHeader {
+    pub declared: bool,
     pub name: String,
     pub version: Option<String>,
     pub description: Option<String>,
@@ -607,7 +613,11 @@ pub enum ExpectsKind {
     Page { path: String, traits: Vec<String> },
     /// `expects trait T { state paid }` — the provider trait declares this state; `state paid @holds <expr>` adds a
     /// proposition over `@entity` that holds while the trait is in it.
-    State { trait_name: String, state: String, holds: Option<SExpression> },
+    State {
+        trait_name: String,
+        state: String,
+        holds: Option<SExpression>,
+    },
     /// `expects trait T { state idle { PAY -> paid } }` — the provider trait has this transition; `@ensures <expr>`
     /// lines after the target add its outcome contract.
     Transition {
@@ -761,6 +771,10 @@ pub enum TypeExpr {
     /// whether the field is required so the lowerer can emit the matching
     /// `required` flag on the resulting `FieldDefinition`.
     Object(Vec<(String, TypeExpr, bool)>),
+    OpenObject {
+        fields: Vec<(String, TypeExpr, bool)>,
+        additional: Box<TypeExpr>,
+    },
     /// `T | U` union (lowering inlines this to enum values when all members
     /// are bare names or string literals).
     Union(Vec<TypeExpr>),
@@ -859,6 +873,14 @@ pub enum TypeExpr {
 }
 
 impl TypeExpr {
+    pub(crate) fn record_fields(&self) -> Option<&Vec<(String, TypeExpr, bool)>> {
+        match self.peel() {
+            Self::Object(fields) | Self::OpenObject { fields, .. } => Some(fields),
+            Self::Optional(inner) => inner.record_fields(),
+            _ => None,
+        }
+    }
+
     /// The type this expression stands for: a resolved `T.f` is its field's
     /// type (recursively); every other form is itself.
     pub fn peel(&self) -> &TypeExpr {
@@ -874,7 +896,9 @@ impl TypeExpr {
     /// A payload field's provenance: `T.f` itself, or for `[T.f]` each element's.
     pub fn payload_projection(&self) -> Option<orbital_core_base::schema::types::FieldProjection> {
         self.projection().or_else(|| match self.peel() {
-            TypeExpr::Array(inner) => inner.projection(),
+            TypeExpr::Array(inner) => inner
+                .projection()
+                .filter(|projection| projection.field.is_some()),
             _ => None,
         })
     }
@@ -882,10 +906,17 @@ impl TypeExpr {
     /// `T.f`'s provenance, for the field a projection types.
     pub fn projection(&self) -> Option<orbital_core_base::schema::types::FieldProjection> {
         match self {
-            TypeExpr::FieldOf { ty, field, .. } => Some(orbital_core_base::schema::types::FieldProjection {
-                type_name: ty.clone(),
-                field: field.clone(),
+            TypeExpr::Optional(inner) => inner.projection(),
+            TypeExpr::Named(name) => Some(orbital_core_base::schema::types::FieldProjection {
+                type_name: name.clone(),
+                field: None,
             }),
+            TypeExpr::FieldOf { ty, field, .. } => {
+                Some(orbital_core_base::schema::types::FieldProjection {
+                    type_name: ty.clone(),
+                    field: Some(field.clone()),
+                })
+            }
             _ => None,
         }
     }
@@ -1416,7 +1447,8 @@ pub(crate) fn local_annotation_type(expr: &SExpression) -> Option<TypeExpr> {
     let SExpression::Array(parts) = expr else {
         return None;
     };
-    let [SExpression::String(head), _, declaration @ SExpression::Object(_)] = parts.as_slice() else {
+    let [SExpression::String(head), _, declaration @ SExpression::Object(_)] = parts.as_slice()
+    else {
         return None;
     };
     if head != "typed" {

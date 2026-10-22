@@ -49,6 +49,9 @@
           "linkedEntity": "Task",
           "name": "TaskBrowse",
           "scope": "collection",
+          "sourceDeclaration": {
+            "fingerprint": "c10a2e99e6b224f29453af189da9354245cec17250f4c81b27a4d540b1b923dd"
+          },
           "stateMachine": {
             "events": [
               {
@@ -88,6 +91,9 @@
           "linkedEntity": "Task",
           "name": "TaskEdit",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "8a0aec41b82ab0f4605bca0e6a60cc28b3ee4d1e3c417182923494e1ca7816b0"
+          },
           "stateMachine": {
             "events": [
               {

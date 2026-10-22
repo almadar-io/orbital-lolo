@@ -158,7 +158,7 @@ fn scan(relative: &str) -> Option<(Vec<String>, Vec<String>, usize)> {
         return None;
     }
     let packages = orbital_core_base::behavior_packages::discover(&root, &root).expect("discover packages");
-    let options = LowerOptions { packages };
+    let options = LowerOptions { packages, ..Default::default() };
     let mut files = Vec::new();
     collect(&base, &mut files);
     let mut report = Vec::new();

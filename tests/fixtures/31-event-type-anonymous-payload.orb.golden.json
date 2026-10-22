@@ -53,6 +53,9 @@
           "linkedEntity": "ErrorReport",
           "name": "ErrorReporter",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "5065a07bea8f1c742711843f1b7394efbd9d023629e9148bb07ba3b277fab611"
+          },
           "stateMachine": {
             "events": [
               {

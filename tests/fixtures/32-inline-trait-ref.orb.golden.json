@@ -48,6 +48,9 @@
           "linkedEntity": "Widget",
           "name": "WidgetView",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "05a70117ed295bac4cc6c4d1a33d667275c090714852c1e1efa240ef9c14a0ff"
+          },
           "stateMachine": {
             "events": [
               {

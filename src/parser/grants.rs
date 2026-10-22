@@ -3,11 +3,12 @@
 
 use super::*;
 use orbital_core_base::os_grants::{
-    AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, DesktopKind, FsGrant, FsMode, GrantAnchor, KvMode, NetGrant, NetKind,
-    NetPart, OsGrants, StdioKind, SysKind,
+    AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, DesktopKind, FsGrant, FsMode, GrantAnchor,
+    KvMode, NetGrant, NetKind, NetPart, OsGrants, StdioKind, SysKind,
 };
 
-pub(crate) const GRANT_KEYS: &[&str] = &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv"];
+pub(crate) const GRANT_KEYS: &[&str] =
+    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv"];
 
 const ENTRY_INVALID: &str = "ORB_OS_GRANT_ENTRY_INVALID";
 
@@ -54,11 +55,13 @@ impl Parser {
 
     /// `exe-dir`, `cwd` or `env NAME`.
     fn parse_anchor(&mut self, key: &str) -> Result<GrantAnchor, ParseError> {
-        Ok(match self.parse_option_word(key, ENTRY_INVALID, ANCHOR_WORDS)? {
-            "exe-dir" => GrantAnchor::ExeDir,
-            "cwd" => GrantAnchor::Cwd,
-            _ => GrantAnchor::Env(self.expect_ident()?),
-        })
+        Ok(
+            match self.parse_option_word(key, ENTRY_INVALID, ANCHOR_WORDS)? {
+                "exe-dir" => GrantAnchor::ExeDir,
+                "cwd" => GrantAnchor::Cwd,
+                _ => GrantAnchor::Env(self.expect_ident()?),
+            },
+        )
     }
 
     /// `[word, …]` or one bare word.
@@ -90,7 +93,11 @@ impl Parser {
                 let glob = self.parse_option_string("fs")?;
                 self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
                 let modes = self.parse_grant_words("fs", FsMode::ALL, |k| k.name())?;
-                grants.anchored.fs.push(AnchoredFsGrant { anchor, glob, modes });
+                grants.anchored.fs.push(AnchoredFsGrant {
+                    anchor,
+                    glob,
+                    modes,
+                });
             } else {
                 let glob = self.parse_option_string("fs")?;
                 self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
@@ -122,7 +129,11 @@ impl Parser {
                 _ => self.expect_ident()?,
             };
             if grants.kv.contains_key(&store) {
-                return Err(ParseError::DuplicateOption { key: store, context: "kv", span });
+                return Err(ParseError::DuplicateOption {
+                    key: store,
+                    context: "kv",
+                    span,
+                });
             }
             self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
             let modes = self.parse_grant_words("kv", KvMode::ALL, |k| k.name())?;
@@ -193,7 +204,11 @@ impl Parser {
                 let port = self.parse_net_part()?;
                 self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
                 let kinds = self.parse_grant_words_or_word("net", NetKind::ALL, |k| k.name())?;
-                grants.anchored.net.push(AnchoredNetGrant { host: first, port, kinds });
+                grants.anchored.net.push(AnchoredNetGrant {
+                    host: first,
+                    port,
+                    kinds,
+                });
             } else {
                 let NetPart::Literal(target) = first else {
                     return Err(ParseError::InvalidOptionValue {
@@ -312,7 +327,8 @@ impl Parser {
 mod tests {
     use crate::{format_program, parse_str};
     use orbital_core_base::os_grants::{
-        AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, FsGrant, FsMode, GrantAnchor, NetKind, NetPart,
+        AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, FsGrant, FsMode, GrantAnchor, NetKind,
+        NetPart,
     };
 
     const ANCHORED: &str = "app a [\n  version: \"1.0.0\",\n  exec: [env ORB_BUN_PATH, exe-dir \"bun\", \"bun\"],\n  fs: { \"/data/**\": [read], exe-dir: \"agent/**\": [read], env ORB_AGENT_DIR: \"**\": [read], cwd: \"docs/**\": [read, meta] },\n  net: { \"db:5432\": [tcp], env HOST, env PORT: listen, \"0.0.0.0\", env PORT: [listen] }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
@@ -325,17 +341,42 @@ mod tests {
         assert_eq!(
             g.anchored.exec,
             [
-                AnchoredExec { anchor: GrantAnchor::Env("ORB_BUN_PATH".into()), path: None },
-                AnchoredExec { anchor: GrantAnchor::ExeDir, path: Some("bun".into()) },
+                AnchoredExec {
+                    anchor: GrantAnchor::Env("ORB_BUN_PATH".into()),
+                    path: None
+                },
+                AnchoredExec {
+                    anchor: GrantAnchor::ExeDir,
+                    path: Some("bun".into())
+                },
             ]
         );
-        assert_eq!(g.fs, [FsGrant { glob: "/data/**".into(), modes: vec![FsMode::Read] }], "control: a quoted glob stays plain");
+        assert_eq!(
+            g.fs,
+            [FsGrant {
+                glob: "/data/**".into(),
+                modes: vec![FsMode::Read]
+            }],
+            "control: a quoted glob stays plain"
+        );
         assert_eq!(
             g.anchored.fs,
             [
-                AnchoredFsGrant { anchor: GrantAnchor::ExeDir, glob: "agent/**".into(), modes: vec![FsMode::Read] },
-                AnchoredFsGrant { anchor: GrantAnchor::Env("ORB_AGENT_DIR".into()), glob: "**".into(), modes: vec![FsMode::Read] },
-                AnchoredFsGrant { anchor: GrantAnchor::Cwd, glob: "docs/**".into(), modes: vec![FsMode::Read, FsMode::Meta] },
+                AnchoredFsGrant {
+                    anchor: GrantAnchor::ExeDir,
+                    glob: "agent/**".into(),
+                    modes: vec![FsMode::Read]
+                },
+                AnchoredFsGrant {
+                    anchor: GrantAnchor::Env("ORB_AGENT_DIR".into()),
+                    glob: "**".into(),
+                    modes: vec![FsMode::Read]
+                },
+                AnchoredFsGrant {
+                    anchor: GrantAnchor::Cwd,
+                    glob: "docs/**".into(),
+                    modes: vec![FsMode::Read, FsMode::Meta]
+                },
             ]
         );
         assert_eq!(g.net.len(), 1);
@@ -361,7 +402,12 @@ mod tests {
     fn anchored_grants_format_back_to_source_that_parses_to_the_same_record() {
         let program = parse_str(ANCHORED).unwrap_or_else(|e| panic!("{e}"));
         let text = format_program(&program);
-        assert!(text.contains("exe-dir: \"agent/**\": [read]") && text.contains("env ORB_BUN_PATH") && text.contains("env HOST, env PORT: [listen]"), "{text}");
+        assert!(
+            text.contains("exe-dir: \"agent/**\": [read]")
+                && text.contains("env ORB_BUN_PATH")
+                && text.contains("env HOST, env PORT: [listen]"),
+            "{text}"
+        );
         let again = parse_str(&text).unwrap_or_else(|e| panic!("{e}\n{text}"));
         assert_eq!(again.app.os_grants, program.app.os_grants);
     }
@@ -369,8 +415,14 @@ mod tests {
     #[test]
     fn a_lone_anchor_as_a_net_target_and_an_unknown_anchor_word_are_refused() {
         let lone = ANCHORED.replace("env HOST, env PORT: listen, ", "env HOST: [listen], ");
-        assert!(parse_str(&lone).is_err(), "a net target needs both host and port");
+        assert!(
+            parse_str(&lone).is_err(),
+            "a net target needs both host and port"
+        );
         let unknown = ANCHORED.replace("exe-dir: \"agent/**\"", "home-dir: \"agent/**\"");
-        assert!(parse_str(&unknown).is_err(), "control: only the declared anchor words");
+        assert!(
+            parse_str(&unknown).is_err(),
+            "control: only the declared anchor words"
+        );
     }
 }

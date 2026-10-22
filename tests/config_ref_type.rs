@@ -75,6 +75,7 @@ fn config_reference_is_typechecked_against_the_knob_it_names() {
     );
     let options = LowerOptions {
         packages: vec![pkg],
+        ..Default::default()
     };
 
     let mismatched = parse_and_lower_str_with(MISMATCHED_REF, &options);

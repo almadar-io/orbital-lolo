@@ -149,7 +149,9 @@ impl Parser {
             }
             arg_spans.push(self.peek_span());
             let arg_index = items.len();
-            self.literal_key_position = head.as_deref().is_some_and(|h| declares_key_position(h, arg_index - 1));
+            self.literal_key_position = head
+                .as_deref()
+                .is_some_and(|h| declares_key_position(h, arg_index - 1));
             let arg =
                 self.with_trail_seg(format!("[{arg_index}]"), |p| p.parse_sexpr_or_value())?;
             items.push(arg);
@@ -440,8 +442,10 @@ impl Parser {
                 Some(ty) => SExpression::Array(vec![
                     SExpression::String("typed".to_string()),
                     value,
-                    serde_json::from_value(serde_json::to_value(ty).expect("a type expression serializes"))
-                        .expect("a serialized type expression is an s-expression"),
+                    serde_json::from_value(
+                        serde_json::to_value(ty).expect("a type expression serializes"),
+                    )
+                    .expect("a serialized type expression is an s-expression"),
                 ]),
                 None => value,
             };
@@ -739,7 +743,11 @@ impl Parser {
         Ok(expr)
     }
 
-    pub(crate) fn check_boolean_slot(expr: &SExpression, slot: &str, span: Span) -> Result<(), ParseError> {
+    pub(crate) fn check_boolean_slot(
+        expr: &SExpression,
+        slot: &str,
+        span: Span,
+    ) -> Result<(), ParseError> {
         let SExpression::Array(items) = expr else {
             return Ok(());
         };
@@ -878,7 +886,9 @@ pub(crate) fn lower_self_sigil(name: &str) -> String {
 /// Whether the installed operator table declares argument `index` of `head` a `key-of` position, directly or as
 /// a member of a union.
 fn declares_key_position(head: &str, index: usize) -> bool {
-    use orbital_core_base::language::registry::{try_get_operator, OperatorTypeRef, OperatorTypeRefKind};
+    use orbital_core_base::language::registry::{
+        try_get_operator, OperatorTypeRef, OperatorTypeRefKind,
+    };
     fn names_key(ty: &OperatorTypeRef) -> bool {
         match ty {
             OperatorTypeRef::Tagged(OperatorTypeRefKind::KeyOf { .. }) => true,

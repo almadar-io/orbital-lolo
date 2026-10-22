@@ -67,6 +67,9 @@
           "linkedEntity": "BrowseItem",
           "name": "BrowseItemBrowse",
           "scope": "collection",
+          "sourceDeclaration": {
+            "fingerprint": "cfc8e1b0e39773c8feea3080a900ffb63dcf5539274b9818fcbb53757b0dbb93"
+          },
           "stateMachine": {
             "events": [
               {

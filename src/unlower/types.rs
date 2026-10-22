@@ -9,6 +9,40 @@ use orbital_core_base::schema::{
 };
 use std::collections::HashMap;
 
+thread_local! {
+    static LEGACY_NULLABILITY: std::cell::Cell<bool> = const { std::cell::Cell::new(true) };
+}
+
+pub(super) struct PrintTypeContract(bool);
+impl PrintTypeContract {
+    pub(super) fn enter(version: Option<u32>) -> Self {
+        Self(LEGACY_NULLABILITY.with(|mode| mode.replace(version.is_none())))
+    }
+}
+impl Drop for PrintTypeContract {
+    fn drop(&mut self) {
+        LEGACY_NULLABILITY.with(|mode| mode.set(self.0));
+    }
+}
+
+pub(super) fn printed_nullable(nullable: Option<bool>) -> bool {
+    nullable.unwrap_or_else(|| LEGACY_NULLABILITY.with(std::cell::Cell::get))
+}
+
+fn source_reference(
+    reference: &orbital_core_base::schema::FieldProjection,
+    resolved: Option<TypeExpr>,
+) -> TypeExpr {
+    match &reference.field {
+        Some(field) => TypeExpr::FieldOf {
+            ty: reference.type_name.clone(),
+            field: field.clone(),
+            resolved: resolved.map(Box::new),
+        },
+        None => TypeExpr::Named(reference.type_name.clone()),
+    }
+}
+
 fn primitive(name: &str) -> TypeExpr {
     TypeExpr::Primitive(name.to_string())
 }
@@ -34,12 +68,17 @@ fn values_union(values: &[String]) -> TypeExpr {
 }
 
 pub(super) fn field_def_type(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> {
+    let base = field_def_type_inner(fd)?;
+    Ok(if printed_nullable(fd.nullable) {
+        TypeExpr::Optional(Box::new(base))
+    } else {
+        base
+    })
+}
+
+fn field_def_type_inner(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> {
     if let Some(p) = &fd.projected_from {
-        return Ok(TypeExpr::FieldOf {
-            ty: p.type_name.clone(),
-            field: p.field.clone(),
-            resolved: None,
-        });
+        return Ok(source_reference(p, None));
     }
     Ok(match &fd.field_type {
         FieldType::String => match &fd.values {
@@ -77,6 +116,17 @@ pub(super) fn field_def_type(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerEr
         FieldType::Array => match &fd.items {
             Some(item) => TypeExpr::Array(Box::new(field_def_type(item)?)),
             None => TypeExpr::Array(Box::new(primitive("string"))),
+        },
+        FieldType::Object if fd.additional_properties.is_some() => TypeExpr::OpenObject {
+            fields: fd
+                .properties
+                .as_ref()
+                .map(object_members)
+                .transpose()?
+                .unwrap_or_default(),
+            additional: Box::new(field_def_type(
+                fd.additional_properties.as_deref().unwrap(),
+            )?),
         },
         FieldType::Object => match (&fd.properties, &fd.items) {
             (Some(props), _) => match props
@@ -272,20 +322,76 @@ fn payload_members(props: &[PayloadField]) -> Result<Vec<(String, TypeExpr, bool
 }
 
 pub(super) fn payload_type(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> {
+    let base = payload_type_inner(pf)?;
+    Ok(if printed_nullable(pf.nullable) {
+        TypeExpr::Optional(Box::new(base))
+    } else {
+        base
+    })
+}
+
+fn payload_type_inner(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> {
     if let Some(p) = &pf.projected_from {
-        return Ok(TypeExpr::FieldOf {
-            ty: p.type_name.clone(),
-            field: p.field.clone(),
-            resolved: None,
-        });
+        return Ok(source_reference(p, None));
     }
-    let base = match (pf.field_type.as_str(), &pf.properties, &pf.entity) {
+    let base = if let Some(additional) = &pf.additional_properties {
+        TypeExpr::OpenObject {
+            fields: pf
+                .properties
+                .as_deref()
+                .map(payload_members)
+                .transpose()?
+                .unwrap_or_default(),
+            additional: Box::new(payload_type(additional)?),
+        }
+    } else if let Some(item) = &pf.items {
+        let parsed = parse_type_string(&pf.field_type)?;
+        match parsed {
+            TypeExpr::Array(_) => TypeExpr::Array(Box::new(payload_type(item)?)),
+            TypeExpr::Map(key, _) => TypeExpr::Map(key, Box::new(payload_type(item)?)),
+            _ => payload_type_without_items(pf)?,
+        }
+    } else {
+        payload_type_without_items(pf)?
+    };
+    match &pf.type_when {
+        None => Ok(base),
+        Some(conditions) => {
+            let knob = conditions
+                .first()
+                .map(|c| c.knob.clone())
+                .ok_or_else(|| UnlowerError::new("empty typeWhen"))?;
+            let mut arms = conditions
+                .iter()
+                .map(|c| {
+                    Ok(MatchArm {
+                        pattern: MatchPattern::Str(c.equals.clone()),
+                        ty: parse_type_string(&c.ty)?,
+                        span: Span::dummy(),
+                    })
+                })
+                .collect::<Result<Vec<_>, UnlowerError>>()?;
+            arms.push(MatchArm {
+                pattern: MatchPattern::Wildcard,
+                ty: base,
+                span: Span::dummy(),
+            });
+            Ok(TypeExpr::Match { knob, arms })
+        }
+    }
+}
+
+fn payload_type_without_items(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> {
+    Ok(match (pf.field_type.as_str(), &pf.properties, &pf.entity) {
         ("array", None, _) if pf.items.is_some() => match pf.items.as_deref() {
             Some(item) => TypeExpr::Array(Box::new(payload_type(item)?)),
             None => parse_type_string("array")?,
         },
         ("object", None, _) if pf.items.is_some() => match pf.items.as_deref() {
-            Some(item) => TypeExpr::Map(Box::new(TypeExpr::Primitive("string".to_string())), Box::new(payload_type(item)?)),
+            Some(item) => TypeExpr::Map(
+                Box::new(TypeExpr::Primitive("string".to_string())),
+                Box::new(payload_type(item)?),
+            ),
             None => parse_type_string("object")?,
         },
         ("object", Some(_), Some(entity)) => TypeExpr::Named(entity.clone()),
@@ -313,7 +419,11 @@ pub(super) fn payload_type(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> 
             let values = pf.values.as_deref().unwrap_or_default();
             let set = match values {
                 [one] => TypeExpr::StringLiteral(one.clone()),
-                many => TypeExpr::Union(many.iter().map(|v| TypeExpr::StringLiteral(v.clone())).collect()),
+                many => TypeExpr::Union(
+                    many.iter()
+                        .map(|v| TypeExpr::StringLiteral(v.clone()))
+                        .collect(),
+                ),
             };
             if other.starts_with('[') {
                 TypeExpr::Array(Box::new(set))
@@ -322,32 +432,7 @@ pub(super) fn payload_type(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> 
             }
         }
         (other, _, _) => parse_type_string(other)?,
-    };
-    match &pf.type_when {
-        None => Ok(base),
-        Some(conditions) => {
-            let knob = conditions
-                .first()
-                .map(|c| c.knob.clone())
-                .ok_or_else(|| UnlowerError::new("empty typeWhen"))?;
-            let mut arms: Vec<MatchArm> = conditions
-                .iter()
-                .map(|c| {
-                    Ok(MatchArm {
-                        pattern: MatchPattern::Str(c.equals.clone()),
-                        ty: parse_type_string(&c.ty)?,
-                        span: Span::dummy(),
-                    })
-                })
-                .collect::<Result<_, UnlowerError>>()?;
-            arms.push(MatchArm {
-                pattern: MatchPattern::Wildcard,
-                ty: base,
-                span: Span::dummy(),
-            });
-            Ok(TypeExpr::Match { knob, arms })
-        }
-    }
+    })
 }
 
 pub(super) fn event_fields(fields: &[PayloadField]) -> Result<Vec<EventField>, UnlowerError> {
@@ -369,7 +454,17 @@ pub(super) fn config_field(
     cf: &SchemaConfigField,
 ) -> Result<ConfigField, UnlowerError> {
     // A call-site `key: value` override carries the parser's `"unknown"` sentinel, not a type.
-    let base = if cf.field_type == "unknown" {
+    let base = if let Some(additional) = &cf.additional_properties {
+        TypeExpr::OpenObject {
+            fields: cf
+                .properties
+                .as_ref()
+                .map(object_members)
+                .transpose()?
+                .unwrap_or_default(),
+            additional: Box::new(field_def_type(additional)?),
+        }
+    } else if cf.field_type == "unknown" {
         TypeExpr::Primitive("unknown".to_string())
     } else if cf.field_type == "object" {
         match &cf.properties {
@@ -379,24 +474,27 @@ pub(super) fn config_field(
     } else {
         parse_type_string(&cf.field_type)?
     };
-    let item_values = cf.items.as_ref().and_then(|i| i.values.as_ref()).filter(|v| !v.is_empty());
+    let item_values = cf
+        .items
+        .as_ref()
+        .and_then(|i| i.values.as_ref())
+        .filter(|v| !v.is_empty());
     let with_values = match (&cf.values, &base, item_values) {
         (Some(values), TypeExpr::Primitive(p), _) if p == "string" => values_union(values),
         // A list of a closed string set (`["a" | "b"]`) keeps the set on its items.
-        (_, TypeExpr::Array(inner), Some(values))
-            if matches!(inner.as_ref(), TypeExpr::Primitive(p) if p == "string") =>
-        {
+        (_, TypeExpr::Array(inner), Some(values)) if matches!(inner.as_ref(), TypeExpr::Primitive(p) if p == "string") => {
             TypeExpr::Array(Box::new(values_union(values)))
         }
         _ => base,
     };
     let type_expr = match &cf.projected_from {
-        Some(p) => TypeExpr::FieldOf {
-            ty: p.type_name.clone(),
-            field: p.field.clone(),
-            resolved: Some(Box::new(with_values)),
-        },
+        Some(p) => source_reference(p, Some(with_values)),
         None => with_values,
+    };
+    let type_expr = if cf.field_type != "unknown" && printed_nullable(cf.nullable) {
+        TypeExpr::Optional(Box::new(type_expr))
+    } else {
+        type_expr
     };
     Ok(ConfigField {
         name: name.to_string(),

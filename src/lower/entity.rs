@@ -110,9 +110,107 @@ fn config_only_through_aliases(
         TypeExpr::Object(fields) => fields
             .iter()
             .find_map(|(_, ty, _)| config_only_through_aliases(ty, aliases, allow, seen)),
+        TypeExpr::OpenObject { fields, additional } => fields
+            .iter()
+            .find_map(|(_, ty, _)| config_only_through_aliases(ty, aliases, allow, seen))
+            .or_else(|| config_only_through_aliases(additional, aliases, allow, seen)),
         other => crate::parser::type_expr_config_only_type_allowing(other, allow)
             .map(|ty| (ty, String::new())),
     }
+}
+
+pub(crate) fn source_nullable(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> bool {
+    fn visit(
+        ty: &TypeExpr,
+        aliases: &BTreeMap<String, TypeAliasResolved>,
+        seen: &mut HashSet<String>,
+    ) -> bool {
+        match ty {
+            TypeExpr::Optional(_) => true,
+            TypeExpr::Named(name) if seen.insert(name.clone()) => {
+                let result = match aliases.get(name) {
+                    Some(TypeAliasResolved::Type(inner, _)) => visit(inner, aliases, seen),
+                    _ => orbital_core_base::language::program_types::program_type_field(name)
+                        .and_then(|field| field.nullable)
+                        .unwrap_or(false),
+                };
+                seen.remove(name);
+                result
+            }
+            TypeExpr::Union(parts) => parts.iter().any(|part| visit(part, aliases, seen)),
+            TypeExpr::FieldOf {
+                resolved: Some(inner),
+                ..
+            } => visit(inner, aliases, seen),
+            _ => false,
+        }
+    }
+    visit(ty, aliases, &mut HashSet::new())
+}
+
+pub(crate) fn source_additional_type<'a>(
+    ty: &'a TypeExpr,
+    aliases: &'a BTreeMap<String, TypeAliasResolved>,
+) -> Option<&'a TypeExpr> {
+    let mut ty = ty;
+    let mut seen = HashSet::new();
+    loop {
+        match ty {
+            TypeExpr::OpenObject { additional, .. } => return Some(additional),
+            TypeExpr::Optional(inner)
+            | TypeExpr::FieldOf {
+                resolved: Some(inner),
+                ..
+            } => ty = inner,
+            TypeExpr::Named(name) if seen.insert(name) => match aliases.get(name) {
+                Some(TypeAliasResolved::Type(inner, _)) => ty = inner,
+                _ => return None,
+            },
+            _ => return None,
+        }
+    }
+}
+
+pub(crate) fn lower_source_field(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+    params: &[&str],
+) -> Result<FieldDefinition, LowerError> {
+    let (field_type, values, items, properties, relation) =
+        lower_type_expr(ty, aliases, entity_names, params)?;
+    let additional_properties = if field_type == FieldType::Object {
+        source_additional_type(ty, aliases)
+            .map(|additional| {
+                lower_source_field(additional, aliases, entity_names, params).map(Box::new)
+            })
+            .transpose()?
+    } else {
+        None
+    };
+    Ok(FieldDefinition {
+        nullable: Some(source_nullable(ty, aliases)),
+        additional_properties,
+        merged_from: None,
+        name: None,
+        field_type,
+        required: None,
+        primary_key: None,
+        unique: None,
+        default: None,
+        values,
+        relation,
+        items,
+        properties,
+        intrinsic: None,
+        description: None,
+        synonyms: None,
+        mock: None,
+        projected_from: ty.projection(),
+    })
 }
 
 pub(crate) fn lower_field(
@@ -124,20 +222,21 @@ pub(crate) fn lower_field(
     // Resolve the type expression. Named types may be enum aliases (lower to
     // string + values list), entity references (lower to a Relation field with
     // cardinality), or struct aliases (lower to inline object schema).
-    let (field_type, values, items, properties, relation) =
-        lower_type_expr(&f.type_expr, aliases, entity_names, &[])?;
+    let shape = lower_source_field(&f.type_expr, aliases, entity_names, &[])?;
     let field = FieldDefinition {
         merged_from: None,
         name: Some(f.name.clone()),
-        field_type,
+        field_type: shape.field_type,
         required: if f.required { Some(true) } else { None },
         primary_key: if f.is_key { Some(true) } else { None },
         unique: if f.is_unique { Some(true) } else { None },
         default: canonicalize_unbound_trait_default(&f.type_expr, f.default.clone()),
-        values,
-        relation,
-        items,
-        properties,
+        values: shape.values,
+        relation: shape.relation,
+        items: shape.items,
+        properties: shape.properties,
+        nullable: shape.nullable,
+        additional_properties: shape.additional_properties,
         intrinsic: if f.is_intrinsic { Some(true) } else { None },
         description: f.description.clone(),
         synonyms: f.synonyms.clone(),
@@ -242,7 +341,13 @@ pub(crate) fn lower_type_expr(
                         // `properties`, which `resolve` maps to Json rather than
                         // expanding.
                         if !RESOLVING.with(|r| r.borrow_mut().insert(name.clone())) {
-                            return Ok((FieldType::Union, Some(vec![name.clone()]), None, None, None));
+                            return Ok((
+                                FieldType::Union,
+                                Some(vec![name.clone()]),
+                                None,
+                                None,
+                                None,
+                            ));
                         }
                         let scope: Vec<&str> = own_param.iter().map(String::as_str).collect();
                         let outer = VARIANTS.with(|v| std::mem::take(&mut *v.borrow_mut()));
@@ -341,6 +446,10 @@ pub(crate) fn lower_type_expr(
                 lower_type_expr(inner, aliases, entity_names, params)?
             };
             let item = FieldDefinition {
+                nullable: Some(source_nullable(inner, aliases)),
+                additional_properties: source_additional_type(inner, aliases)
+                    .map(|ty| lower_source_field(ty, aliases, entity_names, params).map(Box::new))
+                    .transpose()?,
                 mock: None,
                 merged_from: None,
                 name: None,
@@ -369,6 +478,12 @@ pub(crate) fn lower_type_expr(
                     let (ft, values, items, properties, relation) =
                         lower_type_expr(slot, aliases, entity_names, params)?;
                     let field = FieldDefinition {
+                        nullable: Some(source_nullable(slot, aliases)),
+                        additional_properties: source_additional_type(slot, aliases)
+                            .map(|ty| {
+                                lower_source_field(ty, aliases, entity_names, params).map(Box::new)
+                            })
+                            .transpose()?,
                         mock: None,
                         merged_from: None,
                         name: Some(i.to_string()),
@@ -403,6 +518,10 @@ pub(crate) fn lower_type_expr(
             // A map keyed to an entity holds that entity's rows, not their ids.
             let v_intrinsic = v_rel.as_ref().map(|_| true);
             let value_field = FieldDefinition {
+                nullable: Some(source_nullable(value, aliases)),
+                additional_properties: source_additional_type(value, aliases)
+                    .map(|ty| lower_source_field(ty, aliases, entity_names, params).map(Box::new))
+                    .transpose()?,
                 mock: None,
                 merged_from: None,
                 name: None,
@@ -428,7 +547,7 @@ pub(crate) fn lower_type_expr(
                 None,
             )
         }
-        TypeExpr::Object(fields) => {
+        TypeExpr::Object(fields) | TypeExpr::OpenObject { fields, .. } => {
             let mut props = std::collections::HashMap::new();
             for (k, v, req) in fields {
                 let (ft, values, items, properties, relation) =
@@ -436,6 +555,12 @@ pub(crate) fn lower_type_expr(
                 props.insert(
                     k.clone(),
                     FieldDefinition {
+                        nullable: Some(source_nullable(v, aliases)),
+                        additional_properties: source_additional_type(v, aliases)
+                            .map(|ty| {
+                                lower_source_field(ty, aliases, entity_names, params).map(Box::new)
+                            })
+                            .transpose()?,
                         mock: None,
                         merged_from: None,
                         name: Some(k.clone()),
@@ -576,15 +701,26 @@ mod tests {
         let viewer = orbital_core_base::language::program_types::program_type_field("Viewer")
             .expect("the installed language declares Viewer");
         let (ft, values, items, props, rel) = lower(&TypeExpr::Named("Viewer".to_string()));
-        assert!(matches!(ft, FieldType::Object), "Viewer is a record, got {ft:?}");
+        assert!(
+            matches!(ft, FieldType::Object),
+            "Viewer is a record, got {ft:?}"
+        );
         let props = props.expect("Viewer carries its members");
-        assert!(props.contains_key("id"), "Viewer has id: {:?}", props.keys());
-        assert_eq!(props.len(), viewer.properties.as_ref().map_or(0, |p| p.len()));
+        assert!(
+            props.contains_key("id"),
+            "Viewer has id: {:?}",
+            props.keys()
+        );
+        assert_eq!(
+            props.len(),
+            viewer.properties.as_ref().map_or(0, |p| p.len())
+        );
         assert_eq!(values, viewer.values);
         assert!(items.is_none() && rel.is_none());
 
-        let (ft, _, items, _, _) =
-            lower(&TypeExpr::Array(Box::new(TypeExpr::Named("Viewer".to_string()))));
+        let (ft, _, items, _, _) = lower(&TypeExpr::Array(Box::new(TypeExpr::Named(
+            "Viewer".to_string(),
+        ))));
         assert!(matches!(ft, FieldType::Array));
         let item = items.expect("[Viewer] carries an item schema");
         assert!(matches!(item.field_type, FieldType::Object) && item.properties.is_some());
@@ -625,18 +761,37 @@ mod tests {
         aliases.insert(
             "Box".to_string(),
             TypeAliasResolved::Type(
-                TypeExpr::Object(vec![("v".to_string(), TypeExpr::Named("T".to_string()), false)]),
+                TypeExpr::Object(vec![(
+                    "v".to_string(),
+                    TypeExpr::Named("T".to_string()),
+                    false,
+                )]),
                 Some("T".to_string()),
             ),
         );
-        let (ft, _, _, props, _) =
-            lower_type_expr(&TypeExpr::Named("Box".to_string()), &aliases, &HashSet::new(), &[])
-                .expect("Box lowers");
+        let (ft, _, _, props, _) = lower_type_expr(
+            &TypeExpr::Named("Box".to_string()),
+            &aliases,
+            &HashSet::new(),
+            &[],
+        )
+        .expect("Box lowers");
         assert!(matches!(ft, FieldType::Object));
-        assert_eq!(props.expect("Box members")["v"].field_type, FieldType::type_var("T"));
-        let outside =
-            lower_type_expr(&TypeExpr::Named("T".to_string()), &aliases, &HashSet::new(), &[]);
-        assert_eq!(unknown_name(outside), Some("T".to_string()), "control: T is Box's, not global");
+        assert_eq!(
+            props.expect("Box members")["v"].field_type,
+            FieldType::type_var("T")
+        );
+        let outside = lower_type_expr(
+            &TypeExpr::Named("T".to_string()),
+            &aliases,
+            &HashSet::new(),
+            &[],
+        );
+        assert_eq!(
+            unknown_name(outside),
+            Some("T".to_string()),
+            "control: T is Box's, not global"
+        );
     }
 
     #[test]
@@ -645,9 +800,16 @@ mod tests {
         let (ft, _, items, _, _) =
             lower_type_expr(&list, &BTreeMap::new(), &HashSet::new(), &["t"]).expect("[t] lowers");
         assert!(matches!(ft, FieldType::Array));
-        assert_eq!(items.expect("[t] item").field_type, FieldType::type_var("t"));
+        assert_eq!(
+            items.expect("[t] item").field_type,
+            FieldType::type_var("t")
+        );
         let unbound = lower_type_expr(&list, &BTreeMap::new(), &HashSet::new(), &["u"]);
-        assert_eq!(unknown_name(unbound), Some("t".to_string()), "control: another param");
+        assert_eq!(
+            unknown_name(unbound),
+            Some("t".to_string()),
+            "control: another param"
+        );
     }
 
     #[test]
@@ -657,8 +819,16 @@ mod tests {
             "Page".to_string(),
             TypeAliasResolved::Type(
                 TypeExpr::Object(vec![
-                    ("items".to_string(), TypeExpr::Array(Box::new(TypeExpr::Named("t".to_string()))), true),
-                    ("cursor".to_string(), TypeExpr::Optional(Box::new(TypeExpr::Primitive("string".to_string()))), false),
+                    (
+                        "items".to_string(),
+                        TypeExpr::Array(Box::new(TypeExpr::Named("t".to_string()))),
+                        true,
+                    ),
+                    (
+                        "cursor".to_string(),
+                        TypeExpr::Optional(Box::new(TypeExpr::Primitive("string".to_string()))),
+                        false,
+                    ),
                 ]),
                 Some("t".to_string()),
             ),
@@ -666,40 +836,78 @@ mod tests {
         aliases.insert(
             "Plain".to_string(),
             TypeAliasResolved::Type(
-                TypeExpr::Object(vec![("n".to_string(), TypeExpr::Primitive("string".to_string()), true)]),
+                TypeExpr::Object(vec![(
+                    "n".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                )]),
                 None,
             ),
         );
         let entities: HashSet<String> = ["Order".to_string()].into();
-        let (_, _, _, props, _) =
-            lower_type_expr(&TypeExpr::Named("Page".to_string()), &aliases, &entities, &[]).expect("Page");
+        let (_, _, _, props, _) = lower_type_expr(
+            &TypeExpr::Named("Page".to_string()),
+            &aliases,
+            &entities,
+            &[],
+        )
+        .expect("Page");
         let mut page: FieldDefinition =
             serde_json::from_value(serde_json::json!({ "type": "object" })).expect("object");
         page.properties = props;
         let items = &page.properties.as_ref().expect("members")["items"];
-        assert_eq!(items.items.as_ref().expect("elem").field_type, FieldType::type_var("t"));
-        assert_eq!(page.properties.as_ref().expect("members")["cursor"].field_type, FieldType::String);
-        let (oft, _, _, _, orel) =
-            lower_type_expr(&TypeExpr::Named("Order".to_string()), &aliases, &entities, &[]).expect("Order");
+        assert_eq!(
+            items.items.as_ref().expect("elem").field_type,
+            FieldType::type_var("t")
+        );
+        assert_eq!(
+            page.properties.as_ref().expect("members")["cursor"].field_type,
+            FieldType::String
+        );
+        let (oft, _, _, _, orel) = lower_type_expr(
+            &TypeExpr::Named("Order".to_string()),
+            &aliases,
+            &entities,
+            &[],
+        )
+        .expect("Order");
         let mut order: FieldDefinition =
             serde_json::from_value(serde_json::json!({ "type": "object" })).expect("object");
         order.field_type = oft;
         order.relation = orel;
         page.substitute_type_vars(&std::collections::HashMap::from([("t".to_string(), order)]));
-        let elem = page.properties.as_ref().expect("members")["items"].items.clone().expect("elem");
+        let elem = page.properties.as_ref().expect("members")["items"]
+            .items
+            .clone()
+            .expect("elem");
         assert!(matches!(elem.field_type, FieldType::Relation));
         assert_eq!(elem.relation.expect("rel").entity, "Order");
-        let (pft, _, _, pprops, _) =
-            lower_type_expr(&TypeExpr::Named("Plain".to_string()), &aliases, &entities, &[]).expect("Plain");
-        assert!(matches!(pft, FieldType::Object), "control: a non-generic alias is unchanged");
-        assert!(matches!(pprops.expect("n")["n"].field_type, FieldType::String));
+        let (pft, _, _, pprops, _) = lower_type_expr(
+            &TypeExpr::Named("Plain".to_string()),
+            &aliases,
+            &entities,
+            &[],
+        )
+        .expect("Plain");
+        assert!(
+            matches!(pft, FieldType::Object),
+            "control: a non-generic alias is unchanged"
+        );
+        assert!(matches!(
+            pprops.expect("n")["n"].field_type,
+            FieldType::String
+        ));
     }
 
     #[test]
     fn a_union_of_a_primitive_and_records_is_a_union() {
         let record = |key: &str| {
             TypeAliasResolved::Type(
-                TypeExpr::Object(vec![(key.to_string(), TypeExpr::Primitive("string".to_string()), true)]),
+                TypeExpr::Object(vec![(
+                    key.to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                )]),
                 None,
             )
         };
@@ -721,10 +929,17 @@ mod tests {
         let (_, _, items, _, _) =
             lower_type_expr(&list, &aliases, &HashSet::new(), &[]).expect("lowers");
         let item = items.expect("item schema");
-        assert!(matches!(item.field_type, FieldType::Union), "got {:?}", item.field_type);
+        assert!(
+            matches!(item.field_type, FieldType::Union),
+            "got {:?}",
+            item.field_type
+        );
         let variants = item.properties.expect("variants");
         assert!(matches!(variants["string"].field_type, FieldType::String));
-        assert!(matches!(variants["AnchoredEnv"].field_type, FieldType::Object));
+        assert!(matches!(
+            variants["AnchoredEnv"].field_type,
+            FieldType::Object
+        ));
     }
 
     #[test]
@@ -732,20 +947,42 @@ mod tests {
         let tree = TypeExpr::Union(vec![
             TypeExpr::Primitive("string".into()),
             TypeExpr::Object(vec![
-                ("kind".into(), TypeExpr::StringLiteral("branch".into()), true),
-                ("children".into(), TypeExpr::Array(Box::new(TypeExpr::Named("Tree".into()))), true),
+                (
+                    "kind".into(),
+                    TypeExpr::StringLiteral("branch".into()),
+                    true,
+                ),
+                (
+                    "children".into(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("Tree".into()))),
+                    true,
+                ),
             ]),
         ]);
         let aliases = BTreeMap::from([("Tree".into(), TypeAliasResolved::Type(tree, None))]);
         let (kind, _, _, properties, _) = lower_type_expr(
-            &TypeExpr::Named("Tree".into()), &aliases, &HashSet::new(), &[],
-        ).unwrap();
+            &TypeExpr::Named("Tree".into()),
+            &aliases,
+            &HashSet::new(),
+            &[],
+        )
+        .unwrap();
         assert_eq!(kind, FieldType::Union);
         let variants = properties.unwrap();
         assert_eq!(variants["string"].field_type, FieldType::String);
         let record = variants["object"].properties.as_ref().unwrap();
-        assert_eq!(record["kind"].values.as_deref(), Some(["branch".to_string()].as_slice()));
-        assert_eq!(record["children"].items.as_ref().unwrap().by_name_reference(), Some("Tree"));
+        assert_eq!(
+            record["kind"].values.as_deref(),
+            Some(["branch".to_string()].as_slice())
+        );
+        assert_eq!(
+            record["children"]
+                .items
+                .as_ref()
+                .unwrap()
+                .by_name_reference(),
+            Some("Tree")
+        );
         assert_eq!(record["children"].required, Some(true));
     }
 
@@ -756,16 +993,24 @@ mod tests {
             "Viewer".to_string(),
             TypeAliasResolved::Enum(vec!["a".to_string(), "b".to_string()]),
         );
-        let (ft, values, _, props, _) =
-            lower_type_expr(&TypeExpr::Named("Viewer".to_string()), &aliases, &HashSet::new(), &[])
-                .expect("lowers");
+        let (ft, values, _, props, _) = lower_type_expr(
+            &TypeExpr::Named("Viewer".to_string()),
+            &aliases,
+            &HashSet::new(),
+            &[],
+        )
+        .expect("lowers");
         assert!(matches!(ft, FieldType::String) && props.is_none());
         assert_eq!(values, Some(vec!["a".to_string(), "b".to_string()]));
 
         let entities: HashSet<String> = ["Viewer".to_string()].into_iter().collect();
-        let (ft, _, _, props, rel) =
-            lower_type_expr(&TypeExpr::Named("Viewer".to_string()), &BTreeMap::new(), &entities, &[])
-                .expect("lowers");
+        let (ft, _, _, props, rel) = lower_type_expr(
+            &TypeExpr::Named("Viewer".to_string()),
+            &BTreeMap::new(),
+            &entities,
+            &[],
+        )
+        .expect("lowers");
         assert!(matches!(ft, FieldType::Relation) && props.is_none());
         assert_eq!(rel.map(|r| r.entity), Some("Viewer".to_string()));
     }
@@ -790,18 +1035,21 @@ mod tests {
         let mut aliases = BTreeMap::new();
         aliases.insert(
             "MenuItem".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(vec![
-                (
-                    "label".to_string(),
-                    TypeExpr::Primitive("string".to_string()),
-                    true,
-                ),
-                (
-                    "subMenu".to_string(),
-                    TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
-                    false,
-                ),
-            ]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![
+                    (
+                        "label".to_string(),
+                        TypeExpr::Primitive("string".to_string()),
+                        true,
+                    ),
+                    (
+                        "subMenu".to_string(),
+                        TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
+                        false,
+                    ),
+                ]),
+                None,
+            ),
         );
         let (ft, _values, _items, props, _rel) = lower_type_expr(
             &TypeExpr::Named("MenuItem".to_string()),
@@ -870,10 +1118,7 @@ mod tests {
         aliases.insert("Not".to_string(), tagged("not", Some(not_of)));
         aliases.insert(
             "Pred".to_string(),
-            TypeAliasResolved::Type(
-                TypeExpr::Union(vec![named("Leaf"), named("Not")]),
-                None,
-            ),
+            TypeAliasResolved::Type(TypeExpr::Union(vec![named("Leaf"), named("Not")]), None),
         );
         aliases
     }
@@ -931,33 +1176,42 @@ mod tests {
         let mut aliases = BTreeMap::new();
         aliases.insert(
             "DrawShape".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(vec![(
-                "kind".to_string(),
-                TypeExpr::StringLiteral("shape".to_string()),
-                true,
-            )]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![(
+                    "kind".to_string(),
+                    TypeExpr::StringLiteral("shape".to_string()),
+                    true,
+                )]),
+                None,
+            ),
         );
         aliases.insert(
             "DrawGroup".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(vec![
-                (
-                    "kind".to_string(),
-                    TypeExpr::StringLiteral("group".to_string()),
-                    true,
-                ),
-                (
-                    "items".to_string(),
-                    TypeExpr::Array(Box::new(TypeExpr::Named("DrawItem".to_string()))),
-                    false,
-                ),
-            ]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![
+                    (
+                        "kind".to_string(),
+                        TypeExpr::StringLiteral("group".to_string()),
+                        true,
+                    ),
+                    (
+                        "items".to_string(),
+                        TypeExpr::Array(Box::new(TypeExpr::Named("DrawItem".to_string()))),
+                        false,
+                    ),
+                ]),
+                None,
+            ),
         );
         aliases.insert(
             "DrawItem".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Union(vec![
-                TypeExpr::Named("DrawShape".to_string()),
-                TypeExpr::Named("DrawGroup".to_string()),
-            ]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Union(vec![
+                    TypeExpr::Named("DrawShape".to_string()),
+                    TypeExpr::Named("DrawGroup".to_string()),
+                ]),
+                None,
+            ),
         );
         let (ft, values, _items, props, _rel) = lower_type_expr(
             &TypeExpr::Named("DrawItem".to_string()),
@@ -1071,7 +1325,10 @@ mod tests {
     }
 
     fn map_of(value: TypeExpr) -> TypeExpr {
-        TypeExpr::Map(Box::new(TypeExpr::Primitive("string".to_string())), Box::new(value))
+        TypeExpr::Map(
+            Box::new(TypeExpr::Primitive("string".to_string())),
+            Box::new(value),
+        )
     }
 
     fn asset() -> TypeExpr {
@@ -1079,11 +1336,22 @@ mod tests {
     }
 
     fn assert_row_relation(value: &FieldDefinition, cardinality: Cardinality) {
-        assert!(matches!(value.field_type, FieldType::Relation), "got {:?}", value.field_type);
-        let rel = value.relation.as_ref().expect("a map value keeps its relation definition");
+        assert!(
+            matches!(value.field_type, FieldType::Relation),
+            "got {:?}",
+            value.field_type
+        );
+        let rel = value
+            .relation
+            .as_ref()
+            .expect("a map value keeps its relation definition");
         assert_eq!(rel.entity, "Asset");
         assert_eq!(rel.cardinality, Some(cardinality));
-        assert_eq!(value.intrinsic, Some(true), "a map value holds the row, not its id");
+        assert_eq!(
+            value.intrinsic,
+            Some(true),
+            "a map value holds the row, not its id"
+        );
     }
 
     #[test]
@@ -1095,7 +1363,8 @@ mod tests {
         let (_, _, items, _, _) = lower_with_asset(&map_of(TypeExpr::Array(Box::new(asset()))));
         assert_row_relation(items.as_deref().expect("map value"), Cardinality::Many);
 
-        let (_, _, items, _, _) = lower_with_asset(&map_of(TypeExpr::Primitive("string".to_string())));
+        let (_, _, items, _, _) =
+            lower_with_asset(&map_of(TypeExpr::Primitive("string".to_string())));
         let control = items.expect("map value");
         assert!(matches!(control.field_type, FieldType::String));
         assert!(control.relation.is_none() && control.intrinsic.is_none());
@@ -1106,26 +1375,47 @@ mod tests {
         let (_, _, items, _, _) = lower_with_asset(&map_of(map_of(asset())));
         let inner = items.expect("outer map value");
         assert!(matches!(inner.field_type, FieldType::Object) && inner.relation.is_none());
-        assert_row_relation(inner.items.as_deref().expect("inner map value"), Cardinality::One);
+        assert_row_relation(
+            inner.items.as_deref().expect("inner map value"),
+            Cardinality::One,
+        );
 
         let member = TypeExpr::Object(vec![
-            ("name".to_string(), TypeExpr::Primitive("string".to_string()), false),
+            (
+                "name".to_string(),
+                TypeExpr::Primitive("string".to_string()),
+                false,
+            ),
             ("byKey".to_string(), map_of(asset()), false),
         ]);
         let (_, _, _, props, _) = lower_with_asset(&member);
         let props = props.expect("struct members");
         let by_key = props.get("byKey").expect("byKey member");
-        assert_row_relation(by_key.items.as_deref().expect("member map value"), Cardinality::One);
+        assert_row_relation(
+            by_key.items.as_deref().expect("member map value"),
+            Cardinality::One,
+        );
 
         let (_, _, items, _, _) = lower_with_asset(&TypeExpr::Array(Box::new(map_of(asset()))));
         let element = items.expect("list element");
-        assert_row_relation(element.items.as_deref().expect("element map value"), Cardinality::One);
+        assert_row_relation(
+            element.items.as_deref().expect("element map value"),
+            Cardinality::One,
+        );
 
-        let (_, _, items, _, _) = lower_with_asset(&TypeExpr::Array(Box::new(TypeExpr::Array(Box::new(asset())))));
+        let (_, _, items, _, _) = lower_with_asset(&TypeExpr::Array(Box::new(TypeExpr::Array(
+            Box::new(asset()),
+        ))));
         let element = items.expect("outer list element");
-        let rel = element.relation.as_ref().expect("[[Asset]] element keeps its relation");
+        let rel = element
+            .relation
+            .as_ref()
+            .expect("[[Asset]] element keeps its relation");
         assert_eq!(rel.cardinality, Some(Cardinality::Many));
-        assert_eq!(element.intrinsic, None, "a list element relation stays an id list");
+        assert_eq!(
+            element.intrinsic, None,
+            "a list element relation stays an id list"
+        );
     }
 }
 
@@ -1155,7 +1445,7 @@ pub(crate) fn is_type_union(
     aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> bool {
     is_type_union_with(parts, |name| match aliases.get(name) {
-        Some(TypeAliasResolved::Type(TypeExpr::Object(_), _)) => Some(true),
+        Some(TypeAliasResolved::Type(inner, _)) if inner.record_fields().is_some() => Some(true),
         Some(_) => Some(false),
         None => None,
     })
@@ -1171,16 +1461,21 @@ pub(crate) fn is_type_union_with(
     parts: &[TypeExpr],
     named_is_struct: impl Fn(&str) -> Option<bool>,
 ) -> bool {
-    parts.len() >= 2
-        && parts.iter().all(|p| match p {
-            TypeExpr::Named(name) => match named_is_struct(name) {
-                Some(is_struct) => is_struct,
-                None => primitive_field_type(name).is_some(),
-            },
+    fn variant(ty: &TypeExpr, named: &dyn Fn(&str) -> Option<bool>) -> bool {
+        match ty {
+            TypeExpr::Optional(inner) => variant(inner, named),
+            TypeExpr::Named(name) => {
+                named(name).unwrap_or_else(|| primitive_field_type(name).is_some())
+            }
             TypeExpr::Primitive(name) => primitive_field_type(name).is_some(),
-            TypeExpr::Array(_) | TypeExpr::Map(..) | TypeExpr::Object(_) => true,
+            TypeExpr::Array(_)
+            | TypeExpr::Map(..)
+            | TypeExpr::Object(_)
+            | TypeExpr::OpenObject { .. } => true,
             _ => false,
-        })
+        }
+    }
+    parts.len() >= 2 && parts.iter().all(|part| variant(part, &named_is_struct))
 }
 
 /// The variants of a TYPE union, as `(variant name, variant shape)` in
@@ -1207,13 +1502,21 @@ fn struct_union_variants(
     }
     let mut out = Vec::with_capacity(parts.len());
     for p in parts {
-        let (variant_name, inner, scope): (String, TypeExpr, Vec<&str>) = match p {
+        let mut candidate = p;
+        while let TypeExpr::Optional(inner) = candidate {
+            candidate = inner;
+        }
+        let (variant_name, inner, scope): (String, TypeExpr, Vec<&str>) = match candidate {
             TypeExpr::Named(name) => match aliases.get(name) {
-                Some(TypeAliasResolved::Type(inner @ TypeExpr::Object(_), own_param)) => (
-                    name.clone(),
-                    inner.clone(),
-                    own_param.iter().map(String::as_str).collect(),
-                ),
+                Some(TypeAliasResolved::Type(inner, own_param))
+                    if inner.record_fields().is_some() =>
+                {
+                    (
+                        name.clone(),
+                        inner.clone(),
+                        own_param.iter().map(String::as_str).collect(),
+                    )
+                }
                 // A named PRIMITIVE (`string`, `number`, `node`, …).
                 None if primitive_field_type(name).is_some() => {
                     (name.clone(), TypeExpr::Primitive(name.clone()), Vec::new())
@@ -1226,12 +1529,14 @@ fn struct_union_variants(
             // `[string]` and friends — a structural variant needs no alias.
             TypeExpr::Array(_) => ("array".to_string(), p.clone(), params.to_vec()),
             TypeExpr::Map(..) => ("map".to_string(), p.clone(), params.to_vec()),
-            TypeExpr::Object(_) => ("object".to_string(), p.clone(), params.to_vec()),
+            TypeExpr::Object(_) | TypeExpr::OpenObject { .. } => {
+                ("object".to_string(), p.clone(), params.to_vec())
+            }
             _ => return Ok(None),
         };
         let name = &variant_name;
         let inner = &inner;
-        let guarded = matches!(p, TypeExpr::Named(_));
+        let guarded = matches!(candidate, TypeExpr::Named(_));
         if guarded {
             if let Some(cycle) = VARIANTS.with(|v| {
                 let v = v.borrow();
@@ -1256,6 +1561,10 @@ fn struct_union_variants(
         out.push((
             name.clone(),
             FieldDefinition {
+                nullable: Some(source_nullable(p, aliases)),
+                additional_properties: source_additional_type(p, aliases)
+                    .map(|ty| lower_source_field(ty, aliases, entity_names, &scope).map(Box::new))
+                    .transpose()?,
                 mock: None,
                 merged_from: None,
                 name: Some(name.clone()),

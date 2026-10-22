@@ -70,6 +70,9 @@
           "linkedEntity": "Patient",
           "name": "PatientManage",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "daca7f459bd7d468b6a57f37cbcbb61b3e07632762cda93652976242817ef38b"
+          },
           "stateMachine": {
             "events": [
               {

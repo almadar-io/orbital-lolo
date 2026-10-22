@@ -26,6 +26,9 @@
           "linkedEntity": "AgentTask",
           "name": "AgentRunner",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "bab237a29976adc6d849d970c0c23f49eb23d94f995338751c0b987f692d19da"
+          },
           "stateMachine": {
             "events": [
               {

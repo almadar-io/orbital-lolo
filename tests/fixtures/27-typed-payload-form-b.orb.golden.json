@@ -80,6 +80,9 @@
           "linkedEntity": "Place",
           "name": "MapPicker",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "5e61cf23ab1c0b94ab4edceb31e53df4366d603d539d3830ac27fdfc6c5bb422"
+          },
           "stateMachine": {
             "events": [
               {

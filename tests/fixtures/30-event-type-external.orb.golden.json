@@ -60,6 +60,9 @@
           "linkedEntity": "Order",
           "name": "OrderShipper",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "5386d592eae84eaf0a2e2584ff08bde426f72bfb349e34af25c3c30e7a127f25"
+          },
           "stateMachine": {
             "events": [
               {

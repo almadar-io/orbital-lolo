@@ -32,6 +32,7 @@ fn std_options() -> LowerOptions {
     );
     LowerOptions {
         packages: vec![pkg],
+        ..Default::default()
     }
 }
 

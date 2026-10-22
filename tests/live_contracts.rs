@@ -80,7 +80,7 @@ fn package(tmp: &Path, live: bool, lolo: &str) -> BehaviorPackage {
 
 fn options(pkg: BehaviorPackage) -> LowerOptions {
     let std = orbital_test_support::installed_package("almadar-std", Path::new(env!("CARGO_MANIFEST_DIR")));
-    LowerOptions { packages: vec![std, pkg] }
+    LowerOptions { packages: vec![std, pkg], ..Default::default() }
 }
 
 #[test]

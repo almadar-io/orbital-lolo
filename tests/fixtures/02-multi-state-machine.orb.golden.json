@@ -31,6 +31,9 @@
           "linkedEntity": "Order",
           "name": "OrderLifecycle",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "165f9742eb452f7ec52f580f5df387d783b93b51ccd60c57cbd4144d4e73c3b5"
+          },
           "stateMachine": {
             "events": [
               {

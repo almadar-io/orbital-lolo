@@ -42,7 +42,10 @@ pub(crate) fn bare_entity_alias_name(
 /// lowering in `lower/trait.rs` — one conversion, not two copies.
 pub(crate) fn lower_match_field_type(
     te: &TypeExpr,
-) -> (String, Option<Vec<orbital_core_base::schema::PayloadTypeWhen>>) {
+) -> (
+    String,
+    Option<Vec<orbital_core_base::schema::PayloadTypeWhen>>,
+) {
     let base = type_expr_to_string(te);
     let TypeExpr::Match { knob, arms } = te else {
         return (base, None);
@@ -168,7 +171,10 @@ pub(crate) fn lower_emit(
         let ty = f.type_expr.peel();
         if let Some(mut tuple) = tuple_payload_field(ty, aliases, trait_type_params) {
             if !seen.insert(f.name.clone()) {
-                return Err(LowerError::PayloadFieldCollision { event: e.event.clone(), field: f.name.clone() });
+                return Err(LowerError::PayloadFieldCollision {
+                    event: e.event.clone(),
+                    field: f.name.clone(),
+                });
             }
             tuple.name = f.name.clone();
             tuple.required = if f.required { Some(true) } else { None };
@@ -188,6 +194,8 @@ pub(crate) fn lower_emit(
                 });
             }
             fields.push(PayloadField {
+                nullable: Some(false),
+                additional_properties: None,
                 values: None,
                 name: f.name.clone(),
                 field_type: sentinel,
@@ -217,6 +225,8 @@ pub(crate) fn lower_emit(
                 });
             }
             fields.push(PayloadField {
+                nullable: Some(false),
+                additional_properties: None,
                 values: None,
                 name: f.name.clone(),
                 field_type: container,
@@ -236,6 +246,8 @@ pub(crate) fn lower_emit(
                 });
             }
             fields.push(PayloadField {
+                nullable: Some(false),
+                additional_properties: None,
                 values: None,
                 name: f.name.clone(),
                 field_type: "object".to_string(),
@@ -258,6 +270,8 @@ pub(crate) fn lower_emit(
                 });
             }
             fields.push(PayloadField {
+                nullable: Some(false),
+                additional_properties: None,
                 values: None,
                 name: f.name.clone(),
                 field_type: "union".to_string(),
@@ -290,6 +304,8 @@ pub(crate) fn lower_emit(
                 });
             }
             fields.push(PayloadField {
+                nullable: Some(false),
+                additional_properties: None,
                 values: None,
                 name: f.name.clone(),
                 field_type: "object".to_string(),
@@ -315,6 +331,8 @@ pub(crate) fn lower_emit(
                         });
                     }
                     fields.push(PayloadField {
+                        nullable: Some(false),
+                        additional_properties: None,
                         values: None,
                         name: f.name.clone(),
                         field_type: "[object]".to_string(),
@@ -338,6 +356,8 @@ pub(crate) fn lower_emit(
             // An array of structs keeps its element shape, as the same line in `listens` does.
             if let Some(elem) = struct_payload_properties(inner, aliases, trait_type_params) {
                 fields.push(PayloadField {
+                    nullable: Some(false),
+                    additional_properties: None,
                     values: None,
                     name: f.name.clone(),
                     field_type: "[object]".to_string(),
@@ -353,6 +373,8 @@ pub(crate) fn lower_emit(
             }
             let (field_type, type_when) = lower_match_field_type(ty);
             fields.push(PayloadField {
+                nullable: Some(false),
+                additional_properties: None,
                 values: payload_literal_values(ty, aliases),
                 name: f.name.clone(),
                 field_type,
@@ -373,6 +395,8 @@ pub(crate) fn lower_emit(
             }
             let (field_type, type_when) = lower_match_field_type(ty);
             fields.push(PayloadField {
+                nullable: Some(false),
+                additional_properties: None,
                 values: payload_literal_values(ty, aliases),
                 name: f.name.clone(),
                 field_type,
@@ -384,6 +408,11 @@ pub(crate) fn lower_emit(
                 projected_from: projected.clone(),
                 items: None,
             });
+        }
+    }
+    for field in &mut fields {
+        if let Some(source) = e.payload.iter().find(|source| source.name == field.name) {
+            decorate_source_payload(field, &source.type_expr, aliases, trait_type_params);
         }
     }
     // Alias-consistency check (syntax revision 2026-08-18): when the same
@@ -516,6 +545,8 @@ pub(crate) fn payload_fields_mismatch_norm(
             fields
                 .iter()
                 .map(|(n, t, req)| PayloadField {
+                    nullable: Some(false),
+                    additional_properties: None,
                     values: payload_literal_values(t, aliases),
                     name: n.clone(),
                     field_type: type_expr_to_string(t),
@@ -541,6 +572,8 @@ pub(crate) fn payload_fields_mismatch_norm(
             if let Some(props) = flatten_name(base) {
                 return (
                     PayloadField {
+                        nullable: Some(false),
+                        additional_properties: None,
                         values: None,
                         name: f.name.clone(),
                         field_type: if is_array {
@@ -639,6 +672,87 @@ pub(crate) fn payload_fields_mismatch_norm(
 /// path and the `stateMachine.events[]` builder (so events that only appear
 /// in orbital-scope type declarations still carry their payload shape into
 /// the IR).
+pub(crate) fn source_payload_field(
+    name: &str,
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    type_params: &[&str],
+) -> PayloadField {
+    let mut named = ty.peel();
+    while let TypeExpr::Optional(inner) = named {
+        named = inner.peel();
+    }
+    if let TypeExpr::Named(alias) = named {
+        if aliases.contains_key(alias) {
+            return PayloadField {
+                nullable: Some(entity::source_nullable(ty, aliases)),
+                additional_properties: None,
+                values: None,
+                name: name.to_string(),
+                field_type: alias.clone(),
+                required: None,
+                description: None,
+                properties: None,
+                type_when: None,
+                entity: None,
+                projected_from: ty.projection(),
+                items: None,
+            };
+        }
+    }
+    let wrapper = TypeExpr::Object(vec![(name.to_string(), ty.clone(), false)]);
+    let mut fields = type_expr_to_payload_fields(
+        "declaration",
+        &wrapper,
+        aliases,
+        &BTreeMap::new(),
+        type_params,
+    )
+    .expect("a single source field cannot have a payload-field collision");
+    fields
+        .pop()
+        .expect("one source field produces one payload field")
+}
+
+pub(crate) fn decorate_source_payload(
+    field: &mut PayloadField,
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    type_params: &[&str],
+) {
+    field.projected_from = ty.projection();
+    field.nullable = Some(entity::source_nullable(ty, aliases));
+    field.additional_properties = entity::source_additional_type(ty, aliases)
+        .map(|ty| Box::new(source_payload_field("", ty, aliases, type_params)));
+    let mut inner = ty;
+    let mut seen = HashSet::new();
+    loop {
+        match inner {
+            TypeExpr::Optional(next)
+            | TypeExpr::FieldOf {
+                resolved: Some(next),
+                ..
+            } => inner = next,
+            TypeExpr::Named(name) if seen.insert(name) => match aliases.get(name) {
+                Some(TypeAliasResolved::Type(next, _)) => inner = next,
+                _ => break,
+            },
+            _ => break,
+        }
+    }
+    match inner {
+        TypeExpr::Array(item) | TypeExpr::Map(_, item) => {
+            field.items = Some(Box::new(source_payload_field(
+                "",
+                item,
+                aliases,
+                type_params,
+            )));
+        }
+        _ => {}
+    }
+}
+
 pub(crate) fn type_expr_to_payload_fields(
     event_name: &str,
     payload: &TypeExpr,
@@ -652,6 +766,8 @@ pub(crate) fn type_expr_to_payload_fields(
     // the nested-field case below.
     if let Some(sentinel) = type_param_sentinel(payload, type_params) {
         return Ok(vec![PayloadField {
+            nullable: Some(false),
+            additional_properties: None,
             values: None,
             name: "value".to_string(),
             field_type: sentinel,
@@ -666,13 +782,22 @@ pub(crate) fn type_expr_to_payload_fields(
     }
     match payload {
         TypeExpr::Named(type_name) => resolve_payload_type(type_name, aliases, entities_by_name),
+        TypeExpr::OpenObject { .. } => Ok(vec![source_payload_field(
+            "value",
+            payload,
+            aliases,
+            type_params,
+        )]),
         TypeExpr::Object(fields) => {
             let mut flat: Vec<PayloadField> = Vec::with_capacity(fields.len());
             let mut seen: HashSet<String> = HashSet::new();
             for (fname, ftype, freq) in fields {
                 if let Some(mut tuple) = tuple_payload_field(ftype, aliases, type_params) {
                     if !seen.insert(fname.clone()) {
-                        return Err(LowerError::PayloadFieldCollision { event: event_name.to_string(), field: fname.clone() });
+                        return Err(LowerError::PayloadFieldCollision {
+                            event: event_name.to_string(),
+                            field: fname.clone(),
+                        });
                     }
                     tuple.name = fname.clone();
                     tuple.required = if *freq { Some(true) } else { None };
@@ -742,6 +867,8 @@ pub(crate) fn type_expr_to_payload_fields(
                     (type_expr_to_string(ftype), None, None)
                 };
                 flat.push(PayloadField {
+                    nullable: Some(false),
+                    additional_properties: None,
                     values: None,
                     name: fname.clone(),
                     field_type,
@@ -754,6 +881,12 @@ pub(crate) fn type_expr_to_payload_fields(
                     items: union_items.map(|(_, items)| items),
                 });
             }
+            for (field, (_, ty, _)) in flat.iter_mut().zip(fields) {
+                decorate_source_payload(field, ty, aliases, type_params);
+                if field.values.is_none() {
+                    field.values = payload_literal_values(ty, aliases);
+                }
+            }
             Ok(flat)
         }
         other => {
@@ -762,6 +895,8 @@ pub(crate) fn type_expr_to_payload_fields(
             // the `.orb` shape predictable; avoids empty payloads for
             // primitive-valued events.
             Ok(vec![PayloadField {
+                nullable: Some(false),
+                additional_properties: None,
                 values: None,
                 name: "value".to_string(),
                 field_type: type_expr_to_string(other),
@@ -810,9 +945,17 @@ pub(crate) fn named_entity_fields(
             .map(|(n, t, req)| {
                 let container = union_container(t, aliases, &[]);
                 PayloadField {
-                    values: if container.is_some() { None } else { payload_literal_values(t, aliases) },
+                    nullable: Some(false),
+                    additional_properties: None,
+                    values: if container.is_some() {
+                        None
+                    } else {
+                        payload_literal_values(t, aliases)
+                    },
                     name: n.clone(),
-                    field_type: container.as_ref().map_or_else(|| type_expr_to_string(t), |(tag, _)| tag.clone()),
+                    field_type: container
+                        .as_ref()
+                        .map_or_else(|| type_expr_to_string(t), |(tag, _)| tag.clone()),
                     required: if *req { Some(true) } else { None },
                     description: None,
                     properties: None,
@@ -890,7 +1033,11 @@ pub(crate) fn union_payload_variants(
     }
     let mut out = Vec::with_capacity(parts.len());
     for p in parts {
-        let (name, field_type, properties) = match p {
+        let mut candidate = p;
+        while let TypeExpr::Optional(inner) = candidate {
+            candidate = inner;
+        }
+        let (name, field_type, properties) = match candidate {
             TypeExpr::Array(inner) => {
                 match struct_payload_properties(inner, aliases, type_params) {
                     Some(elem) => ("array".to_string(), "[object]".to_string(), Some(elem)),
@@ -913,9 +1060,16 @@ pub(crate) fn union_payload_variants(
             },
             TypeExpr::Primitive(n) => (n.clone(), type_expr_to_string(p), None),
             TypeExpr::Map(..) => ("object".to_string(), type_expr_to_string(p), None),
+            TypeExpr::Object(_) | TypeExpr::OpenObject { .. } => (
+                "object".to_string(),
+                "object".to_string(),
+                struct_payload_properties(candidate, aliases, type_params),
+            ),
             _ => return None,
         };
         out.push(PayloadField {
+            nullable: Some(false),
+            additional_properties: None,
             values: None,
             name,
             field_type,
@@ -927,6 +1081,9 @@ pub(crate) fn union_payload_variants(
             projected_from: None,
             items: None,
         });
+    }
+    for (field, ty) in out.iter_mut().zip(parts) {
+        decorate_source_payload(field, ty, aliases, type_params);
     }
     Some(out)
 }
@@ -959,6 +1116,8 @@ pub(crate) fn union_container(
     Some((
         tag.to_string(),
         Box::new(PayloadField {
+            nullable: Some(false),
+            additional_properties: None,
             values: None,
             name: "item".to_string(),
             field_type: "union".to_string(),
@@ -999,7 +1158,11 @@ pub(crate) fn tuple_payload_field(
     aliases: &BTreeMap<String, TypeAliasResolved>,
     type_params: &[&str],
 ) -> Option<PayloadField> {
-    let (field_type, properties, items) = match ty.peel() {
+    let mut base = ty.peel();
+    while let TypeExpr::Optional(inner) = base {
+        base = inner.peel();
+    }
+    let (field_type, properties, items) = match base {
         TypeExpr::Tuple(slots) => {
             let properties = slots
                 .iter()
@@ -1020,6 +1183,8 @@ pub(crate) fn tuple_payload_field(
         _ => return None,
     };
     Some(PayloadField {
+        nullable: Some(entity::source_nullable(ty, aliases)),
+        additional_properties: None,
         values: None,
         name: String::new(),
         field_type,
@@ -1039,12 +1204,11 @@ pub(crate) fn struct_payload_properties(
     type_params: &[&str],
 ) -> Option<Vec<PayloadField>> {
     let (guard_name, items): (Option<&str>, &Vec<(String, TypeExpr, bool)>) = match te.peel() {
-        TypeExpr::Object(items) => (None, items),
         TypeExpr::Named(n) => match aliases.get(n) {
-            Some(TypeAliasResolved::Type(TypeExpr::Object(items), _)) => (Some(n.as_str()), items),
+            Some(TypeAliasResolved::Type(inner, _)) => (Some(n.as_str()), inner.record_fields()?),
             _ => return None,
         },
-        _ => return None,
+        inner => (None, inner.record_fields()?),
     };
     // CYCLE GUARD — the payload-position twin of `lower/entity.rs`'s
     // RESOLVING guard (same thread-local, same rule): re-entering a struct
@@ -1109,6 +1273,8 @@ pub(crate) fn struct_payload_properties(
             (type_expr_to_string(ty), None)
         };
         props.push(PayloadField {
+            nullable: Some(false),
+            additional_properties: None,
             values: payload_literal_values(ty, aliases),
             name: name.clone(),
             field_type,
@@ -1120,6 +1286,9 @@ pub(crate) fn struct_payload_properties(
             projected_from: projected,
             items: union_items.map(|(_, items)| items),
         });
+    }
+    for (field, (_, ty, _)) in props.iter_mut().zip(items) {
+        decorate_source_payload(field, ty, aliases, type_params);
     }
     if let Some(n) = guard_name {
         crate::lower::entity::RESOLVING.with(|r| {
@@ -1307,18 +1476,21 @@ mod recursive_struct_payload_tests {
         let mut aliases = BTreeMap::new();
         aliases.insert(
             "MenuItem".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(vec![
-                (
-                    "label".to_string(),
-                    TypeExpr::Primitive("string".to_string()),
-                    true,
-                ),
-                (
-                    "subMenu".to_string(),
-                    TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
-                    false,
-                ),
-            ]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![
+                    (
+                        "label".to_string(),
+                        TypeExpr::Primitive("string".to_string()),
+                        true,
+                    ),
+                    (
+                        "subMenu".to_string(),
+                        TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
+                        false,
+                    ),
+                ]),
+                None,
+            ),
         );
         aliases
     }
@@ -1425,6 +1597,8 @@ mod recursive_struct_payload_tests {
         let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
 
         let side = vec![PayloadField {
+            nullable: Some(false),
+            additional_properties: None,
             values: None,
             name: "row".to_string(),
             field_type: "Tag".to_string(),
@@ -1462,30 +1636,36 @@ mod recursive_struct_payload_tests {
     /// `ORB_EMIT_PAYLOAD_FIELD_TYPE_MISMATCH`-shaped `PayloadAliasMismatch`.
     #[test]
     fn depth2_nested_struct_alias_inline_restatement_matches_alias() {
-        let port_item = TypeAliasResolved::Type(TypeExpr::Object(vec![
-            (
-                "privatePort".to_string(),
-                TypeExpr::Primitive("number".to_string()),
-                true,
-            ),
-            (
-                "publicPort".to_string(),
-                TypeExpr::Primitive("number".to_string()),
-                true,
-            ),
-        ]), None);
-        let container_item = TypeAliasResolved::Type(TypeExpr::Object(vec![
-            (
-                "id".to_string(),
-                TypeExpr::Primitive("string".to_string()),
-                true,
-            ),
-            (
-                "ports".to_string(),
-                TypeExpr::Array(Box::new(TypeExpr::Named("PortItem".to_string()))),
-                true,
-            ),
-        ]), None);
+        let port_item = TypeAliasResolved::Type(
+            TypeExpr::Object(vec![
+                (
+                    "privatePort".to_string(),
+                    TypeExpr::Primitive("number".to_string()),
+                    true,
+                ),
+                (
+                    "publicPort".to_string(),
+                    TypeExpr::Primitive("number".to_string()),
+                    true,
+                ),
+            ]),
+            None,
+        );
+        let container_item = TypeAliasResolved::Type(
+            TypeExpr::Object(vec![
+                (
+                    "id".to_string(),
+                    TypeExpr::Primitive("string".to_string()),
+                    true,
+                ),
+                (
+                    "ports".to_string(),
+                    TypeExpr::Array(Box::new(TypeExpr::Named("PortItem".to_string()))),
+                    true,
+                ),
+            ]),
+            None,
+        );
         let mut aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
         aliases.insert("PortItem".to_string(), port_item);
         aliases.insert("ContainerItem".to_string(), container_item);
@@ -1550,6 +1730,8 @@ mod recursive_struct_payload_tests {
         )
         .expect("alias payload resolves");
         let inline_fields_bare_at_depth2 = vec![PayloadField {
+            nullable: Some(false),
+            additional_properties: None,
             values: None,
             name: "containers".to_string(),
             field_type: "[object]".to_string(),
@@ -1557,6 +1739,8 @@ mod recursive_struct_payload_tests {
             description: None,
             properties: Some(vec![
                 PayloadField {
+                    nullable: Some(false),
+                    additional_properties: None,
                     values: None,
                     name: "id".to_string(),
                     field_type: "string".to_string(),
@@ -1569,6 +1753,8 @@ mod recursive_struct_payload_tests {
                     items: None,
                 },
                 PayloadField {
+                    nullable: Some(false),
+                    additional_properties: None,
                     values: None,
                     name: "ports".to_string(),
                     field_type: "[PortItem]".to_string(),
@@ -2009,7 +2195,10 @@ mod entity_payload_marker_tests {
             TypeExpr::Array(Box::new(TypeExpr::Named("Viewer".to_string()))),
         ))
         .expect("an array of a program type lowers");
-        assert_eq!(def.payload_schema.expect("payload")[0].field_type, "[Viewer]");
+        assert_eq!(
+            def.payload_schema.expect("payload")[0].field_type,
+            "[Viewer]"
+        );
 
         let err = lower(&emit_with("viewer", TypeExpr::Named("Viewr".to_string())))
             .expect_err("control: a name neither entity nor program type stays unknown");
@@ -2020,7 +2209,10 @@ mod entity_payload_marker_tests {
 
         let def = lower(&emit_with("row", TypeExpr::Named("Note".to_string())))
             .expect("control: an entity still lowers");
-        assert_eq!(def.payload_schema.expect("payload")[0].entity.as_deref(), Some("Note"));
+        assert_eq!(
+            def.payload_schema.expect("payload")[0].entity.as_deref(),
+            Some("Note")
+        );
     }
 }
 
@@ -2036,72 +2228,87 @@ mod struct_payload_enum_alias_tests {
         );
         aliases.insert(
             "QuotedKind".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Union(vec![
-                TypeExpr::StringLiteral("input".to_string()),
-                TypeExpr::StringLiteral("read".to_string()),
-            ]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Union(vec![
+                    TypeExpr::StringLiteral("input".to_string()),
+                    TypeExpr::StringLiteral("read".to_string()),
+                ]),
+                None,
+            ),
         );
         aliases.insert(
             "Shape".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Union(vec![
-                TypeExpr::Named("Point".to_string()),
-                TypeExpr::Named("Other".to_string()),
-            ]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Union(vec![
+                    TypeExpr::Named("Point".to_string()),
+                    TypeExpr::Named("Other".to_string()),
+                ]),
+                None,
+            ),
         );
         aliases.insert(
             "Other".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(vec![(
-                "y".to_string(),
-                TypeExpr::Primitive("number".to_string()),
-                true,
-            )]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![(
+                    "y".to_string(),
+                    TypeExpr::Primitive("number".to_string()),
+                    true,
+                )]),
+                None,
+            ),
         );
         aliases.insert(
             "Point".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(vec![(
-                "x".to_string(),
-                TypeExpr::Primitive("number".to_string()),
-                true,
-            )]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![(
+                    "x".to_string(),
+                    TypeExpr::Primitive("number".to_string()),
+                    true,
+                )]),
+                None,
+            ),
         );
         aliases.insert(
             "Activity".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(vec![
-                (
-                    "kind".to_string(),
-                    TypeExpr::Named("ToolKind".to_string()),
-                    false,
-                ),
-                (
-                    "kinds".to_string(),
-                    TypeExpr::Array(Box::new(TypeExpr::Named("ToolKind".to_string()))),
-                    false,
-                ),
-                ("at".to_string(), TypeExpr::Named("Point".to_string()), true),
-                (
-                    "label".to_string(),
-                    TypeExpr::Primitive("string".to_string()),
-                    true,
-                ),
-                (
-                    "quoted".to_string(),
-                    TypeExpr::Named("QuotedKind".to_string()),
-                    false,
-                ),
-                (
-                    "inline".to_string(),
-                    TypeExpr::Union(vec![
-                        TypeExpr::StringLiteral("a".to_string()),
-                        TypeExpr::StringLiteral("b".to_string()),
-                    ]),
-                    false,
-                ),
-                (
-                    "shape".to_string(),
-                    TypeExpr::Named("Shape".to_string()),
-                    false,
-                ),
-            ]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![
+                    (
+                        "kind".to_string(),
+                        TypeExpr::Named("ToolKind".to_string()),
+                        false,
+                    ),
+                    (
+                        "kinds".to_string(),
+                        TypeExpr::Array(Box::new(TypeExpr::Named("ToolKind".to_string()))),
+                        false,
+                    ),
+                    ("at".to_string(), TypeExpr::Named("Point".to_string()), true),
+                    (
+                        "label".to_string(),
+                        TypeExpr::Primitive("string".to_string()),
+                        true,
+                    ),
+                    (
+                        "quoted".to_string(),
+                        TypeExpr::Named("QuotedKind".to_string()),
+                        false,
+                    ),
+                    (
+                        "inline".to_string(),
+                        TypeExpr::Union(vec![
+                            TypeExpr::StringLiteral("a".to_string()),
+                            TypeExpr::StringLiteral("b".to_string()),
+                        ]),
+                        false,
+                    ),
+                    (
+                        "shape".to_string(),
+                        TypeExpr::Named("Shape".to_string()),
+                        false,
+                    ),
+                ]),
+                None,
+            ),
         );
         aliases
     }

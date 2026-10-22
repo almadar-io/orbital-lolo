@@ -64,6 +64,9 @@
           "linkedEntity": "Account",
           "name": "UserLoadedNotifier",
           "scope": "collection",
+          "sourceDeclaration": {
+            "fingerprint": "e8c10935a16a9b0f0d5f20887beacbf4c780489f55b77d9a0013ff740172b6bb"
+          },
           "stateMachine": {
             "events": [
               {

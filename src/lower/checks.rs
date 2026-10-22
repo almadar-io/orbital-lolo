@@ -468,7 +468,9 @@ fn check_one_set_value(
     if let SExpression::String(s) = value {
         if !s.starts_with('@') && !s.starts_with('?') {
             if let Some(members) = enum_members_of(declared, aliases) {
-                if !members.is_empty() && !orbital_core_base::type_compat::enum_value_is_member(s, &members) {
+                if !members.is_empty()
+                    && !orbital_core_base::type_compat::enum_value_is_member(s, &members)
+                {
                     return Err(LowerError::EnumValueNotMember {
                         orbital: t.name.clone(),
                         trait_name: t.name.clone(),
@@ -599,7 +601,9 @@ fn check_one_set_value(
         Some(members) => members
             .iter()
             .any(|m| orbital_core_base::type_compat::set_value_type_compatible(m, &actual_str)),
-        None => orbital_core_base::type_compat::set_value_type_compatible(&declared_str, &actual_str),
+        None => {
+            orbital_core_base::type_compat::set_value_type_compatible(&declared_str, &actual_str)
+        }
     };
     if !accepted {
         return Err(LowerError::SetValueTypeMismatch {
@@ -2263,8 +2267,9 @@ pub(crate) fn check_behavior_contracts(
                             if let Some(cfg) = &ref_object.config {
                                 for (k, cf) in cfg {
                                     if let Some(v) = cf.default.as_ref() {
-                                        let got = orbital_core_eval::literal_type::literal_value_type(v)
-                                            .or_else(|| config_ref_knob_type(v, &knob_types));
+                                        let got =
+                                            orbital_core_eval::literal_type::literal_value_type(v)
+                                                .or_else(|| config_ref_knob_type(v, &knob_types));
                                         if let (Some(expected), Some(got)) = (oc.config.get(k), got)
                                         {
                                             if !config_type_compatible(got, expected) {
@@ -2367,18 +2372,21 @@ mod recursive_type_safety_tests {
         let mut aliases = BTreeMap::new();
         aliases.insert(
             "MenuItem".to_string(),
-            TypeAliasResolved::Type(TypeExpr::Object(vec![
-                (
-                    "label".to_string(),
-                    TypeExpr::Primitive("string".to_string()),
-                    true,
-                ),
-                (
-                    "subMenu".to_string(),
-                    TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
-                    false,
-                ),
-            ]), None),
+            TypeAliasResolved::Type(
+                TypeExpr::Object(vec![
+                    (
+                        "label".to_string(),
+                        TypeExpr::Primitive("string".to_string()),
+                        true,
+                    ),
+                    (
+                        "subMenu".to_string(),
+                        TypeExpr::Array(Box::new(TypeExpr::Named("MenuItem".to_string()))),
+                        false,
+                    ),
+                ]),
+                None,
+            ),
         );
         assert_eq!(
             enum_members_of(&TypeExpr::Named("MenuItem".to_string()), &aliases),
@@ -2429,6 +2437,7 @@ mod orbital_reference_contract_tests {
         );
         LowerOptions {
             packages: vec![pkg],
+            ..Default::default()
         }
     }
 
@@ -2634,7 +2643,9 @@ mod emit_program_type_literal_tests {
         "#
         );
         let ast = parse_str(&src).expect("parse");
-        lower_to_orb(&ast).map(|_| ()).map_err(|e| e.innermost().clone())
+        lower_to_orb(&ast)
+            .map(|_| ())
+            .map_err(|e| e.innermost().clone())
     }
 
     #[test]
@@ -2646,11 +2657,15 @@ mod emit_program_type_literal_tests {
     #[test]
     fn a_scalar_literal_never_fills_a_program_type_slot() {
         match lower_emit("5") {
-            Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => assert_eq!(actual, "number"),
+            Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => {
+                assert_eq!(actual, "number")
+            }
             other => panic!("expected EmitPayloadFieldTypeMismatch, got {other:?}"),
         }
         match lower_emit(r#""anonymous""#) {
-            Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => assert_eq!(actual, "string"),
+            Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => {
+                assert_eq!(actual, "string")
+            }
             other => panic!("expected EmitPayloadFieldTypeMismatch, got {other:?}"),
         }
     }

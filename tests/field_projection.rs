@@ -57,7 +57,7 @@ orbital NoteOrbital {
 "#;
 
 fn projection(type_name: &str, field: &str) -> Option<FieldProjection> {
-    Some(FieldProjection { type_name: type_name.to_string(), field: field.to_string() })
+    Some(FieldProjection { type_name: type_name.to_string(), field: Some(field.to_string()) })
 }
 
 fn lowered() -> OrbitalSchema {
@@ -117,7 +117,7 @@ fn control_a_payload_field_typed_as_the_entity_stays_its_row() {
     let row = payload.iter().find(|f| f.name == "row").expect("row");
     assert_eq!(row.field_type, "object");
     assert_eq!(row.entity.as_deref(), Some("Tag"));
-    assert_eq!(row.projected_from, None);
+    assert_eq!(row.projected_from, Some(FieldProjection { type_name: "Tag".into(), field: None }));
 }
 
 #[test]
@@ -154,4 +154,17 @@ fn the_formatter_round_trips_a_projection() {
     let formatted = format_program(&parse_str(APP).expect("parse"));
     assert!(formatted.contains("tagRef : Tag.id"), "{formatted}");
     assert!(formatted.contains("tagId : Tag.id!"), "{formatted}");
+}
+
+
+#[test]
+fn named_source_type_reference_is_distinct_from_an_actual_field_projection() {
+    let named: FieldProjection = serde_json::from_value(serde_json::json!({"type":"Tag"})).unwrap();
+    assert_eq!(named.field, None);
+    assert_eq!(serde_json::to_value(&named).unwrap(), serde_json::json!({"type":"Tag"}));
+    let field: FieldProjection = serde_json::from_value(serde_json::json!({"type":"Tag","field":"id"})).unwrap();
+    assert_eq!(field.field.as_deref(), Some("id"));
+    for malformed in [serde_json::json!({"type":"Tag","field":""}), serde_json::json!({"type":"Tag","field":null})] {
+        assert!(serde_json::from_value::<FieldProjection>(malformed).is_err());
+    }
 }

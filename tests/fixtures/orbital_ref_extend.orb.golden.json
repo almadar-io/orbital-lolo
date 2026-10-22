@@ -43,6 +43,9 @@
           "linkedEntity": "Timesheet",
           "name": "TimesheetApproval",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "5ed8abe622a00e0060948d9c50c4c985c14a3f82b0312efe41ee5de1d542e9b1"
+          },
           "stateMachine": {
             "events": [
               {

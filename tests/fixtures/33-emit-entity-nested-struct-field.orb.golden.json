@@ -101,6 +101,9 @@
           "linkedEntity": "Board",
           "name": "BoardView",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "1a0d4c6d3166224b43896e807e43467d241929a611d8d75f4d3e79f665e7dcff"
+          },
           "stateMachine": {
             "events": [
               {

@@ -90,7 +90,8 @@ impl Parser {
                 self.parse_access_directive(&name, &mut access)?;
                 continue;
             }
-            if matches!(self.peek(), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "invariant") {
+            if matches!(self.peek(), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "invariant")
+            {
                 self.advance();
                 invariants.push(self.parse_sexpr_or_value()?);
                 self.expect_newline_or_eof()?;
@@ -177,7 +178,9 @@ impl Parser {
         };
         let dup_error = || ParseError::InvalidType {
             span: directive_span,
-            message: format!("ELOLO_DUPLICATE_ACCESS_DIRECTIVE: entity declares `@{name}` more than once"),
+            message: format!(
+                "ELOLO_DUPLICATE_ACCESS_DIRECTIVE: entity declares `@{name}` more than once"
+            ),
         };
         // `@<op> none "<reason>"` — the omission, declared. Same runtime behaviour as leaving the directive out;
         // recorded so a lint can tell a considered omission from a forgotten one. The reason is mandatory.

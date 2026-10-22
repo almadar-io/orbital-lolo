@@ -32,7 +32,11 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_config_string(inner)),
         TypeExpr::Tuple(slots) => format!(
             "[{}]",
-            slots.iter().map(type_expr_to_config_string).collect::<Vec<_>>().join(", ")
+            slots
+                .iter()
+                .map(type_expr_to_config_string)
+                .collect::<Vec<_>>()
+                .join(", ")
         ),
         // `Map K V` → round-trippable `Map<K,V>` config-string (the key is a
         // comma-free atom, so resolve splits on the first comma). Parsed back
@@ -53,7 +57,7 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         TypeExpr::Optional(inner) => type_expr_to_config_string(inner),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Union(_) => "string".to_string(),
-        TypeExpr::Object(_) => "object".to_string(),
+        TypeExpr::Object(_) | TypeExpr::OpenObject { .. } => "object".to_string(),
         TypeExpr::RelationMany(_) | TypeExpr::RelationManyNonEmpty(_) => "array".to_string(),
         TypeExpr::Trait => "trait".to_string(),
         TypeExpr::Orbital => "orbital".to_string(),
@@ -114,7 +118,7 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
         TypeExpr::Array(_) | TypeExpr::Tuple(_) => "array".to_string(),
         // A map is a record/object at the bus-payload level.
         TypeExpr::Map(_, _) => "object".to_string(),
-        TypeExpr::Object(_) => "object".to_string(),
+        TypeExpr::Object(_) | TypeExpr::OpenObject { .. } => "object".to_string(),
         TypeExpr::Union(members) => {
             // String-literal unions reduce to "string" (matches lowering's
             // enum-as-string emission). Mixed unions report as the first
@@ -200,7 +204,9 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
         "union" => actual == "object",
         "entity" | "relation" => actual == "object" || actual == "string",
         // A program type (`Viewer`, `TraitValue`) is a record: a struct literal fills it; its shape is L2's check.
-        named if orbital_core_base::language::program_types::program_type(named).is_some() => actual == "object",
+        named if orbital_core_base::language::program_types::program_type(named).is_some() => {
+            actual == "object"
+        }
         _ => false,
     }
 }
@@ -219,14 +225,18 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_string(inner)),
         TypeExpr::Tuple(slots) => format!(
             "[{}]",
-            slots.iter().map(type_expr_to_string).collect::<Vec<_>>().join(", ")
+            slots
+                .iter()
+                .map(type_expr_to_string)
+                .collect::<Vec<_>>()
+                .join(", ")
         ),
         TypeExpr::Map(key, value) => format!(
             "Map<{},{}>",
             type_expr_to_string(key),
             type_expr_to_string(value)
         ),
-        TypeExpr::Object(_) => "object".to_string(),
+        TypeExpr::Object(_) | TypeExpr::OpenObject { .. } => "object".to_string(),
         TypeExpr::Union(_) => "string".to_string(),
         TypeExpr::Optional(inner) => type_expr_to_string(inner),
         TypeExpr::FieldOf {
@@ -271,7 +281,10 @@ pub(crate) fn canonicalize_unbound_trait_default(
     default: Option<SExpression>,
 ) -> Option<SExpression> {
     match (type_expr, &default) {
-        (TypeExpr::Trait | TypeExpr::Orbital | TypeExpr::Behavior, Some(SExpression::String(s))) if s == "none" => Some(SExpression::Null),
+        (
+            TypeExpr::Trait | TypeExpr::Orbital | TypeExpr::Behavior,
+            Some(SExpression::String(s)),
+        ) if s == "none" => Some(SExpression::Null),
         _ => default,
     }
 }
@@ -335,6 +348,13 @@ pub(crate) fn lower_config_fields_to_map(
         map.insert(
             cf.name.clone(),
             SchemaConfigField {
+                nullable: Some(entity::source_nullable(&cf.type_expr, aliases)),
+                additional_properties: entity::source_additional_type(&cf.type_expr, aliases)
+                    .map(|ty| {
+                        entity::lower_source_field(ty, aliases, entity_names, type_params)
+                            .map(Box::new)
+                    })
+                    .transpose()?,
                 field_type,
                 default: canonicalize_unbound_trait_default(
                     cf.type_expr.peel(),

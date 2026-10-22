@@ -223,6 +223,7 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
                 &ast,
                 &crate::LowerOptions {
                     packages: packages.to_vec(),
+                    ..Default::default()
                 },
             )
             .map_err(|e| e.to_string())

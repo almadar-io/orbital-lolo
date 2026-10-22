@@ -301,6 +301,8 @@ pub(crate) fn lower_call_site_overrides(
                 && cf.tier.is_none();
             let schema_field = if is_plain_wiring {
                 SchemaConfigField {
+                    nullable: None,
+                    additional_properties: None,
                     field_type: "unknown".to_string(),
                     default: cf.default.as_ref().map(desugar_expr_match),
                     label: None,
@@ -326,6 +328,12 @@ pub(crate) fn lower_call_site_overrides(
                 let (_, _, items, properties, _) =
                     lower_type_expr(cf.type_expr.peel(), aliases, entity_names, &[])?;
                 SchemaConfigField {
+                    nullable: Some(entity::source_nullable(&cf.type_expr, aliases)),
+                    additional_properties: entity::source_additional_type(&cf.type_expr, aliases)
+                        .map(|ty| {
+                            entity::lower_source_field(ty, aliases, entity_names, &[]).map(Box::new)
+                        })
+                        .transpose()?,
                     field_type: type_expr_to_config_string(cf.type_expr.peel()),
                     default: canonicalize_unbound_trait_default(
                         cf.type_expr.peel(),
@@ -472,14 +480,17 @@ pub(crate) fn lower_trait(
 
     for state in &t.states {
         let is_initial = initial_name.as_deref() == Some(state.name.as_str());
-        states.push((StateDefinition {
-            name: state.name.clone(),
-            is_initial: if is_initial { Some(true) } else { None },
-            is_terminal: None,
-            description: None,
-            time_bound_ms: state.time_bound,
-            holds: state.holds.clone(),
-        }, state.span));
+        states.push((
+            StateDefinition {
+                name: state.name.clone(),
+                is_initial: if is_initial { Some(true) } else { None },
+                is_terminal: None,
+                description: None,
+                time_bound_ms: state.time_bound,
+                holds: state.holds.clone(),
+            },
+            state.span,
+        ));
 
         for tr in &state.transitions {
             if event_seen.insert(tr.event.clone()) {
@@ -528,7 +539,8 @@ pub(crate) fn lower_trait(
                                 .collect::<Result<Vec<_>, LowerError>>()?,
                         )
                     },
-                    ensures: (!tr.ensures.is_empty()).then(|| tr.ensures.iter().map(desugar_expr_match).collect()),
+                    ensures: (!tr.ensures.is_empty())
+                        .then(|| tr.ensures.iter().map(desugar_expr_match).collect()),
                 });
             }
         }
@@ -567,10 +579,14 @@ pub(crate) fn lower_trait(
     // Sort states so the initial one is first; everyone else in declaration order.
     // (This matches the convention in the existing .orb fixtures.)
     states.sort_by_key(|(state, _)| if state.is_initial == Some(true) { 0 } else { 1 });
-    let states = states.into_iter().enumerate().map(|(index, (state, span))| {
-        source_map.insert(format!("{base}.stateMachine.states[{index}]"), span);
-        state
-    }).collect();
+    let states = states
+        .into_iter()
+        .enumerate()
+        .map(|(index, (state, span))| {
+            source_map.insert(format!("{base}.stateMachine.states[{index}]"), span);
+            state
+        })
+        .collect();
 
     let entity_hint = t.linked_entity.as_deref();
 
@@ -608,8 +624,7 @@ pub(crate) fn lower_trait(
                     // Increment 3-II: a field referencing this trait's OWN
                     // declared type parameter lowers to the `$V` / `[$V]`
                     // sentinel — checked first, same as the emit-payload path.
-                    let sentinel =
-                        emit_listen::type_param_sentinel(ty, &trait_type_params);
+                    let sentinel = emit_listen::type_param_sentinel(ty, &trait_type_params);
                     // Inline `{ … }` struct shapes (and struct aliases /
                     // arrays of them) keep their nested `properties` — the
                     // same contract emits payloads carry. Without this a
@@ -632,11 +647,9 @@ pub(crate) fn lower_trait(
                         (container.clone(), None, None, None)
                     } else if let Some(elem) = array_elem {
                         ("[object]".to_string(), Some(elem), None, None)
-                    } else if let Some(nested) = emit_listen::struct_payload_properties(
-                        ty,
-                        aliases,
-                        &trait_type_params,
-                    ) {
+                    } else if let Some(nested) =
+                        emit_listen::struct_payload_properties(ty, aliases, &trait_type_params)
+                    {
                         ("object".to_string(), Some(nested), None, None)
                     } else if let Some((entity_name, entity_fields, is_array)) =
                         emit_listen::named_entity_fields(ty, entities, aliases)
@@ -665,12 +678,18 @@ pub(crate) fn lower_trait(
                         // member reads (`?shape.width`) are checked against.
                         ("union".to_string(), Some(variants), None, None)
                     } else {
-                        let (field_type, type_when) =
-                            emit_listen::lower_match_field_type(ty);
+                        let (field_type, type_when) = emit_listen::lower_match_field_type(ty);
                         (field_type, None, type_when, None)
                     };
                     let is_union = field_type == "union";
-                    PayloadField { values: if is_union { None } else { emit_listen::payload_literal_values(ty, aliases) },
+                    let mut field = PayloadField {
+                        nullable: Some(false),
+                        additional_properties: None,
+                        values: if is_union {
+                            None
+                        } else {
+                            emit_listen::payload_literal_values(ty, aliases)
+                        },
                         name: f.name.clone(),
                         field_type,
                         required: if f.required { Some(true) } else { None },
@@ -680,7 +699,14 @@ pub(crate) fn lower_trait(
                         entity,
                         projected_from: projected,
                         items: union_items.map(|(_, items)| items),
-                    }
+                    };
+                    emit_listen::decorate_source_payload(
+                        &mut field,
+                        &f.type_expr,
+                        aliases,
+                        &trait_type_params,
+                    );
+                    field
                 })
                 .collect()
         } else {
@@ -959,8 +985,12 @@ pub(crate) fn lower_trait(
     // `scope` is required in the .orb schema (V2 Phase 6); an undeclared
     // marker defaults to `instance` per the language spec.
     let scope = Some(match t.scope.as_ref() {
-        Some(crate::ast::TraitScope::Collection) => orbital_core_base::schema::TraitScope::Collection,
-        Some(crate::ast::TraitScope::Instance) | None => orbital_core_base::schema::TraitScope::Instance,
+        Some(crate::ast::TraitScope::Collection) => {
+            orbital_core_base::schema::TraitScope::Collection
+        }
+        Some(crate::ast::TraitScope::Instance) | None => {
+            orbital_core_base::schema::TraitScope::Instance
+        }
     });
 
     // Lower the trait's declared `config { ... }` block into the schema's

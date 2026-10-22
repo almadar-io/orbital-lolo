@@ -265,7 +265,9 @@ pub(crate) fn lower_orbital_reference(
         mock: pairs_to_map(&orb.mock_overrides),
         retype,
         persistence: rebind_tags.persistence.as_ref().map(|p| match p {
-            crate::ast::Persistence::Persistent => orbital_core_base::schema::Persistence::Persistent,
+            crate::ast::Persistence::Persistent => {
+                orbital_core_base::schema::Persistence::Persistent
+            }
             crate::ast::Persistence::Runtime => orbital_core_base::schema::Persistence::Runtime,
         }),
         collection: rebind_tags.collection.clone(),

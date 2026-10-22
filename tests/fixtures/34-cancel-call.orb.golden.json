@@ -38,6 +38,9 @@
           "linkedEntity": "Batch",
           "name": "BatchRunner",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "3af85bb942ca90cfb09d4352a9dd862d476b5892f549619546a29c9937e784f6"
+          },
           "stateMachine": {
             "events": [
               {

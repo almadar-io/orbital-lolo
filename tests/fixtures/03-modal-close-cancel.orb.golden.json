@@ -34,6 +34,9 @@
           "linkedEntity": "ConfirmAction",
           "name": "ConfirmActionConfirmation",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "191b36ac054b22983928e8642982aab02591da9d7393d2a697805a64ad12f86c"
+          },
           "stateMachine": {
             "events": [
               {

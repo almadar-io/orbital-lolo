@@ -27,6 +27,9 @@
           "linkedEntity": "Product",
           "name": "ProductFetch",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "7f90746f590678ad760af361d00440e2741560493a28f013b65552b538f567bf"
+          },
           "stateMachine": {
             "events": [
               {

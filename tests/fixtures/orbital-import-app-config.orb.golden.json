@@ -43,6 +43,9 @@
           "linkedEntity": "Widget",
           "name": "WidgetPanel",
           "scope": "instance",
+          "sourceDeclaration": {
+            "fingerprint": "02a9233915c280beaacfbb180c9e9faed1f1c3336188e6572d8dee26d60dc508"
+          },
           "stateMachine": {
             "events": [
               {

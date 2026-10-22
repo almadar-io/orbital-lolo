@@ -3,8 +3,8 @@
 use super::types::{config_fields, event_fields};
 use super::UnlowerError;
 use crate::ast::{
-    Emit, InboundListen, InboundVerifies, Listen, Span, State, Tick, TickInterval, Trait, TraitRefData, TraitScope, TraitTypeParam,
-    Transition, TypeAnnotation, TypeExpr,
+    Emit, InboundListen, InboundVerifies, Listen, Span, State, Tick, TickInterval, Trait,
+    TraitRefData, TraitScope, TraitTypeParam, Transition, TypeAnnotation, TypeExpr,
 };
 use orbital_core_base::schema::{
     join_event_address, EmitDefinition, EventScope, ListenDefinition, PayloadField, StringOrArray,
@@ -214,7 +214,9 @@ fn tick_of(t: &TickDefinition) -> Result<Tick, UnlowerError> {
     })
 }
 
-fn single_from(tr: &orbital_core_base::schema::TransitionDefinition) -> Result<String, UnlowerError> {
+fn single_from(
+    tr: &orbital_core_base::schema::TransitionDefinition,
+) -> Result<String, UnlowerError> {
     match &tr.from {
         StringOrArray::Single(s) => Ok(s.clone()),
         StringOrArray::Multiple(_) => Err(UnlowerError::new(
@@ -417,17 +419,14 @@ pub(super) fn trait_definition(
                 tier: ev.tier.clone(),
                 target_trait: None,
                 external: ev.external == Some(true),
-                inbound: ev
-                    .inbound
-                    .as_ref()
-                    .map(|i| InboundListen {
-                        name: i.name.clone(),
-                        answers: i.answers.clone(),
-                        verifies: i.verifies.as_ref().map(|v| InboundVerifies {
-                            header: v.header.clone(),
-                            credential: v.credential.clone(),
-                        }),
+                inbound: ev.inbound.as_ref().map(|i| InboundListen {
+                    name: i.name.clone(),
+                    answers: i.answers.clone(),
+                    verifies: i.verifies.as_ref().map(|v| InboundVerifies {
+                        header: v.header.clone(),
+                        credential: v.credential.clone(),
                     }),
+                }),
                 span: Span::dummy(),
             });
         }
