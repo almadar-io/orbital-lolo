@@ -35,6 +35,11 @@ pub(crate) fn lower_entity(
         None => None,
     };
     Ok(EntityDefinition {
+        timestamps: None,
+        soft_delete: None,
+        description: None,
+        visual_prompt: None,
+        asset_ref: None,
         store: entity.store.clone(),
         name: entity.name.clone(),
         collection: entity.collection.clone(),

@@ -951,6 +951,11 @@ fn orbital_types(
 /// the spec, never matched by a real expectation.
 fn spec_placeholder_entity(name: &str) -> EntityDefinition {
     EntityDefinition {
+        timestamps: None,
+        soft_delete: None,
+        description: None,
+        visual_prompt: None,
+        asset_ref: None,
         store: None,
         shared: false,
         identity: false,
