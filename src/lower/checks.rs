@@ -1874,7 +1874,7 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
 /// Three classes of mismatch caught at parse time (parse-time mirror of
 /// L2's `EmitPayloadMissingRequired` / `EmitPayloadExtraField` /
 /// `EmitPayloadFieldTypeMismatch` validators in
-/// `orbital-compiler/src/phases/validation/emit_payload.rs`):
+/// `orbital-compiler/src/phases/validation/circuit/emit_payload.rs`):
 ///
 /// 1. Missing required field: declared with `!` but absent from the
 ///    literal payload.

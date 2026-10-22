@@ -13,20 +13,44 @@
 
 #![allow(clippy::too_many_arguments, clippy::large_enum_variant)]
 
+// Directories under `src/` are organizational only: every module keeps its flat public path via `#[path]`.
+
+// syntax — lex and the parser's own vocabulary
+#[path = "syntax/ast.rs"]
 pub mod ast;
-pub mod complete;
-pub mod embeds;
+#[path = "syntax/error.rs"]
 pub mod error;
-pub mod format;
+#[path = "syntax/keywords.rs"]
 pub mod keywords;
+#[path = "syntax/lexer.rs"]
 pub mod lexer;
+
+// the L1 stages: parse → lower; unlower goes back
 pub mod lower;
 pub mod parser;
-pub mod patterns_meta;
-pub mod reference;
-pub mod registry;
-pub mod types;
 pub mod unlower;
+
+// check — alias and type resolution against the installed language
+#[path = "check/patterns_meta.rs"]
+pub mod patterns_meta;
+#[path = "check/registry.rs"]
+pub mod registry;
+#[path = "check/types.rs"]
+pub mod types;
+
+// spans — side channels from IR back to source
+#[path = "spans/embeds.rs"]
+pub mod embeds;
+#[path = "spans/source_map.rs"]
+pub mod source_map;
+
+// tooling — format, completion, the generated reference
+#[path = "tooling/complete.rs"]
+pub mod complete;
+#[path = "tooling/format.rs"]
+pub mod format;
+#[path = "tooling/reference.rs"]
+pub mod reference;
 
 pub use ast::{Ast, Comment, EntityField, EventField, Span, TypeExpr};
 pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
@@ -40,8 +64,6 @@ pub use lower::{
 pub use parser::{detect_language, parse, parse_str};
 pub use source_map::LoloSourceMap;
 pub use unlower::{schema_to_lolo, unlower, UnlowerError};
-
-pub mod source_map;
 
 use orbital_core_base::schema::OrbitalSchema;
 use std::path::Path;

@@ -1,10 +1,10 @@
-//! Generates the language reference's construct table from `src/ast.rs`'s own
+//! Generates the language reference's construct table from `src/syntax/ast.rs`'s own
 //! declarations and doc comments.
 
 use quote::ToTokens;
 use std::fmt::Write;
 
-const SOURCE: &str = "src/ast.rs";
+const SOURCE: &str = "src/syntax/ast.rs";
 
 fn doc_of(attrs: &[syn::Attribute]) -> String {
     attrs
