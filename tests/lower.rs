@@ -661,3 +661,508 @@ fn fixture_34_cancel_call() {
 fn fixture_10b_persist_batch() {
     assert_lowering_matches("10b-persist-batch");
 }
+
+mod checked_local_annotations {
+    use orbital_core_base::ir::types::{DeclaredShape, OirType};
+    use orbital_core_base::schema::TraitReference;
+    use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
+
+    fn source(bindings: &str, body: &str) -> String {
+        format!(
+            r#"app locals [version: "1.0.0"]
+    type ValueMap = Map string string
+    orbital Probe {{
+     entity Data [runtime] {{
+      id : string!
+      result : string
+     }}
+     trait Run -> Data [integration] {{
+      initial: ready
+      state ready {{
+       INIT -> ready
+        (let ({bindings}) {body})
+      }}
+     }}
+    }}
+    "#
+        )
+    }
+
+    #[test]
+    fn checked_local_annotation_parses_and_formats_existing_type_expressions() {
+        for ty in [
+            "ValueMap",
+            "Map string string",
+            "[string]",
+            "{ value : string! }",
+        ] {
+            let src = source(
+                &format!("(vm : {ty} {{}})"),
+                "(set @entity.result \"done\")",
+            );
+            let parsed = parse_str(&src).unwrap_or_else(|e| panic!("{ty}: {e}"));
+            let formatted = format_program(&parsed);
+            assert!(formatted.contains(&format!("vm : {ty}")), "{formatted}");
+            parse_str(&formatted).expect("formatted annotation parses");
+        }
+    }
+
+    #[test]
+    fn checked_local_annotation_preserves_sequential_and_plain_bindings() {
+        let src = source(
+            "(first : string \"one\") (next @first) (plain 1)",
+            "(set @entity.result @next)",
+        );
+        let parsed = parse_str(&src).expect("annotation and dependent binding parse");
+        let formatted = format_program(&parsed);
+        assert!(formatted.contains("(first : string one)"), "{formatted}");
+        assert!(formatted.contains("(next @first)"), "{formatted}");
+        assert!(formatted.contains("(plain 1)"), "{formatted}");
+        let roundtrip = parse_str(&formatted).expect("plain and annotated bindings roundtrip");
+        assert_eq!(
+            parsed.orbitals[0].traits[0].states[0].transitions[0].effects,
+            roundtrip.orbitals[0].traits[0].states[0].transitions[0].effects
+        );
+    }
+
+    #[test]
+    fn checked_local_annotation_formats_sequential_binding_literal_without_capture() {
+        let src = source(
+            "(first : string \"one\") (literal : string \"first\") (next @first)",
+            "(set @entity.result @literal)",
+        );
+        let parsed = parse_str(&src).unwrap();
+        let formatted = format_program(&parsed);
+        let roundtrip = parse_str(&formatted).unwrap_or_else(|e| panic!("{e}: {formatted}"));
+        assert_eq!(
+            parsed.orbitals[0].traits[0].states[0].transitions[0].effects,
+            roundtrip.orbitals[0].traits[0].states[0].transitions[0].effects
+        );
+    }
+
+    #[test]
+    fn checked_local_annotation_rejects_malformed_declarations() {
+        for bindings in ["(vm : {})", "(vm : ValueMap)", "(vm : ValueMap {} {})"] {
+            assert!(
+                parse_str(&source(bindings, "(set @entity.result \"done\")")).is_err(),
+                "{bindings}"
+            );
+        }
+    }
+
+    #[test]
+    fn checked_local_annotation_does_not_expose_internal_typed_operator() {
+        let src = source("(vm (typed {} ValueMap))", "(set @entity.result \"done\")");
+        assert!(parse_str(&src).is_err());
+        let quoted = source(
+            "(vm (quote (typed {} ValueMap)))",
+            "(set @entity.result \"done\")",
+        );
+        assert!(parse_str(&quoted).is_ok(), "quoted data remains data");
+    }
+
+    #[test]
+    fn checked_local_annotation_emits_canonical_declared_shape_without_source_ast() {
+        for (ty, value) in [
+            ("ValueMap", "{}"),
+            ("Viewer", "null"),
+            ("{ value : string! }", "{ value: \"ok\" }"),
+        ] {
+            let schema = parse_and_lower_str(&source(
+                &format!("(vm : {ty} {value})"),
+                "(set @entity.result \"done\")",
+            ))
+            .unwrap_or_else(|e| panic!("{ty}: {e}"));
+            let trait_def = schema.orbitals[0]
+                .traits
+                .iter()
+                .find_map(|t| match t {
+                    TraitReference::Inline(t) => Some(t),
+                    _ => None,
+                })
+                .unwrap();
+            let effect = &trait_def.state_machine.transitions[0]
+                .effects
+                .as_ref()
+                .unwrap()[0];
+            let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
+            let declaration = &binding.as_array().unwrap()[1].as_array().unwrap()[2];
+            let encoded = declaration
+                .as_str()
+                .expect("L1 removes source-only AST descriptor");
+            let shape = DeclaredShape::parse(encoded).expect("canonical declared-shape descriptor");
+            if ty == "ValueMap" {
+                assert_eq!(shape.name.as_deref(), Some("ValueMap"));
+                assert!(matches!(shape.ty, OirType::Map { .. }), "{shape:?}");
+            }
+            if ty == "Viewer" {
+                assert!(matches!(shape.ty, OirType::Struct { .. }), "{shape:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn checked_local_annotation_unknown_named_type_refuses_during_source_lowering() {
+        assert!(parse_and_lower_str(&source(
+            "(vm : MissingLocalType {})",
+            "(set @entity.result \"done\")",
+        ))
+        .is_err());
+    }
+
+    #[test]
+    fn checked_local_annotation_resolves_existing_field_projection() {
+        let src = source("(vm : Holder.value \"ok\")", "(set @entity.result @vm)").replace(
+            "type ValueMap = Map string string",
+            "type ValueMap = Map string string\ntype Holder = { value : string! }",
+        );
+        let schema =
+            parse_and_lower_str(&src).expect("existing source field projection resolves in annotation");
+        let trait_def = schema.orbitals[0]
+            .traits
+            .iter()
+            .find_map(|t| match t {
+                TraitReference::Inline(t) => Some(t),
+                _ => None,
+            })
+            .unwrap();
+        let effect = &trait_def.state_machine.transitions[0]
+            .effects
+            .as_ref()
+            .unwrap()[0];
+        let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
+        let encoded = binding.as_array().unwrap()[1].as_array().unwrap()[2]
+            .as_str()
+            .unwrap();
+        let shape = DeclaredShape::parse(encoded).unwrap();
+        assert_eq!(shape.ty, OirType::String);
+    }
+
+    #[test]
+    fn checked_local_annotation_keeps_initializer_source_span_at_its_real_slot() {
+        let parsed = parse_str(&source(
+            "(vm : ValueMap (object/merge {} {}))",
+            "(set @entity.result \"done\")",
+        ))
+        .unwrap();
+        let transition = &parsed.orbitals[0].traits[0].states[0].transitions[0];
+        assert!(transition.effect_spans[0]
+            .iter()
+            .any(|(path, _)| path == "[1][0][1][1]"));
+    }
+    pub(super) fn composed_checked_local_schema() -> orbital_core_base::schema::OrbitalSchema {
+        let base = super::payload_wrapper_provenance::generic_source(
+            "type TreeValue = string | { kind : \"branch\"!, children : [TreeValue]! }\ntype ValueMap = Map string TreeValue\ntype Saved = Event @entity",
+        ).replace(
+            "state ready { INIT -> ready  Saved -> ready }",
+            "state ready {\n INIT -> ready\n  (let ((vm : ValueMap {})) (set @entity.rootOnly (json/stringify @vm)))\n  (emit Saved @entity)\n Saved -> ready\n}",
+        );
+        super::payload_wrapper_provenance::two_hops_bound_with_remaps(base, "", "", true)
+    }
+
+    #[test]
+    fn checked_local_annotation_closed_aliases_survive_two_imports_and_remaps() {
+        let schema = composed_checked_local_schema();
+        let trait_def = super::payload_wrapper_provenance::first_trait(&schema);
+        assert_eq!(trait_def.linked_entity.as_deref(), Some("FinalEntity"));
+        let transition = trait_def.state_machine.transitions.iter().find(|t| {
+            t.effects.as_ref().is_some_and(|effects| !effects.is_empty())
+        }).unwrap();
+        let effect = &transition.effects.as_ref().unwrap()[0];
+        let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
+        let encoded = binding.as_array().unwrap()[1].as_array().unwrap()[2].as_str().unwrap();
+        let shape = DeclaredShape::parse(encoded).expect("canonical declaration survives import");
+        assert_eq!(shape.name.as_deref(), Some("ValueMap"));
+        assert!(matches!(shape.ty, OirType::Map { .. }), "{shape:?}");
+        assert!(shape.named.contains_key("TreeValue"), "{shape:?}");
+        assert!(trait_def.state_machine.transitions.iter().any(|t| t.event == "FinalSaved"));
+        let body = &effect.as_array().unwrap()[2];
+        assert_eq!(body.as_array().unwrap()[1].as_str(), Some("@entity.finalOnly"));
+        let recursive = serde_json::to_value(shape.named.get("TreeValue").unwrap()).unwrap();
+        assert!(recursive.to_string().contains("TreeValue"), "{recursive}");
+        let verdict = orbital_compiler::phases::validation::validate_comprehensive_without_services(&schema);
+        assert!(verdict.errors.is_empty(), "{:?}", verdict.errors);
+        assert!(verdict.warnings.is_empty(), "{:?}", verdict.warnings);
+    }
+
+    #[test]
+    fn checked_local_annotation_substitutes_declared_type_parameter_through_two_imports() {
+        for (argument, expected, accepted) in [
+            ("string", OirType::String, true),
+            ("number", OirType::Number, false),
+        ] {
+            let base = super::payload_wrapper_provenance::generic_source("type Saved = Event @entity")
+                .replace("trait Run ->", "trait Run (v : Type) ->")
+                .replace(
+                    "state ready { INIT -> ready  Saved -> ready }",
+                    "state ready {\n INIT -> ready\n  (let ((value : v \"ok\")) (set @entity.rootOnly (json/stringify @value)))\n  (emit Saved @entity)\n Saved -> ready\n}",
+                );
+            let schema = super::payload_wrapper_provenance::two_hops_bound_with_remaps(
+                base, &format!(":: v {argument}"), "", true,
+            );
+            let trait_def = super::payload_wrapper_provenance::first_trait(&schema);
+            let effect = &trait_def.state_machine.transitions.iter().find_map(|t| t.effects.as_ref().filter(|e| !e.is_empty())).unwrap()[0];
+            let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
+            let declaration = binding.as_array().unwrap()[1].as_array().unwrap()[2].as_str().unwrap();
+            let shape = DeclaredShape::parse(declaration).expect("recorded generic declaration");
+            assert_eq!(shape.ty, expected, "{argument}: {shape:?}");
+            assert_ne!(shape.name.as_deref(), Some("v"));
+            let verdict = orbital_compiler::phases::validation::validate_comprehensive_without_services(&schema);
+            if accepted {
+                assert!(verdict.errors.is_empty(), "{:?}", verdict.errors);
+                assert!(verdict.warnings.is_empty(), "{:?}", verdict.warnings);
+            } else {
+                assert!(verdict.errors.iter().any(|e| e.code == orbital_compiler::phases::validation::ErrorCode::OperatorArgTypeMismatch), "{:?}", verdict.errors);
+            }
+        }
+    }
+
+}
+
+mod payload_wrapper_provenance {
+    use orbital_compiler::phases::inline::{inline_schema, InlineConfig};
+    use orbital_compiler::phases::validation::{validate_comprehensive_without_services, ErrorCode};
+    use orbital_core_base::schema::{OrbitalSchema, PayloadField, TraitDefinition, TraitReference};
+    use orbital_lolo::parse_and_lower_str;
+
+    pub(super) fn generic_source(alias: &str) -> String {
+        format!(r#"app origin [version: "1.0.0"]
+    {alias}
+    orbital Root {{
+     entity RootEntity [runtime] {{
+      id : string!
+      rootOnly : string
+     }}
+     trait Run -> @rebindable RootEntity [integration] {{
+      initial: ready
+      state ready {{ INIT -> ready  Saved -> ready }}
+      emits {{ Saved }}
+     }}
+    }}
+    "#)
+    }
+
+    pub(super) fn first_trait(schema: &OrbitalSchema) -> &TraitDefinition {
+        let traits = &schema.orbitals[0].traits;
+        traits.iter().find_map(|t| match t {
+            TraitReference::Inline(t) if t.name == "Bound" => Some(t), _ => None,
+        }).or_else(|| traits.iter().find_map(|t| match t {
+            TraitReference::Inline(t) => Some(t), _ => None,
+        })).unwrap()
+    }
+
+    fn both_payloads(trait_def: &TraitDefinition) -> [&[PayloadField]; 2] {
+        [trait_def.emits.as_ref().unwrap()[0].payload_schema.as_deref().unwrap(),
+         trait_def.state_machine.events.as_ref().unwrap().iter().find(|e| e.key == "Saved").unwrap().payload_schema.as_deref().unwrap()]
+    }
+
+    #[test]
+    fn bare_payload_origin_is_explicit_and_authored_wrappers_have_none() {
+        for (alias, expected) in [
+            ("type Saved = Event @entity", Some("@entity")),
+            ("type Saved (e : Entity) = Event e", Some("$e")),
+            ("type Saved = Event RootEntity", Some("RootEntity")),
+            ("type Saved = Event { value : @entity }", None),
+            ("type Saved (e : Entity) = Event { value : e }", None),
+            ("type Saved = Event { row : @entity }", None),
+            ("type Saved = Event [@entity]", None),
+            ("type Saved = Event string", None),
+        ] {
+            let schema = parse_and_lower_str(&generic_source(alias)).unwrap();
+            let t = first_trait(&schema);
+            assert_eq!(t.emits.as_ref().unwrap()[0].payload_entity.as_deref(), expected, "{alias}");
+            assert_eq!(t.state_machine.events.as_ref().unwrap().iter().find(|e| e.key == "Saved").unwrap().payload_entity.as_deref(), expected, "{alias}");
+        }
+    }
+
+    fn two_hops(alias: &str) -> OrbitalSchema {
+        two_hops_bound(generic_source(alias), "", "")
+    }
+
+    fn two_hops_bound(base_source: String, annotation: &str, extra_entity: &str) -> OrbitalSchema {
+        two_hops_bound_with_remaps(base_source, annotation, extra_entity, false)
+    }
+
+    pub(super) fn two_hops_bound_with_remaps(base_source: String, annotation: &str, extra_entity: &str, remap: bool) -> OrbitalSchema {
+        let dir = tempfile::TempDir::new().unwrap();
+        let mut base = parse_and_lower_str(&base_source).unwrap();
+        inline_schema(&mut base, &InlineConfig::default(), None).unwrap();
+        std::fs::write(dir.path().join("base.orb"), serde_json::to_vec(&base).unwrap()).unwrap();
+        for (name, from, member, entity, extra) in [
+            ("middle", "base", "Run", "MiddleEntity", "middleOnly"),
+            ("final", "middle", "Bound", "FinalEntity", "finalOnly"),
+        ] {
+            let annotation = if name == "middle" { annotation } else { "" };
+            let extra_entity = if name == "middle" { extra_entity } else { "" };
+            let overrides = if remap {
+                if name == "middle" {
+                    "fields { rootOnly: middleOnly } events { Saved: MiddleSaved }"
+                } else {
+                    "fields { middleOnly: finalOnly } events { MiddleSaved: FinalSaved }"
+                }
+            } else { "" };
+            let source = format!(r#"app consumer [version: "1.0.0"]
+    uses Base from "./{from}.orb"
+    orbital Consumer {{
+     entity {entity} [runtime] {{
+      id : string!
+      {extra} : string
+     }}
+     {extra_entity}
+     trait Bound {annotation} = Base.traits.{member} -> {entity} {{ {overrides} }}
+    }}
+    "#);
+            let mut schema = parse_and_lower_str(&source).unwrap();
+            let path = dir.path().join(format!("{name}.orb"));
+            inline_schema(&mut schema, &InlineConfig::default(), Some(&path)).unwrap();
+            if name == "final" { return schema; }
+            std::fs::write(path, serde_json::to_vec(&schema).unwrap()).unwrap();
+        }
+        unreachable!()
+    }
+
+    #[test]
+    fn genuine_bare_generic_payload_follows_two_composed_rebindings() {
+        for alias in ["type Saved = Event @entity", "type Saved (e : Entity) = Event e", "type Saved = Event RootEntity"] {
+            let schema = two_hops(alias);
+            for payload in both_payloads(first_trait(&schema)) {
+                assert!(payload.iter().any(|f| f.name == "finalOnly"), "{alias}: {payload:?}");
+                assert!(!payload.iter().any(|f| f.name == "value"), "{alias}: {payload:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn authored_value_and_row_wrappers_keep_their_paths_through_two_hops() {
+        for (alias, wrapper) in [
+            ("type Saved = Event { value : @entity }", "value"),
+            ("type Saved (e : Entity) = Event { value : e }", "value"),
+            ("type Saved = Event { row : @entity }", "row"),
+        ] {
+            let schema = two_hops(alias);
+            for payload in both_payloads(first_trait(&schema)) {
+                assert_eq!(payload.len(), 1, "{alias}: {payload:?}");
+                assert_eq!(payload[0].name, wrapper, "{alias}");
+                assert!(payload[0].properties.as_ref().unwrap().iter().any(|f| f.name == "finalOnly"), "{alias}: {payload:?}");
+            }
+        }
+    }
+
+    #[test]
+    fn authored_named_record_wrapper_reaches_structural_validation_unchanged() {
+        for (source_type, mismatch) in [
+            ("{ title : string!, count : number! }", false),
+            ("{ title : number!, count : number! }", true),
+            ("{ title : string! }", true),
+            ("number", true),
+        ] {
+            let source = format!(r#"app records [version: "1.0.0"]
+    type NoteRecord = {{ title : string!, count : number! }}
+    type Out = {{ value : {source_type}! }}
+    orbital Probe {{
+     entity Cell [runtime] {{
+      id : string!
+      out : Out
+     }}
+     trait Run -> Cell [integration] {{
+      initial: ready
+      state ready {{ ASK -> ready
+       (set @entity.out ?input)
+       (emit DONE {{ value: (object/get @entity.out "value") }})
+      }}
+      listens {{ ASK {{ input : Out! }} @description "Probe." }}
+      emits {{ DONE -> external {{ value : NoteRecord! }} @description "Probe." }}
+     }}
+    }}
+    "#);
+            let mut schema = parse_and_lower_str(&source).unwrap();
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            let payload = first_trait(&schema).emits.as_ref().unwrap()[0].payload_schema.as_ref().unwrap();
+            assert_eq!(payload.len(), 1, "{source_type}: {payload:?}");
+            assert_eq!(payload[0].name, "value");
+            let result = validate_comprehensive_without_services(&schema);
+            assert_eq!(result.errors.iter().any(|e| e.code == ErrorCode::EmitPayloadFieldTypeMismatch), mismatch, "{source_type}: {:?}", result.errors);
+            if !mismatch { assert!(result.errors.is_empty(), "{:?}", result.errors); assert!(result.warnings.is_empty(), "{:?}", result.warnings); }
+        }
+    }
+
+    #[test]
+    fn a_scalar_type_argument_has_no_entity_origin_after_two_hops() {
+        let source = generic_source("type Saved (v : Type) = Event v")
+            .replace("trait Run ->", "trait Run (v : Type) ->")
+            .replace("INIT -> ready  Saved -> ready", "ASK -> ready (emit Saved { value: ?value })\n Saved -> ready")
+            .replace("emits { Saved }", "listens { ASK { value : v! } }\n emits { Saved }");
+        let schema = two_hops_bound(source, ":: v string", "");
+        let t = first_trait(&schema);
+        assert!(t.emits.as_ref().unwrap()[0].payload_entity.is_none());
+        assert!(t.state_machine.events.as_ref().unwrap().iter().find(|e| e.key == "Saved").unwrap().payload_entity.is_none());
+        for payload in both_payloads(t) {
+            assert_eq!(payload.len(), 1);
+            assert_eq!(payload[0].name, "value");
+            assert_eq!(payload[0].field_type, "string");
+        }
+        let result = validate_comprehensive_without_services(&schema);
+        assert!(result.errors.is_empty(), "{:?}", result.errors);
+        assert!(result.warnings.is_empty(), "{:?}", result.warnings);
+    }
+
+    #[test]
+    fn an_explicit_entity_argument_keeps_its_origin_across_linked_rebinds() {
+        let source = generic_source("type Saved (e : Entity) = Event e")
+            .replace("trait Run ->", "trait Run (e : Entity) ->");
+        let schema = two_hops_bound(source.clone(), ":: e TargetEntity", r#"entity TargetEntity [runtime] {
+     id : string!
+     explicitOnly : number
+    }"#);
+        let t = first_trait(&schema);
+        assert_eq!(t.emits.as_ref().unwrap()[0].payload_entity.as_deref(), Some("TargetEntity"));
+        assert_eq!(t.state_machine.events.as_ref().unwrap().iter().find(|e| e.key == "Saved").unwrap().payload_entity.as_deref(), Some("TargetEntity"));
+        for payload in both_payloads(t) {
+            assert!(payload.iter().any(|f| f.name == "explicitOnly"), "{payload:?}");
+            assert!(!payload.iter().any(|f| f.name == "finalOnly"), "{payload:?}");
+        }
+        let implicit = two_hops_bound(source, "", "");
+        let t = first_trait(&implicit);
+        assert_eq!(t.emits.as_ref().unwrap()[0].payload_entity.as_deref(), Some("$e"));
+        for payload in both_payloads(t) {
+            assert!(payload.iter().any(|f| f.name == "finalOnly"), "{payload:?}");
+            assert!(!payload.iter().any(|f| f.name == "explicitOnly"), "{payload:?}");
+        }
+    }
+
+    #[test]
+    fn array_and_literal_scalar_payloads_remain_single_values_after_rebinding() {
+        for (alias, expected) in [
+            ("type Saved = Event [@entity]", "[object]"),
+            ("type Saved = Event string", "string"),
+        ] {
+            let schema = two_hops(alias);
+            let t = first_trait(&schema);
+            assert!(t.emits.as_ref().unwrap()[0].payload_entity.is_none());
+            for payload in both_payloads(t) {
+                assert_eq!(payload.len(), 1);
+                assert_eq!(payload[0].name, "value");
+                assert_eq!(payload[0].field_type, expected);
+                if expected == "[object]" {
+                    assert!(payload[0].properties.as_ref().unwrap().iter().any(|f| f.name == "finalOnly"));
+                }
+            }
+        }
+    }
+
+    #[test]
+    fn a_named_value_record_keeps_its_own_shape_when_the_linked_entity_changes() {
+        let schema = two_hops("type WrappedRecord = { title : string!, count : number! }\ntype Saved = Event { value : WrappedRecord }");
+        let t = first_trait(&schema);
+        assert!(t.emits.as_ref().unwrap()[0].payload_entity.is_none());
+        for payload in both_payloads(t) {
+            assert_eq!(payload.len(), 1);
+            assert_eq!(payload[0].name, "value");
+            let fields = payload[0].properties.as_ref().unwrap();
+            assert_eq!(fields.len(), 2);
+            assert!(fields.iter().any(|f| f.name == "title"));
+            assert!(fields.iter().any(|f| f.name == "count"));
+            assert!(!fields.iter().any(|f| f.name == "finalOnly"));
+        }
+    }
+}

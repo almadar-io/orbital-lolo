@@ -47,6 +47,12 @@ impl Parser {
                 })
             }
         };
+        if op.as_str() == Some("typed") && self.template_depth == 0 {
+            return Err(ParseError::InvalidSExpr {
+                message: "`typed` is compiler-internal; declare a local binding with `(name : Type value)`".to_string(),
+                span,
+            });
+        }
         let head = match &op {
             SExpression::String(s) => Some(s.clone()),
             _ => None,
@@ -418,9 +424,27 @@ impl Parser {
                     })
                 }
             };
-            let value = self.with_trail_seg(format!("[1][{pair_index}][1]"), |p| {
-                p.parse_sexpr_or_value()
-            })?;
+            let annotation = if matches!(self.peek(), TokenKind::Colon) {
+                self.advance();
+                Some(self.parse_type_expr()?)
+            } else {
+                None
+            };
+            let value_trail = if annotation.is_some() {
+                format!("[1][{pair_index}][1][1]")
+            } else {
+                format!("[1][{pair_index}][1]")
+            };
+            let value = self.with_trail_seg(value_trail, |p| p.parse_sexpr_or_value())?;
+            let value = match annotation {
+                Some(ty) => SExpression::Array(vec![
+                    SExpression::String("typed".to_string()),
+                    value,
+                    serde_json::from_value(serde_json::to_value(ty).expect("a type expression serializes"))
+                        .expect("a serialized type expression is an s-expression"),
+                ]),
+                None => value,
+            };
             self.expect_kind(&TokenKind::RParen, ")")?;
             // `let` is sequential: a binding's value may read earlier bindings,
             // so the name only enters scope after its own value is parsed.

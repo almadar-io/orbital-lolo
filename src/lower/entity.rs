@@ -728,6 +728,28 @@ mod tests {
     }
 
     #[test]
+    fn inline_record_union_keeps_its_fields_and_recursive_reference() {
+        let tree = TypeExpr::Union(vec![
+            TypeExpr::Primitive("string".into()),
+            TypeExpr::Object(vec![
+                ("kind".into(), TypeExpr::StringLiteral("branch".into()), true),
+                ("children".into(), TypeExpr::Array(Box::new(TypeExpr::Named("Tree".into()))), true),
+            ]),
+        ]);
+        let aliases = BTreeMap::from([("Tree".into(), TypeAliasResolved::Type(tree, None))]);
+        let (kind, _, _, properties, _) = lower_type_expr(
+            &TypeExpr::Named("Tree".into()), &aliases, &HashSet::new(), &[],
+        ).unwrap();
+        assert_eq!(kind, FieldType::Union);
+        let variants = properties.unwrap();
+        assert_eq!(variants["string"].field_type, FieldType::String);
+        let record = variants["object"].properties.as_ref().unwrap();
+        assert_eq!(record["kind"].values.as_deref(), Some(["branch".to_string()].as_slice()));
+        assert_eq!(record["children"].items.as_ref().unwrap().by_name_reference(), Some("Tree"));
+        assert_eq!(record["children"].required, Some(true));
+    }
+
+    #[test]
     fn local_alias_and_entity_shadow_a_program_type() {
         let mut aliases = BTreeMap::new();
         aliases.insert(
@@ -1156,7 +1178,7 @@ pub(crate) fn is_type_union_with(
                 None => primitive_field_type(name).is_some(),
             },
             TypeExpr::Primitive(name) => primitive_field_type(name).is_some(),
-            TypeExpr::Array(_) | TypeExpr::Map(..) => true,
+            TypeExpr::Array(_) | TypeExpr::Map(..) | TypeExpr::Object(_) => true,
             _ => false,
         })
 }
@@ -1204,6 +1226,7 @@ fn struct_union_variants(
             // `[string]` and friends — a structural variant needs no alias.
             TypeExpr::Array(_) => ("array".to_string(), p.clone(), params.to_vec()),
             TypeExpr::Map(..) => ("map".to_string(), p.clone(), params.to_vec()),
+            TypeExpr::Object(_) => ("object".to_string(), p.clone(), params.to_vec()),
             _ => return Ok(None),
         };
         let name = &variant_name;

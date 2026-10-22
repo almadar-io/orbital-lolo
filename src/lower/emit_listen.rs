@@ -11,27 +11,20 @@ fn definer_knob_of(event: &str) -> Option<String> {
     orbital_core_base::schema::config_ref_event_knob(event).map(str::to_string)
 }
 
-/// `EmitDefinition.payload_entity` / `EventDefinition.payload_entity` (G4,
-/// `Almadar_Compiler_Gaps.md` §82): a payload alias's body (`type X = Event
-/// <TypeExpr>`) names the WHOLE payload as a concrete, known entity — the
-/// bare form `resolve_payload_type` flattens FLAT at the payload root (never
-/// the generic `@entity`/`$E` sentinel, which has no name to resolve here;
-/// see `flatten_bare_entity_payload`'s doc in `orbital-compiler`). Stamping
-/// the entity's name is what lets the inline phase re-derive the flattened
-/// field list from that entity's CURRENT (post `fields{}`/`extend{}`) shape
-/// once a downstream orbital-import or trait-reference override renames or
-/// extends it — without this the flattened list is frozen at THIS atom's
-/// own compile time forever. `None` for a type-param sentinel, a struct
-/// alias, or any other payload shape.
+/// The binding origin of a whole entity payload, retained through composition.
+/// Authored wrappers, literal scalar payloads and arrays have no whole-entity marker.
 pub(crate) fn bare_entity_alias_name(
     payload: &TypeExpr,
     entities_by_name: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
     type_params: &[&str],
 ) -> Option<String> {
-    if type_param_sentinel(payload, type_params).is_some() {
-        return None;
+    if let TypeExpr::Named(name) = payload {
+        if type_params.contains(&name.as_str()) {
+            return type_param_sentinel(payload, type_params);
+        }
     }
     match payload {
+        TypeExpr::BoundEntityRow => Some("@entity".to_string()),
         TypeExpr::Named(name) if entities_by_name.contains_key(name) => Some(name.clone()),
         _ => None,
     }

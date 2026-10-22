@@ -173,22 +173,6 @@ impl Formatter {
         Some(restore(template, holes))
     }
 
-    fn let_binding_names(bindings: &SExpression) -> Vec<String> {
-        let SExpression::Array(pairs) = bindings else {
-            return Vec::new();
-        };
-        pairs
-            .iter()
-            .filter_map(|pair| match pair {
-                SExpression::Array(kv) => match kv.first() {
-                    Some(SExpression::String(name)) => Some(name.clone()),
-                    _ => None,
-                },
-                _ => None,
-            })
-            .collect()
-    }
-
     /// Emit any pending comments whose source line precedes `line`, each on its
     /// own line at the current indent. Call before printing a node that starts a
     /// fresh line, to interleave its leading comments.
@@ -3262,9 +3246,8 @@ impl Formatter {
         // Detect let form
         let is_let = matches!(&arr[0], SExpression::String(s) if s == "let");
         if is_let && arr.len() == 3 {
-            self.output.push('(');
-            self.output.push_str("let");
-            self.output.push(' ');
+            self.output.push_str("(let ");
+            self.binding_scopes.push(Vec::new());
             match &arr[1] {
                 SExpression::Array(pairs) => {
                     self.output.push('(');
@@ -3273,6 +3256,22 @@ impl Formatter {
                             self.output.push(' ');
                         }
                         match pair {
+                            SExpression::Array(pair) if pair.len() == 2 && pair[0].as_str().is_some() => {
+                                let name = pair[0].as_str().unwrap();
+                                self.output.push('(');
+                                self.output.push_str(name);
+                                if let Some(ty) = crate::ast::local_annotation_type(&pair[1]) {
+                                    self.output.push_str(" : ");
+                                    self.fmt_type_expr(&ty);
+                                    self.output.push(' ');
+                                    self.fmt_sexpr_inner(&pair[1].as_array().unwrap()[1], false);
+                                } else {
+                                    self.output.push(' ');
+                                    self.fmt_sexpr_inner(&pair[1], false);
+                                }
+                                self.output.push(')');
+                                self.binding_scopes.last_mut().unwrap().push(name.to_string());
+                            }
                             SExpression::Array(pair) => self.fmt_sexpr_array(pair, true),
                             other => self.fmt_sexpr_inner(other, false),
                         }
@@ -3282,9 +3281,6 @@ impl Formatter {
                 other => self.fmt_sexpr_inner(other, true),
             }
             self.output.push(' ');
-            // The binding names are in scope for the body only; the list itself
-            // is printed first so the names themselves stay unquoted.
-            self.binding_scopes.push(Self::let_binding_names(&arr[1]));
             self.fmt_sexpr_inner(&arr[2], false);
             self.binding_scopes.pop();
             self.output.push(')');

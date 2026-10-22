@@ -891,6 +891,20 @@ fn orbital_types(
     let mut types_map: BTreeMap<String, Vec<PayloadField>> = BTreeMap::new();
     for (name, resolved) in aliases {
         match resolved {
+            TypeAliasResolved::Type(TypeExpr::Named(target), None) => {
+                types_map.insert(name.clone(), vec![PayloadField {
+                    values: None,
+                    name: String::new(),
+                    field_type: target.clone(),
+                    required: None,
+                    description: None,
+                    properties: None,
+                    type_when: None,
+                    entity: None,
+                    projected_from: None,
+                    items: None,
+                }]);
+            }
             TypeAliasResolved::Type(te @ TypeExpr::Object(_), _) => {
                 if let Some(props) = struct_payload_properties(te, aliases, &[]) {
                     types_map.insert(name.clone(), props);

@@ -3,7 +3,7 @@
 
 use crate::ast::{
     Emit, Entity, EntityField, EventField, ExpectsKind, Listen, Orbital, Program, Trait, TypeAlias,
-    TypeBody, TypeExpr,
+    TypeBody, TypeExpr, ConfigField,
 };
 use crate::error::LowerError;
 use std::collections::HashMap;
@@ -21,6 +21,9 @@ pub(crate) fn resolve_field_projections(program: &Program) -> Result<Program, Lo
     let mut visit = |t: &mut TypeExpr| resolve(t, &declared, &mut Vec::new());
     for alias in &mut out.type_aliases {
         visit_alias(alias, &mut visit)?;
+    }
+    for used in &mut out.uses {
+        visit_config(&mut used.config, &mut visit)?;
     }
     for orbital in &mut out.orbitals {
         visit_orbital(orbital, &mut visit)?;
@@ -132,8 +135,41 @@ fn visit_alias(alias: &mut TypeAlias, visit: &mut Visit<'_>) -> Result<(), Lower
     }
 }
 
+fn visit_expression(expr: &mut orbital_core_base::schema::SExpression, visit: &mut Visit<'_>) -> Result<(), LowerError> {
+    use orbital_core_base::schema::SExpression;
+    if matches!(expr.operator(), Some("quote")) {
+        return Ok(());
+    }
+    if let Some(mut ty) = crate::ast::local_annotation_type(expr) {
+        visit(&mut ty)?;
+        let parts = match expr { SExpression::Array(parts) => parts, _ => unreachable!() };
+        parts[2] = serde_json::from_value(serde_json::to_value(ty).expect("type expression serializes"))
+            .expect("type expression is an s-expression");
+        return visit_expression(&mut parts[1], visit);
+    }
+    match expr {
+        SExpression::Array(items) => items.iter_mut().try_for_each(|e| visit_expression(e, visit)),
+        SExpression::Object(fields) => fields.values_mut().try_for_each(|e| visit_expression(e, visit)),
+        _ => Ok(()),
+    }
+}
+
+fn visit_config(fields: &mut [ConfigField], visit: &mut Visit<'_>) -> Result<(), LowerError> {
+    for field in fields {
+        visit(&mut field.type_expr)?;
+        if let Some(default) = &mut field.default { visit_expression(default, visit)?; }
+    }
+    Ok(())
+}
+
 fn visit_entity_fields(fields: &mut [EntityField], visit: &mut Visit<'_>) -> Result<(), LowerError> {
-    fields.iter_mut().try_for_each(|f| visit(&mut f.type_expr))
+    for field in fields {
+        visit(&mut field.type_expr)?;
+        for expr in field.default.iter_mut().chain(field.derived.iter_mut()) {
+            visit_expression(expr, visit)?;
+        }
+    }
+    Ok(())
 }
 
 fn visit_event_fields(fields: &mut [EventField], visit: &mut Visit<'_>) -> Result<(), LowerError> {
@@ -141,7 +177,13 @@ fn visit_event_fields(fields: &mut [EventField], visit: &mut Visit<'_>) -> Resul
 }
 
 fn visit_listens(listens: &mut [Listen], visit: &mut Visit<'_>) -> Result<(), LowerError> {
-    listens.iter_mut().try_for_each(|l| visit_event_fields(&mut l.payload, visit))
+    for listen in listens {
+        visit_event_fields(&mut listen.payload, visit)?;
+        for expr in listen.guard.iter_mut().chain(listen.payload_mapping.iter_mut().map(|(_, e)| e)) {
+            visit_expression(expr, visit)?;
+        }
+    }
+    Ok(())
 }
 
 fn visit_emits(emits: &mut [Emit], visit: &mut Visit<'_>) -> Result<(), LowerError> {
@@ -149,15 +191,39 @@ fn visit_emits(emits: &mut [Emit], visit: &mut Visit<'_>) -> Result<(), LowerErr
 }
 
 fn visit_entity(entity: &mut Entity, visit: &mut Visit<'_>) -> Result<(), LowerError> {
-    visit_entity_fields(&mut entity.fields, visit)
+    visit_entity_fields(&mut entity.fields, visit)?;
+    for expr in entity.read_policy.iter_mut().chain(entity.create_policy.iter_mut())
+        .chain(entity.update_policy.iter_mut()).chain(entity.delete_policy.iter_mut())
+        .chain(entity.invariants.iter_mut()) {
+        visit_expression(expr, visit)?;
+    }
+    Ok(())
 }
 
 fn visit_trait(t: &mut Trait, visit: &mut Visit<'_>) -> Result<(), LowerError> {
-    t.config.iter_mut().try_for_each(|c| visit(&mut c.type_expr))?;
+    visit_config(&mut t.config, visit)?;
+    for state in &mut t.states {
+        if let Some(expr) = &mut state.holds { visit_expression(expr, visit)?; }
+        for transition in &mut state.transitions {
+            for expr in transition.guard.iter_mut().chain(transition.ensures.iter_mut()).chain(transition.effects.iter_mut()) {
+                visit_expression(expr, visit)?;
+            }
+            if let Some(term_match) = &mut transition.term_match {
+                for arm in &mut term_match.arms {
+                    for expr in &mut arm.effects { visit_expression(expr, visit)?; }
+                }
+            }
+        }
+    }
+    for tick in &mut t.ticks {
+        for expr in tick.guard.iter_mut().chain(tick.effects.iter_mut()) {
+            visit_expression(expr, visit)?;
+        }
+    }
     visit_emits(&mut t.emits, visit)?;
     visit_listens(&mut t.listens, visit)?;
     if let Some(reference) = &mut t.reference {
-        reference.config.iter_mut().try_for_each(|c| visit(&mut c.type_expr))?;
+        visit_config(&mut reference.config, visit)?;
     }
     Ok(())
 }
@@ -167,10 +233,27 @@ fn visit_orbital(orbital: &mut Orbital, visit: &mut Visit<'_>) -> Result<(), Low
         visit_alias(alias, visit)?;
     }
     for expects in &mut orbital.expects {
-        if let ExpectsKind::Identity { shape: Some(fields), .. } | ExpectsKind::Entity { shape: Some(fields), .. } =
-            &mut expects.kind
-        {
-            visit_entity_fields(fields, visit)?;
+        match &mut expects.kind {
+            ExpectsKind::Identity { shape, .. } => {
+                if let Some(fields) = shape { visit_entity_fields(fields, visit)?; }
+            }
+            ExpectsKind::Entity { shape, access, invariants, .. } => {
+                if let Some(fields) = shape { visit_entity_fields(fields, visit)?; }
+                for expr in access.read_policy.iter_mut().chain(access.create_policy.iter_mut())
+                    .chain(access.update_policy.iter_mut()).chain(access.delete_policy.iter_mut())
+                    .chain(invariants.iter_mut()) {
+                    visit_expression(expr, visit)?;
+                }
+            }
+            ExpectsKind::State { holds, .. } => {
+                if let Some(expr) = holds { visit_expression(expr, visit)?; }
+            }
+            ExpectsKind::Transition { ensures, .. } => {
+                for expr in ensures { visit_expression(expr, visit)?; }
+            }
+            ExpectsKind::Config { field } => visit_config(std::slice::from_mut(field), visit)?,
+            ExpectsKind::Event { payload, .. } => visit_event_fields(payload, visit)?,
+            ExpectsKind::Page { .. } => {}
         }
     }
     if let Some(entity) = &mut orbital.entity {
@@ -182,12 +265,13 @@ fn visit_orbital(orbital: &mut Orbital, visit: &mut Visit<'_>) -> Result<(), Low
     for t in &mut orbital.traits {
         visit_trait(t, visit)?;
     }
-    orbital.config.iter_mut().try_for_each(|c| visit(&mut c.type_expr))?;
-    orbital.config_overrides.iter_mut().try_for_each(|c| visit(&mut c.type_expr))?;
+    visit_config(&mut orbital.config, visit)?;
+    visit_config(&mut orbital.config_overrides, visit)?;
+    for expr in &mut orbital.body { visit_expression(expr, visit)?; }
     visit_entity_fields(&mut orbital.extend_fields, visit)?;
     visit_listens(&mut orbital.import_listens, visit)?;
     for u in &mut orbital.uses {
-        u.config.iter_mut().try_for_each(|c| visit(&mut c.type_expr))?;
+        visit_config(&mut u.config, visit)?;
     }
     Ok(())
 }

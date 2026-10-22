@@ -5,9 +5,10 @@
 //! structure" and the EBNF grammar at the bottom of that document.
 
 use orbital_core_base::schema::SExpression;
+use serde::{Deserialize, Serialize};
 
 /// Source span for error reporting.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize)]
 pub struct Span {
     pub line: u32,
     pub col: u32,
@@ -719,7 +720,7 @@ pub struct EntityField {
 /// spellings `TypeExpr::EventPayloadOf` carries. Kept as one enum (not a
 /// string convention) so every consumer switches on a closed shape instead
 /// of re-parsing a leading sigil out of a string.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub enum PayloadOfTarget {
     /// `@payload @config.<knob>` — the payload of the event that config knob
     /// names. Resolved post-inline (L2), against the call site's folded
@@ -734,7 +735,7 @@ pub enum PayloadOfTarget {
 }
 
 /// Type expression in field declarations.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum TypeExpr {
     /// Primitive type (`string`, `int`, `bool`, ...).
     Primitive(String),
@@ -893,7 +894,7 @@ impl TypeExpr {
 /// One arm of a type-level `match` (`TypeExpr::Match`). `ty` is restricted
 /// to `Primitive`/`[Primitive]` in v1 — anything else is
 /// `ELOLO_MATCH_ARM_TYPE_UNSUPPORTED` (`check_match_types`).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MatchArm {
     pub pattern: MatchPattern,
     pub ty: TypeExpr,
@@ -904,7 +905,7 @@ pub struct MatchArm {
 /// literal's canonical spelling (`orbital_core::schema::config_literal_spelling`)
 /// via `spelling()` below — `Str`/`Word` are interchangeable spellings of the
 /// same literal (`"number"` and `number` both spell `"number"`).
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum MatchPattern {
     Str(String),
     Word(String),
@@ -1409,3 +1410,17 @@ pub struct Page {
 /// Top-level AST returned by the parser. The compiler-facing entry point is
 /// `lower_to_orb` which takes one of these.
 pub type Ast = Program;
+
+/// The source-only declaration retained until alias-aware expression lowering.
+pub(crate) fn local_annotation_type(expr: &SExpression) -> Option<TypeExpr> {
+    let SExpression::Array(parts) = expr else {
+        return None;
+    };
+    let [SExpression::String(head), _, declaration @ SExpression::Object(_)] = parts.as_slice() else {
+        return None;
+    };
+    if head != "typed" {
+        return None;
+    }
+    serde_json::from_value(serde_json::to_value(declaration).ok()?).ok()
+}
