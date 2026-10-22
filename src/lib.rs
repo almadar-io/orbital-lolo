@@ -31,7 +31,6 @@ pub mod unlower;
 pub use ast::{Ast, Comment, EntityField, EventField, Span, TypeExpr};
 pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
 pub use format::format_program;
-pub use unlower::{schema_to_lolo, unlower, UnlowerError};
 pub use lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
 pub use lower::{
     lower_to_orb, lower_to_orb_with, lower_to_orb_with_map, lower_to_orb_with_map_with,
@@ -40,6 +39,7 @@ pub use lower::{
 };
 pub use parser::{detect_language, parse, parse_str};
 pub use source_map::LoloSourceMap;
+pub use unlower::{schema_to_lolo, unlower, UnlowerError};
 
 pub mod source_map;
 

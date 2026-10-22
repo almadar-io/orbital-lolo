@@ -156,6 +156,7 @@ pub fn print_trait(
 }
 
 pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
+    let _contract = types::PrintTypeContract::enter(schema.type_contract_version);
     let mut fold_shapes = Vec::new();
     baked_fold_definitions(
         &serde_json::to_value(schema).map_err(|e| UnlowerError::new(e.to_string()))?,
@@ -186,6 +187,9 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
         span: Span::dummy(),
     };
     let mut global = types::AliasShapes::default();
+    global
+        .known_structs
+        .extend(schema.types.iter().flat_map(|types| types.keys().cloned()));
     for def in &fold_shapes {
         types::collect_field_shapes(def, &mut global)?;
     }
@@ -220,14 +224,28 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
         .collect::<Result<Vec<_>, _>>()?;
     let mut orbitals = orbitals;
     let uses = hoist_common_uses(&mut orbitals, &schema.orbitals)?;
-    let type_aliases = hoist_common_aliases(&mut orbitals, &app, &global)?;
-    Ok(Program {
+    let mut type_aliases = hoist_common_aliases(&mut orbitals, &app, &global)?;
+    let root_aliases = orbital::declared_type_aliases_from(
+        schema.types.as_ref(),
+        &global,
+        &mut std::collections::BTreeMap::new(),
+    )?;
+    for alias in root_aliases {
+        if !type_aliases
+            .iter()
+            .any(|existing| existing.name == alias.name)
+        {
+            type_aliases.push(alias);
+        }
+    }
+    let program = Program {
         app,
         type_aliases,
         uses,
         orbitals,
         comments: Vec::new(),
-    })
+    };
+    Ok(program)
 }
 
 /// File-scoped `uses` lower into every orbital's own list, so the prefix every

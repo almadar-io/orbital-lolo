@@ -490,7 +490,6 @@ pub enum LowerError {
     #[error("invalid persistence {value:?}")]
     InvalidPersistence { value: String },
 
-
     #[error("invalid trait category {value:?}")]
     InvalidCategory { value: String },
 
@@ -902,7 +901,10 @@ pub enum LowerError {
     /// `ORB_BEHAVIOR_PACKAGE_NOT_INSTALLED` / `needs_install: true`, the same
     /// treatment the `.orb` inline-resolution path already gives the
     /// equivalent loader error.
-    #[error("{}", orbital_core_base::behavior_packages::not_installed_message(package))]
+    #[error(
+        "{}",
+        orbital_core_base::behavior_packages::not_installed_message(package)
+    )]
     BehaviorPackageNotInstalled { package: String },
 
     /// The installed `@almadar/core` language data (the pattern vocabulary)

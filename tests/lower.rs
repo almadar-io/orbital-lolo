@@ -1166,3 +1166,111 @@ mod payload_wrapper_provenance {
         }
     }
 }
+
+mod native_record_contracts {
+    use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
+    use serde_json::{json, Value};
+
+    fn source(declarations: &str) -> String {
+        format!(r#"app records [version: "1.0.0"]
+{declarations}
+orbital Contract {{
+ entity State [runtime] {{
+  id : string!
+  value : Probe
+ }}
+}}
+"#)
+    }
+
+    fn value_field(schema: &Value) -> &Value {
+        schema["orbitals"][0]["entity"]["fields"].as_array().unwrap().iter()
+            .find(|field| field["name"] == "value").unwrap()
+    }
+
+    #[test]
+    fn native_record_contracts_keep_presence_independent_from_nullability() {
+        let schema = parse_and_lower_str(&source("type Probe = { optional : string, required : string!, nullable : string?, requiredNullable : string?! }")).unwrap();
+        let encoded = serde_json::to_value(schema).unwrap();
+        let fields = &value_field(&encoded)["properties"];
+        for (name, required, nullable) in [("optional", false, false), ("required", true, false), ("nullable", false, true), ("requiredNullable", true, true)] {
+            assert_eq!(fields[name]["required"].as_bool().unwrap_or(false), required, "{name}: {}", fields[name]);
+            assert_eq!(fields[name]["nullable"].as_bool().unwrap_or(false), nullable, "{name}: {}", fields[name]);
+        }
+    }
+
+    #[test]
+    fn native_record_contracts_catchall_roundtrips_without_reinterpreting_literal_keys() {
+        let src = source(r#"type Probe = { id : string, "*" : string, "..." : number, ... : string? }"#);
+        let parsed = parse_str(&src).unwrap();
+        let formatted = format_program(&parsed);
+        assert!(formatted.contains("... : string?"), "{formatted}");
+        parse_str(&formatted).expect("formatted typed catchall parses");
+        let lowered = serde_json::to_value(parse_and_lower_str(&src).unwrap()).unwrap();
+        let field = value_field(&lowered);
+        assert!(field["properties"].get("*").is_some());
+        assert!(field["properties"].get("...").is_some());
+        assert_eq!(field["properties"]["id"]["type"], "string");
+        assert_eq!(field["additionalProperties"]["type"], "string");
+        assert_eq!(field["additionalProperties"]["nullable"], true);
+    }
+
+    #[test]
+    fn native_record_contracts_ordinary_record_does_not_gain_a_catchall() {
+        let encoded = serde_json::to_value(parse_and_lower_str(&source("type Probe = { id : string, * : string }")).unwrap()).unwrap();
+        assert!(value_field(&encoded).get("additionalProperties").is_none());
+        assert_eq!(value_field(&encoded)["properties"]["*"]["type"], "string");
+    }
+
+    #[test]
+    fn native_record_contracts_reject_duplicate_or_required_catchall_and_unknown_type() {
+        for declaration in ["type Probe = { ... : string, ... : number }", "type Probe = { ... : string! }", "type Probe = { ... : MissingType }"] {
+            assert!(parse_and_lower_str(&source(declaration)).is_err(), "{declaration}");
+        }
+    }
+
+    #[test]
+    fn native_record_contracts_type_only_source_retains_named_recursive_declarations() {
+        let src = r#"type FieldValue = string | number | boolean | [FieldValue] | Map string FieldValue
+type RowWriteFailureMode = "atomic" | "stop"
+type RowWriteBatch = { ops : [FieldValue]!, onFailure : RowWriteFailureMode! }
+"#;
+        let encoded = serde_json::to_value(parse_and_lower_str(src).unwrap()).unwrap();
+        assert_eq!(encoded["orbitals"], json!([]));
+        let types = encoded["types"].as_object().expect("type-only source exports existing named-type metadata");
+        for name in ["FieldValue", "RowWriteFailureMode", "RowWriteBatch"] {
+            assert!(types.contains_key(name), "{encoded}");
+        }
+        assert!(types["FieldValue"].to_string().contains("FieldValue"));
+        let mode = &types["RowWriteFailureMode"][0];
+        assert_eq!(mode["type"], "string");
+        assert_eq!(mode["values"], json!(["atomic", "stop"]));
+        assert_eq!(mode["nullable"], false);
+        let failure = types["RowWriteBatch"].as_array().unwrap().iter()
+            .find(|field| field["name"] == "onFailure").unwrap();
+        assert_eq!(failure["type"], "string");
+        assert_eq!(failure["values"], mode["values"]);
+        assert_eq!(failure["required"], true);
+        assert_eq!(failure["nullable"], false);
+        let schema = parse_and_lower_str(src).unwrap();
+        let rendered = format_program(&orbital_lolo::unlower(&schema).unwrap());
+        assert_eq!(parse_and_lower_str(&rendered).unwrap().types, schema.types);
+    }
+    #[test]
+    fn native_record_contracts_legacy_print_spells_nullable_fields_without_losing_presence() {
+        let legacy: orbital_core_base::schema::OrbitalSchema = serde_json::from_value(json!({
+            "name":"Legacy", "orbitals":[{"name":"Legacy", "entity":{"name":"Row", "fields":[
+                {"name":"required", "type":"string", "required":true},
+                {"name":"optional", "type":"string", "required":false}
+            ]}, "traits":[], "pages":[]}]
+        })).unwrap();
+        let printed = format_program(&orbital_lolo::unlower(&legacy).unwrap());
+        assert!(printed.contains("required : string?!"), "{printed}");
+        assert!(printed.contains("optional : string?"), "{printed}");
+        let restored = serde_json::to_value(parse_and_lower_str(&printed).unwrap()).unwrap();
+        for field in restored["orbitals"][0]["entity"]["fields"].as_array().unwrap() {
+            assert_eq!(field["nullable"], true, "{field}");
+        }
+    }
+
+}

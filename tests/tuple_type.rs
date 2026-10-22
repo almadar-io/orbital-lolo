@@ -211,7 +211,7 @@ orbital Probe {
     else {
         panic!("tuple field")
     };
-    let orbital_core_base::ir::types::OirType::Struct { fields } = &items[1] else {
+    let orbital_core_base::ir::types::OirType::Struct { fields, .. } = &items[1] else {
         panic!("tuple record")
     };
     assert_eq!(fields[0].name, "repo");

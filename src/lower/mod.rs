@@ -13,25 +13,25 @@ use orbital_core_base::behavior_packages::BehaviorPackage;
 use orbital_core_base::effect_row::{EffectRow, EffectRowBuilder, EffectSite};
 use orbital_core_base::schema::{
     Cardinality, ConfigField as SchemaConfigField, EmitDefinition, EntityDefinition,
-    EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration, InboundDeclaration, InboundVerification,
-    FieldDefinition, FieldType, ListenDefinition, ListenSource, Orbital as CoreOrbital,
-    OrbitalRefObject, OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
+    EntityFieldContract, EntityRef, EventDefinition, EventScope, ExpectDeclaration,
+    FieldDefinition, FieldType, InboundDeclaration, InboundVerification, ListenDefinition,
+    ListenSource, MotionShapeTokens, MotionTokens, Orbital as CoreOrbital, OrbitalRefObject,
+    OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
     Persistence as CorePersistence, RelationDefinition, SExpression, StateDefinition, StateMachine,
-    MotionShapeTokens, MotionTokens, StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef,
-    ThemeTokens, ThemeVariant,
+    StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef, ThemeTokens, ThemeVariant,
     TickDefinition, TraitCategory, TraitDefinition, TraitReference, TransitionDefinition,
     UseDeclaration,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 mod checks;
+mod config_knob_read;
 mod emit_listen;
-mod projection;
 pub(crate) mod entity;
 mod orbital_ref;
 mod page;
 mod payload_contract;
-mod config_knob_read;
+mod projection;
 mod render_prop_types;
 mod r#trait;
 mod tree_fold;
@@ -65,6 +65,7 @@ pub(crate) use type_helpers::{
 #[derive(Debug, Default, Clone)]
 pub struct LowerOptions {
     pub packages: Vec<BehaviorPackage>,
+    pub source_path: Option<std::path::PathBuf>,
 }
 
 /// Lower an entire `.lolo` program into an `OrbitalSchema` (no identity
@@ -167,7 +168,10 @@ fn discovered_options() -> Result<LowerOptions, LowerError> {
         orbital_core_base::behavior_packages::user_store_dir().unwrap_or_else(|| cwd.clone());
     let packages = orbital_core_base::behavior_packages::discover(&cwd, &user_store)
         .map_err(|e| LowerError::BehaviorPackages(e.to_string()))?;
-    Ok(LowerOptions { packages })
+    Ok(LowerOptions {
+        packages,
+        ..Default::default()
+    })
 }
 
 /// The one internal entry point every public `lower_to_orb*` function funnels
@@ -242,7 +246,10 @@ fn lower_to_orb_names_only(
     // Build a global map of type aliases (file-level) for enum substitution.
     let mut type_aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
     for ta in &ast.type_aliases {
-        type_aliases.insert(ta.name.clone(), resolve_type_alias(&ta.body, ta.type_param.as_ref()));
+        type_aliases.insert(
+            ta.name.clone(),
+            resolve_type_alias(&ta.body, ta.type_param.as_ref()),
+        );
     }
     reclassify_struct_unions(&mut type_aliases);
 
@@ -305,7 +312,10 @@ fn lower_to_orb_names_only(
         // Merge orbital-scoped type aliases on top of file-level ones.
         let mut local_aliases = type_aliases.clone();
         for ta in &orb.type_aliases {
-            local_aliases.insert(ta.name.clone(), resolve_type_alias(&ta.body, ta.type_param.as_ref()));
+            local_aliases.insert(
+                ta.name.clone(),
+                resolve_type_alias(&ta.body, ta.type_param.as_ref()),
+            );
         }
         reclassify_struct_unions(&mut local_aliases);
         let mut local_entities = file_entity_bodies.clone();
@@ -347,7 +357,12 @@ fn lower_to_orb_names_only(
             .located(orb.span)?,
         );
         if let Some(lowered) = orbitals.last_mut() {
-            tree_fold::bake_tree_fold_definitions(lowered, &local_aliases, &local_entity_names, orb.span)?;
+            tree_fold::bake_tree_fold_definitions(
+                lowered,
+                &local_aliases,
+                &local_entity_names,
+                orb.span,
+            )?;
         }
     }
 
@@ -370,6 +385,8 @@ fn lower_to_orb_names_only(
     )?;
 
     let mut schema = OrbitalSchema {
+        type_contract_version: Some(1),
+        types: orbital_types(&type_aliases),
         store: ast.app.store.clone(),
         theme_definitions: None,
         themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.clone()),
@@ -419,13 +436,18 @@ fn qualify_message_keys(schema: OrbitalSchema) -> Result<OrbitalSchema, LowerErr
         detail: e.to_string(),
     })?;
     let namespace = schema.name.clone();
-    if let Some(issue) = qualify_message_keys(&mut value, &namespace).into_iter().next() {
+    if let Some(issue) = qualify_message_keys(&mut value, &namespace)
+        .into_iter()
+        .next()
+    {
         return Err(match issue {
             MessageKeyIssue::Dynamic { path } => LowerError::MessageKeyDynamic { path },
             MessageKeyIssue::Invalid { path, key } => LowerError::MessageKeyInvalid { path, key },
         });
     }
-    serde_json::from_value(value).map_err(|e| LowerError::MessageKeys { detail: e.to_string() })
+    serde_json::from_value(value).map_err(|e| LowerError::MessageKeys {
+        detail: e.to_string(),
+    })
 }
 
 /// `ThemeDecl` → `ThemeRef`: a quoted key stays a reference; an inline
@@ -767,7 +789,11 @@ pub(crate) fn lower_expects_decl(
             traits: (!traits.is_empty()).then(|| traits.clone()),
             strict,
         },
-        ExpectsKind::State { trait_name, state, holds } => ExpectDeclaration::State {
+        ExpectsKind::State {
+            trait_name,
+            state,
+            holds,
+        } => ExpectDeclaration::State {
             trait_name: trait_name.clone(),
             state: state.clone(),
             holds: holds.clone(),
@@ -788,11 +814,21 @@ pub(crate) fn lower_expects_decl(
             strict,
         },
         ExpectsKind::Config { field } => {
-            let mut lowered = lower_config_fields_to_map(std::slice::from_ref(field), "expects config", false, &[], aliases, entity_names)?
-                .unwrap_or_default();
-            let knob = lowered
-                .remove(&field.name)
-                .ok_or_else(|| LowerError::Internal(format!("expects config `{}` lowered to no knob", field.name)))?;
+            let mut lowered = lower_config_fields_to_map(
+                std::slice::from_ref(field),
+                "expects config",
+                false,
+                &[],
+                aliases,
+                entity_names,
+            )?
+            .unwrap_or_default();
+            let knob = lowered.remove(&field.name).ok_or_else(|| {
+                LowerError::Internal(format!(
+                    "expects config `{}` lowered to no knob",
+                    field.name
+                ))
+            })?;
             ExpectDeclaration::Config {
                 name: field.name.clone(),
                 knob,
@@ -867,6 +903,8 @@ fn vocabulary_values(te: &TypeExpr) -> Option<Vec<String>> {
 
 fn vocabulary_entry(values: Vec<String>) -> PayloadField {
     PayloadField {
+        nullable: Some(false),
+        additional_properties: None,
         values: Some(values),
         name: String::new(),
         field_type: "string".to_string(),
@@ -891,41 +929,40 @@ fn orbital_types(
     let mut types_map: BTreeMap<String, Vec<PayloadField>> = BTreeMap::new();
     for (name, resolved) in aliases {
         match resolved {
-            TypeAliasResolved::Type(TypeExpr::Named(target), None) => {
-                types_map.insert(name.clone(), vec![PayloadField {
-                    values: None,
-                    name: String::new(),
-                    field_type: target.clone(),
-                    required: None,
-                    description: None,
-                    properties: None,
-                    type_when: None,
-                    entity: None,
-                    projected_from: None,
-                    items: None,
-                }]);
-            }
-            TypeAliasResolved::Type(te @ TypeExpr::Object(_), _) => {
-                if let Some(props) = struct_payload_properties(te, aliases, &[]) {
-                    types_map.insert(name.clone(), props);
-                }
-            }
-            // A dictionary or list alias is not a struct: it is recorded as ONE entry with the empty name (no field
-            // has one) whose type string is the alias's value, so `json/parse x Row` can name it as a shape.
             TypeAliasResolved::Type(
-                te @ (TypeExpr::Map(..) | TypeExpr::Array(_) | TypeExpr::Tuple(_) | TypeExpr::SExpr),
+                te @ (TypeExpr::OpenObject { .. }
+                | TypeExpr::Optional(_)
+                | TypeExpr::FieldOf { .. }),
                 _,
             ) => {
-                if let Some(tuple) = emit_listen::tuple_payload_field(te, aliases, &[]) {
-                    types_map.insert(name.clone(), vec![tuple]);
-                    continue;
-                }
+                types_map.insert(
+                    name.clone(),
+                    vec![emit_listen::source_payload_field("", te, aliases, &[])],
+                );
+            }
+            TypeAliasResolved::Type(TypeExpr::Primitive(kind), _) => {
+                types_map.insert(
+                    name.clone(),
+                    vec![emit_listen::source_payload_field(
+                        "",
+                        &TypeExpr::Primitive(kind.clone()),
+                        aliases,
+                        &[],
+                    )],
+                );
+            }
+            TypeAliasResolved::Enum(values) => {
+                types_map.insert(name.clone(), vec![vocabulary_entry(values.clone())]);
+            }
+            TypeAliasResolved::Type(TypeExpr::Named(target), None) => {
                 types_map.insert(
                     name.clone(),
                     vec![PayloadField {
+                        nullable: Some(false),
+                        additional_properties: None,
                         values: None,
                         name: String::new(),
-                        field_type: type_expr_to_string(te),
+                        field_type: target.clone(),
                         required: None,
                         description: None,
                         properties: None,
@@ -936,13 +973,38 @@ fn orbital_types(
                     }],
                 );
             }
+            TypeAliasResolved::Type(te @ TypeExpr::Object(_), _) => {
+                if let Some(props) = struct_payload_properties(te, aliases, &[]) {
+                    types_map.insert(name.clone(), props);
+                }
+            }
+            // A dictionary or list alias is not a struct: it is recorded as ONE entry with the empty name (no field
+            // has one) whose type string is the alias's value, so `json/parse x Row` can name it as a shape.
+            TypeAliasResolved::Type(
+                te
+                @ (TypeExpr::Map(..) | TypeExpr::Array(_) | TypeExpr::Tuple(_) | TypeExpr::SExpr),
+                _,
+            ) => {
+                if let Some(tuple) = emit_listen::tuple_payload_field(te, aliases, &[]) {
+                    types_map.insert(name.clone(), vec![tuple]);
+                } else {
+                    types_map.insert(
+                        name.clone(),
+                        vec![emit_listen::source_payload_field("", te, aliases, &[])],
+                    );
+                }
+            }
             // A tagged union is recorded as ONE entry with the empty name, typed `union`, whose properties are its
             // variants: a payload field named by the alias resolves to that union and its members can be read.
             TypeAliasResolved::Type(te @ TypeExpr::Union(_), _) => {
-                if let Some(variants) = crate::lower::emit_listen::union_payload_variants(te, aliases, &[]) {
+                if let Some(variants) =
+                    crate::lower::emit_listen::union_payload_variants(te, aliases, &[])
+                {
                     types_map.insert(
                         name.clone(),
                         vec![PayloadField {
+                            nullable: Some(false),
+                            additional_properties: None,
                             values: None,
                             name: String::new(),
                             field_type: "union".to_string(),
@@ -1387,36 +1449,61 @@ mod tests {
             "      diagram {\n        strokeNormal: \"3px\"\n        lineCap: \"round\"\n        fillStyle: \"hatch\"\n      }\n      scene {\n        materialFlat: \"1\"\n      }\n      surface {\n        diagram: \"#1f3a2e\"\n      }",
         );
         let s = lower(&src);
-        let orbital_core_base::schema::ThemeRef::Inline(def) = s.orbitals[0].theme.as_ref().unwrap() else {
+        let orbital_core_base::schema::ThemeRef::Inline(def) =
+            s.orbitals[0].theme.as_ref().unwrap()
+        else {
             panic!("expected inline theme");
         };
         let diagram = def.tokens.diagram.as_ref().expect("diagram axis lowered");
         assert_eq!(diagram.stroke_normal.as_deref(), Some("3px"));
-        assert_eq!(diagram.line_cap, Some(orbital_core_base::schema::DiagramLineCap::Round));
-        assert_eq!(diagram.fill_style, Some(orbital_core_base::schema::DiagramFillStyle::Hatch));
-        assert_eq!(def.tokens.scene.as_ref().unwrap().material_flat.as_deref(), Some("1"));
-        assert_eq!(def.tokens.surface.as_ref().unwrap().diagram.as_deref(), Some("#1f3a2e"));
+        assert_eq!(
+            diagram.line_cap,
+            Some(orbital_core_base::schema::DiagramLineCap::Round)
+        );
+        assert_eq!(
+            diagram.fill_style,
+            Some(orbital_core_base::schema::DiagramFillStyle::Hatch)
+        );
+        assert_eq!(
+            def.tokens.scene.as_ref().unwrap().material_flat.as_deref(),
+            Some("1")
+        );
+        assert_eq!(
+            def.tokens.surface.as_ref().unwrap().diagram.as_deref(),
+            Some("#1f3a2e")
+        );
         let ast = parse_str(&src).expect("parse");
         let formatted = crate::format::format_program(&ast);
-        let reparsed = parse_str(&formatted).unwrap_or_else(|e| panic!("reparse: {e}\n{formatted}"));
+        let reparsed =
+            parse_str(&formatted).unwrap_or_else(|e| panic!("reparse: {e}\n{formatted}"));
         assert_eq!(reparsed.orbitals[0].theme, ast.orbitals[0].theme);
     }
 
     #[test]
     fn inline_theme_rejects_an_unknown_diagram_value() {
-        let err = parse_str(&inline_theme("      diagram {\n        lineCap: \"wavy\"\n      }")).unwrap_err();
+        let err = parse_str(&inline_theme(
+            "      diagram {\n        lineCap: \"wavy\"\n      }",
+        ))
+        .unwrap_err();
         assert!(err.to_string().contains("butt, round, square"), "{err}");
     }
 
     #[test]
     fn inline_theme_rejects_an_unknown_diagram_key() {
-        assert!(parse_str(&inline_theme("      diagram {\n        stroke: \"2px\"\n      }")).is_err());
+        assert!(parse_str(&inline_theme(
+            "      diagram {\n        stroke: \"2px\"\n      }"
+        ))
+        .is_err());
     }
 
     #[test]
     fn control_inline_theme_without_drawing_axes_lowers_none() {
-        let s = lower(&inline_theme("      colors {\n        primary: \"#000\"\n      }"));
-        let orbital_core_base::schema::ThemeRef::Inline(def) = s.orbitals[0].theme.as_ref().unwrap() else {
+        let s = lower(&inline_theme(
+            "      colors {\n        primary: \"#000\"\n      }",
+        ));
+        let orbital_core_base::schema::ThemeRef::Inline(def) =
+            s.orbitals[0].theme.as_ref().unwrap()
+        else {
             panic!("expected inline theme");
         };
         assert!(def.tokens.diagram.is_none() && def.tokens.scene.is_none());
@@ -1443,10 +1530,22 @@ mod tests {
     #[test]
     fn lower_nullable_field_is_its_inner_type_and_not_required() {
         let ent = lowered_entity("orbital Foo {\n  entity Bar {\n    id : string!\n    due : number?\n    kept : number!\n  }\n}");
-        let field = |name: &str| ent.fields.iter().find(|f| f.name.as_deref() == Some(name)).unwrap();
-        assert_eq!(field("due").field_type, orbital_core_base::schema::FieldType::Number);
+        let field = |name: &str| {
+            ent.fields
+                .iter()
+                .find(|f| f.name.as_deref() == Some(name))
+                .unwrap()
+        };
+        assert_eq!(
+            field("due").field_type,
+            orbital_core_base::schema::FieldType::Number
+        );
         assert_ne!(field("due").required, Some(true));
-        assert_eq!(field("kept").required, Some(true), "control: `!` still requires");
+        assert_eq!(
+            field("kept").required,
+            Some(true),
+            "control: `!` still requires"
+        );
     }
 
     #[test]
@@ -2122,7 +2221,9 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         match lower_to_orb(&ast).map_err(|e| e.innermost().clone()) {
-            Err(LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => assert_eq!(actual, "number"),
+            Err(LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => {
+                assert_eq!(actual, "number")
+            }
             other => panic!("expected EmitPayloadFieldTypeMismatch, got {:?}", other),
         }
     }
@@ -2252,14 +2353,21 @@ mod tests {
         assert!(lower_to_orb(&ast).is_ok(), "a cast makes a CallKey");
         let ast = parse_str(&src("\"search\"")).expect("parse");
         match lower_to_orb(&ast).map_err(|e| e.innermost().clone()) {
-            Err(LowerError::SetValueTypeMismatch { expected_type, actual_type, .. }) => {
+            Err(LowerError::SetValueTypeMismatch {
+                expected_type,
+                actual_type,
+                ..
+            }) => {
                 assert_eq!(expected_type, "CallKey");
                 assert_eq!(actual_type, "string");
             }
             other => panic!("expected SetValueTypeMismatch, got {:?}", other),
         }
         let ast = parse_str(&src("7")).expect("parse");
-        assert!(lower_to_orb(&ast).is_err(), "control: a number is no CallKey either");
+        assert!(
+            lower_to_orb(&ast).is_err(),
+            "control: a number is no CallKey either"
+        );
     }
 
     #[test]
@@ -2290,7 +2398,9 @@ mod tests {
         }
         let ast = parse_str(&src("true")).expect("parse");
         match lower_to_orb(&ast).map_err(|e| e.innermost().clone()) {
-            Err(LowerError::SetValueTypeMismatch { actual_type, .. }) => assert_eq!(actual_type, "boolean"),
+            Err(LowerError::SetValueTypeMismatch { actual_type, .. }) => {
+                assert_eq!(actual_type, "boolean")
+            }
             other => panic!("expected SetValueTypeMismatch, got {:?}", other),
         }
     }
@@ -2318,11 +2428,16 @@ mod tests {
         "#;
         let ast = parse_str(src).expect("parse");
         let schema = lower_to_orb(&ast).expect("lowers");
-        let orbital_core_base::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
+        let orbital_core_base::schema::TraitReference::Inline(trait_def) =
+            &schema.orbitals[0].traits[0]
+        else {
             panic!("inline trait");
         };
         let events = trait_def.state_machine.events.as_ref().expect("events");
-        let framed = events.iter().find(|e| e.key == "FRAMED").expect("FRAMED event");
+        let framed = events
+            .iter()
+            .find(|e| e.key == "FRAMED")
+            .expect("FRAMED event");
         let frame = framed
             .payload_schema
             .as_ref()
@@ -2617,7 +2732,9 @@ mod tests {
             other => panic!("expected entity, got {other:?}"),
         }
         match &expects[3] {
-            ExpectDeclaration::Event { trait_name, event, .. } => {
+            ExpectDeclaration::Event {
+                trait_name, event, ..
+            } => {
                 // Verbatim passthrough — no case-folding on either segment.
                 assert_eq!(trait_name, "Checkout");
                 assert_eq!(event, "ORDER_PLACED");
@@ -2668,7 +2785,9 @@ mod tests {
         let s = lower("orbital ShopSpec {\n  expects trait Checkout { emits {\n    PLACED { orderId : string!, note : string }\n    CANCELLED\n  } }\n}");
         let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
         match &expects[0] {
-            ExpectDeclaration::Event { payload: Some(p), .. } => {
+            ExpectDeclaration::Event {
+                payload: Some(p), ..
+            } => {
                 assert_eq!(p.len(), 2);
                 assert_eq!(p[0].name, "orderId");
                 assert_eq!(p[0].field_type, "string");
@@ -2677,7 +2796,10 @@ mod tests {
             }
             other => panic!("expected an event with a payload, got {other:?}"),
         }
-        assert!(matches!(&expects[1], ExpectDeclaration::Event { payload: None, .. }), "control: a bare event has no payload");
+        assert!(
+            matches!(&expects[1], ExpectDeclaration::Event { payload: None, .. }),
+            "control: a bare event has no payload"
+        );
     }
 
     #[test]
@@ -2695,13 +2817,23 @@ mod tests {
             }
             other => panic!("expected a config obligation, got {other:?}"),
         }
-        assert!(matches!(&expects[1], ExpectDeclaration::Config { name, knob, .. } if name == "retries" && knob.default.is_none()));
+        assert!(
+            matches!(&expects[1], ExpectDeclaration::Config { name, knob, .. } if name == "retries" && knob.default.is_none())
+        );
         let reformatted = crate::format::format_program(&parse_str(src).expect("parses"));
-        assert!(reformatted.contains("expects config { stdio : string = pipe }"), "{reformatted}");
+        assert!(
+            reformatted.contains("expects config { stdio : string = pipe }"),
+            "{reformatted}"
+        );
         let relowered = lower(&reformatted);
-        let again = relowered.orbitals[0].expects.as_ref().expect("expects re-lowered");
+        let again = relowered.orbitals[0]
+            .expects
+            .as_ref()
+            .expect("expects re-lowered");
         assert_eq!(again.len(), 2);
-        assert!(matches!(&again[0], ExpectDeclaration::Config { knob, .. } if knob.default == Some(SExpression::String("pipe".to_string()))));
+        assert!(
+            matches!(&again[0], ExpectDeclaration::Config { knob, .. } if knob.default == Some(SExpression::String("pipe".to_string())))
+        );
     }
 
     #[test]
@@ -2723,33 +2855,62 @@ mod tests {
         let s = lower("orbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  expects page \"/orders\" -> Checkout\n  expects trait Checkout { state idle { PAY -> paid } state refunded }\n}");
         let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
         match &expects[0] {
-            ExpectDeclaration::Entity { persistence, shared, read_policy, access_waivers, shape, .. } => {
+            ExpectDeclaration::Entity {
+                persistence,
+                shared,
+                read_policy,
+                access_waivers,
+                shape,
+                ..
+            } => {
                 assert_eq!(*persistence, Some(CorePersistence::Persistent));
                 assert!(*shared);
                 assert!(read_policy.is_some());
-                assert_eq!(access_waivers.as_ref().and_then(|w| w.update.as_deref()), Some("joins another entity"));
+                assert_eq!(
+                    access_waivers.as_ref().and_then(|w| w.update.as_deref()),
+                    Some("joins another entity")
+                );
                 let fields = shape.as_ref().expect("shape");
                 assert_eq!(fields[0].primary_key, Some(true));
                 assert_eq!(fields[1].unique, Some(true));
             }
             other => panic!("expected an entity, got {other:?}"),
         }
-        assert!(matches!(&expects[1], ExpectDeclaration::Page { traits: Some(t), .. } if t == &vec!["Checkout".to_string()]));
-        assert!(matches!(&expects[2], ExpectDeclaration::Transition { from, event, to, .. } if from == "idle" && event == "PAY" && to == "paid"));
-        assert!(matches!(&expects[3], ExpectDeclaration::State { state, .. } if state == "refunded"));
-        assert!(expects.iter().all(ExpectDeclaration::is_strict), "a spec's declarations are strict");
+        assert!(
+            matches!(&expects[1], ExpectDeclaration::Page { traits: Some(t), .. } if t == &vec!["Checkout".to_string()])
+        );
+        assert!(
+            matches!(&expects[2], ExpectDeclaration::Transition { from, event, to, .. } if from == "idle" && event == "PAY" && to == "paid")
+        );
+        assert!(
+            matches!(&expects[3], ExpectDeclaration::State { state, .. } if state == "refunded")
+        );
+        assert!(
+            expects.iter().all(ExpectDeclaration::is_strict),
+            "a spec's declarations are strict"
+        );
     }
 
     #[test]
     fn a_spec_names_an_entity_of_a_spec_it_uses_through_the_alias() {
         let s = lower("uses Inner from \"./inner.lolo\"\n\norbital OuterSpec {\n  expects entity Order {\n    id : string!\n    owner : Inner.Customer\n  }\n}");
         let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
-        let ExpectDeclaration::Entity { shape: Some(fields), .. } = &expects[0] else {
+        let ExpectDeclaration::Entity {
+            shape: Some(fields),
+            ..
+        } = &expects[0]
+        else {
             panic!("expected an entity with a shape");
         };
-        let uses = s.orbitals[0].uses.as_ref().expect("the spec keeps its `uses`, which is how it inherits Inner's obligations");
+        let uses = s.orbitals[0]
+            .uses
+            .as_ref()
+            .expect("the spec keeps its `uses`, which is how it inherits Inner's obligations");
         assert_eq!(uses[0].alias, "Inner");
-        let owner = fields.iter().find(|f| f.name.as_deref() == Some("owner")).expect("owner");
+        let owner = fields
+            .iter()
+            .find(|f| f.name.as_deref() == Some("owner"))
+            .expect("owner");
         assert_eq!(
             owner.relation.as_ref().map(|r| r.entity.as_str()),
             Some("Customer"),
@@ -2771,4 +2932,3 @@ mod tests {
         assert!(err.to_string().contains("alias"), "{err}");
     }
 }
-

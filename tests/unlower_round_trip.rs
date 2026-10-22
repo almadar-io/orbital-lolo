@@ -93,7 +93,7 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>, accept: &dyn Fn(&Path) -> bool) {
 fn run_corpus(root: &Path, files: &[PathBuf]) {
     let packages =
         orbital_core_base::behavior_packages::discover(root, root).expect("discover packages");
-    let options = LowerOptions { packages };
+    let options = LowerOptions { packages, ..Default::default() };
     let mut failures = Vec::new();
     for f in files {
         let src = fs::read_to_string(f).unwrap();
@@ -187,7 +187,7 @@ fn dump_printed() {
     };
     let root = monorepo_root().expect("monorepo checkout");
     let packages = orbital_core_base::behavior_packages::discover(&root, &root).expect("discover");
-    let options = LowerOptions { packages };
+    let options = LowerOptions { packages, ..Default::default() };
     let src = fs::read_to_string(file).unwrap();
     let schema = parse_and_lower_str_with(&src, &options).unwrap();
     println!("{}", schema_to_lolo(&schema).unwrap());
@@ -196,7 +196,7 @@ fn dump_printed() {
 fn monorepo_options() -> Option<LowerOptions> {
     let root = monorepo_root()?;
     let packages = orbital_core_base::behavior_packages::discover(&root, &root).ok()?;
-    Some(LowerOptions { packages })
+    Some(LowerOptions { packages, ..Default::default() })
 }
 
 const IMPORT_HEAD: &str = "uses Notes from \"almadar-behaviors/std-notes\"\n\n";

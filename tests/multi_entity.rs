@@ -277,7 +277,7 @@ fn map_of_entity_rows_validates_compiles_and_types_its_reads() {
     let Some(OirType::Array { inner }) = field("packs") else {
         panic!("packs is a list")
     };
-    let OirType::Struct { fields } = peel(&inner) else {
+    let OirType::Struct { fields, .. } = peel(&inner) else {
         panic!("Pack is a struct, got {inner:?}")
     };
     let member = fields

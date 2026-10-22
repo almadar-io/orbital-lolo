@@ -5,15 +5,17 @@
 //! lexer captures them as trivia and the formatter re-interleaves them by source
 //! line before the node that follows them (re-indented to the output).
 
-use orbital_core_base::os_grants::{DesktopKind, FsMode, KvMode, NetKind, NetPart, OsGrants, StdioKind, SysKind};
+use orbital_core_base::os_grants::{
+    DesktopKind, FsMode, KvMode, NetKind, NetPart, OsGrants, StdioKind, SysKind,
+};
 use orbital_core_base::schema::SExpression;
 use std::collections::HashMap;
 
 use crate::ast::{
     AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst,
-    ExpectedAccess, ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, PayloadOfTarget, Persistence,
-    Program, State, TermMatch, ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait, TraitRefData,
-    TraitScope, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
+    ExpectedAccess, ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, PayloadOfTarget,
+    Persistence, Program, State, TermMatch, ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait,
+    TraitRefData, TraitScope, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
 };
 
 /// Format a `Program` AST into canonical `.lolo` source text.
@@ -358,7 +360,10 @@ impl Formatter {
             ));
         }
         if let Some(store) = &app.store {
-            entries.push(("store", Box::new(move |f: &mut Self| f.output.push_str(store))));
+            entries.push((
+                "store",
+                Box::new(move |f: &mut Self| f.output.push_str(store)),
+            ));
         }
         if let Some(public) = &app.public {
             entries.push((
@@ -397,7 +402,11 @@ impl Formatter {
     /// The `fs` … `desktop` entries of a grant set, in the contract's order; an empty family writes nothing.
     fn grant_entries(grants: &OsGrants) -> Vec<ModifierEntry<'_>> {
         fn names<T: Copy>(kinds: &[T], name: fn(T) -> &'static str) -> String {
-            kinds.iter().map(|k| name(*k)).collect::<Vec<_>>().join(", ")
+            kinds
+                .iter()
+                .map(|k| name(*k))
+                .collect::<Vec<_>>()
+                .join(", ")
         }
         fn strings(f: &mut Formatter, items: &[String]) {
             f.output.push('[');
@@ -425,13 +434,15 @@ impl Formatter {
                     for g in &grants.fs {
                         sep(f);
                         f.write_quoted_string(&g.glob);
-                        f.output.push_str(&format!(": [{}]", names(&g.modes, FsMode::name)));
+                        f.output
+                            .push_str(&format!(": [{}]", names(&g.modes, FsMode::name)));
                     }
                     for g in &grants.anchored.fs {
                         sep(f);
                         f.output.push_str(&format!("{}: ", g.anchor.label()));
                         f.write_quoted_string(&g.glob);
-                        f.output.push_str(&format!(": [{}]", names(&g.modes, FsMode::name)));
+                        f.output
+                            .push_str(&format!(": [{}]", names(&g.modes, FsMode::name)));
                     }
                     f.output.push_str(" }");
                 }),
@@ -472,7 +483,9 @@ impl Formatter {
                     fn part(f: &mut Formatter, part: &NetPart, port: bool) {
                         match part {
                             NetPart::Anchor(anchor) => f.output.push_str(&anchor.label()),
-                            NetPart::Literal(text) if port && text.parse::<u16>().is_ok() => f.output.push_str(text),
+                            NetPart::Literal(text) if port && text.parse::<u16>().is_ok() => {
+                                f.output.push_str(text)
+                            }
                             NetPart::Literal(text) => f.write_quoted_string(text),
                         }
                     }
@@ -484,7 +497,8 @@ impl Formatter {
                         }
                         first = false;
                         f.write_quoted_string(&g.target);
-                        f.output.push_str(&format!(": [{}]", names(&g.kinds, NetKind::name)));
+                        f.output
+                            .push_str(&format!(": [{}]", names(&g.kinds, NetKind::name)));
                     }
                     for g in &grants.anchored.net {
                         if !first {
@@ -494,7 +508,8 @@ impl Formatter {
                         part(f, &g.host, false);
                         f.output.push_str(", ");
                         part(f, &g.port, true);
-                        f.output.push_str(&format!(": [{}]", names(&g.kinds, NetKind::name)));
+                        f.output
+                            .push_str(&format!(": [{}]", names(&g.kinds, NetKind::name)));
                     }
                     f.output.push_str(" }");
                 }),
@@ -507,7 +522,8 @@ impl Formatter {
             entries.push((
                 "stdio",
                 Box::new(move |f: &mut Self| {
-                    f.output.push_str(&format!("[{}]", names(&grants.stdio, StdioKind::name)))
+                    f.output
+                        .push_str(&format!("[{}]", names(&grants.stdio, StdioKind::name)))
                 }),
             ));
         }
@@ -515,7 +531,8 @@ impl Formatter {
             entries.push((
                 "sys",
                 Box::new(move |f: &mut Self| {
-                    f.output.push_str(&format!("[{}]", names(&grants.sys, SysKind::name)))
+                    f.output
+                        .push_str(&format!("[{}]", names(&grants.sys, SysKind::name)))
                 }),
             ));
         }
@@ -538,7 +555,8 @@ impl Formatter {
                             f.output.push_str(", ");
                         }
                         f.write_quoted_string(store);
-                        f.output.push_str(&format!(": [{}]", names(modes, KvMode::name)));
+                        f.output
+                            .push_str(&format!(": [{}]", names(modes, KvMode::name)));
                     }
                     f.output.push_str(" }");
                 }),
@@ -927,6 +945,21 @@ impl Formatter {
                         self.output.push('!');
                     }
                 }
+                self.output.push_str(" }");
+            }
+            TypeExpr::OpenObject { fields, additional } => {
+                self.output.push_str("{ ");
+                for (name, ty, required) in fields {
+                    self.output.push_str(&shape_field_name(name));
+                    self.output.push_str(" : ");
+                    self.fmt_type_expr(ty);
+                    if *required {
+                        self.output.push('!');
+                    }
+                    self.output.push_str(", ");
+                }
+                self.output.push_str("... : ");
+                self.fmt_type_expr(additional);
                 self.output.push_str(" }");
             }
             TypeExpr::Union(parts) => {
@@ -1722,11 +1755,21 @@ impl Formatter {
                     self.output.push_str(&traits.join(", "));
                 }
             }
-            ExpectsKind::State { trait_name, state, holds: None } => {
-                self.output.push_str(&format!("trait {trait_name} {{ state {state} }}"));
+            ExpectsKind::State {
+                trait_name,
+                state,
+                holds: None,
+            } => {
+                self.output
+                    .push_str(&format!("trait {trait_name} {{ state {state} }}"));
             }
-            ExpectsKind::State { trait_name, state, holds: Some(holds) } => {
-                self.output.push_str(&format!("trait {trait_name} {{ state {state} @holds "));
+            ExpectsKind::State {
+                trait_name,
+                state,
+                holds: Some(holds),
+            } => {
+                self.output
+                    .push_str(&format!("trait {trait_name} {{ state {state} @holds "));
                 self.fmt_sexpr(holds);
                 self.output.push_str(" }");
             }
@@ -1737,8 +1780,9 @@ impl Formatter {
                 to,
                 ensures,
             } => {
-                self.output
-                    .push_str(&format!("trait {trait_name} {{ state {from} {{ {event} -> {to}"));
+                self.output.push_str(&format!(
+                    "trait {trait_name} {{ state {from} {{ {event} -> {to}"
+                ));
                 for p in ensures {
                     self.output.push_str(" @ensures ");
                     self.fmt_sexpr(p);
@@ -1753,7 +1797,12 @@ impl Formatter {
         }
     }
 
-    fn fmt_expects_shape(&mut self, shape: &Option<Vec<EntityField>>, access: &ExpectedAccess, invariants: &[SExpression]) {
+    fn fmt_expects_shape(
+        &mut self,
+        shape: &Option<Vec<EntityField>>,
+        access: &ExpectedAccess,
+        invariants: &[SExpression],
+    ) {
         if shape.is_none() && !access.has_any() && invariants.is_empty() {
             return;
         }
@@ -1793,7 +1842,12 @@ impl Formatter {
         delete: &Option<SExpression>,
         waivers: &[(String, String)],
     ) {
-        for (sigil, expr) in [("read", read), ("create", create), ("update", update), ("delete", delete)] {
+        for (sigil, expr) in [
+            ("read", read),
+            ("create", create),
+            ("update", update),
+            ("delete", delete),
+        ] {
             if let Some(expr) = expr {
                 self.write_indent();
                 self.output.push('@');
@@ -3256,7 +3310,9 @@ impl Formatter {
                             self.output.push(' ');
                         }
                         match pair {
-                            SExpression::Array(pair) if pair.len() == 2 && pair[0].as_str().is_some() => {
+                            SExpression::Array(pair)
+                                if pair.len() == 2 && pair[0].as_str().is_some() =>
+                            {
                                 let name = pair[0].as_str().unwrap();
                                 self.output.push('(');
                                 self.output.push_str(name);
@@ -3270,7 +3326,10 @@ impl Formatter {
                                     self.fmt_sexpr_inner(&pair[1], false);
                                 }
                                 self.output.push(')');
-                                self.binding_scopes.last_mut().unwrap().push(name.to_string());
+                                self.binding_scopes
+                                    .last_mut()
+                                    .unwrap()
+                                    .push(name.to_string());
                             }
                             SExpression::Array(pair) => self.fmt_sexpr_array(pair, true),
                             other => self.fmt_sexpr_inner(other, false),
@@ -3653,7 +3712,10 @@ fn page_meta_source(meta: &orbital_core_base::schema::PageMeta) -> String {
     let quote = quote_lolo;
     match meta {
         orbital_core_base::schema::PageMeta::Literal(s) => quote(s),
-        orbital_core_base::schema::PageMeta::Message(orbital_core_base::schema::PageMessage(_, key)) => {
+        orbital_core_base::schema::PageMeta::Message(orbital_core_base::schema::PageMessage(
+            _,
+            key,
+        )) => {
             format!("(i18n/t {})", quote(key))
         }
     }

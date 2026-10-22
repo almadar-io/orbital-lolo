@@ -66,7 +66,6 @@ pub struct Program {
 /// `app NAME "VERSION" [ modifiers ]` header.
 #[derive(Debug, Clone)]
 pub struct AppHeader {
-    pub declared: bool,
     pub name: String,
     pub version: Option<String>,
     pub description: Option<String>,

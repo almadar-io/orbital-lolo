@@ -566,14 +566,11 @@ impl Parser {
     fn parse_program(&mut self) -> Result<Program, ParseError> {
         self.skip_newlines();
 
-        // The `app` header is optional. Many `.orb` behaviors are single-orbital
-        // files with no app wrapper, so we permit a `.lolo` file that opens
-        // directly with `orbital ...`.
+        // The `app` header is required at the top level.
         let app = if self.check_ident("app") {
             self.parse_app_header()?
         } else {
             AppHeader {
-                declared: false,
                 name: String::new(),
                 version: None,
                 description: None,
@@ -744,7 +741,6 @@ impl Parser {
             Vec::new()
         };
         Ok(AppHeader {
-            declared: true,
             name,
             version: version.or(positional_version),
             description,
