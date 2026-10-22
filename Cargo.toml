@@ -21,7 +21,7 @@ quote = "1"
 [dev-dependencies]
 pretty_assertions.workspace = true
 orbital-compiler = { path = "../orbital-compiler" }
-orbital-test-support = { path = "../orbital-test-support" }
+orbital-test-support = { package = "orbital-integration-tests", path = "../orbital-integration-tests" }
 orbital-core-runtime = { path = "../orbital-core/crates/runtime" }
 serde_json.workspace = true
 tempfile = "3.10"
