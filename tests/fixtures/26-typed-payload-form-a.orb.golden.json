@@ -7,11 +7,13 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "userId",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -46,15 +48,18 @@
               "payloadSchema": [
                 {
                   "name": "id",
+                  "nullable": false,
                   "required": true,
                   "type": "string"
                 },
                 {
                   "name": "name",
+                  "nullable": false,
                   "type": "string"
                 },
                 {
                   "name": "email",
+                  "nullable": false,
                   "type": "string"
                 }
               ],
@@ -65,7 +70,7 @@
           "name": "UserLoadedNotifier",
           "scope": "collection",
           "sourceDeclaration": {
-            "fingerprint": "e8c10935a16a9b0f0d5f20887beacbf4c780489f55b77d9a0013ff740172b6bb"
+            "fingerprint": "781079433f4518f4b162ec065b0e29d500f9f3f675043b2873781f05bb8806de"
           },
           "stateMachine": {
             "events": [
@@ -80,15 +85,18 @@
                 "payloadSchema": [
                   {
                     "name": "id",
+                    "nullable": false,
                     "required": true,
                     "type": "string"
                   },
                   {
                     "name": "name",
+                    "nullable": false,
                     "type": "string"
                   },
                   {
                     "name": "email",
+                    "nullable": false,
                     "type": "string"
                   }
                 ]
@@ -115,7 +123,48 @@
             ]
           }
         }
-      ]
+      ],
+      "types": {
+        "UserData": [
+          {
+            "name": "id",
+            "nullable": false,
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "email",
+            "nullable": false,
+            "type": "string"
+          }
+        ]
+      }
     }
-  ]
+  ],
+  "typeContractVersion": 1,
+  "types": {
+    "UserData": [
+      {
+        "name": "id",
+        "nullable": false,
+        "required": true,
+        "type": "string"
+      },
+      {
+        "name": "name",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "email",
+        "nullable": false,
+        "type": "string"
+      }
+    ]
+  }
 }

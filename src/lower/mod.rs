@@ -54,6 +54,7 @@ pub(crate) use r#trait::{
 };
 pub(crate) use type_helpers::{
     canonicalize_unbound_trait_default, emit_primitive_compatible, humanize_event_key,
+    record_literal_fits,
     lower_config_fields_to_map, type_expr_to_compat_str, type_expr_to_config_string,
     type_expr_to_config_values, type_expr_to_string,
 };
@@ -258,7 +259,8 @@ fn lower_to_orb_names_only(
     // `type_aliases` table loses struct fields (collapsed to "object") because
     // those callers only need enum/primitive info; the typed-payload flattener
     // needs the original field list.
-    let file_entity_bodies = collect_entity_type_bodies(&ast.type_aliases);
+    let mut file_entity_bodies = collect_entity_type_bodies(&ast.type_aliases);
+    file_entity_bodies.extend(crate::types::composed_entity_fields(&ast.type_aliases, &[]));
     let file_event_aliases = collect_event_type_bodies(&ast.type_aliases);
 
     // Phase 9.6.A: collect the set of names that designate ENTITIES (relation
@@ -308,6 +310,7 @@ fn lower_to_orb_names_only(
     }
 
     let mut orbitals = Vec::with_capacity(ast.orbitals.len());
+    let mut orbital_entity_names = Vec::with_capacity(ast.orbitals.len());
     for (orbital_index, orb) in ast.orbitals.iter().enumerate() {
         // Merge orbital-scoped type aliases on top of file-level ones.
         let mut local_aliases = type_aliases.clone();
@@ -320,6 +323,10 @@ fn lower_to_orb_names_only(
         reclassify_struct_unions(&mut local_aliases);
         let mut local_entities = file_entity_bodies.clone();
         local_entities.extend(collect_entity_type_bodies(&orb.type_aliases));
+        local_entities.extend(crate::types::composed_entity_fields(
+            &ast.type_aliases,
+            &orb.type_aliases,
+        ));
         let mut local_events = file_event_aliases.clone();
         local_events.extend(collect_event_type_bodies(&orb.type_aliases));
         // Per-orbital entity-name set: file-level set + any orbital-scoped
@@ -356,6 +363,7 @@ fn lower_to_orb_names_only(
             )
             .located(orb.span)?,
         );
+        orbital_entity_names.push(local_entity_names.clone());
         if let Some(lowered) = orbitals.last_mut() {
             tree_fold::bake_tree_fold_definitions(
                 lowered,
@@ -368,7 +376,7 @@ fn lower_to_orb_names_only(
 
     check_listens_integrity(&orbitals)?;
     check_button_transitions(&orbitals)?;
-    check_emit_payload_literals(&orbitals)?;
+    check_emit_payload_literals(&orbitals, &orbital_entity_names)?;
     check_behavior_contracts(&orbitals, contracts)?;
 
     // App-level `config { ... }` (orbital-import Stage A, `OrbitalSchema.config`)
@@ -386,7 +394,7 @@ fn lower_to_orb_names_only(
 
     let mut schema = OrbitalSchema {
         type_contract_version: Some(1),
-        types: orbital_types(&type_aliases),
+        types: orbital_types(&type_aliases, &file_entity_bodies),
         store: ast.app.store.clone(),
         theme_definitions: None,
         themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.clone()),
@@ -880,7 +888,7 @@ fn lower_spec_orbital(
         os_grants: None,
         design: None,
         id: None,
-        types: orbital_types(aliases),
+        types: orbital_types(aliases, entities),
         reference: None,
         config: None,
     })
@@ -920,6 +928,7 @@ fn vocabulary_entry(values: Vec<String>) -> PayloadField {
 
 fn orbital_types(
     aliases: &BTreeMap<String, TypeAliasResolved>,
+    shapes: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
 ) -> Option<BTreeMap<String, Vec<PayloadField>>> {
     // Gap A: carry every struct-shaped alias visible in this orbital's scope
     // (file-level + orbital-local, already merged into `aliases`) so a `::`
@@ -928,6 +937,19 @@ fn orbital_types(
     // aliases are not legal `::` args and are excluded.
     let mut types_map: BTreeMap<String, Vec<PayloadField>> = BTreeMap::new();
     for (name, resolved) in aliases {
+        // A shape alias (`Entity { .. }`, `A & Entity { .. }`) resolves to the opaque `object` primitive; its
+        // exported entry is the merged field list, and an alias with no field list (trait/page/orbital/event
+        // shapes) exports nothing rather than a bare `object`.
+        if matches!(resolved, TypeAliasResolved::Type(TypeExpr::Primitive(kind), _) if kind == "object") {
+            if let Some(fields) = shapes.get(name) {
+                if let Some(props) =
+                    struct_payload_properties(&TypeExpr::Object(fields.clone()), aliases, &[])
+                {
+                    types_map.insert(name.clone(), props);
+                }
+            }
+            continue;
+        }
         match resolved {
             TypeAliasResolved::Type(
                 te @ (TypeExpr::OpenObject { .. }
@@ -1323,7 +1345,7 @@ fn lower_orbital(
         Some(orb.pages.iter().map(lower_page_decl).collect::<Vec<_>>())
     };
 
-    let types = orbital_types(aliases);
+    let types = orbital_types(aliases, entities);
 
     Ok(CoreOrbital {
         name: orb.name.clone(),

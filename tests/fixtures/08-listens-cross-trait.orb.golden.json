@@ -6,11 +6,13 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "message",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -33,6 +35,7 @@
               "payloadSchema": [
                 {
                   "name": "orderId",
+                  "nullable": false,
                   "type": "string"
                 }
               ],
@@ -43,7 +46,7 @@
           "name": "OrderProcessing",
           "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "3e71e4dc37592563be33a788f1657ea5971ac06e60184d6a02f9016b25b76dca"
+            "fingerprint": "2fce7e8e19ff61c8c48fb75754335bba71a5a4b715ce50e2bfeb5493138ef73f"
           },
           "stateMachine": {
             "events": [
@@ -57,6 +60,7 @@
                 "payloadSchema": [
                   {
                     "name": "orderId",
+                    "nullable": false,
                     "type": "string"
                   }
                 ]
@@ -157,5 +161,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

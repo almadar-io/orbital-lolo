@@ -162,12 +162,56 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
     }
 }
 
+/// The record an object literal writes, each member typed by its own literal value; a member whose type
+/// the literal does not decide (a binding, a call, a list) is unknowable.
+pub(crate) fn literal_record_type(value: &SExpression) -> orbital_core_base::ir::OirType {
+    use orbital_core_base::ir::{OirField, OirType};
+    match value {
+        SExpression::Object(members) => {
+            let mut fields: Vec<OirField> = members
+                .iter()
+                .map(|(name, member)| OirField::new(name.clone(), literal_record_type(member)))
+                .collect();
+            fields.sort_by(|a, b| a.name.cmp(&b.name));
+            OirType::Struct { additional: None, fields }
+        }
+        SExpression::String(s) if !s.starts_with('@') && !s.starts_with('?') => OirType::String,
+        SExpression::Number(_) => OirType::Number,
+        SExpression::Bool(_) => OirType::Boolean,
+        SExpression::Array(items) if items.is_empty() => OirType::Array {
+            inner: Box::new(OirType::Json),
+        },
+        _ => OirType::Json,
+    }
+}
+
+/// Whether an object literal satisfies the record type `declared` names (a type alias or a program type),
+/// through the one core assignability rule; `entity_names` shadow program types as everywhere else.
+pub(crate) fn record_literal_fits(
+    declared: &TypeExpr,
+    value: &SExpression,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+) -> Result<bool, LowerError> {
+    let shape = super::tree_fold::declared_source_shape(declared, aliases, entity_names, &[])?;
+    Ok(orbital_core_base::type_compat::oir_type_satisfies_with_named(
+        &literal_record_type(value),
+        &shape.ty,
+        &|name| shape.named.get(name).cloned(),
+    ))
+}
+
+
 /// Lenient primitive compatibility check for emit payload literals.
 /// Mirrors the L2 validator's `primitive_types_compatible` so the two
 /// detection layers agree. `any` matches anything; `date`/`datetime`/
 /// `timestamp` accept string or number literals; `entity`/`relation`
 /// accept object or string literals.
-pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
+pub(crate) fn emit_primitive_compatible(
+    declared: &str,
+    actual: &str,
+    entity_names: &HashSet<String>,
+) -> bool {
     if declared == actual {
         return true;
     }
@@ -203,10 +247,7 @@ pub(crate) fn emit_primitive_compatible(declared: &str, actual: &str) -> bool {
         // variant it satisfies is the L2 emit-payload backstop's check.
         "union" => actual == "object",
         "entity" | "relation" => actual == "object" || actual == "string",
-        // A program type (`Viewer`, `TraitValue`) is a record: a struct literal fills it; its shape is L2's check.
-        named if orbital_core_base::language::program_types::program_type(named).is_some() => {
-            actual == "object"
-        }
+        named if entity_names.contains(named) => actual == "object" || actual == "string",
         _ => false,
     }
 }

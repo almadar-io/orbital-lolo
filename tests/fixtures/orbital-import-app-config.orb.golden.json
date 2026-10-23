@@ -4,10 +4,12 @@
       "default": "Acme",
       "description": "The organism-wide shell title every orbital's traits may forward",
       "label": "Shell title",
+      "nullable": false,
       "type": "string"
     },
     "pageSize": {
       "default": 10.0,
+      "nullable": false,
       "tier": "presentation",
       "type": "int"
     }
@@ -19,11 +21,13 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "title",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -82,6 +86,7 @@
           "config": {
             "appName": {
               "default": "Acme Notes",
+              "nullable": false,
               "type": "unknown"
             }
           },
@@ -90,5 +95,6 @@
       ]
     }
   ],
+  "typeContractVersion": 1,
   "version": "1.0.0"
 }

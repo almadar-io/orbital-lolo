@@ -1274,3 +1274,59 @@ type RowWriteBatch = { ops : [FieldValue]!, onFailure : RowWriteFailureMode! }
     }
 
 }
+
+#[test]
+fn shape_aliases_export_their_merged_field_lists_and_no_type_is_a_bare_object() {
+    let source = r#"app shapes [version: "1.0.0"]
+type Timestamped = Entity {
+  id : string!
+  createdAt : string
+}
+type Auditable = Timestamped & Entity {
+  createdBy : string
+  updatedBy : string
+}
+type Saved = Event string
+orbital AuditOrbital {
+  entity Rec :: Auditable [persistent: recs] {
+    id : string!
+    createdAt : string
+    createdBy : string
+    updatedBy : string
+  }
+  trait RecBrowse -> Rec [interaction] {
+    state idle {
+      INIT -> idle
+        (ref Rec)
+    }
+  }
+  page "/recs" -> RecBrowse
+}
+"#;
+    let schema = serde_json::to_value(parse_and_lower_str(source).unwrap()).unwrap();
+    let names = |entry: &Value| -> Vec<String> {
+        entry
+            .as_array()
+            .unwrap()
+            .iter()
+            .map(|f| f["name"].as_str().unwrap().to_string())
+            .collect()
+    };
+    for types in [&schema["types"], &schema["orbitals"][0]["types"]] {
+        assert_eq!(names(&types["Timestamped"]), ["id", "createdAt"], "{types}");
+        assert_eq!(
+            names(&types["Auditable"]),
+            ["id", "createdAt", "createdBy", "updatedBy"],
+            "{types}"
+        );
+        assert!(types.get("Saved").is_none(), "an event alias is no exported type: {types}");
+        for (alias, entry) in types.as_object().unwrap() {
+            for member in entry.as_array().unwrap() {
+                let bare = member["type"] == "object"
+                    && member["name"] == ""
+                    && member.get("properties").is_none();
+                assert!(!bare, "`{alias}` is exported as a bare object: {member}");
+            }
+        }
+    }
+}

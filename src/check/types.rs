@@ -119,6 +119,42 @@ pub fn resolve_named(
     flatten_composition(resolved, ctx, ann_span)
 }
 
+/// The merged field list of every entity composition (`A & Entity { .. }`) declared at file scope or in one orbital,
+/// by alias name. A composition that is not an entity composition has no field list and is absent.
+pub fn composed_entity_fields(
+    file_aliases: &[TypeAlias],
+    orbital_aliases: &[TypeAlias],
+) -> BTreeMap<String, Vec<(String, TypeExpr, bool)>> {
+    let mut file = TypeRegistry::new();
+    for ta in file_aliases {
+        file.insert(ta.clone());
+    }
+    let mut orbital = TypeRegistry::new();
+    for ta in orbital_aliases {
+        orbital.insert(ta.clone());
+    }
+    let ctx = ResolveCtx {
+        file: &file,
+        orbital: Some(&orbital),
+    };
+    let mut out = BTreeMap::new();
+    for ta in file_aliases.iter().chain(orbital_aliases) {
+        if ta.type_param.is_some() || !matches!(ta.body, TypeBody::Composition(_)) {
+            continue;
+        }
+        if let Ok(TypeBody::Entity { fields, .. }) = resolve_named(&ta.name, &[], &ctx, ta.span) {
+            out.insert(
+                ta.name.clone(),
+                fields
+                    .into_iter()
+                    .map(|f| (f.name, f.type_expr, f.required))
+                    .collect(),
+            );
+        }
+    }
+    out
+}
+
 /// Apply a single-parameter substitution to a `TypeBody` (recursively into
 /// `Composition` members and trait-linked-entity / orbital slots).
 fn substitute_body(

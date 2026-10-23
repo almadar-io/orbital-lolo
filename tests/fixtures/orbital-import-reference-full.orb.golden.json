@@ -8,6 +8,7 @@
         "config": {
           "pageSize": {
             "default": 50.0,
+            "nullable": false,
             "type": "unknown"
           }
         },
@@ -33,6 +34,7 @@
           "config": {
             "appName": {
               "default": "PF",
+              "nullable": false,
               "type": "unknown"
             }
           },
@@ -40,5 +42,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

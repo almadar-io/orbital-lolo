@@ -6,22 +6,27 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "items": {
+              "nullable": false,
               "type": "string"
             },
             "name": "items",
+            "nullable": false,
             "type": "array"
           },
           {
             "name": "itemCount",
+            "nullable": false,
             "type": "number"
           },
           {
             "name": "isEmpty",
+            "nullable": false,
             "type": "boolean"
           }
         ],
@@ -79,5 +84,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

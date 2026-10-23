@@ -7,19 +7,23 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "createdAt",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "createdBy",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "note",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -75,7 +79,48 @@
             ]
           }
         }
-      ]
+      ],
+      "types": {
+        "Auditable": [
+          {
+            "name": "id",
+            "nullable": false,
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "createdAt",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "createdBy",
+            "nullable": false,
+            "type": "string"
+          }
+        ]
+      }
     }
-  ]
+  ],
+  "typeContractVersion": 1,
+  "types": {
+    "Auditable": [
+      {
+        "name": "id",
+        "nullable": false,
+        "required": true,
+        "type": "string"
+      },
+      {
+        "name": "createdAt",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "createdBy",
+        "nullable": false,
+        "type": "string"
+      }
+    ]
+  }
 }

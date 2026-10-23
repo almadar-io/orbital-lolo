@@ -7,12 +7,14 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "default": "pending",
             "name": "status",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -39,15 +41,26 @@
               "payloadSchema": [
                 {
                   "entity": "Row",
+                  "items": {
+                    "name": "",
+                    "nullable": false,
+                    "projectedFrom": {
+                      "type": "Row"
+                    },
+                    "type": "Row"
+                  },
                   "name": "data",
+                  "nullable": false,
                   "properties": [
                     {
                       "name": "id",
+                      "nullable": false,
                       "required": true,
                       "type": "string"
                     },
                     {
                       "name": "status",
+                      "nullable": false,
                       "type": "string"
                     }
                   ],
@@ -60,15 +73,18 @@
               "payloadSchema": [
                 {
                   "name": "operations",
+                  "nullable": false,
                   "type": "number"
                 },
                 {
                   "name": "completedCount",
+                  "nullable": false,
                   "required": true,
                   "type": "number"
                 },
                 {
                   "name": "totalCount",
+                  "nullable": false,
                   "required": true,
                   "type": "number"
                 }
@@ -79,6 +95,7 @@
               "payloadSchema": [
                 {
                   "name": "error",
+                  "nullable": false,
                   "required": true,
                   "type": "string"
                 }
@@ -89,7 +106,7 @@
           "name": "RowBatch",
           "scope": "collection",
           "sourceDeclaration": {
-            "fingerprint": "65bb74bc132434c802806e07e887ddbb1c9eabdf4b6269c51f1798721c45d63e"
+            "fingerprint": "1af0f93354155e94010dbffcb89db6d4357e7d5ff86d7bc6bf5c8e1db857ac4d"
           },
           "stateMachine": {
             "events": [
@@ -103,15 +120,26 @@
                 "payloadSchema": [
                   {
                     "entity": "Row",
+                    "items": {
+                      "name": "",
+                      "nullable": false,
+                      "projectedFrom": {
+                        "type": "Row"
+                      },
+                      "type": "Row"
+                    },
                     "name": "data",
+                    "nullable": false,
                     "properties": [
                       {
                         "name": "id",
+                        "nullable": false,
                         "required": true,
                         "type": "string"
                       },
                       {
                         "name": "status",
+                        "nullable": false,
                         "type": "string"
                       }
                     ],
@@ -129,15 +157,18 @@
                 "payloadSchema": [
                   {
                     "name": "operations",
+                    "nullable": false,
                     "type": "number"
                   },
                   {
                     "name": "completedCount",
+                    "nullable": false,
                     "required": true,
                     "type": "number"
                   },
                   {
                     "name": "totalCount",
+                    "nullable": false,
                     "required": true,
                     "type": "number"
                   }
@@ -149,6 +180,7 @@
                 "payloadSchema": [
                   {
                     "name": "error",
+                    "nullable": false,
                     "required": true,
                     "type": "string"
                   }
@@ -256,5 +288,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

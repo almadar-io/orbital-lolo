@@ -6,6 +6,7 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           }
@@ -40,10 +41,12 @@
               "payloadSchema": [
                 {
                   "name": "message",
+                  "nullable": false,
                   "type": "string"
                 },
                 {
                   "name": "code",
+                  "nullable": false,
                   "type": "number"
                 }
               ],
@@ -54,7 +57,7 @@
           "name": "ErrorReporter",
           "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "5065a07bea8f1c742711843f1b7394efbd9d023629e9148bb07ba3b277fab611"
+            "fingerprint": "4595b83b758ed20d521c39d76e39a1adbc68d8dde1ab13220630cf3bc0f357eb"
           },
           "stateMachine": {
             "events": [
@@ -68,10 +71,12 @@
                 "payloadSchema": [
                   {
                     "name": "message",
+                    "nullable": false,
                     "type": "string"
                   },
                   {
                     "name": "code",
+                    "nullable": false,
                     "type": "number"
                   }
                 ]
@@ -100,5 +105,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

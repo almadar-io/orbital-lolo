@@ -6,11 +6,13 @@
         "pageSize": {
           "default": 10.0,
           "label": "Items per page",
+          "nullable": false,
           "type": "int"
         },
         "reminderOffsetHours": {
           "default": 24.0,
           "label": "Reminder lead time",
+          "nullable": false,
           "tier": "primary",
           "type": "number"
         }
@@ -19,11 +21,13 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "title",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -77,5 +81,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

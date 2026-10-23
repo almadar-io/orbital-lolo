@@ -6,6 +6,7 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           }
@@ -73,5 +74,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

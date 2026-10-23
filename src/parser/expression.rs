@@ -274,10 +274,11 @@ impl Parser {
     pub(crate) fn parse_expr_match(&mut self, open_span: Span) -> Result<SExpression, ParseError> {
         let scrutinee_span = self.peek_span();
         let scrutinee = self.parse_sexpr_or_value()?;
-        if !is_pure_match_scrutinee(&scrutinee) {
+        if !is_pure_match_scrutinee(&scrutinee, |name| self.is_lexically_bound(name)) {
             return Err(ParseError::InvalidSExpr {
                 message: "ELOLO_MATCH_EXPR_SCRUTINEE_IMPURE: a `match` scrutinee must be a pure \
-                          reference (@entity.<f>, @payload.<f>, @config.<k>, or ?field) or a \
+                          reference (@entity.<f>, @payload.<f>, @config.<k>, a `let` or lambda \
+                          local such as @node.kind, or ?field) or a \
                           literal — re-evaluating an arbitrary expression once per arm isn't \
                           free, so this v1 requires a pure read; a general-expression scrutinee \
                           needs let-binding support in the desugar (a follow-up)"
@@ -322,6 +323,26 @@ impl Parser {
         Ok(SExpression::Array(items))
     }
 
+    /// The parameter count of a parenthesized parameter list `(fn (a b) body)`: only identifiers inside the parens,
+    /// and a body after them (a lone `(…)` before the closing paren is the body of a lambda with no parameters).
+    fn paren_param_count(&self) -> Option<usize> {
+        if !matches!(self.peek(), TokenKind::LParen) {
+            return None;
+        }
+        let mut at = self.pos + 1;
+        let mut count = 0usize;
+        loop {
+            match &self.tokens.get(at)?.kind {
+                TokenKind::Identifier(name) if name != "<" && self.lang.canon_literal(name).is_none() => count += 1,
+                TokenKind::RParen => break,
+                _ => return None,
+            }
+            at += 1;
+        }
+        let after = &self.tokens.get(at + 1)?.kind;
+        (count > 0 && !matches!(after, TokenKind::RParen)).then_some(count)
+    }
+
     /// Consume a lambda's parameters and open a binding scope for them.
     ///
     /// Two surface forms reach here: grouped `(fn [a b] body)` and flat
@@ -332,6 +353,19 @@ impl Parser {
     fn parse_lambda_params(&mut self) -> Result<Vec<SExpression>, ParseError> {
         let mut emitted = Vec::new();
         let mut names = Vec::new();
+        if let Some(count) = self.paren_param_count() {
+            self.advance();
+            for _ in 0..count {
+                if let TokenKind::Identifier(name) = self.peek().clone() {
+                    names.push(name);
+                }
+                self.advance();
+            }
+            self.advance();
+            emitted.push(SExpression::Array(names.iter().cloned().map(SExpression::String).collect()));
+            self.binding_scopes.push(names);
+            return Ok(emitted);
+        }
         if matches!(self.peek(), TokenKind::LBracket) {
             let grouped = self.parse_array_items()?;
             if let SExpression::Array(entries) = &grouped {
@@ -854,10 +888,11 @@ impl Parser {
 /// re-running side-effecting reads. A bare word passes as a literal: unbound
 /// it compares as a constant string, and a `let`-bound name resolves to its
 /// already-evaluated binding — a pure read either way.
-fn is_pure_match_scrutinee(expr: &SExpression) -> bool {
+fn is_pure_match_scrutinee(expr: &SExpression, bound: impl Fn(&str) -> bool) -> bool {
     match expr {
         SExpression::String(s) if s.starts_with('@') => {
-            s.starts_with("@entity.") || s.starts_with("@payload.") || s.starts_with("@config.")
+            let root = s[1..].split('.').next().unwrap_or_default();
+            s.starts_with("@entity.") || s.starts_with("@payload.") || s.starts_with("@config.") || bound(root)
         }
         SExpression::String(_) => true,
         SExpression::Number(_) | SExpression::Bool(_) | SExpression::Null => true,

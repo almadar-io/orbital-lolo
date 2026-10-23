@@ -7,15 +7,18 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "name",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "phone",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -71,7 +74,43 @@
             ]
           }
         }
-      ]
+      ],
+      "types": {
+        "Patient": [
+          {
+            "name": "id",
+            "nullable": false,
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "phone",
+            "nullable": false,
+            "type": "string"
+          }
+        ]
+      }
     }
-  ]
+  ],
+  "typeContractVersion": 1,
+  "types": {
+    "Patient": [
+      {
+        "name": "id",
+        "nullable": false,
+        "required": true,
+        "type": "string"
+      },
+      {
+        "name": "name",
+        "nullable": false,
+        "type": "string"
+      }
+    ]
+  }
 }

@@ -7,39 +7,48 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "createdAt",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "updatedAt",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "createdBy",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "updatedBy",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "name",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "dateOfBirth",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "phone",
+            "nullable": false,
             "type": "string"
           },
           {
             "name": "notes",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -115,7 +124,195 @@
             ]
           }
         }
-      ]
+      ],
+      "types": {
+        "Auditable": [
+          {
+            "name": "id",
+            "nullable": false,
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "createdAt",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "createdBy",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "updatedBy",
+            "nullable": false,
+            "type": "string"
+          }
+        ],
+        "Patient": [
+          {
+            "name": "id",
+            "nullable": false,
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "createdAt",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "createdBy",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "updatedBy",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "name",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "dateOfBirth",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "phone",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "notes",
+            "nullable": false,
+            "type": "string"
+          }
+        ],
+        "Timestamped": [
+          {
+            "name": "id",
+            "nullable": false,
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "createdAt",
+            "nullable": false,
+            "type": "string"
+          },
+          {
+            "name": "updatedAt",
+            "nullable": false,
+            "type": "string"
+          }
+        ]
+      }
     }
-  ]
+  ],
+  "typeContractVersion": 1,
+  "types": {
+    "Auditable": [
+      {
+        "name": "id",
+        "nullable": false,
+        "required": true,
+        "type": "string"
+      },
+      {
+        "name": "createdAt",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "updatedAt",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "createdBy",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "updatedBy",
+        "nullable": false,
+        "type": "string"
+      }
+    ],
+    "Patient": [
+      {
+        "name": "id",
+        "nullable": false,
+        "required": true,
+        "type": "string"
+      },
+      {
+        "name": "createdAt",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "updatedAt",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "createdBy",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "updatedBy",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "name",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "dateOfBirth",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "phone",
+        "nullable": false,
+        "type": "string"
+      }
+    ],
+    "Timestamped": [
+      {
+        "name": "id",
+        "nullable": false,
+        "required": true,
+        "type": "string"
+      },
+      {
+        "name": "createdAt",
+        "nullable": false,
+        "type": "string"
+      },
+      {
+        "name": "updatedAt",
+        "nullable": false,
+        "type": "string"
+      }
+    ]
+  }
 }

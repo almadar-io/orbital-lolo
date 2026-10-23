@@ -7,17 +7,27 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "items": {
+              "nullable": false,
+              "projectedFrom": {
+                "type": "GraphNodeOut"
+              },
               "properties": {
                 "badge": {
                   "name": "badge",
+                  "nullable": false,
+                  "projectedFrom": {
+                    "type": "Badge"
+                  },
                   "properties": {
                     "text": {
                       "name": "text",
+                      "nullable": false,
                       "required": true,
                       "type": "string"
                     }
@@ -29,6 +39,7 @@
               "type": "object"
             },
             "name": "nodes",
+            "nullable": false,
             "type": "array"
           }
         ],
@@ -63,25 +74,45 @@
                 {
                   "entity": "Board",
                   "name": "snapshot",
+                  "nullable": false,
+                  "projectedFrom": {
+                    "type": "Board"
+                  },
                   "properties": [
                     {
                       "name": "id",
+                      "nullable": false,
                       "required": true,
                       "type": "string"
                     },
                     {
+                      "items": {
+                        "name": "",
+                        "nullable": false,
+                        "projectedFrom": {
+                          "type": "GraphNodeOut"
+                        },
+                        "type": "GraphNodeOut"
+                      },
                       "name": "nodes",
+                      "nullable": false,
                       "properties": [
                         {
                           "name": "id",
+                          "nullable": false,
                           "required": true,
                           "type": "string"
                         },
                         {
                           "name": "badge",
+                          "nullable": false,
+                          "projectedFrom": {
+                            "type": "Badge"
+                          },
                           "properties": [
                             {
                               "name": "text",
+                              "nullable": false,
                               "required": true,
                               "type": "string"
                             }
@@ -102,7 +133,7 @@
           "name": "BoardView",
           "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "1a0d4c6d3166224b43896e807e43467d241929a611d8d75f4d3e79f665e7dcff"
+            "fingerprint": "7bdca456e140695965f2e5c6bb6322189506b99ba4fd611bbd43c4e6ebe0986f"
           },
           "stateMachine": {
             "events": [
@@ -117,25 +148,45 @@
                   {
                     "entity": "Board",
                     "name": "snapshot",
+                    "nullable": false,
+                    "projectedFrom": {
+                      "type": "Board"
+                    },
                     "properties": [
                       {
                         "name": "id",
+                        "nullable": false,
                         "required": true,
                         "type": "string"
                       },
                       {
+                        "items": {
+                          "name": "",
+                          "nullable": false,
+                          "projectedFrom": {
+                            "type": "GraphNodeOut"
+                          },
+                          "type": "GraphNodeOut"
+                        },
                         "name": "nodes",
+                        "nullable": false,
                         "properties": [
                           {
                             "name": "id",
+                            "nullable": false,
                             "required": true,
                             "type": "string"
                           },
                           {
                             "name": "badge",
+                            "nullable": false,
+                            "projectedFrom": {
+                              "type": "Badge"
+                            },
                             "properties": [
                               {
                                 "name": "text",
+                                "nullable": false,
                                 "required": true,
                                 "type": "string"
                               }
@@ -177,6 +228,7 @@
         "Badge": [
           {
             "name": "text",
+            "nullable": false,
             "required": true,
             "type": "string"
           }
@@ -184,14 +236,20 @@
         "GraphNodeOut": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "badge",
+            "nullable": false,
+            "projectedFrom": {
+              "type": "Badge"
+            },
             "properties": [
               {
                 "name": "text",
+                "nullable": false,
                 "required": true,
                 "type": "string"
               }
@@ -201,5 +259,40 @@
         ]
       }
     }
-  ]
+  ],
+  "typeContractVersion": 1,
+  "types": {
+    "Badge": [
+      {
+        "name": "text",
+        "nullable": false,
+        "required": true,
+        "type": "string"
+      }
+    ],
+    "GraphNodeOut": [
+      {
+        "name": "id",
+        "nullable": false,
+        "required": true,
+        "type": "string"
+      },
+      {
+        "name": "badge",
+        "nullable": false,
+        "projectedFrom": {
+          "type": "Badge"
+        },
+        "properties": [
+          {
+            "name": "text",
+            "nullable": false,
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "type": "object"
+      }
+    ]
+  }
 }

@@ -7,11 +7,13 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "total",
+            "nullable": false,
             "type": "number"
           }
         ],
@@ -34,10 +36,12 @@
               "payloadSchema": [
                 {
                   "name": "orderId",
+                  "nullable": false,
                   "type": "string"
                 },
                 {
                   "name": "total",
+                  "nullable": false,
                   "type": "int"
                 }
               ],
@@ -48,7 +52,7 @@
           "name": "OrderEmitter",
           "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "e11a28006da82bb2a6d016c7ebf74dc0bb9b362e3d657f9c87eaa795e7ae9712"
+            "fingerprint": "4aa4ab1f245d4a8f978acd783b0e1a45e2bbfd11ab638b355b340544691bdfd0"
           },
           "stateMachine": {
             "events": [
@@ -62,10 +66,12 @@
                 "payloadSchema": [
                   {
                     "name": "orderId",
+                    "nullable": false,
                     "type": "string"
                   },
                   {
                     "name": "total",
+                    "nullable": false,
                     "type": "int"
                   }
                 ]
@@ -97,5 +103,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

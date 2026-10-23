@@ -7,11 +7,13 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "status",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -195,5 +197,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

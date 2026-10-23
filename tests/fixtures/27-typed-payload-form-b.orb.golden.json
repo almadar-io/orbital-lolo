@@ -7,11 +7,13 @@
         "fields": [
           {
             "name": "id",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
           {
             "name": "name",
+            "nullable": false,
             "type": "string"
           }
         ],
@@ -45,25 +47,33 @@
               "payloadSchema": [
                 {
                   "name": "placeId",
+                  "nullable": false,
                   "required": true,
                   "type": "string"
                 },
                 {
                   "entity": "Location",
                   "name": "location",
+                  "nullable": false,
+                  "projectedFrom": {
+                    "type": "Location"
+                  },
                   "properties": [
                     {
                       "name": "lat",
+                      "nullable": false,
                       "required": true,
                       "type": "number"
                     },
                     {
                       "name": "lng",
+                      "nullable": false,
                       "required": true,
                       "type": "number"
                     },
                     {
                       "name": "address",
+                      "nullable": false,
                       "type": "string"
                     }
                   ],
@@ -71,6 +81,7 @@
                 },
                 {
                   "name": "timestamp",
+                  "nullable": false,
                   "type": "string"
                 }
               ],
@@ -81,7 +92,7 @@
           "name": "MapPicker",
           "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "5e61cf23ab1c0b94ab4edceb31e53df4366d603d539d3830ac27fdfc6c5bb422"
+            "fingerprint": "b4ef85b73c5179ad763c7abf4e44abc9909809917829d35d67f6a9f22137eba8"
           },
           "stateMachine": {
             "events": [
@@ -95,25 +106,33 @@
                 "payloadSchema": [
                   {
                     "name": "placeId",
+                    "nullable": false,
                     "required": true,
                     "type": "string"
                   },
                   {
                     "entity": "Location",
                     "name": "location",
+                    "nullable": false,
+                    "projectedFrom": {
+                      "type": "Location"
+                    },
                     "properties": [
                       {
                         "name": "lat",
+                        "nullable": false,
                         "required": true,
                         "type": "number"
                       },
                       {
                         "name": "lng",
+                        "nullable": false,
                         "required": true,
                         "type": "number"
                       },
                       {
                         "name": "address",
+                        "nullable": false,
                         "type": "string"
                       }
                     ],
@@ -121,6 +140,7 @@
                   },
                   {
                     "name": "timestamp",
+                    "nullable": false,
                     "type": "string"
                   }
                 ]
@@ -147,7 +167,50 @@
             ]
           }
         }
-      ]
+      ],
+      "types": {
+        "Location": [
+          {
+            "name": "lat",
+            "nullable": false,
+            "required": true,
+            "type": "number"
+          },
+          {
+            "name": "lng",
+            "nullable": false,
+            "required": true,
+            "type": "number"
+          },
+          {
+            "name": "address",
+            "nullable": false,
+            "type": "string"
+          }
+        ]
+      }
     }
-  ]
+  ],
+  "typeContractVersion": 1,
+  "types": {
+    "Location": [
+      {
+        "name": "lat",
+        "nullable": false,
+        "required": true,
+        "type": "number"
+      },
+      {
+        "name": "lng",
+        "nullable": false,
+        "required": true,
+        "type": "number"
+      },
+      {
+        "name": "address",
+        "nullable": false,
+        "type": "string"
+      }
+    ]
+  }
 }

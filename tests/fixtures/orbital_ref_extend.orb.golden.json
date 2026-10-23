@@ -10,6 +10,7 @@
           {
             "description": "Workspace",
             "name": "workspaceId",
+            "nullable": false,
             "required": true,
             "type": "string"
           },
@@ -17,6 +18,7 @@
             "default": 0.0,
             "description": "Overtime hours",
             "name": "overtimeHours",
+            "nullable": false,
             "type": "number"
           }
         ],
@@ -86,5 +88,6 @@
         }
       ]
     }
-  ]
+  ],
+  "typeContractVersion": 1
 }

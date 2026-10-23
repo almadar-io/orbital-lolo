@@ -206,6 +206,7 @@ pub(crate) fn check_set_value_types(
     let Some(entity_fields) = entities.get(linked) else {
         return Ok(());
     };
+    let entity_names: HashSet<String> = entities.keys().cloned().collect();
 
     // Build per-listened-event payload schema lookup. Keyed by the LOCAL
     // event name (the trigger for cross-orbital listens, the bare event
@@ -284,6 +285,7 @@ pub(crate) fn check_set_value_types(
                         &HashSet::new(),
                         refinement,
                         aliases,
+                        &entity_names,
                     )?;
                 }
             }
@@ -302,6 +304,7 @@ pub(crate) fn check_set_value_types(
                 &HashSet::new(),
                 None,
                 aliases,
+                &entity_names,
             )?;
         }
     }
@@ -326,6 +329,7 @@ fn check_set_in_expr(
     let_bindings: &HashSet<String>,
     refinement: Option<&ArmRefinement>,
     aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
 ) -> Result<(), LowerError> {
     if let SExpression::Array(arr) = expr {
         // `(let ((name init)…) body)` — record the bound names so a later
@@ -358,6 +362,7 @@ fn check_set_in_expr(
                     let_bindings,
                     refinement,
                     aliases,
+                    entity_names,
                 )?;
                 return check_set_in_expr(
                     &arr[2],
@@ -370,6 +375,7 @@ fn check_set_in_expr(
                     &nested,
                     refinement,
                     aliases,
+                    entity_names,
                 );
             }
         }
@@ -399,6 +405,7 @@ fn check_set_in_expr(
                                 let_bindings,
                                 refinement,
                                 aliases,
+                                entity_names,
                             )?;
                         }
                     }
@@ -417,6 +424,7 @@ fn check_set_in_expr(
                 let_bindings,
                 refinement,
                 aliases,
+                entity_names,
             )?;
         }
     } else if let SExpression::Object(obj) = expr {
@@ -432,6 +440,7 @@ fn check_set_in_expr(
                 let_bindings,
                 refinement,
                 aliases,
+                entity_names,
             )?;
         }
     }
@@ -457,6 +466,7 @@ fn check_one_set_value(
     let_bindings: &HashSet<String>,
     refinement: Option<&ArmRefinement>,
     aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
 ) -> Result<(), LowerError> {
     // ENUM-UNENFORCED (Gap G-LOLO-ENUM-UNENFORCED): when the field declares an
     // enum (an inline `"a" | "b"` union) and the value is a plain string
@@ -595,15 +605,30 @@ fn check_one_set_value(
         return Ok(());
     };
 
+    if let (SExpression::Object(_), Some(record)) =
+        (value, record_slot(declared, aliases, entity_names))
+    {
+        if record_literal_fits(record, value, aliases, entity_names)? {
+            return Ok(());
+        }
+        return Err(LowerError::SetValueTypeMismatch {
+            orbital: t.name.clone(),
+            trait_name: t.name.clone(),
+            field: field.to_string(),
+            expected_type: declared_str,
+            actual_type: actual_str,
+            value_source,
+        });
+    }
+
+    let compatible = |declared: &str, actual: &str| {
+        orbital_core_base::type_compat::set_value_type_compatible(declared, actual)
+    };
     let union_members = type_union_member_strs(declared, aliases);
     let accepted = match &union_members {
         _ if declared_str == actual_str => true,
-        Some(members) => members
-            .iter()
-            .any(|m| orbital_core_base::type_compat::set_value_type_compatible(m, &actual_str)),
-        None => {
-            orbital_core_base::type_compat::set_value_type_compatible(&declared_str, &actual_str)
-        }
+        Some(members) => members.iter().any(|m| compatible(m, &actual_str)),
+        None => compatible(&declared_str, &actual_str),
     };
     if !accepted {
         return Err(LowerError::SetValueTypeMismatch {
@@ -616,6 +641,26 @@ fn check_one_set_value(
         });
     }
     Ok(())
+}
+
+/// The named record type (a type alias or a program type) a field is declared as, when it is one.
+fn record_slot<'a>(
+    ty: &'a TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+) -> Option<&'a TypeExpr> {
+    match ty {
+        TypeExpr::Optional(inner) => record_slot(inner, aliases, entity_names),
+        TypeExpr::Named(n)
+            if matches!(aliases.get(n), Some(TypeAliasResolved::Type(..)))
+                || (!aliases.contains_key(n)
+                    && !entity_names.contains(n)
+                    && orbital_core_base::language::program_types::program_type(n).is_some()) =>
+        {
+            Some(ty)
+        }
+        _ => None,
+    }
 }
 
 /// The member types (as compat strings) of a field typed by a TYPE union — an inline
@@ -1892,8 +1937,11 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
 /// Emits with no literal payload object (e.g. `(emit DONE)` / `(emit
 /// DONE @some.binding)`) skip the extra-field and type-mismatch
 /// branches but still get the missing-required check.
-pub(crate) fn check_emit_payload_literals(orbitals: &[CoreOrbital]) -> Result<(), LowerError> {
-    for orbital in orbitals {
+pub(crate) fn check_emit_payload_literals(
+    orbitals: &[CoreOrbital],
+    entity_names: &[HashSet<String>],
+) -> Result<(), LowerError> {
+    for (orbital, entity_names) in orbitals.iter().zip(entity_names) {
         for trait_ref in &orbital.traits {
             let TraitReference::Inline(td) = trait_ref else {
                 continue;
@@ -1915,7 +1963,13 @@ pub(crate) fn check_emit_payload_literals(orbitals: &[CoreOrbital]) -> Result<()
             // Walk every transition's effects + every tick's effects.
             let trait_emits_walk = |effects: &[SExpression]| -> Result<(), LowerError> {
                 for effect in effects {
-                    check_emit_literal_recursive(effect, &emit_schemas, &orbital.name, &td.name)?;
+                    check_emit_literal_recursive(
+                        effect,
+                        &emit_schemas,
+                        &orbital.name,
+                        &td.name,
+                        entity_names,
+                    )?;
                 }
                 Ok(())
             };
@@ -1944,6 +1998,7 @@ fn check_emit_literal_recursive(
     emit_schemas: &HashMap<&str, &[PayloadField]>,
     orbital_name: &str,
     trait_name: &str,
+    entity_names: &HashSet<String>,
 ) -> Result<(), LowerError> {
     match expr {
         SExpression::Array(arr) => {
@@ -1958,6 +2013,7 @@ fn check_emit_literal_recursive(
                                 schema,
                                 orbital_name,
                                 trait_name,
+                                entity_names,
                             )?;
                         }
                         // Unknown event names handled by the L2 validator's
@@ -1967,12 +2023,24 @@ fn check_emit_literal_recursive(
                 }
             }
             for item in arr {
-                check_emit_literal_recursive(item, emit_schemas, orbital_name, trait_name)?;
+                check_emit_literal_recursive(
+                    item,
+                    emit_schemas,
+                    orbital_name,
+                    trait_name,
+                    entity_names,
+                )?;
             }
         }
         SExpression::Object(obj) => {
             for value in obj.values() {
-                check_emit_literal_recursive(value, emit_schemas, orbital_name, trait_name)?;
+                check_emit_literal_recursive(
+                    value,
+                    emit_schemas,
+                    orbital_name,
+                    trait_name,
+                    entity_names,
+                )?;
             }
         }
         _ => {}
@@ -1989,6 +2057,7 @@ fn check_one_emit_literal(
     schema: &[PayloadField],
     orbital_name: &str,
     trait_name: &str,
+    entity_names: &HashSet<String>,
 ) -> Result<(), LowerError> {
     let payload_obj = match payload {
         Some(SExpression::Object(o)) => Some(o),
@@ -2033,7 +2102,22 @@ fn check_one_emit_literal(
             }
             Some(expected) => {
                 if let Some(actual) = orbital_core_eval::literal_type::literal_value_type(value) {
-                    if !emit_primitive_compatible(expected, actual) {
+                    let declared_core = expected.trim_end_matches('!');
+                    let program_record = actual == "object"
+                        && !entity_names.contains(declared_core)
+                        && orbital_core_base::language::program_types::program_type(declared_core)
+                            .is_some();
+                    let compatible = if program_record {
+                        record_literal_fits(
+                            &TypeExpr::Named(declared_core.to_string()),
+                            value,
+                            &BTreeMap::new(),
+                            entity_names,
+                        )?
+                    } else {
+                        emit_primitive_compatible(expected, actual, entity_names)
+                    };
+                    if !compatible {
                         return Err(LowerError::EmitPayloadFieldTypeMismatch {
                             orbital: orbital_name.to_string(),
                             trait_name: trait_name.to_string(),
@@ -2625,8 +2709,13 @@ mod emit_program_type_literal_tests {
     use crate::parser::parse_str;
 
     fn lower_emit(value: &str) -> Result<(), crate::error::LowerError> {
+        lower_emit_with("", value)
+    }
+
+    fn lower_emit_with(prelude: &str, value: &str) -> Result<(), crate::error::LowerError> {
         let src = format!(
             r#"
+            {prelude}
             orbital TicketOrbital {{
                 entity Ticket {{ id : string! }}
                 trait TicketMint -> Ticket [interaction] {{
@@ -2650,8 +2739,33 @@ mod emit_program_type_literal_tests {
 
     #[test]
     fn a_record_literal_fills_a_program_type_slot() {
-        lower_emit(r#"{ id: "anonymous", role: "anonymous", permissions: [] }"#)
+        lower_emit(r#"{ id: "anonymous", role: "anonymous", permissions: [], claims: [] }"#)
             .expect("a record literal is a Viewer at L1; its shape is L2's check");
+    }
+
+    #[test]
+    fn a_literal_missing_a_required_field_never_fills_a_program_type_slot() {
+        match lower_emit(r#"{ id: "anonymous", role: "anonymous", permissions: [] }"#) {
+            Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => {
+                assert_eq!(actual, "object")
+            }
+            other => panic!("expected EmitPayloadFieldTypeMismatch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_literal_with_a_wrong_typed_field_never_fills_a_program_type_slot() {
+        match lower_emit(r#"{ id: 5, role: "anonymous", permissions: [], claims: [] }"#) {
+            Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { .. }) => {}
+            other => panic!("expected EmitPayloadFieldTypeMismatch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_local_entity_shadows_a_program_type_at_the_emit_literal_site() {
+        let shadow = r#"type Viewer = Entity { id : string! }"#;
+        lower_emit_with(shadow, r#"{ id: "anonymous" }"#)
+            .expect("Viewer is the local entity here, not the program type");
     }
 
     #[test]
@@ -2668,5 +2782,86 @@ mod emit_program_type_literal_tests {
             }
             other => panic!("expected EmitPayloadFieldTypeMismatch, got {other:?}"),
         }
+    }
+}
+
+#[cfg(test)]
+mod set_program_type_literal_tests {
+    use crate::lower::lower_to_orb;
+    use crate::parser::parse_str;
+
+    fn lower_set(tag: &str, value: &str) -> Result<(), crate::error::LowerError> {
+        lower_set_with("", tag, value)
+    }
+
+    fn lower_set_with(
+        prelude: &str,
+        tag: &str,
+        value: &str,
+    ) -> Result<(), crate::error::LowerError> {
+        let src = format!(
+            r#"
+            {prelude}
+            orbital TicketOrbital {{
+                entity Ticket {{
+                    id : string!
+                    who : Viewer
+                }}
+                trait TicketMint -> {tag}Ticket [lifecycle, instance] {{
+                    initial: idle
+                    state idle {{
+                        MINT -> idle
+                            (set @entity.who {value})
+                    }}
+                }}
+            }}
+        "#
+        );
+        let ast = parse_str(&src).expect("parse");
+        lower_to_orb(&ast)
+            .map(|_| ())
+            .map_err(|e| e.innermost().clone())
+    }
+
+    #[test]
+    fn a_record_literal_fills_a_program_typed_entity_field() {
+        for tag in ["", "@rebindable "] {
+            lower_set(tag, r#"{ id: "anonymous", role: "anonymous", permissions: [], claims: [] }"#)
+                .unwrap_or_else(|e| panic!("{tag:?}: {e:?}"));
+        }
+    }
+
+    #[test]
+    fn a_scalar_literal_never_fills_a_program_typed_entity_field() {
+        match lower_set("", "5") {
+            Err(crate::error::LowerError::SetValueTypeMismatch { actual_type, .. }) => {
+                assert_eq!(actual_type, "number")
+            }
+            other => panic!("expected SetValueTypeMismatch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_literal_missing_a_required_field_never_fills_a_program_typed_entity_field() {
+        match lower_set("", r#"{ id: "anonymous", role: "anonymous", permissions: [] }"#) {
+            Err(crate::error::LowerError::SetValueTypeMismatch { .. }) => {}
+            other => panic!("expected SetValueTypeMismatch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_literal_with_a_wrong_typed_field_never_fills_a_program_typed_entity_field() {
+        match lower_set("", r#"{ id: 5, role: "anonymous", permissions: [], claims: [] }"#) {
+            Err(crate::error::LowerError::SetValueTypeMismatch { .. }) => {}
+            other => panic!("expected SetValueTypeMismatch, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn a_local_entity_shadows_a_program_type_at_the_set_literal_site() {
+        let shadow = r#"type Viewer = Entity { id : string! }"#;
+        lower_set_with(shadow, "", r#"{ id: "anonymous" }"#)
+            .expect("Viewer is the local entity here, not the program type");
+        assert!(lower_set("", r#"{ id: "anonymous" }"#).is_err());
     }
 }
