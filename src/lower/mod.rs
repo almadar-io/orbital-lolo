@@ -19,7 +19,7 @@ use orbital_core_base::schema::{
     OrbitalSchema, PageDefinition, PageRef, PageRefObject, PayloadField,
     Persistence as CorePersistence, RelationDefinition, SExpression, StateDefinition, StateMachine,
     StringOrArray, StringOrNumber, ThemeDefinition, ThemeRef, ThemeTokens, ThemeVariant,
-    TickDefinition, TraitCategory, TraitDefinition, TraitReference, TransitionDefinition,
+    TickDefinition, TraitDefinition, TraitReference, TransitionDefinition,
     UseDeclaration,
 };
 use std::collections::{BTreeMap, HashMap, HashSet};
@@ -183,6 +183,9 @@ fn lower_impl(
     prior: Option<&OrbitalSchema>,
     contracts: &LoloContracts,
 ) -> Result<(OrbitalSchema, crate::source_map::LoloSourceMap), LowerError> {
+    if ast.app.legacy_lines {
+        return Err(crate::error::app_header_legacy_error().located(ast.app.span));
+    }
     let mut source_map = crate::source_map::LoloSourceMap::new();
     let ast = &projection::resolve_field_projections(ast)?;
     let mut schema = lower_to_orb_names_only(ast, &mut source_map, contracts)?;
@@ -742,7 +745,7 @@ pub(crate) fn lower_expects_decl(
             shape,
             persistence,
             shared,
-            local,
+            browser,
             access,
             invariants,
         } => ExpectDeclaration::Entity {
@@ -753,7 +756,7 @@ pub(crate) fn lower_expects_decl(
                 Persistence::Runtime => CorePersistence::Runtime,
             }),
             shared: *shared,
-            local: *local,
+            browser: *browser,
             read_policy: access.read_policy.clone(),
             create_policy: access.create_policy.clone(),
             update_policy: access.update_policy.clone(),
@@ -1069,8 +1072,7 @@ fn spec_placeholder_entity(name: &str) -> EntityDefinition {
         store: None,
         shared: false,
         identity: false,
-        local: false,
-        seed_mock: false,
+        browser: false,
         locale_instances: None,
         read_policy: None,
         create_policy: None,
@@ -1283,8 +1285,6 @@ fn lower_orbital(
             // Synthetic carrier for `behavior/*` composition directives, not a
             // real effect surface — downstream passes ignore this trait.
             effect_row: None,
-            category: None,
-            capabilities: Vec::new(),
             description: None,
             linked_entity: Some(entity_def.name.clone()),
             emits: None,
@@ -1307,8 +1307,8 @@ fn lower_orbital(
                     tier: None,
                     payload_schema: None,
                     payload_entity: None,
-                    external: None,
-                    listened: None,
+                    input: None,
+                    listened: None
                     inbound: None,
                 }]),
                 transitions: vec![TransitionDefinition {
@@ -1324,8 +1324,7 @@ fn lower_orbital(
             ticks: None,
             config: None,
             data_entities: None,
-            scope: None,
-            local: false,
+            dispatch: None,
             source_declaration: None,
             source_behavior: None,
             source_entity_definition: None,
@@ -1342,7 +1341,12 @@ fn lower_orbital(
     let pages = if orb.pages.is_empty() {
         None
     } else {
-        Some(orb.pages.iter().map(lower_page_decl).collect::<Vec<_>>())
+        Some(
+            orb.pages
+                .iter()
+                .map(|p| lower_page_decl(p).located(p.span))
+                .collect::<Result<Vec<_>, LowerError>>()?,
+        )
     };
 
     let types = orbital_types(aliases, entities);
@@ -1640,7 +1644,7 @@ mod tests {
     #[test]
     fn lower_state_transition() {
         let s = lower(
-            "orbital O { entity E { id : string! } trait T -> E [interaction] { state s { EVT -> s (set @id 1) } } }",
+            "orbital O { entity E { id : string! } trait T -> E { state s { EVT -> s (set @id 1) } } }",
         );
         let t = match &s.orbitals[0].traits[0] {
             TraitReference::Inline(td) => td,
@@ -1787,7 +1791,7 @@ mod tests {
                     id : string!
                     currentPage : number = 1
                 }
-                trait T -> E [interaction, instance] {
+                trait T -> E {
                     state s {
                         INIT -> s
                             (render-ui main { type: \"pagination\", currentPage: \"@entity.currentPage\", totalPages: 1 })
@@ -1823,13 +1827,13 @@ mod tests {
                     id : string!
                     count : number = 0
                 }
-                trait Reader -> E [interaction, instance] {
+                trait Reader -> E {
                     state s {
                         INIT -> s
                             (render-ui main { type: \"text\", value: \"@entity.count\" })
                     }
                 }
-                trait Writer -> E [interaction, instance] {
+                trait Writer -> E {
                     state s {
                         INCREMENT -> s
                             (set @entity.count 1)
@@ -1858,13 +1862,13 @@ mod tests {
                     id : string!
                     count : number = 0
                 }
-                trait Reader -> E [interaction, instance] {
+                trait Reader -> E {
                     state s {
                         INIT -> s
                             (render-ui main { type: \"text\", value: \"@entity.count\" })
                     }
                 }
-                trait Writer -> E [interaction, instance] {
+                trait Writer -> E {
                     state s {
                         INCREMENT -> s
                             (set @entity.count 1)
@@ -1897,7 +1901,7 @@ mod tests {
                     id : string!
                     currentPage : number = 1
                 }
-                trait T -> E [interaction, instance] {
+                trait T -> E {
                     state s {
                         INIT -> s
                             (set @entity.currentPage 1)
@@ -1921,7 +1925,7 @@ mod tests {
         let src = "
             orbital O {
                 entity E { id : string! }
-                trait T -> E [interaction, instance] {
+                trait T -> E {
                     state s {
                         INIT -> s
                             (render-ui main { type: \"text\", value: \"@entity.id\" })
@@ -1968,7 +1972,7 @@ mod tests {
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
-                trait ContactBrowse -> Contact [interaction] {
+                trait ContactBrowse -> Contact {
                     initial: idle
                     state idle {
                         OPEN -> idle
@@ -1995,7 +1999,7 @@ mod tests {
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
-                trait ContactBrowse -> Contact [interaction] {
+                trait ContactBrowse -> Contact {
                     initial: idle
                     state idle {
                         VIEW -> idle
@@ -2024,7 +2028,7 @@ mod tests {
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
-                trait ContactBrowse -> Contact [interaction] {
+                trait ContactBrowse -> Contact {
                     initial: idle
                     state idle {
                         OPEN -> idle
@@ -2049,7 +2053,7 @@ mod tests {
         let src = r#"
             orbital HomeOrbital {
                 entity Home [runtime] { id : string! }
-                trait HomeView -> Home [interaction] {
+                trait HomeView -> Home {
                     initial: idle
                     state idle {
                         BACK -> idle
@@ -2079,7 +2083,7 @@ mod tests {
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
-                trait ContactDelete -> Contact [interaction] {
+                trait ContactDelete -> Contact {
                     initial: idle
                     state idle {
                         DELETE -> idle
@@ -2106,7 +2110,7 @@ mod tests {
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
-                trait ContactDelete -> Contact [interaction] {
+                trait ContactDelete -> Contact {
                     initial: idle
                     state idle {
                         DELETE -> idle
@@ -2135,7 +2139,7 @@ mod tests {
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
-                trait ContactDelete -> Contact [interaction] {
+                trait ContactDelete -> Contact {
                     initial: idle
                     state idle {
                         DELETE -> idle
@@ -2164,7 +2168,7 @@ mod tests {
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
-                trait ContactDelete -> Contact [interaction] {
+                trait ContactDelete -> Contact {
                     initial: idle
                     state idle {
                         DELETE -> idle
@@ -2205,7 +2209,7 @@ mod tests {
                 type ByIndex = { type : "index", index : int! }
                 type Pick = ByName | ByIndex
                 entity Contact { id : string! }
-                trait ContactDelete -> Contact [interaction] {
+                trait ContactDelete -> Contact {
                     initial: idle
                     state idle {
                         DELETE -> idle
@@ -2229,7 +2233,7 @@ mod tests {
                 type ByIndex = { type : "index", index : int! }
                 type Pick = ByName | ByIndex
                 entity Contact { id : string! }
-                trait ContactDelete -> Contact [interaction] {
+                trait ContactDelete -> Contact {
                     initial: idle
                     state idle {
                         DELETE -> idle
@@ -2258,7 +2262,7 @@ mod tests {
         let src = r#"
             orbital ContactOrbital {
                 entity Contact { id : string! }
-                trait ContactDelete -> Contact [interaction] {
+                trait ContactDelete -> Contact {
                     initial: idle
                     state idle {
                         DELETE -> idle
@@ -2295,7 +2299,7 @@ mod tests {
                     id : string!
                     title : string!
                 }
-                trait ArticleEditor -> Article [interaction] {
+                trait ArticleEditor -> Article {
                     initial: idle
                     state idle {
                         INIT -> idle
@@ -2322,7 +2326,7 @@ mod tests {
                     id : string!
                     title : string!
                 }
-                trait ArticleEditor -> Article [interaction] {
+                trait ArticleEditor -> Article {
                     initial: idle
                     state idle {
                         INIT -> idle
@@ -2360,7 +2364,7 @@ mod tests {
                     id : string!
                     callKey : CallKey
                 }}
-                trait ArticleEditor -> Article [interaction] {{
+                trait ArticleEditor -> Article {{
                     initial: idle
                     state idle {{
                         INIT -> idle
@@ -2403,7 +2407,7 @@ mod tests {
                     id : string!
                     frame : Frame
                 }}
-                trait ArticleEditor -> Article [interaction] {{
+                trait ArticleEditor -> Article {{
                     initial: idle
                     state idle {{
                         INIT -> idle
@@ -2436,7 +2440,7 @@ mod tests {
                     id : string!
                     frame : Frame
                 }
-                trait ArticleEditor -> Article [interaction] {
+                trait ArticleEditor -> Article {
                     initial: idle
                     state idle {
                         FRAMED -> idle
@@ -2487,7 +2491,7 @@ mod tests {
                     id : string!
                     status : "open" | "closed" | "pending"
                 }
-                trait TicketFlow -> Ticket [interaction] {
+                trait TicketFlow -> Ticket {
                     initial: idle
                     state idle {
                         INIT -> idle
@@ -2521,7 +2525,7 @@ mod tests {
                     id : string!
                     status : "open" | "closed" | "pending"
                 }
-                trait TicketFlow -> Ticket [interaction] {
+                trait TicketFlow -> Ticket {
                     initial: idle
                     state idle {
                         INIT -> idle
@@ -2548,7 +2552,7 @@ mod tests {
                     id : string!
                     count : int
                 }
-                trait CounterEdit -> Counter [interaction] {
+                trait CounterEdit -> Counter {
                     initial: idle
                     state idle {
                         UPDATE -> idle
@@ -2578,7 +2582,7 @@ mod tests {
                     id : string!
                     count : int
                 }
-                trait CounterEdit -> Counter [interaction] {
+                trait CounterEdit -> Counter {
                     initial: idle
                     state idle {
                         UPDATE -> idle
@@ -2619,7 +2623,7 @@ mod tests {
                     id : string!
                     limit : int
                 }
-                trait ListEdit -> List [interaction] {
+                trait ListEdit -> List {
                     initial: idle
                     state idle {
                         INIT -> idle
@@ -2652,7 +2656,7 @@ mod tests {
                     id : string!
                     title : string!
                 }
-                trait ArticleView -> Article [interaction] {
+                trait ArticleView -> Article {
                     initial: idle
                     state idle {
                         VIEW -> idle
@@ -2690,7 +2694,7 @@ mod tests {
         let src = r#"
             orbital BatchOrbital {
                 entity Batch [runtime] { id : string! }
-                trait BatchRun -> Batch [interaction] {
+                trait BatchRun -> Batch {
                     initial: idle
                     state idle {
                         FINISH -> idle

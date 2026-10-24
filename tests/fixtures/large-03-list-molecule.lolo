@@ -26,7 +26,7 @@ orbital ListItemOrbital {
   type ListItemLoaded     = Event { data : [ListItem] }              "Fired when the ListItem collection finishes loading; payload.data holds the list"
   type ListItemLoadFailed = Event { error : string!, code : string } "Fired when the ListItem collection fails to load"
 
-  trait ListItemBrowse -> @rebindable ListItem [interaction, collection] {
+  trait ListItemBrowse -> @rebindable ListItem {
     initial: loading
     state loading {
       INIT -> loading
@@ -166,7 +166,7 @@ orbital ListItemOrbital {
   ;; Coordinator trait: owns the persist side-effects triggered by the
   ;; Modal/Confirmation trait refs' emits. Replaces the old per-ref
   ;; `on SAVE { (persist ...) }` override pattern.
-  trait ListItemPersistor -> ListItem [lifecycle, instance] {
+  trait ListItemPersistor -> ListItem {
     initial: idle
     state idle {
       INIT -> idle

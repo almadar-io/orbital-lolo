@@ -15,7 +15,7 @@ orbital LightOrbital {{
   entity Lamp [runtime] {{
     id : string!
   }}
-  trait LampView -> Lamp [interaction] {{
+  trait LampView -> Lamp {{
     config {{
       light : Light = {{ position: [1, 2, 3] }}
       pos : {knob} = {default}

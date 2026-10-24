@@ -18,7 +18,7 @@ const TAGGED: &str = r#"orbital DrawOrbital {
 
   entity DrawState [runtime] { id : string! }
 
-  trait DrawDispatch -> DrawState [lifecycle, instance] {
+  trait DrawDispatch -> DrawState {
     listens { DISPATCH { item : DrawItem!, mood : Mood } }
     state idle { INIT -> idle }
   }

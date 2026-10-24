@@ -30,7 +30,7 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
   events {
     TIMESHEET_APPROVED: PF_APPROVED
   }
-  trait TimesheetApproval -> Timesheet [interaction, instance] {
+  trait TimesheetApproval -> Timesheet {
     state draft {
       SUBMIT -> submitted
         (set @id "x")
@@ -38,7 +38,7 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
     state submitted {
     }
   }
-  trait TimesheetHistory -> Timesheet [interaction, instance] {
+  trait TimesheetHistory -> Timesheet {
     state idle {
     }
   }

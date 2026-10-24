@@ -25,7 +25,7 @@ orbital TradeOrderOrbital {
   type TradeOrderUpdated       = Event TradeOrder                 "Fired after a trade order row's status persists"
   type TradeOrderUpdateFailed  = Event { error : string, code : string }    "Fired when a trade order row's status update fails to persist"
 
-  trait TradeOrderManage -> @rebindable TradeOrder [interaction, collection] {
+  trait TradeOrderManage -> @rebindable TradeOrder {
     config {
       title : string = "Trade Orders"
         @label "Section title"

@@ -37,7 +37,7 @@ orbital NestDeepLetOrbital {
     worldH : number = 400
   }
 
-  trait NestDeepLet -> @rebindable DeepLetState [lifecycle] {
+  trait NestDeepLet -> @rebindable DeepLetState {
     initial: playing
 
     state playing {

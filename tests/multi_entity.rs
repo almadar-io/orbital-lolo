@@ -27,7 +27,7 @@ orbital PostOrbital {
     id : string!
     name : string!
   }
-  trait PostTrait -> Post [interaction] { state idle { INIT -> idle (ref Post) } }
+  trait PostTrait -> Post { state idle { INIT -> idle (ref Post) } }
   page "/posts" -> PostTrait
 }
 "#;
@@ -61,7 +61,7 @@ orbital TaxonomyOrbital {
     id : string!
     name : string!
   }
-  trait TopicTrait -> Topic [interaction] { state idle { INIT -> idle (ref Topic) } }
+  trait TopicTrait -> Topic { state idle { INIT -> idle (ref Topic) } }
   page "/topics" -> TopicTrait
 }
 
@@ -72,7 +72,7 @@ orbital ArticleOrbital {
     labelIds : [Label]
     primaryLabel : Label
   }
-  trait ArticleTrait -> Article [interaction] { state idle { INIT -> idle (ref Article) } }
+  trait ArticleTrait -> Article { state idle { INIT -> idle (ref Article) } }
   page "/articles" -> ArticleTrait
 }
 "#;
@@ -101,7 +101,7 @@ orbital PostOrbital {
     id : string!
     kind : Bogus
   }
-  trait PostTrait -> Post [interaction] { state idle { INIT -> idle (ref Post) } }
+  trait PostTrait -> Post { state idle { INIT -> idle (ref Post) } }
   page "/posts" -> PostTrait
 }
 "#;
@@ -122,7 +122,7 @@ orbital PostOrbital {
     id : string!
     name : string!
   }
-  trait PostTrait -> Post [interaction] {
+  trait PostTrait -> Post {
     state idle { INIT -> idle (ref Post) }
     emits {
       TAG_PICKED { tag : Tag }
@@ -147,7 +147,7 @@ orbital PickOrbital {
     name : string!
     sel : string @intrinsic
   }
-  trait TagPick -> @rebindable Tag [interaction] {
+  trait TagPick -> @rebindable Tag {
     state idle {
       PICK -> idle
         (set @name @entity.sel)
@@ -155,7 +155,7 @@ orbital PickOrbital {
         (set @sel ?value)
     }
   }
-  trait PostTrait -> Post [interaction] { state idle { INIT -> idle (ref Post) } }
+  trait PostTrait -> Post { state idle { INIT -> idle (ref Post) } }
   page "/posts" -> PostTrait
 }
 "#;
@@ -207,7 +207,7 @@ orbital BoardOrbital {{
     url : string
   }}
   type Pack = {{ name : string  byKey : Map string Asset }}
-  trait BoardTrait -> Board [lifecycle] {{
+  trait BoardTrait -> Board {{
     initial: idle
     state idle {{
       INIT -> idle

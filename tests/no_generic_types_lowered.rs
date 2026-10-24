@@ -97,7 +97,7 @@ orbital Doc {
     when : date
   }
 
-  trait Walker -> Doc [interaction] {
+  trait Walker -> Doc {
     state idle {
       INIT -> idle
         (set @entity.id (json/stringify @config.limit))

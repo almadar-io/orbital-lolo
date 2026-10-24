@@ -12,7 +12,7 @@ orbital Level {
   entity World [runtime, shared] {
     id : string
   }
-  trait LevelBody = Body.traits.PlatformerBody -> World [local] {
+  trait LevelBody = Body.traits.PlatformerBody -> World [client] {
     config {
       running: true
     }

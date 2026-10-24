@@ -9,7 +9,7 @@ type UserData = Entity {
 
 orbital O {
   entity Account [runtime] { id : string! }
-  trait T -> Account [interaction] {
+  trait T -> Account {
     state s {
       LOAD -> s
         (fetch Account)

@@ -3,7 +3,7 @@ orbital RowOrbital {
     id : string!
     status : string = "pending"
   }
-  trait RowBatch -> Row [interaction, collection] {
+  trait RowBatch -> Row {
     initial: ready
     state ready {
       INIT -> ready

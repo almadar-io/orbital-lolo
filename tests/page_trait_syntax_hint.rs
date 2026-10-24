@@ -10,12 +10,12 @@ orbital StatsOrbital {
   entity Stat [runtime] {
     id : string!
   }
-  trait StatsView -> Stat [interaction] {
+  trait StatsView -> Stat {
     state idle {
       INIT -> idle
     }
   }
-  trait StatsLayout -> Stat [interaction] {
+  trait StatsLayout -> Stat {
     state idle {
       INIT -> idle
     }

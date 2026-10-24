@@ -11,7 +11,7 @@ orbital GuardRawOrbital {
     probeTag : string = ""
   }
 
-  trait GuardRawTruthiness -> RawRecord [interaction, instance] {
+  trait GuardRawTruthiness -> RawRecord {
     initial: idle
 
     state idle {

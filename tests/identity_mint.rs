@@ -15,7 +15,7 @@ const FIXTURE: &str = r#"
             id : string!
             balance : number = 0
         }
-        trait Deposit -> Account [interaction, instance] {
+        trait Deposit -> Account {
             initial: idle
             state idle {
                 DEPOSIT -> idle
@@ -38,7 +38,7 @@ const FIXTURE_PLUS_TRAIT: &str = r#"
             id : string!
             balance : number = 0
         }
-        trait Deposit -> Account [interaction, instance] {
+        trait Deposit -> Account {
             initial: idle
             state idle {
                 DEPOSIT -> idle
@@ -49,7 +49,7 @@ const FIXTURE_PLUS_TRAIT: &str = r#"
                 DEPOSITED { id : string! }
             }
         }
-        trait Withdraw -> Account [interaction, instance] {
+        trait Withdraw -> Account {
             initial: idle
             state idle {
                 WITHDRAW -> idle
@@ -175,14 +175,14 @@ const FIXTURE_EMBED: &str = r#"
             id : string!
             title : string = ""
         }
-        trait Card -> Product [interaction, instance] {
+        trait Card -> Product {
             initial: idle
             state idle {
                 INIT -> idle
                     (render-ui main { type: badge, label: "x" })
             }
         }
-        trait Feed -> Product [interaction, collection] {
+        trait Feed -> Product {
             initial: idle
             state idle {
                 LOAD -> idle
@@ -262,7 +262,7 @@ const FIXTURE_CONFIG_ENTITY: &str = r#"
             id : string!
             balance : number = 0
         }
-        trait Lifecycle -> Account [interaction, instance] {
+        trait Lifecycle -> Account {
             initial: idle
             state idle {
                 RUN -> idle when @config.targetEntity

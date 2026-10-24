@@ -7,7 +7,7 @@ orbital WidgetOrbital {
     label : string
   }
 
-  trait WidgetView -> Widget [interaction] {
+  trait WidgetView -> Widget {
     state idle {
       INIT -> idle
         (render-ui main {

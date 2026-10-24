@@ -16,7 +16,7 @@ fn parse_err(src: &str) -> ParseError {
 
 #[test]
 fn truncated_mid_paren_reports_opening_paren() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @entity.x 1";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (set @entity.x 1";
     let err = parse_err(src);
     match err {
         ParseError::UnclosedDelimiter {
@@ -41,7 +41,7 @@ fn missing_paren_mid_file_reports_opening_paren() {
     // Not truncated: the state block's `}` closes over the unterminated
     // s-expression — the error must point at the CAUSE (the open `(`), not
     // report an "unexpected RBrace" consequence.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @entity.x (+ @entity.x 1)\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (set @entity.x (+ @entity.x 1)\n    }\n  }\n}";
     let err = parse_err(src);
     match err {
         ParseError::UnclosedDelimiter {
@@ -64,7 +64,7 @@ fn missing_paren_mid_file_reports_opening_paren() {
 
 #[test]
 fn truncated_mid_brace_reports_opening_brace() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (render-ui main { type: stack";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (render-ui main { type: stack";
     let err = parse_err(src);
     match err {
         ParseError::UnclosedDelimiter {
@@ -79,7 +79,7 @@ fn truncated_mid_brace_reports_opening_brace() {
 
 #[test]
 fn truncated_mid_bracket_reports_opening_bracket() {
-    let src = "orbital O {\n  entity E [runtime] {\n    items : [any] = []\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @entity.items [1 2 3";
+    let src = "orbital O {\n  entity E [runtime] {\n    items : [any] = []\n  }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (set @entity.items [1 2 3";
     let err = parse_err(src);
     match err {
         ParseError::UnclosedDelimiter {
@@ -97,7 +97,7 @@ fn nested_unclosed_reports_innermost_opener() {
     // The outer `(set …` DOES have a matching close eventually in a
     // well-formed program, but the inner `(add 1 2` never closes — the
     // reported span must be the inner `(`, not the outer one.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @entity.x (add 1 2";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (set @entity.x (add 1 2";
     let err = parse_err(src);
     match err {
         ParseError::UnclosedDelimiter {
@@ -129,7 +129,7 @@ fn stray_closing_paren_in_trait_body_hints_stray() {
     // different (already-existing) UnexpectedToken path, but the RParen
     // shape should route to the "stray `)`" hint added alongside the new
     // EOF diagnostics.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @entity.x 1))\n    }\n  }\n}\n";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (set @entity.x 1))\n    }\n  }\n}\n";
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     let suggestion = suggestion.unwrap_or_default();

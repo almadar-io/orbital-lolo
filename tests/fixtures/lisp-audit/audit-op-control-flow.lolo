@@ -14,7 +14,7 @@ orbital OpControlFlowOrbital {
     active : boolean = true
   }
 
-  trait OpControlFlow -> @rebindable OpControlFlowData [lifecycle] {
+  trait OpControlFlow -> @rebindable OpControlFlowData {
     initial: active
 
     state active {

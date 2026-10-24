@@ -24,7 +24,7 @@ orbital NoteOrbital {
 
   type Pick = { tag : Tag.id! }
 
-  trait NoteView -> Note [interaction, instance] {
+  trait NoteView -> Note {
     config {
       defaultTag : Tag.name = "general"
     }

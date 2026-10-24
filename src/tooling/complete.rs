@@ -705,10 +705,10 @@ mod tests {
 
     #[test]
     fn line_start_keywords_are_the_ones_the_enclosing_block_parses() {
-        let (src, off) = at("orbital O {\n  trait T -> E [interaction] {\n    em|");
+        let (src, off) = at("orbital O {\n  trait T -> E {\n    em|");
         let r = complete(&src, off, None);
         assert_eq!((r.context, labels(&r)), ("keyword", vec!["emits"]));
-        let (src, off) = at("orbital O {\n  trait T -> E [interaction] {\n    e|");
+        let (src, off) = at("orbital O {\n  trait T -> E {\n    e|");
         assert!(
             !labels(&complete(&src, off, None)).contains(&"entity"),
             "entity is not a trait statement"
@@ -730,7 +730,7 @@ mod tests {
 
     #[test]
     fn control_a_colon_outside_an_entity_is_not_a_field_type() {
-        let (src, off) = at("orbital O {\n  trait T -> E [interaction] {\n    initial: id|");
+        let (src, off) = at("orbital O {\n  trait T -> E {\n    initial: id|");
         assert_ne!(complete(&src, off, None).context, "field-type");
     }
 
@@ -744,7 +744,7 @@ mod tests {
             "a field name is free — `ticks` is not an entity statement"
         );
         let (src, off) =
-            at("orbital O {\n  trait T -> E [interaction] {\n    state idle {\n      IN|");
+            at("orbital O {\n  trait T -> E {\n    state idle {\n      IN|");
         assert_eq!(complete(&src, off, None).candidates, vec![]);
     }
 

@@ -9,14 +9,14 @@ orbital TaskOrbital {
     status : string
   }
 
-  trait TaskBrowse -> Task [interaction, collection] {
+  trait TaskBrowse -> Task {
     state browsing {
       INIT -> browsing
         (fetch Task)
     }
   }
 
-  trait TaskEdit -> Task [interaction, instance] {
+  trait TaskEdit -> Task {
     state editing {
       SAVE -> editing
         (persist update Task @entity)

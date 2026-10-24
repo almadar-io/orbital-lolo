@@ -11,7 +11,7 @@ orbital ValueDeterminismOrbital {
     obj : Map string string = {}
   }
 
-  trait ValueDeterminism -> ValueRecord [interaction, instance] {
+  trait ValueDeterminism -> ValueRecord {
     initial: idle
 
     state idle {

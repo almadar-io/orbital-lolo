@@ -15,7 +15,7 @@ fn program(effect: &str) -> String {
     total : number = 0
   }}
 
-  trait ProbeRun -> Probe [lifecycle, instance] {{
+  trait ProbeRun -> Probe {{
     initial: idle
     state idle {{
       RUN -> idle

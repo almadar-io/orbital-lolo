@@ -3,7 +3,7 @@ orbital ConfirmOrbital {
     id : string!
     pendingId : string
   }
-  trait ConfirmActionConfirmation -> ConfirmAction [interaction] {
+  trait ConfirmActionConfirmation -> ConfirmAction {
     state idle {
       REQUEST -> confirming
         (set @pendingId ?id)

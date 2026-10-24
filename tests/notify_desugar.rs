@@ -14,7 +14,7 @@ fn wrap(trait_body: &str) -> String {
     id : string!
   }}
 
-  trait Exec -> Row [interaction] {{
+  trait Exec -> Row {{
 {trait_body}
   }}
 }}

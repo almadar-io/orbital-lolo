@@ -93,7 +93,7 @@ pub struct AppHeader {
     /// `origin:` / `icon:` / `siteName:` / `signIn:` site modifiers.
     pub site: orbital_core_base::schema::SiteMeta,
     /// The modifiers were written as loose lines after `app` (the pre-bracket
-    /// form) — still parsed, reported as `ORB_L_APP_HEADER_LEGACY`.
+    /// form) — still parsed; lowering rejects it with `ORB_L_APP_HEADER_LEGACY`.
     pub legacy_lines: bool,
     /// App-level `config { ... }` block, declared right after the header
     /// (orbital-import Stage A, `OrbitalSchema.config`) — ORGANISM-wide
@@ -521,8 +521,8 @@ pub struct EntityRebindTags {
     pub collection: Option<String>,
     pub shared: bool,
     pub identity: bool,
-    pub local: bool,
-    pub mock: bool,
+    pub browser: bool,
+    pub retired_words: Vec<RetiredWord>,
 }
 
 /// One `traits { UpstreamTrait [-> Entity] { ... } }` entry of an orbital-import body.
@@ -595,7 +595,7 @@ pub enum ExpectsKind {
         shape: Option<Vec<EntityField>>,
         persistence: Option<Persistence>,
         shared: bool,
-        local: bool,
+        browser: bool,
         access: ExpectedAccess,
         /// `@invariant <expr>` lines: propositions every stored row satisfies.
         invariants: Vec<SExpression>,
@@ -647,10 +647,10 @@ pub struct Entity {
     /// directory is both persisted and the identity, so it cannot be a
     /// persistence mode.
     pub identity: bool,
-    /// `local` header tag — `[persistent: x, local]`: the rows live in the browser.
-    pub local: bool,
-    /// `mock` header tag — seed an empty browser store from the shared mock seeder.
-    pub seed_mock: bool,
+    /// `browser` header tag — `[persistent: x, browser]`: the rows live in the browser.
+    pub browser: bool,
+    /// Retired header tags (`local`, `mock`); lowering rejects each.
+    pub retired_words: Vec<RetiredWord>,
     /// `store: Driver` header tag — the store-driver orbital answering this entity's row asks.
     pub store: Option<String>,
     /// `instances [ { … }, … ]` — written-out rows the entity starts with.
@@ -1002,14 +1002,20 @@ pub struct TraitTypeParam {
 
 /// `trait Name [:: TypeAnnotation] -> Entity [category] { ... }` or
 /// `trait Name [:: TypeAnnotation] = Alias.traits.Upstream -> Entity { ... }` (reference form).
-/// Instance vs collection scope, parsed from the trait modifier list
-/// (`[interaction, instance]` / `[interaction, collection]`). Optional in this
-/// phase; unmarked traits pass. The type-checker will require one of these in
-/// a later phase (see Almadar_Entity_V2_Plan.md Phase 4).
+/// A header word the language no longer takes (or never took), kept with its
+/// location so lowering can report it with the fix-it.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum TraitScope {
-    Instance,
-    Collection,
+pub struct RetiredWord {
+    pub word: String,
+    pub span: Span,
+}
+
+/// The dispatch mode a trait header declares: `[client]` or `[optimistic]`.
+/// No header word means server dispatch.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TraitDispatch {
+    Client,
+    Optimistic,
 }
 
 /// A `trait` declaration: an inline state machine bound to an entity, or a
@@ -1039,22 +1045,10 @@ pub struct Trait {
     pub entity_binding_description: Option<String>,
     /// `@synonyms "..."` annotation on the rebindable binding (body-level).
     pub entity_binding_synonyms: Option<String>,
-    pub category: Option<String>,
-    /// Instance or collection scope marker parsed from the modifier list.
-    /// `None` today means the trait opted out / predates the modifier. Phase 4
-    /// of the V2 migration turns `None` into a warning.
-    pub scope: Option<TraitScope>,
-    /// `local` marker parsed from the same trait-header bracket list.
-    /// Declares client-only dispatch (see `docs/Almadar_LOLO.md` §7).
-    /// Undeclared (`false`) is server-gated dispatch — never inferred.
-    pub local: bool,
-    /// Author-supplied capability tags parsed from the trait header's bracket
-    /// list. Anything beyond the scope marker (`instance`/`collection`) and
-    /// the first category identifier collects here. Free-form strings — the
-    /// parser doesn't validate against a known set. Source for
-    /// `OirTrait.capabilities` and downstream `FactorySignature` matching.
-    /// See `docs/Almadar_Domain_Language.md` Phase 3.
-    pub capabilities: Vec<String>,
+    /// `[client]` / `[optimistic]` header word; `None` is server dispatch.
+    pub dispatch: Option<TraitDispatch>,
+    /// Header words outside the dispatch modes; lowering rejects each.
+    pub retired_words: Vec<RetiredWord>,
     pub initial_state: Option<String>,
     pub states: Vec<State>,
     pub emits: Vec<Emit>,
@@ -1296,9 +1290,11 @@ pub struct Listen {
     /// `-> Target.TRIGGER`: the imported trait that gains this route. Only
     /// an orbital import's `listens {}` carries one.
     pub target_trait: Option<String>,
-    /// `EVENT -> external { … }`: a declared external input, an event a client
+    /// `EVENT -> input { … }`: a declared input, an event a client
     /// outside the program may send this trait.
-    pub external: bool,
+    pub input: bool,
+    /// The retired `-> external {` spelling of `input`; lowering rejects it.
+    pub retired_external: Option<RetiredWord>,
     /// `EVENT -> inbound "name" answers ANSWER { … }`: the hook delivered to this event and the event that answers it.
     pub inbound: Option<InboundListen>,
     pub span: Span,
@@ -1405,6 +1401,11 @@ pub struct EventField {
 /// `page /path [:: TypeAnnotation] = Alias.pages.Upstream [-> Trait [, Trait...]]` (reference form).
 #[derive(Debug, Clone)]
 pub struct Page {
+    /// The protocol word after `page` (`http`, `stdio`, `boot`); `None` is a route.
+    pub protocol: Option<String>,
+    /// The `{ … }` address record after the protocol word.
+    pub address: Option<SExpression>,
+    /// The route path; empty on a protocol page.
     pub path: String,
     /// Optional `::` type annotation above the page declaration.
     pub type_annotation: Option<TypeAnnotation>,

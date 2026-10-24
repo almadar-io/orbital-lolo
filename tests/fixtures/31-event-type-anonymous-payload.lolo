@@ -8,7 +8,7 @@ orbital ErrorReporterOrbital {
 
   type ReportFailed = Event { message : string, code : number } [external]
 
-  trait ErrorReporter -> ErrorReport [interaction, instance] {
+  trait ErrorReporter -> ErrorReport {
     state idle {
       FAIL -> idle
         (emit ReportFailed)

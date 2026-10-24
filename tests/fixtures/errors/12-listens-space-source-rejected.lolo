@@ -4,7 +4,7 @@
 
 orbital O {
   entity E [runtime] { id : string! }
-  trait Source -> E [interaction] {
+  trait Source -> E {
     state s {
       FIRE -> s
         (emit FIRED)
@@ -13,7 +13,7 @@ orbital O {
       FIRED
     }
   }
-  trait Listener -> E [interaction] {
+  trait Listener -> E {
     state idle {
       RECV -> idle
     }

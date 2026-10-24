@@ -55,7 +55,7 @@ fn jsx_authored_file_formats_and_roundtrips() {
     id : string!
     total : number
   }
-  trait BillView -> Bill [interaction] {
+  trait BillView -> Bill {
     state idle {
       INIT -> idle
         (render-ui main

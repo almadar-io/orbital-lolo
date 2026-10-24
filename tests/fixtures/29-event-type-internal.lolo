@@ -11,7 +11,7 @@ orbital BrowseItemOrbital {
 
   type BrowseItemLoaded = Event BrowseItem
 
-  trait BrowseItemBrowse -> BrowseItem [interaction, collection] {
+  trait BrowseItemBrowse -> BrowseItem {
     state browsing {
       INIT -> browsing
         (fetch BrowseItem { emit: { success: "BrowseItemLoaded" } })

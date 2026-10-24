@@ -151,8 +151,8 @@ impl Parser {
                         collection: tags.collection,
                         shared: tags.shared,
                         identity: tags.identity,
-                        local: tags.local,
-                        mock: tags.mock,
+                        browser: tags.browser,
+                        retired_words: tags.retired_words,
                     });
                 }
                 self.expect_newline_or_eof()?;

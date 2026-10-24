@@ -16,7 +16,7 @@ orbital AuditableOrbital {
     createdBy : string
     note : string
   }
-  trait RecordBrowse -> Record [interaction] {
+  trait RecordBrowse -> Record {
     state idle {
       INIT -> idle
         (ref Record)

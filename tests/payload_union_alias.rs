@@ -12,7 +12,7 @@ orbital Probe {{
     requestId : Correlation = 0
     request : Request
   }}
-  trait Main -> Session [integration] {{
+  trait Main -> Session {{
     initial: ready
     state ready {{ INIT -> ready }}
     emits {{ ANSWER -> external {{ requestId : {payload_type}! }} }}

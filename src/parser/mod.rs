@@ -1560,7 +1560,7 @@ impl Parser {
                     shape,
                     persistence: tags.persistence,
                     shared: tags.shared,
-                    local: tags.local,
+                    browser: tags.browser,
                     access,
                     invariants,
                 }]
@@ -1671,13 +1671,19 @@ impl Parser {
     fn parse_expects_entity_tags(&mut self) -> Result<ExpectedTags, ParseError> {
         let span = self.peek_span();
         let tags = self.parse_persistence_tag()?;
-        if tags.collection.is_some() || tags.mock || tags.store.is_some() {
+        if let Some(retired) = tags.retired_words.first() {
             return Err(ParseError::InvalidType {
-                span,
-                message: "an `expects entity` header names the storage mode, `shared` or `local` only — a collection name, `mock` and `store` describe a provider, not a requirement".to_string(),
+                span: retired.span,
+                message: crate::error::retired_entity_word_message(&retired.word),
             });
         }
-        if tags.identity && (tags.persistence.is_some() || tags.shared || tags.local) {
+        if tags.collection.is_some() || tags.store.is_some() {
+            return Err(ParseError::InvalidType {
+                span,
+                message: "an `expects entity` header names the storage mode, `shared` or `browser` only — a collection name and `store` describe a provider, not a requirement".to_string(),
+            });
+        }
+        if tags.identity && (tags.persistence.is_some() || tags.shared || tags.browser) {
             return Err(ParseError::InvalidType {
                 span,
                 message: "an `expects entity [identity]` takes only the `identity` tag".to_string(),
@@ -1687,7 +1693,7 @@ impl Parser {
             identity: tags.identity,
             persistence: tags.persistence,
             shared: tags.shared,
-            local: tags.local,
+            browser: tags.browser,
         })
     }
 
@@ -1883,7 +1889,7 @@ struct ExpectedTags {
     identity: bool,
     persistence: Option<Persistence>,
     shared: bool,
-    local: bool,
+    browser: bool,
 }
 
 /// Duplicate key for `ELOLO_DUPLICATE_EXPECTATION`: same kind+name, or the
@@ -2441,31 +2447,45 @@ mod tests {
 
     #[test]
     fn parse_trait_with_state() {
-        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @x 1)\n    }\n  }\n}";
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (set @x 1)\n    }\n  }\n}";
         let prog = p(src);
         let t = &prog.orbitals[0].traits[0];
         assert_eq!(t.name, "T");
         assert_eq!(t.linked_entity, Some("E".to_string()));
-        assert_eq!(t.category, Some("interaction".to_string()));
+        assert_eq!(t.dispatch, None);
+        assert!(t.retired_words.is_empty());
         assert_eq!(t.states.len(), 1);
         assert_eq!(t.states[0].transitions.len(), 1);
     }
 
     #[test]
-    fn parse_trait_local_flag() {
-        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction, instance, local] {\n    state s {\n      EVT -> s\n        (set @x 1)\n    }\n  }\n}";
-        let prog = p(src);
-        let t = &prog.orbitals[0].traits[0];
-        assert!(t.local, "`local` in the bracket list must set Trait.local");
-        assert_eq!(t.category, Some("interaction".to_string()));
-        assert_eq!(t.scope, Some(TraitScope::Instance));
+    fn parse_trait_dispatch_words() {
+        for (word, mode) in [
+            ("client", TraitDispatch::Client),
+            ("optimistic", TraitDispatch::Optimistic),
+        ] {
+            let src = format!("orbital O {{\n  entity E {{ id : string! }}\n  trait T -> E [{word}] {{\n    state s {{\n      EVT -> s\n        (set @x 1)\n    }}\n  }}\n}}");
+            let prog = p(&src);
+            let t = &prog.orbitals[0].traits[0];
+            assert_eq!(t.dispatch, Some(mode));
+            assert!(t.retired_words.is_empty());
+        }
     }
 
     #[test]
-    fn parse_trait_without_local_defaults_false() {
-        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @x 1)\n    }\n  }\n}";
+    fn parse_trait_keeps_non_dispatch_header_words_for_lowering() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction, instance, local] {\n    state s {\n      EVT -> s\n        (set @x 1)\n    }\n  }\n}";
         let prog = p(src);
-        assert!(!prog.orbitals[0].traits[0].local);
+        let t = &prog.orbitals[0].traits[0];
+        assert_eq!(t.dispatch, None);
+        let words: Vec<&str> = t.retired_words.iter().map(|w| w.word.as_str()).collect();
+        assert_eq!(words, ["interaction", "instance", "local"]);
+    }
+
+    #[test]
+    fn parse_trait_refuses_two_dispatch_modes() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [client, optimistic] {\n    state s { EVT -> s }\n  }\n}";
+        assert!(parse_str(src).is_err());
     }
 
     #[test]
@@ -2599,7 +2619,7 @@ mod tests {
 
     #[test]
     fn a_payload_sigil_after_whitespace_is_not_a_nullable_marker() {
-        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      GO -> idle\n        (emit DONE { value: ? })\n    }\n  }\n}";
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [client] {\n    initial: idle\n    state idle {\n      GO -> idle\n        (emit DONE { value: ? })\n    }\n  }\n}";
         let prog = p(src);
         assert_eq!(prog.orbitals.len(), 1);
     }
@@ -2732,6 +2752,76 @@ mod tests {
         assert_eq!(p.traits, vec!["T"]);
         assert_eq!(p.view, Some("list".to_string()));
         assert!(p.is_initial);
+    }
+
+    #[test]
+    fn parse_page_protocol_word_with_address() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page http { host: @config.host, port: @config.port, path: \"/\" } as Api -> T [access: authenticated]\n}";
+        let prog = p(src);
+        let page = &prog.orbitals[0].pages[0];
+        assert_eq!(page.protocol.as_deref(), Some("http"));
+        assert_eq!(page.path, "");
+        assert_eq!(page.name.as_deref(), Some("Api"));
+        assert_eq!(page.traits, vec!["T"]);
+        let Some(SExpression::Object(address)) = &page.address else {
+            panic!("expected a record address, got {:?}", page.address);
+        };
+        let keys: Vec<&str> = address.keys().map(String::as_str).collect();
+        assert_eq!(keys, ["host", "port", "path"]);
+        assert_eq!(address["host"], SExpression::String("@config.host".to_string()));
+    }
+
+    #[test]
+    fn parse_page_protocol_word_without_address() {
+        for word in ["stdio", "boot"] {
+            let src = format!("orbital O {{\n  entity E {{ id : string! }}\n  trait T -> E {{ state s {{ I -> s }} }}\n  page {word} as P -> T\n}}");
+            let prog = p(&src);
+            let page = &prog.orbitals[0].pages[0];
+            assert_eq!(page.protocol.as_deref(), Some(word));
+            assert!(page.address.is_none());
+        }
+    }
+
+    #[test]
+    fn parse_page_reference_form_carries_the_address_override() {
+        let src = "orbital O {\n  entity E { id : string! }\n  page http { host: \"0.0.0.0\", port: 8080, path: \"/\" } = Server.pages.Api\n}";
+        let prog = p(src);
+        let page = &prog.orbitals[0].pages[0];
+        assert_eq!(page.protocol.as_deref(), Some("http"));
+        assert_eq!(page.reference.as_deref(), Some("Server.pages.Api"));
+        assert!(page.address.is_some());
+    }
+
+    #[test]
+    fn parse_page_route_has_no_protocol() {
+        let prog = p("orbital O {\n  entity E { id : string! }\n  trait T -> E { state s { I -> s } }\n  page \"/foo\" -> T\n}");
+        let page = &prog.orbitals[0].pages[0];
+        assert!(page.protocol.is_none());
+        assert!(page.address.is_none());
+        assert_eq!(page.path, "/foo");
+    }
+
+    #[test]
+    fn parse_entity_browser_tag_and_retired_tags() {
+        let prog = p("orbital O {\n  entity E [persistent: rows, browser] { id : string! }\n}");
+        let e = prog.orbitals[0].entity.as_ref().unwrap();
+        assert!(e.browser && e.retired_words.is_empty());
+        let prog = p("orbital O {\n  entity E [persistent: rows, local, mock] { id : string! }\n}");
+        let e = prog.orbitals[0].entity.as_ref().unwrap();
+        assert!(!e.browser);
+        let words: Vec<&str> = e.retired_words.iter().map(|w| w.word.as_str()).collect();
+        assert_eq!(words, ["local", "mock"]);
+    }
+
+    #[test]
+    fn parse_listen_input_and_retired_external() {
+        let src = |word: &str| format!("orbital O {{\n  entity E {{ id : string! }}\n  trait T -> E {{\n    state s {{ GO -> s }}\n    listens {{\n      GO -> {word} {{ id: string! }}\n    }}\n  }}\n}}");
+        let prog = p(&src("input"));
+        let l = &prog.orbitals[0].traits[0].listens[0];
+        assert!(l.input && l.retired_external.is_none());
+        let prog = p(&src("external"));
+        let l = &prog.orbitals[0].traits[0].listens[0];
+        assert_eq!(l.retired_external.as_ref().map(|w| w.word.as_str()), Some("external"));
     }
 
     #[test]
@@ -3063,13 +3153,13 @@ mod tests {
                 shape,
                 persistence,
                 shared,
-                local,
+                browser,
                 access,
                 ..
             } => {
                 assert_eq!(name, "Order");
                 assert_eq!(*persistence, Some(Persistence::Persistent));
-                assert!(*shared && !*local);
+                assert!(*shared && !*browser);
                 assert!(access.read_policy.is_some());
                 assert_eq!(
                     access.access_waivers,
@@ -3093,6 +3183,7 @@ mod tests {
         for bad in [
             "expects entity Order [persistent: orders]",
             "expects entity Order [mock]",
+            "expects entity Order [local]",
             "expects entity Order {\n    @read none \"a\"\n    @read none \"b\"\n  }",
             "expects entity C [identity, persistent]",
         ] {

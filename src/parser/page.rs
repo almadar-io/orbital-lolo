@@ -6,21 +6,27 @@ impl Parser {
     pub(crate) fn parse_page(&mut self) -> Result<Page, ParseError> {
         let span = self.peek_span();
         self.expect_keyword("page")?;
-        // Path: stored as a string-like token. We accept either a literal
-        // string or an identifier (for compatibility) — the test fixtures use
-        // a quoted string, which lexes as TokenKind::String.
+        // A string literal is a route path; a bare identifier is a protocol word
+        // (checked against the core protocol table at lowering) followed by its
+        // `{ … }` address record.
+        let mut protocol = None;
+        let mut address = None;
         let path = match self.peek().clone() {
             TokenKind::String(s) => {
                 self.advance();
                 s
             }
-            TokenKind::Identifier(s) => {
+            TokenKind::Identifier(word) => {
                 self.advance();
-                s
+                protocol = Some(word);
+                if matches!(self.peek(), TokenKind::LBrace) {
+                    address = Some(self.parse_object_literal()?);
+                }
+                String::new()
             }
             _ => {
                 return Err(ParseError::UnexpectedToken {
-                    expected: "page path".to_string(),
+                    expected: "page path or protocol word".to_string(),
                     got: format!("{:?}", self.peek()),
                     span: self.peek_span(),
                 })
@@ -75,7 +81,11 @@ impl Parser {
                 .as_deref()
                 .map(|n| format!(" as {n}"))
                 .unwrap_or_default();
-            format!("page \"{path}\"{as_name} -> {}", names.join(", "))
+            let head = match &protocol {
+                Some(word) => word.clone(),
+                None => format!("\"{path}\""),
+            };
+            format!("page {head}{as_name} -> {}", names.join(", "))
         };
         if matches!(self.peek(), TokenKind::LBrace) {
             return Err(ParseError::UnexpectedToken {
@@ -173,6 +183,8 @@ impl Parser {
             }
         }
         Ok(Page {
+            protocol,
+            address,
             path,
             type_annotation,
             traits,

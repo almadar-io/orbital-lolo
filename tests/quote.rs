@@ -16,7 +16,7 @@ fn program(head: &str, transition: &str) -> String {
     status : string = "pending"
   }}
 
-  trait Explain -> Order [interaction] {{
+  trait Explain -> Order {{
     initial: idle
 
     state idle {{

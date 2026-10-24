@@ -12,7 +12,7 @@ orbital TaskOrbital {{
     id : string!
     title : string
   }}
-  trait TaskPersistor -> Task [lifecycle] {{
+  trait TaskPersistor -> Task {{
     initial: idle
     state idle {{
       INIT -> idle
@@ -101,7 +101,7 @@ orbital TaskOrbital {{
   entity Task [persistent: tasks] {{
     id : string!
   }}
-  trait TaskPersistor -> Task [lifecycle] {{
+  trait TaskPersistor -> Task {{
     initial: idle
     state idle {{
       INIT -> idle

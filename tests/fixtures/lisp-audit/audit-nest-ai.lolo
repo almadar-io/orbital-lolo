@@ -27,7 +27,7 @@ orbital NestAiOrbital {
     tick : number = 0
   }
 
-  trait NestAi -> @rebindable NestAiData [lifecycle] {
+  trait NestAi -> @rebindable NestAiData {
     initial: active
 
     state active {

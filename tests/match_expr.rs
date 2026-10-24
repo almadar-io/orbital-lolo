@@ -25,7 +25,7 @@ fn wrap_entity_trait(trait_body: &str) -> String {
     label : string = ""
   }}
 
-  trait Exec -> Row [interaction] {{
+  trait Exec -> Row {{
 {trait_body}
   }}
 }}

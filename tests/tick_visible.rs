@@ -12,7 +12,7 @@ orbital ClockOrbital {{
     id : string!
     n : number = 0
   }}
-  trait Spin -> Frame [interaction] {{
+  trait Spin -> Frame {{
     initial: idle
     state idle {{
       INIT -> idle

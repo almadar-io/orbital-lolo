@@ -12,7 +12,7 @@ orbital BadOrbital {
     id : string!
     createdAt : string
   }
-  trait RecordTrait -> Record [interaction] {
+  trait RecordTrait -> Record {
     state idle {
       INIT -> idle
         (ref Record)

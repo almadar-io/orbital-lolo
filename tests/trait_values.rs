@@ -23,7 +23,7 @@ fn program(field: &str, effect: &str) -> String {
     {field}
   }}
 
-  trait Hold -> Panel [interaction] {{
+  trait Hold -> Panel {{
     initial: idle
 
     state idle {{

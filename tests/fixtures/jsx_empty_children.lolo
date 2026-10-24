@@ -5,7 +5,7 @@ orbital JsxEmptyChildrenOrbital {
     id : string!
   }
 
-  trait WidgetView -> Widget [interaction] {
+  trait WidgetView -> Widget {
     state idle {
       INIT -> idle
         (render-ui main <Stack direction={vertical}>

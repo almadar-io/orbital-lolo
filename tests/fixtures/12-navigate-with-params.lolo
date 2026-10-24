@@ -2,7 +2,7 @@ orbital RouterOrbital {
   entity Page [runtime] {
     id : string!
   }
-  trait Router -> Page [interaction] {
+  trait Router -> Page {
     state idle {
       GO_HOME -> idle
         (navigate "/home")

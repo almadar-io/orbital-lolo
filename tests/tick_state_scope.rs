@@ -11,7 +11,7 @@ orbital ClockOrbital {{
     id : string!
     due : number = 0
   }}
-  trait ReminderScan -> Reminder [lifecycle] {{
+  trait ReminderScan -> Reminder {{
     initial: idle
     state idle {{
       INIT -> idle

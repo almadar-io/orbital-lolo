@@ -16,7 +16,7 @@ orbital GuardTruthinessOrbital {
     probeTag : string = ""
   }
 
-  trait GuardTruthiness -> TruthRecord [interaction, instance] {
+  trait GuardTruthiness -> TruthRecord {
     initial: idle
 
     state idle {

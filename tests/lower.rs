@@ -379,7 +379,7 @@ orbital W {
   entity Widget [persistent: widgets] {
     id : string!
   }
-  trait WidgetView -> Widget [interaction] {
+  trait WidgetView -> Widget {
     config {
       title : string!
     }
@@ -412,7 +412,7 @@ orbital W {
   entity Widget [persistent: widgets] {
     id : string!
   }
-  trait WidgetView -> Widget [interaction] {
+  trait WidgetView -> Widget {
     config {
       title : string! = "Untitled"
       icon : string = "layout-panel-top"
@@ -479,7 +479,7 @@ orbital OrbE {
     customer : Customer
     watchers : [Customer]
   }
-  trait OrderTrait -> Order [interaction] { state idle { INIT -> idle (ref Order) } }
+  trait OrderTrait -> Order { state idle { INIT -> idle (ref Order) } }
   page "/orders" -> OrderTrait
 }
 "#;
@@ -605,7 +605,7 @@ orbital W {
   entity Widget [runtime] {
     id : string!
   }
-  trait WidgetView -> Widget [interaction] {
+  trait WidgetView -> Widget {
     config {
       steps : [Step] = []
     }
@@ -676,7 +676,7 @@ mod checked_local_annotations {
       id : string!
       result : string
      }}
-     trait Run -> Data [integration] {{
+     trait Run -> Data {{
       initial: ready
       state ready {{
        INIT -> ready
@@ -933,7 +933,7 @@ mod payload_wrapper_provenance {
       id : string!
       rootOnly : string
      }}
-     trait Run -> @rebindable RootEntity [integration] {{
+     trait Run -> @rebindable RootEntity {{
       initial: ready
       state ready {{ INIT -> ready  Saved -> ready }}
       emits {{ Saved }}
@@ -1064,7 +1064,7 @@ mod payload_wrapper_provenance {
       id : string!
       out : Out
      }}
-     trait Run -> Cell [integration] {{
+     trait Run -> Cell {{
       initial: ready
       state ready {{ ASK -> ready
        (set @entity.out ?input)
@@ -1294,7 +1294,7 @@ orbital AuditOrbital {
     createdBy : string
     updatedBy : string
   }
-  trait RecBrowse -> Rec [interaction] {
+  trait RecBrowse -> Rec {
     state idle {
       INIT -> idle
         (ref Rec)

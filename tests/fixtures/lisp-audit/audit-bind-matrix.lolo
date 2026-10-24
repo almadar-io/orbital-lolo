@@ -14,7 +14,7 @@ orbital BindMatrixOrbital {
     upperTags : [string] = []
   }
 
-  trait BindMatrix -> BindRecord [interaction, instance] {
+  trait BindMatrix -> BindRecord {
     initial: idle
 
     state idle {

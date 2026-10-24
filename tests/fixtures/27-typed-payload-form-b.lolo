@@ -13,7 +13,7 @@ orbital MapPickerOrbital {
     name : string
   }
 
-  trait MapPicker -> Place [interaction, instance] {
+  trait MapPicker -> Place {
     state idle {
       INIT -> idle
         (fetch Place)

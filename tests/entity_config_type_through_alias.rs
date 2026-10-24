@@ -26,7 +26,7 @@ orbital Player {{
     {entity_field}
   }}
 
-  trait Runner -> Run [interaction] {{
+  trait Runner -> Run {{
     state idle {{
       INIT -> idle
         (set @entity.id {read})
@@ -74,7 +74,7 @@ orbital Player {
     steps : [Step] = []
   }
 
-  trait Runner -> Log [interaction] {
+  trait Runner -> Log {
     state idle {
       INIT -> idle
     }
@@ -98,7 +98,7 @@ orbital Player {{
     {field}
   }}
 
-  trait Runner -> Log [interaction] {{
+  trait Runner -> Log {{
     state idle {{
       INIT -> idle
     }}

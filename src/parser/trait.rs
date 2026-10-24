@@ -55,82 +55,11 @@ impl Parser {
         } else {
             None
         };
-        // Optional `[category]` or `[category, scope, ...capabilities]`
-        // modifier list. Before the V2 migration this was a single
-        // identifier (the category). It then grew to accept the trait scope
-        // modifier (`instance` | `collection`, Almadar_Entity_V2_Plan.md
-        // §P0.3). Phase 3 of `Almadar_Domain_Language.md` adds capability
-        // tags: any identifier beyond the scope marker and the first
-        // (category) slot accumulates into `capabilities`. First non-scope
-        // identifier still wins as the category.
-        let (category, scope, local, capabilities) = if matches!(self.peek(), TokenKind::LBracket) {
-            self.advance();
-            let mut category: Option<String> = None;
-            let mut scope: Option<TraitScope> = None;
-            let mut local = false;
-            let mut capabilities: Vec<String> = Vec::new();
-            loop {
-                self.skip_newlines();
-                if matches!(self.peek(), TokenKind::RBracket) {
-                    self.advance();
-                    break;
-                }
-                let ident = self.expect_ident()?;
-                // The first non-scope word is a `categories`-section word,
-                // later ones are `capabilities`-section words — the same
-                // token position serves both, so try each section in turn
-                // (safe: no English word appears in both, B1 rule 4).
-                let ident = self
-                    .lang
-                    .canon_tag(&ident)
-                    .or_else(|| self.lang.canon_category(&ident))
-                    .or_else(|| self.lang.canon_capability(&ident))
-                    .map(str::to_string)
-                    .unwrap_or(ident);
-                match ident.as_str() {
-                    "instance" => {
-                        if scope.is_some() {
-                            return Err(ParseError::UnexpectedToken {
-                                expected:
-                                    "at most one of `instance` | `collection` in trait modifiers"
-                                        .to_string(),
-                                got: "duplicate scope marker".to_string(),
-                                span: self.peek_span(),
-                            });
-                        }
-                        scope = Some(TraitScope::Instance);
-                    }
-                    "collection" => {
-                        if scope.is_some() {
-                            return Err(ParseError::UnexpectedToken {
-                                expected:
-                                    "at most one of `instance` | `collection` in trait modifiers"
-                                        .to_string(),
-                                got: "duplicate scope marker".to_string(),
-                                span: self.peek_span(),
-                            });
-                        }
-                        scope = Some(TraitScope::Collection);
-                    }
-                    "local" => {
-                        local = true;
-                    }
-                    _ => {
-                        if category.is_none() {
-                            category = Some(ident);
-                        } else {
-                            capabilities.push(ident);
-                        }
-                    }
-                }
-                if matches!(self.peek(), TokenKind::Comma) {
-                    self.advance();
-                }
-                self.skip_newlines();
-            }
-            (category, scope, local, capabilities)
+        // Optional `[client]` / `[optimistic]` dispatch word; no header is server dispatch.
+        let (dispatch, retired_words) = if matches!(self.peek(), TokenKind::LBracket) {
+            self.parse_trait_header_words()?
         } else {
-            (None, None, false, Vec::new())
+            (None, Vec::new())
         };
 
         let brace_form = matches!(self.peek(), TokenKind::LBrace);
@@ -240,10 +169,8 @@ impl Parser {
             entity_rebindable,
             entity_binding_description,
             entity_binding_synonyms,
-            category,
-            scope,
-            local,
-            capabilities,
+            dispatch,
+            retired_words,
             initial_state,
             states,
             emits,
@@ -254,6 +181,56 @@ impl Parser {
             reference: None,
             is_inline_synthetic: false,
         })
+    }
+
+    /// The bracket after a trait header: `[client]`, `[optimistic]`, or nothing for server
+    /// dispatch. Any other word is returned for lowering to reject with its fix-it.
+    fn parse_trait_header_words(
+        &mut self,
+    ) -> Result<(Option<TraitDispatch>, Vec<RetiredWord>), ParseError> {
+        self.expect_kind(&TokenKind::LBracket, "[")?;
+        let mut dispatch: Option<TraitDispatch> = None;
+        let mut retired_words = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBracket) {
+                self.advance();
+                break;
+            }
+            let span = self.peek_span();
+            let ident = self.expect_ident()?;
+            let word = self
+                .lang
+                .canon_tag(&ident)
+                .or_else(|| self.lang.canon_category(&ident))
+                .or_else(|| self.lang.canon_capability(&ident))
+                .map(str::to_string)
+                .unwrap_or(ident);
+            let mode = match word.as_str() {
+                "client" => Some(TraitDispatch::Client),
+                "optimistic" => Some(TraitDispatch::Optimistic),
+                _ => None,
+            };
+            match mode {
+                Some(mode) => {
+                    if dispatch.is_some() {
+                        return Err(ParseError::UnexpectedToken {
+                            expected: "at most one of `client` | `optimistic` in trait modifiers"
+                                .to_string(),
+                            got: "duplicate dispatch mode".to_string(),
+                            span,
+                        });
+                    }
+                    dispatch = Some(mode);
+                }
+                None => retired_words.push(RetiredWord { word, span }),
+            }
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+            self.skip_newlines();
+        }
+        Ok((dispatch, retired_words))
     }
 
     /// Increment 3-II: parse an optional `(V : Type, R : Type)` trait-level
@@ -355,32 +332,12 @@ impl Parser {
             None
         };
 
-        // Optional `[local]`: the rebind dispatches client-only. The atom owns
-        // category/scope; `local` is the one modifier a call site sets.
-        let mut local = false;
-        if matches!(self.peek(), TokenKind::LBracket) {
-            self.advance();
-            loop {
-                self.skip_newlines();
-                if matches!(self.peek(), TokenKind::RBracket) {
-                    self.advance();
-                    break;
-                }
-                let span = self.peek_span();
-                let ident = self.expect_ident()?;
-                if ident != "local" {
-                    return Err(ParseError::UnexpectedToken {
-                        expected: "`local` (the only modifier a trait rebind sets; the atom owns category and scope)".to_string(),
-                        got: ident,
-                        span,
-                    });
-                }
-                local = true;
-                if matches!(self.peek(), TokenKind::Comma) {
-                    self.advance();
-                }
-            }
-        }
+        // Optional `[client]` / `[optimistic]`: the rebind's dispatch mode.
+        let (dispatch, retired_words) = if matches!(self.peek(), TokenKind::LBracket) {
+            self.parse_trait_header_words()?
+        } else {
+            (None, Vec::new())
+        };
 
         let body = self.parse_trait_ref_body()?;
 
@@ -393,10 +350,8 @@ impl Parser {
             entity_rebindable: false,
             entity_binding_description: None,
             entity_binding_synonyms: None,
-            category: None,
-            scope: None,
-            local,
-            capabilities: Vec::new(),
+            dispatch,
+            retired_words,
             initial_state: None,
             states: Vec::new(),
             emits: Vec::new(),
@@ -1307,25 +1262,27 @@ impl Parser {
                     synonyms,
                     tier,
                     target_trait: None,
-                    external: false,
+                    input: false,
+                    retired_external: None,
                     inbound: None,
                     span,
                 })
             }
-            // Declared external input: `EVENT -> external { fields }`. The
+            // Declared input: `EVENT -> input { fields }`. The
             // payload braces are mandatory (an empty `{}` declares no fields).
             TokenKind::Arrow | TokenKind::UnicodeArrow => {
                 self.advance();
+                let word_span = self.peek_span();
                 let word = self.expect_ident()?;
                 let word = self
                     .lang
                     .canon_keyword(&word)
                     .map(str::to_string)
                     .unwrap_or(word);
-                if word != "external" && word != "inbound" {
+                if word != "input" && word != "external" && word != "inbound" {
                     return Err(ParseError::UnexpectedToken {
                         expected:
-                            "`external` or `inbound` after `->` on a local listen (`EVENT -> external { … }`, `EVENT -> inbound \"name\" answers ANSWER { … }`)"
+                            "`input` or `inbound` after `->` on a local listen (`EVENT -> input { … }`, `EVENT -> inbound \"name\" answers ANSWER { … }`)"
                                 .to_string(),
                         got: word,
                         span: self.peek_span(),
@@ -1391,7 +1348,7 @@ impl Parser {
                 };
                 if !matches!(self.peek(), TokenKind::LBrace) {
                     return Err(ParseError::UnexpectedToken {
-                        expected: "a payload `{ … }` after `-> external` / `-> inbound` (write `{}` for none)"
+                        expected: "a payload `{ … }` after `-> input` / `-> inbound` (write `{}` for none)"
                             .to_string(),
                         got: format!("{:?}", self.peek()),
                         span: self.peek_span(),
@@ -1412,7 +1369,11 @@ impl Parser {
                     synonyms,
                     tier,
                     target_trait: None,
-                    external: inbound.is_none(),
+                    input: inbound.is_none(),
+                    retired_external: (word == "external").then(|| RetiredWord {
+                        word: word.clone(),
+                        span: word_span,
+                    }),
                     inbound,
                     span,
                 })
@@ -1433,7 +1394,8 @@ impl Parser {
                     synonyms,
                     tier,
                     target_trait: None,
-                    external: false,
+                    input: false,
+                    retired_external: None,
                     inbound: None,
                     span,
                 })
@@ -1537,7 +1499,8 @@ impl Parser {
                     synonyms: None,
                     tier: None,
                     target_trait,
-                    external: false,
+                    input: false,
+                    retired_external: None,
                     inbound: None,
                     span,
                 })

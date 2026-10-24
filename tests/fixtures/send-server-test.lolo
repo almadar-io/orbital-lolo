@@ -11,7 +11,7 @@ orbital ChatOrbital {
   type ChatMessageLoaded    = Event { data: [ChatMessage] }
   type ChatMessageLoadFailed = Event { error: string }
 
-  trait ChatMessageChat -> ChatMessage [interaction, collection] {
+  trait ChatMessageChat -> ChatMessage {
     initial: loading
 
     state loading {

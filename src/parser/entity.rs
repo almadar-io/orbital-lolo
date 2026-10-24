@@ -9,8 +9,8 @@ pub(crate) struct EntityTags {
     pub collection: Option<String>,
     pub shared: bool,
     pub identity: bool,
-    pub local: bool,
-    pub mock: bool,
+    pub browser: bool,
+    pub retired_words: Vec<RetiredWord>,
     pub store: Option<String>,
 }
 
@@ -28,8 +28,8 @@ impl Parser {
             collection,
             shared,
             identity,
-            local,
-            mock: seed_mock,
+            browser,
+            retired_words,
             store,
         } = if matches!(self.peek(), TokenKind::LBracket) {
             self.parse_persistence_tag()?
@@ -133,8 +133,8 @@ impl Parser {
             collection,
             shared,
             identity,
-            local,
-            seed_mock,
+            browser,
+            retired_words,
             store,
             instances,
             locale_instances,
@@ -256,8 +256,8 @@ impl Parser {
         let mut collection: Option<String> = None;
         let mut shared = false;
         let mut identity = false;
-        let mut local = false;
-        let mut mock = false;
+        let mut browser = false;
+        let mut retired_words: Vec<RetiredWord> = Vec::new();
         let mut store: Option<String> = None;
         loop {
             let tag_span = self.peek_span();
@@ -270,8 +270,11 @@ impl Parser {
             match kind.as_str() {
                 "shared" => shared = true,
                 "identity" => identity = true,
-                "local" => local = true,
-                "mock" => mock = true,
+                "browser" => browser = true,
+                "local" | "mock" => retired_words.push(RetiredWord {
+                    word: kind,
+                    span: tag_span,
+                }),
                 "store" => {
                     self.expect_kind(&TokenKind::Colon, "':' after `store`")?;
                     store = Some(self.expect_ident()?);
@@ -326,8 +329,8 @@ impl Parser {
             collection,
             shared,
             identity,
-            local,
-            mock,
+            browser,
+            retired_words,
             store,
         })
     }

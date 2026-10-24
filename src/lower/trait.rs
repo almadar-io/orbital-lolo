@@ -191,6 +191,7 @@ pub(crate) fn lower_trait_decl(
     source_map: &mut crate::source_map::LoloSourceMap,
     base: &str,
 ) -> Result<TraitReference, LowerError> {
+    check_trait_header(t)?;
     source_map.insert(base.to_string(), t.span);
     if let Some(span) = t.linked_entity_span {
         source_map.insert(format!("{base}.linkedEntity"), span);
@@ -380,6 +381,30 @@ pub(crate) fn lower_call_site_overrides(
     })
 }
 
+fn lower_dispatch(mode: crate::ast::TraitDispatch) -> orbital_core_base::schema::DispatchMode {
+    match mode {
+        crate::ast::TraitDispatch::Client => orbital_core_base::schema::DispatchMode::Client,
+        crate::ast::TraitDispatch::Optimistic => {
+            orbital_core_base::schema::DispatchMode::Optimistic
+        }
+    }
+}
+
+/// Reject the header words and listen spellings the language no longer takes.
+pub(crate) fn check_trait_header(t: &Trait) -> Result<(), LowerError> {
+    if let Some(word) = t.retired_words.first() {
+        return Err(crate::error::trait_header_word_error(&word.word).located(word.span));
+    }
+    check_listens_spelling(&t.listens)
+}
+
+pub(crate) fn check_listens_spelling(listens: &[Listen]) -> Result<(), LowerError> {
+    match listens.iter().find_map(|l| l.retired_external.as_ref()) {
+        Some(word) => Err(crate::error::listen_external_error().located(word.span)),
+        None => Ok(()),
+    }
+}
+
 /// Build a `TraitReference::Reference` from a parsed `trait Name = Alias.X { ... }`.
 pub(crate) fn lower_trait_reference(
     t: &Trait,
@@ -427,7 +452,7 @@ pub(crate) fn lower_trait_reference(
     } = lower_call_site_overrides(ref_data, &t.listens, aliases, entity_names)?;
 
     Ok(TraitReference::Reference {
-        local: t.local,
+        dispatch: t.dispatch.map(lower_dispatch),
         id: None,
         reference: Some(ref_data.reference.clone()),
         name: Some(
@@ -775,12 +800,12 @@ pub(crate) fn lower_trait(
         }
     }
 
-    // Declared external inputs (`EVENT -> external { … }`), marked on their
+    // Declared inputs (`EVENT -> input { … }`), marked on their
     // own event definition.
-    let external_inputs: HashSet<String> = t
+    let declared_inputs_marked: HashSet<String> = t
         .listens
         .iter()
-        .filter(|l| l.external)
+        .filter(|l| l.input)
         .map(|l| l.event.clone())
         .collect();
     let inbound_handlers: HashMap<String, InboundDeclaration> = t
@@ -816,7 +841,7 @@ pub(crate) fn lower_trait(
             event_keys
                 .into_iter()
                 .map(|k| -> Result<EventDefinition, LowerError> {
-                    let is_external = external_inputs.contains(&k);
+                    let is_input = declared_inputs_marked.contains(&k);
                     let is_listened = declared_inputs.contains(&k);
                     let inbound = inbound_handlers.get(&k).cloned();
                     let name = humanize_event_key(&k, entity_hint);
@@ -909,7 +934,7 @@ pub(crate) fn lower_trait(
                         tier,
                         payload_schema: payload,
                         payload_entity,
-                        external: is_external.then_some(true),
+                        input: is_input.then_some(true),
                         listened: is_listened.then_some(true),
                         inbound,
                     })
@@ -918,20 +943,6 @@ pub(crate) fn lower_trait(
         )
     };
 
-    let category = match t.category.as_deref() {
-        Some("interaction") => Some(TraitCategory::Interaction),
-        Some("integration") => Some(TraitCategory::Integration),
-        Some("lifecycle") => Some(TraitCategory::Lifecycle),
-        Some("game-core") => Some(TraitCategory::GameCore),
-        Some("game-entity") => Some(TraitCategory::GameEntity),
-        Some("game-ui") => Some(TraitCategory::GameUi),
-        Some(other) => {
-            return Err(LowerError::InvalidCategory {
-                value: other.to_string(),
-            })
-        }
-        None => None,
-    };
 
     // Reuse the emits lowered up front (see the `stateMachine.events[]`
     // payload-precedence block above). `lower_emit` already ran per entry.
@@ -981,17 +992,6 @@ pub(crate) fn lower_trait(
                 .collect::<Result<Vec<_>, LowerError>>()?,
         )
     };
-
-    // `scope` is required in the .orb schema (V2 Phase 6); an undeclared
-    // marker defaults to `instance` per the language spec.
-    let scope = Some(match t.scope.as_ref() {
-        Some(crate::ast::TraitScope::Collection) => {
-            orbital_core_base::schema::TraitScope::Collection
-        }
-        Some(crate::ast::TraitScope::Instance) | None => {
-            orbital_core_base::schema::TraitScope::Instance
-        }
-    });
 
     // Lower the trait's declared `config { ... }` block into the schema's
     // `Option<HashMap<String, ConfigField>>` shape. The resolve phase
@@ -1044,10 +1044,6 @@ pub(crate) fn lower_trait(
         check_set_value_types(t, entities, aliases)?;
     }
 
-    let mut capabilities: Vec<String> = t.capabilities.clone();
-    capabilities.sort();
-    capabilities.dedup();
-
     // Rebindable binding: emit the opt-in marker + the inferred field
     // contract (reads via `@entity.X` → requires; writes via `(set
     // @entity.X)` → provides). Only when the author wrote `-> @rebindable`,
@@ -1067,8 +1063,6 @@ pub(crate) fn lower_trait(
         entity_rebindable,
         entity_contract,
         effect_row: infer_effect_row(t)?,
-        category,
-        capabilities,
         description: None,
         linked_entity: t.linked_entity.clone(),
         emits,
@@ -1081,8 +1075,7 @@ pub(crate) fn lower_trait(
         ticks,
         config,
         data_entities: None,
-        scope,
-        local: t.local,
+        dispatch: t.dispatch.map(lower_dispatch),
         source_declaration: None,
         source_behavior: None,
         source_entity_definition: None,

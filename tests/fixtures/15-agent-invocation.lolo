@@ -2,7 +2,7 @@ orbital AgentOrbital {
   entity AgentTask [runtime] {
     id : string!
   }
-  trait AgentRunner -> AgentTask [interaction] {
+  trait AgentRunner -> AgentTask {
     state idle {
       RUN -> idle
         (call-service "openai" "chat" { prompt: ?prompt })

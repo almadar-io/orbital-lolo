@@ -3,7 +3,7 @@ orbital UserOrbital {
     id : string!
     name : string
   }
-  trait UserCrud -> User [interaction] {
+  trait UserCrud -> User {
     state listing {
       CREATE -> listing
         (persist create User ?data)

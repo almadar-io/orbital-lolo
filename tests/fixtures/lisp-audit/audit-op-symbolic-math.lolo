@@ -15,7 +15,7 @@ orbital OpSymbolicMathOrbital {
     checkpoint : number = 0
   }
 
-  trait OpSymbolicMath -> @rebindable OpSymbolicMathData [lifecycle] {
+  trait OpSymbolicMath -> @rebindable OpSymbolicMathData {
     initial: active
 
     state active {

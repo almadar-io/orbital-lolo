@@ -240,7 +240,7 @@ orbital ApprovalOrbital {
     id : string!
   }
 
-  trait ApprovalRun -> ApprovalRecord [lifecycle, instance] {
+  trait ApprovalRun -> ApprovalRecord {
     state idle {
       INIT -> idle (ref ApprovalRecord)
     }

@@ -3,7 +3,7 @@ orbital TaskOrbital {
     id : string!
     title : string
   }
-  trait TaskList -> Task [interaction] {
+  trait TaskList -> Task {
     state listing {
       INIT -> listing
         (ref Task)

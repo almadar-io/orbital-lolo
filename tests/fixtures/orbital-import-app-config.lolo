@@ -19,7 +19,7 @@ orbital Shell {
     title : string
   }
 
-  trait WidgetPanel -> Widget [interaction] {
+  trait WidgetPanel -> Widget {
     state idle {
       INIT -> idle
         (set @entity.title "Ready")

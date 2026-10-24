@@ -13,7 +13,7 @@ orbital Broken {
   entity Rec :: Mixed [persistent: recs] {
     id : string!
   }
-  trait RecTrait -> Rec [interaction] {
+  trait RecTrait -> Rec {
     state idle {
       INIT -> idle
         (ref Rec)

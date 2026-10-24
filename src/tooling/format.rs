@@ -15,7 +15,7 @@ use crate::ast::{
     AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst,
     ExpectedAccess, ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, PayloadOfTarget,
     Persistence, Program, State, TermMatch, ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait,
-    TraitRefData, TraitScope, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
+    TraitDispatch, TraitRefData, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
 };
 
 /// Format a `Program` AST into canonical `.lolo` source text.
@@ -1281,16 +1281,17 @@ impl Formatter {
                 self.output.push_str(entity);
             }
             if let Some(tags) = &orbital.entity_rebind_tags {
+                let mut flags = vec![
+                    ("shared", tags.shared),
+                    ("identity", tags.identity),
+                    ("browser", tags.browser),
+                ];
+                flags.extend(tags.retired_words.iter().map(|w| (w.word.as_str(), true)));
                 self.fmt_persistence_tag(
                     tags.persistence.as_ref(),
                     tags.collection.as_deref(),
                     None,
-                    &[
-                        ("shared", tags.shared),
-                        ("identity", tags.identity),
-                        ("local", tags.local),
-                        ("mock", tags.mock),
-                    ],
+                    &flags,
                 );
             }
             self.write_newline();
@@ -1706,7 +1707,7 @@ impl Formatter {
                 shape,
                 persistence,
                 shared,
-                local,
+                browser,
                 access,
                 invariants,
             } => {
@@ -1721,8 +1722,8 @@ impl Formatter {
                 if *shared {
                     tags.push("shared");
                 }
-                if *local {
-                    tags.push("local");
+                if *browser {
+                    tags.push("browser");
                 }
                 if !tags.is_empty() {
                     self.output.push_str(" [");
@@ -1902,16 +1903,17 @@ impl Formatter {
             self.output.push(' ');
             self.fmt_type_annotation(ann);
         }
+        let mut flags = vec![
+            ("shared", entity.shared),
+            ("identity", entity.identity),
+            ("browser", entity.browser),
+        ];
+        flags.extend(entity.retired_words.iter().map(|w| (w.word.as_str(), true)));
         self.fmt_persistence_tag(
             entity.persistence.as_ref(),
             entity.collection.as_ref().map(|s| s.as_str()),
             entity.store.as_deref(),
-            &[
-                ("shared", entity.shared),
-                ("identity", entity.identity),
-                ("local", entity.local),
-                ("mock", entity.seed_mock),
-            ],
+            &flags,
         );
         self.output.push_str(" {");
         let has_access_directives = entity.read_policy.is_some()
@@ -1988,8 +1990,11 @@ impl Formatter {
                 self.output.push_str(" -> ");
                 self.output.push_str(le);
             }
-            if tr.local {
-                self.output.push_str(" [local]");
+            let words = trait_header_words(tr);
+            if !words.is_empty() {
+                self.output.push_str(" [");
+                self.output.push_str(&words.join(", "));
+                self.output.push(']');
             }
             self.output.push_str(" {");
             self.write_newline();
@@ -2057,30 +2062,12 @@ impl Formatter {
             }
         }
 
-        self.output.push_str(" [");
-        let mut parts = Vec::new();
-        if let Some(cat) = &tr.category {
-            parts.push(cat.clone());
+        let parts = trait_header_words(tr);
+        if !parts.is_empty() {
+            self.output.push_str(" [");
+            self.output.push_str(&parts.join(", "));
+            self.output.push(']');
         }
-        if let Some(scope) = &tr.scope {
-            parts.push(match scope {
-                TraitScope::Instance => "instance".to_string(),
-                TraitScope::Collection => "collection".to_string(),
-            });
-        }
-        if tr.local {
-            parts.push("local".to_string());
-        }
-        for cap in &tr.capabilities {
-            parts.push(cap.clone());
-        }
-        for (i, p) in parts.iter().enumerate() {
-            if i > 0 {
-                self.output.push_str(", ");
-            }
-            self.output.push_str(p);
-        }
-        self.output.push(']');
 
         self.output.push_str(" {");
         self.write_newline();
@@ -2456,8 +2443,12 @@ impl Formatter {
             }
             self.output.push(' ');
             self.fmt_event_payload(&listen.payload);
-        } else if listen.external && listen.triggers.is_none() {
-            self.output.push_str(" -> external ");
+        } else if (listen.input || listen.retired_external.is_some()) && listen.triggers.is_none() {
+            self.output.push_str(if listen.retired_external.is_some() {
+                " -> external "
+            } else {
+                " -> input "
+            });
             self.fmt_event_payload(&listen.payload);
         } else if !listen.payload.is_empty() && listen.triggers.is_none() {
             self.output.push(' ');
@@ -2600,7 +2591,24 @@ impl Formatter {
 
     fn fmt_page(&mut self, page: &Page) {
         self.output.push_str("page ");
-        self.write_quoted_string(&page.path);
+        match &page.protocol {
+            Some(word) => {
+                self.output.push_str(word);
+                if let Some(SExpression::Object(map)) = &page.address {
+                    self.output.push_str(" { ");
+                    for (i, (key, value)) in map.iter().enumerate() {
+                        if i > 0 {
+                            self.output.push_str(", ");
+                        }
+                        self.write_object_key(key);
+                        self.output.push_str(": ");
+                        self.fmt_sexpr(value);
+                    }
+                    self.output.push_str(" }");
+                }
+            }
+            None => self.write_quoted_string(&page.path),
+        }
         if let Some(ann) = &page.type_annotation {
             self.output.push(' ');
             self.fmt_type_annotation(ann);
@@ -3665,6 +3673,17 @@ fn fmt_duration(ms: u64) -> String {
 }
 
 /// A page's head modifiers as `key: value` bracket entries, in canonical order.
+fn trait_header_words(tr: &Trait) -> Vec<String> {
+    let mut words = Vec::new();
+    match tr.dispatch {
+        Some(TraitDispatch::Client) => words.push("client".to_string()),
+        Some(TraitDispatch::Optimistic) => words.push("optimistic".to_string()),
+        None => {}
+    }
+    words.extend(tr.retired_words.iter().map(|w| w.word.clone()));
+    words
+}
+
 fn head_modifier_sources(mods: &orbital_core_base::schema::PageModifiers) -> Vec<String> {
     use orbital_core_base::schema::{PageAccess, PageIndexing};
     let mut out = Vec::new();

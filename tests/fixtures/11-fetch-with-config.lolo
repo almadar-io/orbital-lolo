@@ -2,7 +2,7 @@ orbital ProductOrbital {
   entity Product [persistent: products] {
     id : string!
   }
-  trait ProductFetch -> Product [interaction] {
+  trait ProductFetch -> Product {
     state idle {
       LOAD -> idle
         (fetch Product { id: ?id })

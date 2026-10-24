@@ -11,7 +11,7 @@ orbital FeatureDetailPageItemOrbital {
   type FooterLink = { label : string!, href : string! }
   type FooterColumn = { title : string!, items : [FooterLink] }
 
-  trait FeatureDetailPageItemLayout -> FeatureDetailPageItem [interaction, instance] {
+  trait FeatureDetailPageItemLayout -> FeatureDetailPageItem {
     config {
       heroTag : string = "Feature"
       heroTitle : string = "Everything you need to ship"

@@ -12,7 +12,7 @@ orbital MixOrbital {{
     id : string!
     level : number
   }}
-  trait MixSave -> Mix [interaction] {{
+  trait MixSave -> Mix {{
     initial: idle
     state idle {{
       INIT -> idle

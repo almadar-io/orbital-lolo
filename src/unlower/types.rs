@@ -90,6 +90,7 @@ fn field_def_type_inner(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> 
             None => primitive("string"),
         },
         FieldType::Number => primitive("number"),
+        FieldType::Int => primitive("int"),
         FieldType::Boolean => primitive("boolean"),
         FieldType::Date => primitive("date"),
         FieldType::Datetime => primitive("datetime"),

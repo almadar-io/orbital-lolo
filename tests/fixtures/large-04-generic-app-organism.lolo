@@ -196,7 +196,7 @@ orbital ContactOrbital {
     }
   }
 
-  trait ContactPersistor -> Contact [lifecycle, instance] {
+  trait ContactPersistor -> Contact {
     initial: idle
     state idle {
       INIT -> idle
@@ -445,7 +445,7 @@ orbital ItemOrbital {
     }
   }
 
-  trait ItemPersistor -> Item [lifecycle, instance] {
+  trait ItemPersistor -> Item {
     config {
       requireApproval : boolean = false
         @label "Require approval before new items go live"
@@ -677,7 +677,7 @@ orbital ActivityOrbital {
     }
   }
 
-  trait ActivityPersistor -> Activity [lifecycle, instance] {
+  trait ActivityPersistor -> Activity {
     initial: idle
     state idle {
       INIT -> idle
@@ -908,7 +908,7 @@ orbital TaskOrbital {
     }
   }
 
-  trait TaskPersistor -> Task [lifecycle, instance] {
+  trait TaskPersistor -> Task {
     initial: idle
     state idle {
       INIT -> idle
@@ -1124,7 +1124,7 @@ orbital CalendarOrbital {
     }
   }
 
-  trait CalendarPersistor -> CalendarEvent [lifecycle, instance] {
+  trait CalendarPersistor -> CalendarEvent {
     initial: idle
     state idle {
       INIT -> idle
@@ -1349,7 +1349,7 @@ orbital WidgetOrbital {
     }
   }
 
-  trait WidgetPersistor -> Widget [lifecycle, instance] {
+  trait WidgetPersistor -> Widget {
     initial: idle
     state idle {
       INIT -> idle
@@ -1554,7 +1554,7 @@ orbital FeedOrbital {
     }
   }
 
-  trait FeedPersistor -> FeedPost [lifecycle, instance] {
+  trait FeedPersistor -> FeedPost {
     initial: idle
     state idle {
       INIT -> idle
@@ -1782,7 +1782,7 @@ orbital NoteOrbital {
     }
   }
 
-  trait NotePersistor -> Note [lifecycle, instance] {
+  trait NotePersistor -> Note {
     initial: idle
     state idle {
       INIT -> idle

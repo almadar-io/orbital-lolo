@@ -11,7 +11,7 @@ orbital Home {
     id : string!
   }
 
-  trait HomeView -> HomeState [interaction, instance] {
+  trait HomeView -> HomeState {
     initial: idle
 
     state idle {

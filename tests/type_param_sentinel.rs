@@ -21,7 +21,7 @@ orbital RecurrenceOrbital {
     name : string
   }
 
-  trait RecurrenceSave -> Recurrence [interaction] {
+  trait RecurrenceSave -> Recurrence {
     state idle {
       INIT -> idle (ref Recurrence)
     }
@@ -125,7 +125,7 @@ orbital ThingOrbital {
     name : string
   }
 
-  trait ThingSim -> @rebindable Thing [interaction, instance] {
+  trait ThingSim -> @rebindable Thing {
     initial: idle
     state idle {
       INIT -> idle
@@ -161,7 +161,7 @@ orbital ThingOrbital {
     id : string!
   }
 
-  trait ThingSim -> @rebindable Thing [interaction, instance] {
+  trait ThingSim -> @rebindable Thing {
     initial: idle
     state idle {
       INIT -> idle
@@ -188,7 +188,7 @@ orbital ThingOrbital {
     id : string!
   }
 
-  trait ThingSim -> @rebindable Thing [interaction, instance] {
+  trait ThingSim -> @rebindable Thing {
     initial: idle
     state idle {
       INIT -> idle
@@ -247,7 +247,7 @@ orbital SigilOrbital {
     id : string!
   }
 
-  trait SigilRender -> SigilData [interaction, instance] {
+  trait SigilRender -> SigilData {
     initial: idle
     state idle {
       INIT -> idle when (and @config.actionPayload @config.targetRow @config.actor)
@@ -324,7 +324,7 @@ orbital SiblingOrbital {
     id : string!
   }
 
-  trait SiblingRender -> SiblingData [interaction, instance] {
+  trait SiblingRender -> SiblingData {
     initial: idle
     state idle {
       INIT -> idle when @config.items
@@ -458,7 +458,7 @@ orbital P {
     id : string!
     v : Ctl
   }
-  trait R -> Item [interaction, instance] {
+  trait R -> Item {
     initial: idle
     state idle {
       INIT -> idle
@@ -506,7 +506,7 @@ orbital P {
     id : string!
     f : Fmt
   }
-  trait R -> Item [interaction, instance] {
+  trait R -> Item {
     initial: idle
     state idle {
       INIT -> idle

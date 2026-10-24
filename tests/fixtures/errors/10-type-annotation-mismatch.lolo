@@ -12,7 +12,7 @@ orbital BadBody {
     id : string!
     name : string!
   }
-  trait ContactTrait -> Contact [interaction] {
+  trait ContactTrait -> Contact {
     state idle {
       INIT -> idle
         (ref Contact)

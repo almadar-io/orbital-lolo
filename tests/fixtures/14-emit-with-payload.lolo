@@ -3,7 +3,7 @@ orbital OrderEmitOrbital {
     id : string!
     total : int
   }
-  trait OrderEmitter -> OrderEmit [interaction] {
+  trait OrderEmitter -> OrderEmit {
     state idle {
       SHIP -> idle
         (emit ORDER_SHIPPED { orderId: @id, total: @total })

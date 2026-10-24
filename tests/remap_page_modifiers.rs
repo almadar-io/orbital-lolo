@@ -102,7 +102,7 @@ orbital Post {
     id : string!
   }
 
-  trait PostView -> PostState [interaction, instance] {
+  trait PostView -> PostState {
     initial: idle
     state idle {
       INIT -> idle
@@ -177,7 +177,7 @@ orbital Post {
     id : string!
   }
 
-  trait PostView -> PostState [interaction, instance] {
+  trait PostView -> PostState {
     initial: idle
     state idle {
       INIT -> idle

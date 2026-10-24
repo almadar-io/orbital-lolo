@@ -12,7 +12,7 @@ const FIXTURE: &str = r#"
             id : string!
             balance : number = 0
         }
-        trait Deposit -> Account [interaction, instance] {
+        trait Deposit -> Account {
             initial: idle
             state idle {
                 DEPOSIT -> idle

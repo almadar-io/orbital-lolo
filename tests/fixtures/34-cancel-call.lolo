@@ -4,7 +4,7 @@ orbital BatchOrbital {
     batchId : string
   }
 
-  trait BatchRunner -> Batch [interaction] {
+  trait BatchRunner -> Batch {
     state idle {
       START -> idle
         (set "@entity.batchId" "@payload.batchId")

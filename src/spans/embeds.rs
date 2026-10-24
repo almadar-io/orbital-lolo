@@ -56,7 +56,7 @@ orbital NoteOrbital {
     id : string!
   }
 
-  trait NoteView -> Note [interaction] {
+  trait NoteView -> Note {
     initial: idle
     state idle {
       INIT -> idle
@@ -74,7 +74,7 @@ orbital TagOrbital {
     id : string!
   }
 
-  trait TagView -> Tag [interaction] {
+  trait TagView -> Tag {
     initial: idle
     state idle {
       INIT -> idle

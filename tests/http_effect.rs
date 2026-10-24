@@ -13,7 +13,7 @@ orbital DemoOrbital {{
     id : string!
   }}
 
-  trait DemoFlow -> Demo [interaction, instance] {{
+  trait DemoFlow -> Demo {{
     initial: idle
     state idle {{
       INIT -> idle

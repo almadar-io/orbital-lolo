@@ -272,7 +272,7 @@ orbital TaskOrbital {{
   entity Task [persistent: tasks] {{
     id : string!
   }}
-  trait TaskBrowse -> Task [interaction] {{
+  trait TaskBrowse -> Task {{
     initial: idle
     state idle {{
       INIT -> idle
@@ -315,7 +315,7 @@ orbital CallOrbital {{
   entity Call [runtime] {{
     id : string!
   }}
-  trait CallBrowse -> Call [interaction] {{
+  trait CallBrowse -> Call {{
     initial: idle
     state idle {{
       INIT -> idle
@@ -367,7 +367,7 @@ orbital LinkOrbital {{
   entity Link [runtime] {{
     id : string!
   }}
-  trait LinkBrowse -> Link [interaction] {{
+  trait LinkBrowse -> Link {{
     initial: idle
     state idle {{
       INIT -> idle
@@ -439,7 +439,7 @@ orbital BlobOrbital {{
     id : string!
     payload : {field_type}
   }}
-  trait BlobBrowse -> Blob [interaction] {{
+  trait BlobBrowse -> Blob {{
     initial: idle
     state idle {{
       INIT -> idle
@@ -554,7 +554,7 @@ fn a_spec_without_propositions_carries_no_invariant_fields() {
     assert!(!json.contains("invariants") && !json.contains("holds"), "{json}");
 }
 
-const WALLET: &str = "app wallet \"1.0.0\"\n\norbital Wallet {\n  entity Account [persistent: accounts] {\n    balance : number\n    @invariant (>= @entity.balance 0)\n  }\n  trait Wallet -> Account [interaction] {\n    state active {\n      @holds (>= @entity.balance 0)\n      INIT -> active\n        (set @entity.balance 100)\n      SPEND -> active when (<= @payload.amount @entity.balance)\n        @ensures (= @entity.balance (- @fromEntity.balance @payload.amount))\n        (persist update Account @entity.id { balance: (- @entity.balance @payload.amount) })\n    }\n  }\n  page \"/wallet\" -> Wallet\n}\n";
+const WALLET: &str = "app wallet \"1.0.0\"\n\norbital Wallet {\n  entity Account [persistent: accounts] {\n    balance : number\n    @invariant (>= @entity.balance 0)\n  }\n  trait Wallet -> Account {\n    state active {\n      @holds (>= @entity.balance 0)\n      INIT -> active\n        (set @entity.balance 100)\n      SPEND -> active when (<= @payload.amount @entity.balance)\n        @ensures (= @entity.balance (- @fromEntity.balance @payload.amount))\n        (persist update Account @entity.id { balance: (- @entity.balance @payload.amount) })\n    }\n  }\n  page \"/wallet\" -> Wallet\n}\n";
 
 #[test]
 fn propositions_on_real_declarations_lower_into_the_ir_and_round_trip() {
@@ -599,7 +599,7 @@ fn propositions_in_an_ordinary_orbital_are_accepted() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let in_body = "app shop \"1.0.0\"\n\norbital Shop {\n  entity Cart [runtime] { id : string }\n  expects entity Order { total : number\n    @invariant (>= @entity.total 0)\n  }\n  trait CartView -> Cart [interaction] {\n    state idle {\n      INIT -> idle\n    }\n  }\n  page \"/cart\" -> CartView\n}\n";
+    let in_body = "app shop \"1.0.0\"\n\norbital Shop {\n  entity Cart [runtime] { id : string }\n  expects entity Order { total : number\n    @invariant (>= @entity.total 0)\n  }\n  trait CartView -> Cart {\n    state idle {\n      INIT -> idle\n    }\n  }\n  page \"/cart\" -> CartView\n}\n";
     let schema = parse_and_lower_str_with(in_body, &options).unwrap();
     let json = serde_json::to_string(&schema).unwrap();
     assert!(json.contains("invariants"), "{json}");
@@ -612,7 +612,7 @@ fn propositions_ensures_outside_a_transition_is_refused() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let on_state = "app w \"1.0.0\"\n\norbital W {\n  entity A [runtime] { n : number }\n  trait T -> A [interaction] {\n    state s {\n      @ensures (>= @entity.n 0)\n      INIT -> s\n    }\n  }\n  page \"/w\" -> T\n}\n";
+    let on_state = "app w \"1.0.0\"\n\norbital W {\n  entity A [runtime] { n : number }\n  trait T -> A {\n    state s {\n      @ensures (>= @entity.n 0)\n      INIT -> s\n    }\n  }\n  page \"/w\" -> T\n}\n";
     let err = parse_and_lower_str_with(on_state, &options).unwrap_err().to_string();
     assert!(err.contains("@ensures"), "{err}");
 }
@@ -626,7 +626,7 @@ orbital TaskOrbital {
   entity Task [persistent: tasks] {
     id : string!
   }
-  trait TaskPersistor -> Task [lifecycle] {
+  trait TaskPersistor -> Task {
     initial: idle
     state idle {
       INIT -> idle

@@ -4,12 +4,11 @@ use super::types::{config_fields, event_fields};
 use super::UnlowerError;
 use crate::ast::{
     Emit, InboundListen, InboundVerifies, Listen, Span, State, Tick, TickInterval, Trait,
-    TraitRefData, TraitScope, TraitTypeParam, Transition, TypeAnnotation, TypeExpr,
+    TraitDispatch, TraitRefData, TraitTypeParam, Transition, TypeAnnotation, TypeExpr,
 };
 use orbital_core_base::schema::{
-    join_event_address, EmitDefinition, EventScope, ListenDefinition, PayloadField, StringOrArray,
-    StringOrNumber, TickDefinition, TraitCategory, TraitDefinition, TraitReference,
-    TraitScope as CoreScope,
+    join_event_address, DispatchMode, EmitDefinition, EventScope, ListenDefinition, PayloadField,
+    StringOrArray, StringOrNumber, TickDefinition, TraitDefinition, TraitReference,
 };
 use std::collections::{HashMap, HashSet};
 
@@ -30,10 +29,8 @@ fn empty_trait(name: &str) -> Trait {
         entity_rebindable: false,
         entity_binding_description: None,
         entity_binding_synonyms: None,
-        category: None,
-        scope: None,
-        local: false,
-        capabilities: Vec::new(),
+        dispatch: None,
+        retired_words: Vec::new(),
         initial_state: None,
         states: Vec::new(),
         emits: Vec::new(),
@@ -70,7 +67,8 @@ pub(super) fn cross_listen(l: &ListenDefinition) -> Listen {
         synonyms: l.synonyms.clone(),
         tier: l.tier.clone(),
         target_trait: None,
-        external: false,
+        input: false,
+        retired_external: None,
         inbound: None,
         span: Span::dummy(),
     }
@@ -83,6 +81,13 @@ pub(super) struct EventAlias {
     pub event: String,
     pub payload: TypeExpr,
     pub description: Option<String>,
+}
+
+fn unlower_dispatch(mode: &DispatchMode) -> TraitDispatch {
+    match mode {
+        DispatchMode::Client => TraitDispatch::Client,
+        DispatchMode::Optimistic => TraitDispatch::Optimistic,
+    }
 }
 
 pub(super) fn trait_reference(
@@ -100,7 +105,7 @@ pub(super) fn trait_reference(
             listens,
             emits_scope,
             type_args,
-            local,
+            dispatch,
             ..
         } => {
             let reference = reference
@@ -111,7 +116,7 @@ pub(super) fn trait_reference(
                 .ok_or_else(|| UnlowerError::new("trait reference declaration without a name"))?;
             let mut tr = empty_trait(&name);
             tr.linked_entity = linked_entity.clone();
-            tr.local = *local;
+            tr.dispatch = dispatch.as_ref().map(unlower_dispatch);
             tr.listens = listens.iter().flatten().map(cross_listen).collect();
             if let Some(args) = type_args {
                 let mut flat: Vec<String> = Vec::new();
@@ -296,23 +301,7 @@ pub(super) fn trait_definition(
     let mut tr = empty_trait(&td.name);
     tr.linked_entity = td.linked_entity.clone();
     tr.entity_rebindable = td.entity_rebindable == Some(true);
-    tr.category = td.category.as_ref().map(|c| {
-        match c {
-            TraitCategory::Interaction => "interaction",
-            TraitCategory::Integration => "integration",
-            TraitCategory::Lifecycle => "lifecycle",
-            TraitCategory::GameCore => "game-core",
-            TraitCategory::GameEntity => "game-entity",
-            TraitCategory::GameUi => "game-ui",
-        }
-        .to_string()
-    });
-    tr.scope = td.scope.as_ref().map(|s| match s {
-        CoreScope::Instance => TraitScope::Instance,
-        CoreScope::Collection => TraitScope::Collection,
-    });
-    tr.local = td.local;
-    tr.capabilities = td.capabilities.clone();
+    tr.dispatch = td.dispatch.as_ref().map(unlower_dispatch);
     tr.type_params = td
         .type_params
         .iter()
@@ -397,7 +386,7 @@ pub(super) fn trait_definition(
         let sole_source = emit.is_none() && !in_transitions;
         let aliased = emit.is_some_and(|e| e.payload_entity.is_some())
             && ev.payload_entity == emit.and_then(|e| e.payload_entity.clone());
-        if ev.external == Some(true)
+        if ev.input == Some(true)
             || ev.listened == Some(true)
             || ev.inbound.is_some()
             || sole_source
@@ -418,7 +407,8 @@ pub(super) fn trait_definition(
                 synonyms: ev.synonyms.clone(),
                 tier: ev.tier.clone(),
                 target_trait: None,
-                external: ev.external == Some(true),
+                input: ev.input == Some(true),
+                retired_external: None,
                 inbound: ev.inbound.as_ref().map(|i| InboundListen {
                     name: i.name.clone(),
                     answers: i.answers.clone(),

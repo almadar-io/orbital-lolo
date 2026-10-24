@@ -27,7 +27,7 @@ orbital BoardOrbital {
     score  : number = 0
   }
 
-  trait BoardPlay -> Board [interaction, instance] {
+  trait BoardPlay -> Board {
     initial: idle
     state idle {
       INIT -> idle
@@ -114,7 +114,7 @@ orbital LevelOrbital {
     id : string!
   }
 
-  trait LevelData -> Level [lifecycle, instance] {
+  trait LevelData -> Level {
     initial: idle
     state idle {
       INIT -> idle
@@ -151,7 +151,7 @@ orbital PanelOrbital {
     id : string!
   }
 
-  trait PanelRender -> Panel [interaction, instance] {
+  trait PanelRender -> Panel {
     initial: idle
     state idle {
       INIT -> idle
@@ -194,7 +194,7 @@ orbital InertOrbital {
     id : string!
   }
 
-  trait InertFlow -> Inert [lifecycle, instance] {
+  trait InertFlow -> Inert {
     initial: idle
     state idle {
       GO -> done

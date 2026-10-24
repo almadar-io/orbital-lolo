@@ -4,7 +4,7 @@ orbital StatusOrbital {
     id : string!
     status : Status
   }
-  trait StatusActions -> StatusItem [interaction] {
+  trait StatusActions -> StatusItem {
     state idle {
       ACTIVATE -> idle
         (set @status "active")

@@ -116,8 +116,8 @@ pub(super) fn entity(
         collection: def.collection.clone(),
         shared: def.shared,
         identity: def.identity,
-        local: def.local,
-        seed_mock: def.seed_mock,
+        browser: def.browser,
+        retired_words: Vec::new(),
         store: def.store.clone(),
         instances: def.instances.clone().unwrap_or_default(),
         locale_instances: def.locale_instances.clone().unwrap_or_default(),
@@ -179,7 +179,7 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
             shape: s,
             persistence,
             shared,
-            local,
+            browser,
             read_policy,
             create_policy,
             update_policy,
@@ -195,7 +195,7 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
                 CorePersistence::Runtime => Persistence::Runtime,
             }),
             shared: *shared,
-            local: *local,
+            browser: *browser,
             access: ExpectedAccess {
                 read_policy: read_policy.clone(),
                 create_policy: create_policy.clone(),
@@ -275,6 +275,8 @@ fn page(p: &PageRef) -> Result<Page, UnlowerError> {
         PageRef::Inline(d) => {
             let derived = crate::lower::page_name_from_path(&d.path);
             Ok(Page {
+                protocol: d.protocol.clone(),
+                address: d.address.clone(),
                 path: d.path.clone(),
                 type_annotation: None,
                 traits: trait_names(&d.traits)?,
@@ -283,7 +285,7 @@ fn page(p: &PageRef) -> Result<Page, UnlowerError> {
                 is_initial: d.is_initial == Some(true),
                 span: Span::dummy(),
                 reference: None,
-                name: (d.name != derived).then(|| d.name.clone()),
+                name: (d.protocol.is_some() || d.name != derived).then(|| d.name.clone()),
                 icon: d.icon.clone(),
                 label: d.label.clone(),
                 roles: d.roles.clone(),
@@ -295,10 +297,14 @@ fn page(p: &PageRef) -> Result<Page, UnlowerError> {
             })
         }
         PageRef::Object(o) => Ok(Page {
-            path: o
-                .path
-                .clone()
-                .ok_or_else(|| UnlowerError::new("page reference without a path"))?,
+            protocol: o.protocol.clone(),
+            address: o.address.clone(),
+            path: match (&o.protocol, &o.path) {
+                (Some(_), path) => path.clone().unwrap_or_default(),
+                (None, path) => path
+                    .clone()
+                    .ok_or_else(|| UnlowerError::new("page reference without a path"))?,
+            },
             type_annotation: None,
             traits: trait_names(&o.traits)?,
             view: None,
@@ -473,8 +479,7 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
             || r.collection.is_some()
             || r.shared
             || r.identity
-            || r.local
-            || r.seed_mock;
+            || r.browser;
         if has_tags {
             out.entity_rebind_tags = Some(crate::ast::EntityRebindTags {
                 persistence: r.persistence.as_ref().map(|p| match p {
@@ -484,8 +489,8 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
                 collection: r.collection.clone(),
                 shared: r.shared,
                 identity: r.identity,
-                local: r.local,
-                mock: r.seed_mock,
+                browser: r.browser,
+                retired_words: Vec::new(),
             });
         }
         let mut overrides: Vec<_> = r.traits.iter().flatten().collect();

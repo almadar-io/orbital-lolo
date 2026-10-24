@@ -3,7 +3,7 @@ orbital NotificationOrbital {
     id : string!
     message : string
   }
-  trait OrderProcessing -> Notification [interaction, instance] {
+  trait OrderProcessing -> Notification {
     state pending {
       SHIP -> shipped
         (emit ORDER_SHIPPED { orderId: @id })
@@ -13,7 +13,7 @@ orbital NotificationOrbital {
       ORDER_SHIPPED -> external { orderId: string }
     }
   }
-  trait NotificationHandler -> Notification [interaction] {
+  trait NotificationHandler -> Notification {
     state idle {
       SHOW -> active
         (set @message ?message)

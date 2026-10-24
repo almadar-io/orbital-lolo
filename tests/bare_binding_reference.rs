@@ -28,7 +28,7 @@ orbital ProbeOrbital {{
     status : "idle" = idle
   }}
 
-  trait ProbeRun -> Probe [lifecycle, instance] {{
+  trait ProbeRun -> Probe {{
     initial: idle
 
     state idle {{
@@ -180,7 +180,7 @@ orbital KeyOrbital {{
     state : string = "a"
     now : number = 0
   }}
-  trait KeyRun -> Thing [lifecycle, instance] {{
+  trait KeyRun -> Thing {{
     initial: idle
     state idle {{
       INIT -> idle

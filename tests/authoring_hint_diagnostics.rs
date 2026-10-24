@@ -17,7 +17,7 @@ fn parse_err(src: &str) -> ParseError {
 
 #[test]
 fn slash_comment_gets_semicolon_hint() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      // handled elsewhere\n      RUN -> idle\n        (set @entity.x 1)\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      // handled elsewhere\n      RUN -> idle\n        (set @entity.x 1)\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -29,7 +29,7 @@ fn slash_comment_gets_semicolon_hint() {
 
 #[test]
 fn sigil_object_key_gets_explicit_pair_hint() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (emit DONE { @entity.x })\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (emit DONE { @entity.x })\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     assert!(
@@ -44,7 +44,7 @@ fn sigil_object_key_gets_explicit_pair_hint() {
 fn trait_level_transition_gets_placement_hint() {
     // Observed live (C-TRAIT-LEVEL-TRANSITION): the model closes a state and
     // writes the next `EVENT -> target` arm at trait level.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n\n    ADVANCE -> idle\n      (set @entity.x 2)\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n\n    ADVANCE -> idle\n      (set @entity.x 2)\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -58,7 +58,7 @@ fn trait_level_transition_gets_placement_hint() {
 fn early_trait_close_gets_brace_hint() {
     // Observed live (C-EARLY-TRAIT-CLOSE): an extra `}` closes the trait, so
     // the next `state` block lands at orbital level.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> running\n        (set @entity.x 1)\n    }\n  }\n\n    state running {\n      STOP -> idle\n        (set @entity.x 0)\n    }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> running\n        (set @entity.x 1)\n    }\n  }\n\n    state running {\n      STOP -> idle\n        (set @entity.x 0)\n    }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -74,7 +74,7 @@ fn early_trait_close_gets_brace_hint() {
 fn annotation_inside_payload_gets_placement_hint() {
     // Observed live (C-ANNOTATION-IN-PAYLOAD): `@description` written inside
     // the emits payload braces instead of after the closing `}`.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n    emits {\n      DONE -> external {\n        @description \"finished\"\n        x : number\n      }\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n    emits {\n      DONE -> external {\n        @description \"finished\"\n        x : number\n      }\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -90,7 +90,7 @@ fn annotation_inside_payload_gets_placement_hint() {
 fn bare_paren_group_gets_do_hint() {
     // Observed live (C-BARE-PAREN-GROUP): a bare `(` opened as a grouping
     // block for a multi-expression lambda body.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x (array/len (array/map @entity.x (fn c (\n          (if true 1 2)))))\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x (array/len (array/map @entity.x (fn c (\n          (if true 1 2)))))\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -105,7 +105,7 @@ fn bare_paren_group_gets_do_hint() {
 #[test]
 fn parenthesized_value_gets_operator_hint() {
     // Observed live (C-SIGIL-OPERATOR): JS-style parenthesized value.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x (@entity.x))\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x (@entity.x))\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     assert!(
@@ -119,7 +119,7 @@ fn parenthesized_value_gets_operator_hint() {
 #[test]
 fn brace_lambda_body_gets_do_hint() {
     // Observed live (C-BRACE-LAMBDA-BODY): JS arrow-function block body.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x (array/len (array/map @entity.x (fn b {\n          (set @entity.x 1)\n        }))))\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x (array/len (array/map @entity.x (fn b {\n          (set @entity.x 1)\n        }))))\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -134,7 +134,7 @@ fn brace_lambda_body_gets_do_hint() {
 #[test]
 fn unquoted_multiword_value_gets_quote_hint() {
     // Observed live (C-UNQUOTED-STRING): bare multi-word text value + commas.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (render-ui main { type: typography, content: Next Review })\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (render-ui main { type: typography, content: Next Review })\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -152,7 +152,7 @@ fn unquoted_multiword_value_gets_quote_hint() {
 fn emits_scope_form_in_listens_gets_direction_hint() {
     // Observed live (C-LISTENS-ARROW): emits' `EVENT -> internal { … }` form
     // copied into a listens block. `-> external` is the external-input form.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n    listens {\n      PING -> internal {\n        x : number\n      }\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n    listens {\n      PING -> internal {\n        x : number\n      }\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -166,7 +166,7 @@ fn emits_scope_form_in_listens_gets_direction_hint() {
 
 #[test]
 fn external_input_form_in_listens_parses() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      PING -> idle\n        (set @entity.x ?x)\n    }\n    listens {\n      PING -> external {\n        x : number\n      }\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      PING -> idle\n        (set @entity.x ?x)\n    }\n    listens {\n      PING -> external {\n        x : number\n      }\n    }\n  }\n}";
     assert!(parse_str(src).is_ok());
 }
 
@@ -187,7 +187,7 @@ fn single_quoted_string_gets_double_quote_hint() {
 #[test]
 fn unquoted_multiword_value_before_newline_gets_quote_hint() {
     // Same class, newline shape: `label: Next Review` then newline.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (render-ui main { type: typography\n          content: Next Review\n          variant: caption })\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (render-ui main { type: typography\n          content: Next Review\n          variant: caption })\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     assert!(
@@ -220,7 +220,7 @@ fn bare_uses_gets_from_hint() {
 fn early_orbital_close_gets_brace_hint() {
     // Observed live (Run 17): an extra `}` closes the ORBITAL, so the next
     // `page` declaration lands at file level.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n  }\n}\n\n  page \"/\" as P -> T\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n  }\n}\n\n  page \"/\" as P -> T\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
     assert!(
@@ -236,7 +236,7 @@ fn early_orbital_close_gets_brace_hint() {
 fn rparen_inside_object_gets_missing_brace_hint() {
     // Observed live (Run 17): closer pile-up `}))` where one `{` never got
     // its `}` — the parser is mid-object when `)` arrives.
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (render-ui main { type: stack\n          children: [{ type: typography\n            content: \"hi\"\n          ]\n        })\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (render-ui main { type: stack\n          children: [{ type: typography\n            content: \"hi\"\n          ]\n        })\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, _fix) = err.hint();
     assert!(
@@ -249,6 +249,6 @@ fn rparen_inside_object_gets_missing_brace_hint() {
 
 #[test]
 fn semicolon_comments_still_parse() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    initial: idle\n    state idle {\n      ;; handled elsewhere\n      RUN -> idle\n        (set @entity.x 1)\n    }\n  }\n}";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      ;; handled elsewhere\n      RUN -> idle\n        (set @entity.x 1)\n    }\n  }\n}";
     assert!(parse_str(src).is_ok(), "`;;` comments must stay legal");
 }

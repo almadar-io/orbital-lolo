@@ -12,7 +12,7 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
   roles {
     approver: [owner, project_manager]
   }
-  trait TimesheetApproval -> Timesheet [interaction, instance] {
+  trait TimesheetApproval -> Timesheet {
     state draft {
       SUBMIT -> submitted
         (set @id "x")

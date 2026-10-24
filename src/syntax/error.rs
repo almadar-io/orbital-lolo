@@ -462,9 +462,80 @@ impl ParseError {
     }
 }
 
+const RETIRED_TRAIT_CATEGORIES: &[&str] = &[
+    "interaction",
+    "integration",
+    "lifecycle",
+    "game-core",
+    "game-entity",
+    "game-ui",
+];
+
+/// The error for a trait header word that is not a dispatch mode.
+pub(crate) fn trait_header_word_error(word: &str) -> LowerError {
+    if RETIRED_TRAIT_CATEGORIES.contains(&word) {
+        LowerError::Coded {
+            code: "ORB_T_HEADER_WORD_RETIRED",
+            message: format!("trait header word `{word}` is retired: delete it (P-009: checks follow the page)"),
+        }
+    } else if word == "instance" || word == "collection" {
+        LowerError::Coded {
+            code: "ORB_T_HEADER_WORD_RETIRED",
+            message: format!("trait header word `{word}` is retired: delete it"),
+        }
+    } else if word == "local" {
+        LowerError::Coded {
+            code: "ORB_T_HEADER_WORD_RETIRED",
+            message: "trait header word `local` is retired: write `[client]`".to_string(),
+        }
+    } else {
+        LowerError::Coded {
+            code: "ORB_T_UNKNOWN_HEADER_WORD",
+            message: format!("unknown trait header word `{word}`: move it to `;; @capabilities`"),
+        }
+    }
+}
+
+/// The message for a retired entity header word, `None` for a word that was never one.
+pub(crate) fn retired_entity_word_message(word: &str) -> String {
+    match word {
+        "local" => "entity header word `local` is retired: write `browser`".to_string(),
+        _ => format!("entity header word `{word}` is retired: delete it"),
+    }
+}
+
+/// The error for a retired entity header word.
+pub(crate) fn entity_header_word_error(word: &str) -> LowerError {
+    LowerError::Coded {
+        code: "ORB_E_HEADER_WORD_RETIRED",
+        message: retired_entity_word_message(word),
+    }
+}
+
+/// The error for the retired `-> external {` listen spelling.
+pub(crate) fn listen_external_error() -> LowerError {
+    LowerError::Coded {
+        code: "ORB_L_LISTEN_EXTERNAL_RETIRED",
+        message: "`-> external {` on a listen is retired: write `-> input {`".to_string(),
+    }
+}
+
+/// The error for the pre-bracket app header.
+pub(crate) fn app_header_legacy_error() -> LowerError {
+    LowerError::Coded {
+        code: "ORB_L_APP_HEADER_LEGACY",
+        message: "the app header writes its modifiers outside its bracket (a positional version, or description/theme/locales/public on loose lines): write the bracket form `app NAME [ version: \"1.0.0\", description: …, theme: …, locales: […], public: … ]` (`orb format --write <file>` rewrites it)".to_string(),
+    }
+}
+
 /// Lowering error.
 #[derive(Debug, Clone, Error)]
 pub enum LowerError {
+    /// A header word, protocol or app-header form the language no longer takes,
+    /// with the code and the fix-it that names the replacement.
+    #[error("{code}: {message}")]
+    Coded { code: &'static str, message: String },
+
     #[error("unknown type alias {name:?}")]
     UnknownTypeAlias { name: String },
 
@@ -489,9 +560,6 @@ pub enum LowerError {
 
     #[error("invalid persistence {value:?}")]
     InvalidPersistence { value: String },
-
-    #[error("invalid trait category {value:?}")]
-    InvalidCategory { value: String },
 
     #[error("internal lowering bug: {0}")]
     Internal(String),

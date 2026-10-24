@@ -25,7 +25,7 @@ orbital OpDivergenceProbesOrbital {
     createdAt : string = ""
   }
 
-  trait OpDivergenceProbes -> @rebindable OpDivergenceProbesData [lifecycle] {
+  trait OpDivergenceProbes -> @rebindable OpDivergenceProbesData {
     initial: active
 
     state active {

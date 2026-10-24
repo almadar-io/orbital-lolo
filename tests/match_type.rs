@@ -18,7 +18,7 @@ fn wrap(trait_body: &str) -> String {
     id : string!
   }}
 
-  trait WidgetInput -> Widget [interaction] {{
+  trait WidgetInput -> Widget {{
     state idle {{
       INIT -> idle
     }}
@@ -333,7 +333,7 @@ orbital MatchOrbital {
     }
   }
 
-  trait WidgetInput -> Widget [interaction] {
+  trait WidgetInput -> Widget {
     state idle {
       INIT -> idle
     }
@@ -364,7 +364,7 @@ orbital MatchOrbital {
     id : string!
   }
 
-  trait WidgetInput -> Widget [interaction] {
+  trait WidgetInput -> Widget {
     state idle {
       INIT -> idle
     }

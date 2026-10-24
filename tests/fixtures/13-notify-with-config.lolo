@@ -2,7 +2,7 @@ orbital NotifyOrbital {
   entity Toast [runtime] {
     id : string!
   }
-  trait Notifier -> Toast [interaction] {
+  trait Notifier -> Toast {
     state idle {
       INFO -> idle
         (notify success "Saved")

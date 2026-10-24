@@ -17,7 +17,7 @@ orbital UserNotifierOrbital {
     userId : string
   }
 
-  trait UserLoadedNotifier -> Account [interaction, collection] {
+  trait UserLoadedNotifier -> Account {
     state idle {
       INIT -> idle
         (fetch Account)

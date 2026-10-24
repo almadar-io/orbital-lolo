@@ -4,7 +4,7 @@
 orbital O {
   entity E [runtime] { id : string! }
   type ELoaded = Event E
-  trait T -> E [interaction, collection] {
+  trait T -> E {
     state s {
       INIT -> s
         (fetch E)

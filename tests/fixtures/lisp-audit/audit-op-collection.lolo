@@ -14,7 +14,7 @@ orbital OpCollectionOrbital {
     total : number = 0
   }
 
-  trait OpCollection -> @rebindable OpCollectionData [lifecycle] {
+  trait OpCollection -> @rebindable OpCollectionData {
     initial: active
 
     state active {

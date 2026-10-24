@@ -3,7 +3,7 @@ orbital OrderOrbital {
     id : string!
     status : string
   }
-  trait OrderLifecycle -> Order [interaction] {
+  trait OrderLifecycle -> Order {
     initial: pending
     state pending {
       CONFIRM -> confirmed

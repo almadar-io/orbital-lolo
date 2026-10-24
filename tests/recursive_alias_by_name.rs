@@ -18,7 +18,7 @@ orbital Tree {{
     id : string!
   }}
 
-  trait Walker -> Doc [interaction] {{
+  trait Walker -> Doc {{
     state idle {{
       INIT -> idle
         (set @entity.id (json/stringify @config.{knob}))

@@ -299,7 +299,7 @@ orbital NoteOrbital {
     }
   }
 
-  trait NotePersistor -> Note [lifecycle, instance] {
+  trait NotePersistor -> Note {
     initial: idle
     state idle {
       INIT -> idle

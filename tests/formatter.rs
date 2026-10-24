@@ -379,7 +379,7 @@ orbital O {
   entity Item [runtime] {
     id : string!
   }
-  trait V -> Item [interaction collection] {
+  trait V -> Item {
     initial idle
     state idle {
       INIT -> idle (render-ui main { type: "box" })
@@ -395,7 +395,7 @@ orbital O {
   entity Item [runtime] {
     id : string!
   }
-  trait V -> Item [interaction, collection] {
+  trait V -> Item {
     initial: idle
     state idle {
       INIT -> idle (render-ui main { type: "box" })
@@ -429,7 +429,7 @@ orbital PersonOrbital {
     name : string!
     role : "clinician" | "frontdesk" | "patient" = clinician
   }
-  trait V -> Person [interaction, collection] {
+  trait V -> Person {
     initial: idle
     state idle {
       INIT -> idle (render-ui main { type: "box" })
@@ -474,7 +474,7 @@ orbital TicketOrbital {
     id : string!
     assignee : string!
   }
-  trait V -> Ticket [interaction, collection] {
+  trait V -> Ticket {
     initial: idle
     state idle {
       INIT -> idle (render-ui main { type: "box" })
@@ -561,7 +561,7 @@ orbital PersonOrbital {{
   entity Person {tag} {{
     id : string!
   }}
-  trait V -> Person [interaction, collection] {{
+  trait V -> Person {{
     initial: idle
     state idle {{
       INIT -> idle (render-ui main {{ type: "box" }})
@@ -656,7 +656,7 @@ orbital ProductOrbital {
     id : string!
     title : string!
   }
-  trait V -> Product [interaction, collection] {
+  trait V -> Product {
     initial: idle
     state idle {
       INIT -> idle (render-ui main { type: "box" })
@@ -769,7 +769,7 @@ orbital OrbG {
     bag : Map string (string | number)
     list : [(string | number)]
   }
-  trait RecTrait -> Rec [interaction] { state idle { INIT -> idle (ref Rec) } }
+  trait RecTrait -> Rec { state idle { INIT -> idle (ref Rec) } }
   page "/recs" -> RecTrait
 }
 "#;
@@ -795,7 +795,7 @@ fn fetch_deliver_and_total_lower_to_the_ir_and_survive_the_formatter() {
     let src = r#"
 orbital T {
   entity Item [runtime] { id : string! }
-  trait R -> Item [interaction] {
+  trait R -> Item {
     initial: idle
     state idle {
       INIT -> idle
@@ -834,7 +834,7 @@ mod quoted_field_names {
 
     fn program(types: &str) -> String {
         format!(
-            "{BASE}{types}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    link : Link\n  }}\n  trait T -> E [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
+            "{BASE}{types}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    link : Link\n  }}\n  trait T -> E {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
         )
     }
 
@@ -879,7 +879,7 @@ mod quoted_field_names {
     #[test]
     fn an_inline_object_type_accepts_a_quoted_name() {
         let src = format!(
-            "{BASE}orbital O {{\n  entity E [runtime] {{\n    id : string!\n    link : {{ \"@href\" : string }}\n  }}\n  trait T -> E [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
+            "{BASE}orbital O {{\n  entity E [runtime] {{\n    id : string!\n    link : {{ \"@href\" : string }}\n  }}\n  trait T -> E {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
         );
         assert_eq!(lowered_link_names(&src), vec!["@href"]);
     }
@@ -944,7 +944,7 @@ mod xml_parse_list_paths {
 
     fn program(shape: &str) -> String {
         format!(
-            "app xl [\n  version: \"1.0.0\",\n  description: \"x\"\n]\ntype Author = {{ name : string }}\ntype Entry = {{ id : string, author : [Author] }}\ntype Feed = {{ title : string, entry : [Entry] }}\ntype Row = {{ id : string, title : string }}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    body : string\n    out : string\n  }}\n  trait T -> E [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (set @entity.out (object/get (xml/parse \"<a/>\" {shape}) title \"\"))\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
+            "app xl [\n  version: \"1.0.0\",\n  description: \"x\"\n]\ntype Author = {{ name : string }}\ntype Entry = {{ id : string, author : [Author] }}\ntype Feed = {{ title : string, entry : [Entry] }}\ntype Row = {{ id : string, title : string }}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    body : string\n    out : string\n  }}\n  trait T -> E {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (set @entity.out (object/get (xml/parse \"<a/>\" {shape}) title \"\"))\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
         )
     }
 
@@ -1025,7 +1025,7 @@ orbital ListOrbital {
     frames : [string] = ["idle", "walk"]
     keys : [string] = []
   }
-  trait V -> Row [interaction, instance] {
+  trait V -> Row {
     initial: idle
     state idle {
       INIT -> idle

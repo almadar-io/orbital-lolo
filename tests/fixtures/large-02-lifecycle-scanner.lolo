@@ -18,7 +18,7 @@ orbital LifecycleOrbital {
   type LifecycleStepped      = Event { id : string }                           "Internal: one record transitioned; drives the next loop pass."
   type LifecycleTransitioned = Event { entityId : string, status : string }    "Re-emitted per record as it transitions; rename to wire downstream listeners."
 
-  trait LifecycleScheduler -> LifecycleRunLog [lifecycle, instance] {
+  trait LifecycleScheduler -> LifecycleRunLog {
     config {
       enabled       : boolean = false
         @label "Auto-archive old records"

@@ -16,7 +16,7 @@ fn program(effect: &str) -> String {
     program : string = ""
   }}
 
-  trait Build -> Draft [interaction] {{
+  trait Build -> Draft {{
     initial: idle
 
     state idle {{

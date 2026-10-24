@@ -24,7 +24,7 @@ orbital WidgetOrbital {
     viewState   : string @intrinsic = ""
   }
 
-  trait WidgetReview -> @rebindable WidgetView [interaction, instance] {
+  trait WidgetReview -> @rebindable WidgetView {
     initial: idle
     state idle {
       RENDER -> idle
@@ -84,7 +84,7 @@ orbital ApptOrbital {
     range : string @intrinsic @description "selected range" = "month"
   }
 
-  trait ApptShow -> Appt [interaction, instance] {
+  trait ApptShow -> Appt {
     initial: idle
     state idle {
       RENDER -> idle
@@ -132,7 +132,7 @@ orbital ClientOrbital {
     contactName : string @description "primary contact" @mock "person-name"
   }
 
-  trait ClientShow -> Client [interaction, instance] {
+  trait ClientShow -> Client {
     initial: idle
     state idle {
       RENDER -> idle
@@ -179,7 +179,7 @@ orbital EvtOrbital {
     id : string!
   }
 
-  trait ThingFlow -> Thing [interaction, instance] {
+  trait ThingFlow -> Thing {
     initial: idle
     state idle {
       OPEN -> active
@@ -257,7 +257,7 @@ orbital BadOrbital {
     headline : string = ""
   }
 
-  trait BadReview -> @rebindable BadView [interaction, instance] {
+  trait BadReview -> @rebindable BadView {
     initial: idle
     state idle {
       RENDER -> idle
@@ -288,7 +288,7 @@ orbital OkOrbital {
     headline : string @intrinsic = ""
   }
 
-  trait OkReview -> @rebindable OkView [interaction, instance] {
+  trait OkReview -> @rebindable OkView {
     initial: idle
     state idle {
       RENDER -> idle

@@ -6,7 +6,7 @@ use orbital_lolo::parse_and_lower_str_with_map;
 
 #[test]
 fn transition_effect_span_is_tracked() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @entity.x 1)\n    }\n  }\n}\n";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (set @entity.x 1)\n    }\n  }\n}\n";
     let (_schema, map) =
         parse_and_lower_str_with_map(src, "probe.lolo").expect("parse+lower must succeed");
 
@@ -27,7 +27,7 @@ fn transition_effect_span_is_tracked() {
 
 #[test]
 fn guard_span_is_tracked() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s when (> @entity.x 0)\n        (set @entity.x 1)\n    }\n  }\n}\n";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    state s {\n      EVT -> s when (> @entity.x 0)\n        (set @entity.x 1)\n    }\n  }\n}\n";
     let (_schema, map) =
         parse_and_lower_str_with_map(src, "probe.lolo").expect("parse+lower must succeed");
 
@@ -39,7 +39,7 @@ fn guard_span_is_tracked() {
 
 #[test]
 fn deeper_pointer_falls_back_to_tracked_ancestor() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E [interaction] {\n    state s {\n      EVT -> s\n        (set @entity.x 1)\n    }\n  }\n}\n";
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    state s {\n      EVT -> s\n        (set @entity.x 1)\n    }\n  }\n}\n";
     let (_schema, map) =
         parse_and_lower_str_with_map(src, "probe.lolo").expect("parse+lower must succeed");
 

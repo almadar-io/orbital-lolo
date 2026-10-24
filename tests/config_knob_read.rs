@@ -14,7 +14,7 @@ fn program(knobs: &str, init_body: &str, guard: &str) -> String {
     name : string
   }}
 
-  trait ProbeView -> Probe [interaction, instance] {{
+  trait ProbeView -> Probe {{
     initial: idle
 
     state idle {{
@@ -79,7 +79,7 @@ fn edge_a_knob_read_only_by_a_type_level_match_is_fine() {
   entity Probe [persistent: probes] {
     id : string!
   }
-  trait ProbeView -> Probe [interaction, instance] {
+  trait ProbeView -> Probe {
     initial: idle
     state idle {
       INIT -> idle

@@ -5,7 +5,7 @@ orbital InventoryOrbital {
     itemCount : int = derived (array/length @items)
     isEmpty : bool = derived (== (array/length @items) 0)
   }
-  trait InventoryActions -> Inventory [interaction] {
+  trait InventoryActions -> Inventory {
     state idle {
       ADD -> idle
         (set @items (array/append @items ?item))

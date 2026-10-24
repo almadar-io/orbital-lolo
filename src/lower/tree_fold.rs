@@ -375,7 +375,7 @@ mod tests {
 
     fn program(types: &str, shape: &str) -> String {
         format!(
-            "app tf [\n  version: \"1.0.0\",\n  description: \"x\"\n]\n{types}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    out : string\n  }}\n  trait T -> E [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (set @entity.out (tree/fold @payload.v (fn (n k) @n.label) {shape}))\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
+            "app tf [\n  version: \"1.0.0\",\n  description: \"x\"\n]\n{types}\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    out : string\n  }}\n  trait T -> E {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (set @entity.out (tree/fold @payload.v (fn (n k) @n.label) {shape}))\n    }}\n  }}\n  page \"/\" -> T\n}}\n"
         )
     }
 
@@ -569,7 +569,7 @@ orbital O {
     out : Verdict
     count : number = 0
   }
-  trait T -> E [interaction, instance] {
+  trait T -> E {
     initial: idle
     state idle {
       INIT -> idle

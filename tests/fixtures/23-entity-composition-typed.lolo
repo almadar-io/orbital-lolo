@@ -36,7 +36,7 @@ orbital PatientOrbital {
     notes : string
   }
 
-  trait PatientManage -> Patient [interaction] {
+  trait PatientManage -> Patient {
     state idle {
       INIT -> idle
         (ref Patient)

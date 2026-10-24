@@ -2718,7 +2718,7 @@ mod emit_program_type_literal_tests {
             {prelude}
             orbital TicketOrbital {{
                 entity Ticket {{ id : string! }}
-                trait TicketMint -> Ticket [interaction] {{
+                trait TicketMint -> Ticket {{
                     initial: idle
                     state idle {{
                         MINT -> idle

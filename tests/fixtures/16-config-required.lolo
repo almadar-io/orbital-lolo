@@ -2,7 +2,7 @@ orbital ConfigRequiredOrbital {
   entity Widget [persistent: widgets] {
     id : string!
   }
-  trait WidgetView -> Widget [interaction] {
+  trait WidgetView -> Widget {
     config {
       title : string!
         @label "Title"

@@ -50,7 +50,7 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
   events {
     TIMESHEET_APPROVED: PF_APPROVED
   }
-  trait TimesheetApproval -> Timesheet [interaction, instance] {
+  trait TimesheetApproval -> Timesheet {
     state draft {
       SUBMIT -> submitted
         (set @id "x")
@@ -515,7 +515,7 @@ orbital ProjectOrbital = Pm.orbitals.ProjectOrbital {
   listens {
     ProjectLifecycle.PROJECT_CREATE_REQUESTED -> ProjectPersistor.PROJECT_CREATE_REQUESTED
   }
-  trait ProjectLifecycle -> Project [lifecycle, instance] {
+  trait ProjectLifecycle -> Project {
     state idle {
       OPEN -> idle
         (emit PROJECT_CREATE_REQUESTED { data: @entity })
@@ -570,7 +570,7 @@ orbital O {
   entity Row [runtime] {
     id : string
   }
-  trait A -> Row [interaction, instance] {
+  trait A -> Row {
     listens {
       B.GO -> C.GO
     }

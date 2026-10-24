@@ -11,7 +11,7 @@ orbital StreamOrbital {
   type StreamLoaded      = Event { data: [StreamChunk] }
   type StreamFailed      = Event { error: string }
 
-  trait StreamChunkStream -> StreamChunk [interaction] {
+  trait StreamChunkStream -> StreamChunk {
     initial: loading
     state loading {
       INIT -> loading

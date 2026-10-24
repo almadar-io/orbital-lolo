@@ -16,7 +16,7 @@ orbital TaskOrbital {{
     id : string!
     title : string
   }}
-  trait TaskPersistor -> Task [lifecycle] {{
+  trait TaskPersistor -> Task {{
     initial: idle
     state idle {{
       INIT -> idle
@@ -27,7 +27,7 @@ orbital TaskOrbital {{
       DO_CREATE -> external {{ data : {{ title : string! }} }}
     }}
   }}
-  trait Assistant -> Task [interaction] {{
+  trait Assistant -> Task {{
     config {{
       tools : [AgentTool] = {default}
     }}

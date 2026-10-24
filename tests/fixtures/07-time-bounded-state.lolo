@@ -2,7 +2,7 @@ orbital ConfirmingOrbital {
   entity Order [runtime] {
     id : string!
   }
-  trait ConfirmFlow -> Order [interaction] {
+  trait ConfirmFlow -> Order {
     state confirming for 30s {
       CONFIRM -> confirmed
         (set @id "x")

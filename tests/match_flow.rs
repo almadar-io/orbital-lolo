@@ -35,7 +35,7 @@ fn wrap_draw_trait(trait_body: &str) -> String {
     lastText : string = ""
   }}
 
-  trait DrawDispatch -> DrawState [lifecycle, instance] {{
+  trait DrawDispatch -> DrawState {{
 {trait_body}
   }}
 

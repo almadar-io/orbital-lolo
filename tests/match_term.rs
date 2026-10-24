@@ -21,7 +21,7 @@ fn wrap_entity_trait(trait_body: &str) -> String {
     key : string = ""
   }}
 
-  trait RedisExec -> RedisRow [interaction] {{
+  trait RedisExec -> RedisRow {{
 {trait_body}
   }}
 }}
@@ -136,7 +136,7 @@ fn match_lowers_to_the_same_transitions_as_the_hand_guarded_spelling() {
     key : string = ""
   }
 
-  trait RedisExec -> RedisRow [interaction] {
+  trait RedisExec -> RedisRow {
     state idle {
       INIT -> idle
         (set @entity.op "get")
@@ -247,7 +247,7 @@ fn wildcard_optional_when_closed_vocabulary_is_fully_covered() {
     active : boolean = false
   }
 
-  trait ToggleExec -> ToggleRow [interaction] {
+  trait ToggleExec -> ToggleRow {
     state idle {
       INIT -> idle
         (set @entity.active false)
@@ -281,7 +281,7 @@ fn ensures_on_a_match_transition_is_owed_by_every_arm_and_formats_back() {
     active : boolean = false
   }
 
-  trait ToggleExec -> ToggleRow [interaction] {
+  trait ToggleExec -> ToggleRow {
     state idle {
       INIT -> idle
         (set @entity.active false)
@@ -510,7 +510,7 @@ fn open_scrutinee_type_needs_a_wildcard_arm() {
     op : string = ""
   }
 
-  trait FreeExec -> FreeRow [interaction] {
+  trait FreeExec -> FreeRow {
     state idle {
       INIT -> idle
         (set @entity.op "x")
@@ -603,7 +603,7 @@ fn wrap_draw_trait(trait_body: &str) -> String {
     lastText : string = ""
   }}
 
-  trait DrawDispatch -> DrawState [lifecycle, instance] {{
+  trait DrawDispatch -> DrawState {{
 {trait_body}
   }}
 }}
@@ -666,7 +666,7 @@ fn entity_rooted_dotted_scrutinee_lowers_with_wildcard_unguarded_last() {
     lastWidth : number = 0
   }
 
-  trait DrawApply -> DrawState [lifecycle, instance] {
+  trait DrawApply -> DrawState {
     listens {
       DISPATCH { item : DrawItem! }
     }
@@ -818,7 +818,7 @@ fn ambiguous_discriminant_literal_is_rejected() {
     n : number = 0
   }
 
-  trait Dispatch -> Row [lifecycle, instance] {
+  trait Dispatch -> Row {
     listens {
       DISPATCH { item : Item! }
     }

@@ -20,7 +20,7 @@ orbital AuditOrbital {
     updatedBy : string
     note : string
   }
-  trait RecBrowse -> Rec [interaction] {
+  trait RecBrowse -> Rec {
     state idle {
       INIT -> idle
         (ref Rec)

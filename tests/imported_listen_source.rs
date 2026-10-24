@@ -15,7 +15,7 @@ orbital Local {{
   entity Thing [persistent: things] {{
     id : string!
   }}
-  trait Source -> Thing [interaction] {{
+  trait Source -> Thing {{
     initial: idle
     state idle {{
       INIT -> idle
@@ -28,7 +28,7 @@ orbital Watcher {{
   entity Note [persistent: notes] {{
     id : string!
   }}
-  trait NoteLog -> Note [interaction] {{
+  trait NoteLog -> Note {{
     initial: idle
     state idle {{
       INIT -> idle

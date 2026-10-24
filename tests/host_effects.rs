@@ -12,7 +12,7 @@ fn program(effect: &str) -> String {
     id : string!
   }}
 
-  trait DemoFlow -> Demo [interaction, instance] {{
+  trait DemoFlow -> Demo {{
     {config}
     initial: idle
     state idle {{

@@ -12,7 +12,7 @@ orbital TaskOrbital {{
     id : string!
     title : string
   }}
-  trait TaskBrowse -> Task [interaction] {{
+  trait TaskBrowse -> Task {{
     initial: idle
     state idle {{
       INIT -> idle
@@ -155,7 +155,7 @@ orbital HookOrbital {{
   entity Req [runtime] {{
     id : string!
   }}
-  trait HookIn -> Req [interaction, instance] {{
+  trait HookIn -> Req {{
     initial: idle
     state idle {{
       INIT -> idle

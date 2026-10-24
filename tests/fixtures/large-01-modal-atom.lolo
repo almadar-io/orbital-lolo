@@ -19,7 +19,7 @@ orbital ModalRecordOrbital {
   type ModalRecordLoaded = Event { data : [ModalRecord] }
   type ModalRecordLoadFailed = Event { error : string, code : string }
 
-  trait ModalRecordModal -> @rebindable ModalRecord [interaction, instance] {
+  trait ModalRecordModal -> @rebindable ModalRecord {
     config {
       icon : string = "layout-panel-top"
         @label "Icon"

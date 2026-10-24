@@ -19,6 +19,9 @@ pub(crate) fn lower_entity(
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,
 ) -> Result<EntityDefinition, LowerError> {
+    if let Some(word) = entity.retired_words.first() {
+        return Err(crate::error::entity_header_word_error(&word.word).located(word.span));
+    }
     check_shared_entity_has_persistence_mode(entity)?;
     let mut fields = Vec::with_capacity(entity.fields.len());
     let allow: &[&str] = if matches!(entity.persistence, Some(Persistence::Runtime)) {
@@ -48,8 +51,7 @@ pub(crate) fn lower_entity(
         instances: (!entity.instances.is_empty()).then(|| entity.instances.clone()),
         shared: entity.shared,
         identity: entity.identity,
-        local: entity.local,
-        seed_mock: entity.seed_mock,
+        browser: entity.browser,
         locale_instances: (!entity.locale_instances.is_empty())
             .then(|| entity.locale_instances.clone()),
         read_policy: entity.read_policy.clone(),

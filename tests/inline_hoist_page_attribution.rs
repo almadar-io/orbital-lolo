@@ -25,7 +25,7 @@ fn disjoint_pages_get_only_their_own_producers_fragments() {
     label : string
   }
 
-  trait TraitA -> Widget [interaction] {
+  trait TraitA -> Widget {
     state idle {
       INIT -> idle
         (render-ui main {
@@ -37,7 +37,7 @@ fn disjoint_pages_get_only_their_own_producers_fragments() {
     }
   }
 
-  trait TraitB -> Widget [interaction] {
+  trait TraitB -> Widget {
     state idle {
       INIT -> idle
         (render-ui main {
@@ -86,7 +86,7 @@ fn single_page_orbital_keeps_prior_behavior() {
     label : string
   }
 
-  trait WidgetView -> Widget [interaction] {
+  trait WidgetView -> Widget {
     state idle {
       INIT -> idle
         (render-ui main {
@@ -123,7 +123,7 @@ fn trait_declared_on_both_pages_gives_fragments_to_both() {
     label : string
   }
 
-  trait SharedTrait -> Widget [interaction] {
+  trait SharedTrait -> Widget {
     state idle {
       INIT -> idle
         (render-ui main {
@@ -135,7 +135,7 @@ fn trait_declared_on_both_pages_gives_fragments_to_both() {
     }
   }
 
-  trait OtherTrait -> Widget [interaction] {
+  trait OtherTrait -> Widget {
     state idle {
       INIT -> idle
     }

@@ -4,14 +4,14 @@ orbital ItemOrbital {
     title : string
   }
 
-  trait ItemSearch -> Item [interaction] {
+  trait ItemSearch -> Item {
     state idle {
       INIT -> idle
         (render-ui main { type: "search-input", placeholder: "Search..." })
     }
   }
 
-  trait ItemBrowse -> Item [interaction] {
+  trait ItemBrowse -> Item {
     state browsing {
       INIT -> browsing
         (ref Item)
@@ -19,7 +19,7 @@ orbital ItemOrbital {
     }
   }
 
-  trait ItemLayout -> Item [interaction] {
+  trait ItemLayout -> Item {
     state composing {
       INIT -> composing
         (render-ui main {

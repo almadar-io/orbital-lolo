@@ -7,7 +7,7 @@ use orbital_core_base::behavior_packages::discover;
 use orbital_lolo::registry::LoloContracts;
 use std::sync::Arc;
 
-const LOLO: &str = "app zz-new [version: \"1.0.0\", description: \"x\"]\norbital ZzOrbital {\n  entity ZzView [runtime] {\n    id : string!\n  }\n  trait ZzBar -> @rebindable ZzView [interaction, instance] {\n    initial: idle\n    state idle {\n      INIT -> idle\n        (render-ui main { type: typography, content: \"x\" })\n    }\n  }\n  page \"/zz\" as ZzPage -> ZzBar\n}\n";
+const LOLO: &str = "app zz-new [version: \"1.0.0\", description: \"x\"]\norbital ZzOrbital {\n  entity ZzView [runtime] {\n    id : string!\n  }\n  trait ZzBar -> @rebindable ZzView {\n    initial: idle\n    state idle {\n      INIT -> idle\n        (render-ui main { type: typography, content: \"x\" })\n    }\n  }\n  page \"/zz\" as ZzPage -> ZzBar\n}\n";
 
 #[test]
 fn unchanged_packages_load_once_and_a_new_lolo_is_seen() {

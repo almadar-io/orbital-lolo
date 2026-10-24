@@ -238,6 +238,10 @@ pub(crate) fn lower_orbital_reference(
         };
 
     let rebind_tags = orb.entity_rebind_tags.clone().unwrap_or_default();
+    if let Some(word) = rebind_tags.retired_words.first() {
+        return Err(crate::error::entity_header_word_error(&word.word).located(word.span));
+    }
+    super::r#trait::check_listens_spelling(&orb.import_listens)?;
     let ref_object = OrbitalRefObject {
         page_modifiers: (!orb.page_modifiers.is_empty()).then(|| {
             orb.page_modifiers
@@ -273,8 +277,7 @@ pub(crate) fn lower_orbital_reference(
         collection: rebind_tags.collection.clone(),
         shared: rebind_tags.shared,
         identity: rebind_tags.identity,
-        local: rebind_tags.local,
-        seed_mock: rebind_tags.mock,
+        browser: rebind_tags.browser,
         traits,
         listens: if orb.import_listens.is_empty() {
             None

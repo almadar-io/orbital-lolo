@@ -21,7 +21,7 @@ orbital BoardOrbital {
     nodes : [GraphNodeOut]
   }
 
-  trait BoardView -> Board [interaction, instance] {
+  trait BoardView -> Board {
     state idle {
       INIT -> idle
         (fetch Board)

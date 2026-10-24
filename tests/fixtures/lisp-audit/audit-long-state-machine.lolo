@@ -19,7 +19,7 @@ orbital LongStateMachineOrbital {
     timer : number = 0
   }
 
-  trait OrderLifecycle -> @rebindable OrderFulfillment [lifecycle] {
+  trait OrderLifecycle -> @rebindable OrderFulfillment {
     initial: created
 
     state created {

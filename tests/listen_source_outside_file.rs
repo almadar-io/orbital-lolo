@@ -12,7 +12,7 @@ orbital CartItemOrbital {
     id : string!
     count : number
   }
-  trait CartItemAddToCart -> CartItem [interaction] {
+  trait CartItemAddToCart -> CartItem {
     state idle {
       ADD_TO_CART -> idle
     }
@@ -35,7 +35,7 @@ orbital ProductOrbital {{
   entity Product [runtime] {{
     id : string!
   }}
-  trait ProductBrowse -> Product [interaction] {{
+  trait ProductBrowse -> Product {{
     state idle {{
       PICK -> idle
         (emit ADD_TO_CART {{ id: @id }})

@@ -9,7 +9,7 @@ orbital OrderOrbital {
 
   type OrderShipped = Event Order [external]
 
-  trait OrderShipper -> Order [interaction, instance] {
+  trait OrderShipper -> Order {
     state pending {
       SHIP -> shipped
         (persist update Order @payload.data)
