@@ -60,10 +60,12 @@ fn a_tagged_union_alias_is_defined_in_types_with_its_variants() {
 fn the_variants_stay_defined_and_a_vocabulary_alias_is_not_a_union_definition() {
     let types = types_of(TAGGED);
     assert!(types.contains_key("DrawShape") && types.contains_key("DrawText"));
-    assert!(
-        !types.contains_key("Mood"),
-        "control: a string vocabulary is an enum, not a union definition"
-    );
+    let [mood] = types.get("Mood").expect("a vocabulary alias is defined as a string").as_slice() else {
+        panic!("a vocabulary alias is one unnamed entry");
+    };
+    assert_eq!(mood.field_type, "string", "control: a string vocabulary is an enum, not a union definition");
+    assert_eq!(mood.values, Some(vec!["happy".to_string(), "sad".to_string()]));
+    assert!(mood.properties.is_none());
 }
 
 #[test]

@@ -319,6 +319,7 @@ pub(crate) fn lower_call_site_overrides(
                     nested_forwarded_from: Vec::new(),
                     payload_for: None,
                     projected_from: None,
+                    record: None,
                 }
             } else {
                 // Declaration-form entries (an alias trait declaring its OWN
@@ -353,6 +354,7 @@ pub(crate) fn lower_call_site_overrides(
                     nested_forwarded_from: Vec::new(),
                     payload_for: None,
                     projected_from: cf.type_expr.projection(),
+                    record: entity::field_ref_record(cf.type_expr.peel(), aliases, entity_names, &[])?,
                 }
             };
             map.insert(cf.name.clone(), schema_field);

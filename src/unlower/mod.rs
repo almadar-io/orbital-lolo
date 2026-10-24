@@ -71,6 +71,46 @@ fn strip_baked_list_paths(value: &mut serde_json::Value) {
     }
 }
 
+/// The lowerer replaces a `(let ((x : T v)) …)` annotation's type with its declared shape text; the source
+/// spelling is the type.
+fn restore_local_annotations(value: &mut serde_json::Value) -> Result<(), UnlowerError> {
+    match value {
+        serde_json::Value::Array(items) => {
+            if items.len() == 3 && items[0].as_str() == Some("let") {
+                if let serde_json::Value::Array(bindings) = &mut items[1] {
+                    for binding in bindings {
+                        let Some(serde_json::Value::Array(typed)) =
+                            binding.as_array_mut().and_then(|pair| pair.get_mut(1))
+                        else {
+                            continue;
+                        };
+                        if let [serde_json::Value::String(head), _, annotation @ serde_json::Value::String(_)] =
+                            typed.as_mut_slice()
+                        {
+                            if head == "typed" {
+                                let text = annotation.as_str().unwrap_or_default().to_string();
+                                *annotation =
+                                    serde_json::to_value(types::declared_shape_type(&text)?)
+                                        .map_err(|e| UnlowerError::new(e.to_string()))?;
+                            }
+                        }
+                    }
+                }
+            }
+            for item in items {
+                restore_local_annotations(item)?;
+            }
+        }
+        serde_json::Value::Object(map) => {
+            for v in map.values_mut() {
+                restore_local_annotations(v)?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
+}
+
 /// Each baked `(tree/fold v step Shape definition)` definition: it keeps the by-name back-references the
 /// orbital `types` section expands.
 fn baked_fold_definitions(
@@ -111,6 +151,7 @@ fn without_namespace(schema: &OrbitalSchema) -> Result<OrbitalSchema, UnlowerErr
     );
     strip_namespace(&mut value, &prefix);
     strip_baked_list_paths(&mut value);
+    restore_local_annotations(&mut value)?;
     serde_json::from_value(value).map_err(|e| UnlowerError::new(e.to_string()))
 }
 

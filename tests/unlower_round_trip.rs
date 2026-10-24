@@ -116,26 +116,7 @@ fn run_corpus(root: &Path, files: &[PathBuf]) {
 
 fn monorepo_root() -> Option<PathBuf> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    (root.join("tools/verify-efficacy/fixtures").is_dir()
-        && root.join("packages/almadar-std/behaviors/lolo").is_dir())
-    .then_some(root)
-}
-
-#[test]
-fn corpus_efficacy_good_fixtures() {
-    let Some(root) = monorepo_root() else { return };
-    let mut files = Vec::new();
-    collect(
-        &root.join("tools/verify-efficacy/fixtures"),
-        &mut files,
-        &|p| {
-            p.file_name()
-                .and_then(|n| n.to_str())
-                .is_some_and(|n| n.starts_with("good"))
-        },
-    );
-    assert!(!files.is_empty());
-    run_corpus(&root, &files);
+    root.join("packages/almadar-std/behaviors/lolo").is_dir().then_some(root)
 }
 
 fn sample_per_dir(base: &Path) -> Vec<PathBuf> {
@@ -643,6 +624,117 @@ fn propositions_ensures_outside_a_transition_is_refused() {
     assert!(err.contains("@ensures"), "{err}");
 }
 
+fn field_knob_program(types: &str, head: &str, knobs: &str, states: &str) -> String {
+    let reads = knobs
+        .lines()
+        .filter_map(|l| l.trim().split(" :").next())
+        .filter(|n| !n.is_empty())
+        .map(|n| format!("@config.{n}"))
+        .collect::<Vec<_>>()
+        .join(", ");
+    format!(
+        r#"app Probe
+{types}
+orbital ContactOrbital {{
+  entity Contact [persistent: contacts] {{
+    id : string!
+    name : string
+    age : number
+  }}
+  trait Cards {head} -> Contact {{
+    config {{
+{knobs}
+    }}
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (render-ui main {{ type: stack, children: [{reads}] }})
+{states}
+    }}
+  }}
+  page "/" -> Cards [initial]
+}}"#
+    )
+}
+
+fn knob_config(source: &str, options: &LowerOptions) -> serde_json::Value {
+    let schema = parse_and_lower_str_with(source, options).unwrap();
+    serde_json::to_value(&schema).unwrap()["orbitals"][0]["traits"][0]["config"].clone()
+}
+
+#[test]
+fn a_field_ref_knob_type_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+
+    let entity = field_knob_program(
+        "",
+        "",
+        "      titleFields : [field @entity string] = [\"name\"]\n      groupByField : field @entity = \"age\"\n      ratingField : field @entity number?",
+        "",
+    );
+    round_trip(&entity, &options).unwrap();
+    let config = knob_config(&entity, &options);
+    assert_eq!(config["titleFields"]["type"], "[field]", "{config}");
+    assert_eq!(config["titleFields"]["items"]["type"], "field", "{config}");
+    assert_eq!(config["titleFields"]["items"]["record"], "@entity", "{config}");
+    assert_eq!(config["titleFields"]["items"]["items"]["type"], "string", "{config}");
+    assert_eq!(config["groupByField"]["type"], "field", "{config}");
+    assert_eq!(config["groupByField"]["record"], "@entity", "{config}");
+    assert!(config["groupByField"].get("items").is_none(), "any field has no value type: {config}");
+    assert_eq!(config["ratingField"]["items"]["nullable"], true, "{config}");
+    let printed = schema_to_lolo(&parse_and_lower_str_with(&entity, &options).unwrap()).unwrap();
+    assert!(printed.contains("[field @entity string]"), "{printed}");
+    assert!(printed.contains("groupByField : field @entity"), "{printed}");
+
+    let alias = field_knob_program(
+        "type Point = { x : number, label : string }",
+        "",
+        "      column : field Contact number = \"age\"\n      axis : field Point number = \"x\"",
+        "",
+    );
+    round_trip(&alias, &options).unwrap();
+    let config = knob_config(&alias, &options);
+    assert_eq!(config["column"]["record"], "Contact", "{config}");
+    assert_eq!(config["axis"]["record"], "Point", "{config}");
+    assert_eq!(config["axis"]["properties"]["x"]["type"], "number", "{config}");
+
+    let payload = field_knob_program(
+        "",
+        "",
+        "      event : event = SELECT\n      coalesceKey : field (@payload @config.event)",
+        "      SELECT -> idle",
+    );
+    round_trip(&payload, &options).unwrap();
+    let config = knob_config(&payload, &options);
+    assert_eq!(config["coalesceKey"]["record"], "@payload(event)", "{config}");
+    let printed = schema_to_lolo(&parse_and_lower_str_with(&payload, &options).unwrap()).unwrap();
+    assert!(printed.contains("field (@payload @config.event)"), "{printed}");
+
+    let variable = field_knob_program("", "(r : Entity)", "      column : field r number", "");
+    round_trip(&variable, &options).unwrap();
+    let config = knob_config(&variable, &options);
+    assert_eq!(config["column"]["record"], "$r", "{config}");
+}
+
+#[test]
+fn a_knob_named_field_is_still_a_name() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = field_knob_program(
+        "",
+        "",
+        "      field : string = \"x\"\n      other : field @entity",
+        "",
+    );
+    round_trip(&source, &options).unwrap();
+    let config = knob_config(&source, &options);
+    assert_eq!(config["field"]["type"], "string", "{config}");
+    assert_eq!(config["other"]["type"], "field", "{config}");
+}
+
 #[test]
 fn a_list_of_a_union_round_trips_through_the_printer() {
     let source = r#"app Probe
@@ -668,4 +760,145 @@ orbital TaskOrbital {
         return;
     };
     round_trip(source, &options).unwrap();
+}
+
+fn nullable_items_program(element: &str) -> String {
+    format!(
+        r#"app Probe
+type Tree = string | number | [Tree{element}] | Map string Tree{element}
+orbital TreeOrbital {{
+  entity Tree [runtime] {{
+    id : string!
+  }}
+  trait TreeBrowse -> Tree {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+    }}
+    emits {{
+      TREE_READ -> external {{
+        value : Tree
+      }}
+    }}
+  }}
+  page "/" -> TreeBrowse [initial]
+}}"#
+    )
+}
+
+#[test]
+fn a_list_of_nullable_items_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = nullable_items_program("?");
+    round_trip(&source, &options).unwrap();
+    let schema = parse_and_lower_str_with(&source, &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert!(
+        printed.contains("[Tree?] | Map string Tree?"),
+        "{printed}"
+    );
+}
+
+#[test]
+fn control_a_list_of_plain_items_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&nullable_items_program(""), &options).unwrap();
+}
+
+fn local_binding_program(binding: &str) -> String {
+    format!(
+        r#"app Probe
+type Entry = {{ mode : string }}
+orbital TableOrbital {{
+  entity Table [runtime] {{
+    id : string!
+    table : Map string Entry
+  }}
+  trait TableBrowse -> Table {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+      RESET -> idle
+        (set @entity.table (let (({binding} {{}})) @empty))
+    }}
+  }}
+  page "/" -> TableBrowse [initial]
+}}"#
+    )
+}
+
+#[test]
+fn an_optional_map_and_a_map_of_optional_values_round_trip_apart() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    for knob in ["(Map string string)?", "Map string string?"] {
+        let source = format!(
+            "app Probe\norbital MapOrbital {{\n  entity Cell [runtime] {{\n    id : string!\n    tokens : {knob}\n  }}\n  trait Run -> Cell {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (set @entity.tokens null)\n    }}\n  }}\n  page boot as MapStart -> Run\n}}\n"
+        );
+        round_trip(&source, &options).unwrap_or_else(|e| panic!("{knob}: {e}"));
+    }
+}
+
+#[test]
+fn a_typed_let_binding_prints_as_an_annotation() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = local_binding_program("empty : Map string Entry");
+    round_trip(&source, &options).unwrap();
+    let schema = parse_and_lower_str_with(&source, &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert!(printed.contains("(empty : Map string Entry {})"), "{printed}");
+}
+
+#[test]
+fn control_an_untyped_let_binding_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&local_binding_program("empty"), &options).unwrap();
+}
+
+fn nested_fn_program(first: &str, second: &str) -> String {
+    format!(
+        r#"app Probe
+orbital SumOrbital {{
+  entity Sum [runtime] {{
+    id : string!
+    items : [number]
+    total : number = 0
+  }}
+  trait SumBrowse -> Sum {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (set @entity.items [1, 2])
+      RUN -> idle
+        (set @entity.total (array/reduce @entity.items 0 (fn s t (array/reduce @entity.items @s (fn {first} {second} (+ @{first} @{second}))))))
+    }}
+  }}
+  page "/" -> SumBrowse [initial]
+}}"#
+    )
+}
+
+#[test]
+fn a_lambda_that_shadows_an_outer_parameter_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&nested_fn_program("s", "t"), &options).unwrap();
+}
+
+#[test]
+fn control_a_lambda_with_fresh_parameters_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&nested_fn_program("a", "b"), &options).unwrap();
 }

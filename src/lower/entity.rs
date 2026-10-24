@@ -212,6 +212,7 @@ pub(crate) fn lower_source_field(
         synonyms: None,
         mock: None,
         projected_from: ty.projection(),
+        record: field_ref_record(ty, aliases, entity_names, params)?,
     })
 }
 
@@ -244,6 +245,7 @@ pub(crate) fn lower_field(
         synonyms: f.synonyms.clone(),
         mock: f.mock.clone(),
         projected_from: f.type_expr.projection(),
+        record: None,
     };
     if let Some((ty, via)) =
         config_only_through_aliases(&f.type_expr, aliases, allow, &mut HashSet::new())
@@ -255,6 +257,43 @@ pub(crate) fn lower_field(
         });
     }
     Ok(field)
+}
+
+/// The record `R` of a `field R T` type as the IR spells it: `@entity`, `@entity(<knob>)`, `@payload(<knob>)`, an entity
+/// or alias name, or `$r` for a type variable. `None` for any other type.
+pub(crate) fn field_ref_record(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+    params: &[&str],
+) -> Result<Option<String>, LowerError> {
+    let mut ty = ty.peel();
+    while let TypeExpr::Optional(inner) = ty {
+        ty = inner.peel();
+    }
+    let TypeExpr::FieldRef { record, .. } = ty else {
+        return Ok(None);
+    };
+    Ok(Some(match record.peel() {
+        TypeExpr::BoundEntityRow => "@entity".to_string(),
+        TypeExpr::NamedEntityRow(knob) => format!("@entity({knob})"),
+        TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(knob)) => format!("@payload({knob})"),
+        TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(member)) => {
+            format!("@payload(.{member})")
+        }
+        TypeExpr::ExpectedIdentityRow => "@user".to_string(),
+        TypeExpr::Named(name) if params.contains(&name.as_str()) => format!("${name}"),
+        TypeExpr::Named(name) if entity_names.contains(name) || aliases.contains_key(name) => {
+            name.clone()
+        }
+        other => {
+            return Err(LowerError::Type(crate::error::TypeError::UnknownType {
+                name: super::type_helpers::type_expr_to_string(other),
+                suggestion: None,
+                span: crate::ast::Span::default(),
+            }))
+        }
+    }))
 }
 
 type LoweredType = (
@@ -321,6 +360,20 @@ pub(crate) fn lower_type_expr(
         // through record aliases, by `config_only_through_aliases` in `lower_field`.
         TypeExpr::EventRef => (FieldType::Event, None, None, None, None),
         TypeExpr::EventAddress => (FieldType::EventAddress, None, None, None, None),
+        // `items` is the type the named field must have, not a list element; a record alias rides `properties`.
+        TypeExpr::FieldRef { record, value } => {
+            let (_, _, _, properties, _) = lower_type_expr(record, aliases, entity_names, params)?;
+            (
+                FieldType::Field,
+                None,
+                value
+                    .as_deref()
+                    .map(|ty| lower_source_field(ty, aliases, entity_names, params).map(Box::new))
+                    .transpose()?,
+                properties,
+                None,
+            )
+        }
         TypeExpr::FieldOf {
             resolved: Some(inner),
             ..
@@ -468,6 +521,7 @@ pub(crate) fn lower_type_expr(
                 description: None,
                 synonyms: None,
                 projected_from: inner.projection(),
+                record: field_ref_record(inner, aliases, entity_names, params)?,
             };
             (FieldType::Array, None, Some(Box::new(item)), None, None)
         }
@@ -502,6 +556,7 @@ pub(crate) fn lower_type_expr(
                         description: None,
                         synonyms: None,
                         projected_from: slot.projection(),
+                        record: field_ref_record(slot, aliases, entity_names, params)?,
                     };
                     Ok((i.to_string(), field))
                 })
@@ -540,6 +595,7 @@ pub(crate) fn lower_type_expr(
                 description: None,
                 synonyms: None,
                 projected_from: value.projection(),
+                record: field_ref_record(value, aliases, entity_names, params)?,
             };
             (
                 FieldType::Object,
@@ -583,6 +639,7 @@ pub(crate) fn lower_type_expr(
                         description: None,
                         synonyms: None,
                         projected_from: v.projection(),
+                        record: field_ref_record(v, aliases, entity_names, params)?,
                     },
                 );
             }
@@ -1583,6 +1640,7 @@ fn struct_union_variants(
                 description: None,
                 synonyms: None,
                 projected_from: None,
+                record: None,
             },
         ));
     }

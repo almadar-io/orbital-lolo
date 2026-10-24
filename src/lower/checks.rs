@@ -2090,6 +2090,14 @@ fn check_one_emit_literal(
         .iter()
         .map(|f| (f.name.as_str(), f.field_type.as_str()))
         .collect();
+    let members = |key: &str| -> Vec<&str> {
+        schema
+            .iter()
+            .find(|f| f.name == key && f.field_type == "union")
+            .and_then(|f| f.properties.as_ref())
+            .map(|variants| variants.iter().map(|v| v.field_type.as_str()).collect())
+            .unwrap_or_default()
+    };
     for (key, value) in obj.iter() {
         match declared.get(key.as_str()) {
             None => {
@@ -2114,6 +2122,10 @@ fn check_one_emit_literal(
                             &BTreeMap::new(),
                             entity_names,
                         )?
+                    } else if actual != "object" && !members(key).is_empty() {
+                        members(key)
+                            .into_iter()
+                            .any(|member| member == actual || emit_primitive_compatible(member, actual, entity_names))
                     } else {
                         emit_primitive_compatible(expected, actual, entity_names)
                     };

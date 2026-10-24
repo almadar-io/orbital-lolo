@@ -568,6 +568,22 @@ impl Parser {
         previous.line == next.line && previous.col + u32::from(previous.len) == next.col
     }
 
+    fn peek_shares_line_with_previous(&self) -> bool {
+        let Some(previous) = self.pos.checked_sub(1).map(|i| self.tokens[i].span) else {
+            return false;
+        };
+        previous.line == self.tokens[self.pos].span.line
+    }
+
+    /// Whether the next token begins the record atom `R` of `field R T`: a name, a parenthesised form, or a record sigil.
+    fn peek_starts_record_atom(&self) -> bool {
+        match self.peek() {
+            TokenKind::Identifier(_) | TokenKind::LParen => true,
+            TokenKind::Sigil(raw) => matches!(self.canon_sigil_root(raw).as_str(), "entity" | "payload" | "user"),
+            _ => false,
+        }
+    }
+
     fn parse_type_atom_base(&mut self) -> Result<TypeExpr, ParseError> {
         // `(T | U)` — a grouped type: how a union is written where only one atom fits
         // (`Map string (string | number)`, `[(string | number)]`).
@@ -685,6 +701,25 @@ impl Parser {
             .canon_type(&name)
             .map(str::to_string)
             .unwrap_or(name);
+        // `field R T` — the name of a field of the record `R`, whose value is a `T` (any type when `T` is omitted).
+        // `field` is a type only when a record atom follows on the same line, so `field : string` keeps `field` a name.
+        if name == "field" && self.peek_shares_line_with_previous() && self.peek_starts_record_atom() {
+            let record = self.parse_type_atom_base()?;
+            let names_a_value = self.peek_shares_line_with_previous()
+                && matches!(
+                    self.peek(),
+                    TokenKind::Identifier(_) | TokenKind::LBracket | TokenKind::LParen
+                );
+            let value = if names_a_value {
+                Some(Box::new(self.parse_type_atom()?))
+            } else {
+                None
+            };
+            return Ok(TypeExpr::FieldRef {
+                record: Box::new(record),
+                value,
+            });
+        }
         // `Map K V` — reserved built-in dynamic-key map constructor, applied by
         // juxtaposition (Haskell `Map k v` style): parse the key type-atom then
         // the value type-atom. Lowers to `Record<K, V>`. Reserved like the

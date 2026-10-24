@@ -28,6 +28,7 @@ pub(crate) fn type_expr_to_config_string(ty: &TypeExpr) -> String {
         }
         TypeExpr::NamedEntityRow(knob) => format!("@entity({knob})"),
         TypeExpr::ExpectedIdentityRow => "@user".to_string(),
+        TypeExpr::FieldRef { .. } => "field".to_string(),
         TypeExpr::Named(name) => name.clone(),
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_config_string(inner)),
         TypeExpr::Tuple(slots) => format!(
@@ -114,6 +115,8 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
         | TypeExpr::EventPayloadOf(_)
         | TypeExpr::NamedEntityRow(_)
         | TypeExpr::ExpectedIdentityRow => "object".to_string(),
+        // A field reference is the field's name at the bus-payload level.
+        TypeExpr::FieldRef { .. } => "string".to_string(),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Array(_) | TypeExpr::Tuple(_) => "array".to_string(),
         // A map is a record/object at the bus-payload level.
@@ -262,6 +265,7 @@ pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {
         }
         TypeExpr::NamedEntityRow(knob) => format!("@entity({knob})"),
         TypeExpr::ExpectedIdentityRow => "@user".to_string(),
+        TypeExpr::FieldRef { .. } => "field".to_string(),
         TypeExpr::StringLiteral(_) => "string".to_string(),
         TypeExpr::Array(inner) => format!("[{}]", type_expr_to_string(inner)),
         TypeExpr::Tuple(slots) => format!(
@@ -414,6 +418,7 @@ pub(crate) fn lower_config_fields_to_map(
                 nested_forwarded_from: Vec::new(),
                 payload_for: None,
                 projected_from: cf.type_expr.projection(),
+                record: entity::field_ref_record(cf.type_expr.peel(), aliases, entity_names, type_params)?,
             },
         );
     }

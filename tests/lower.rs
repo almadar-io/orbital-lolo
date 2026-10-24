@@ -1087,6 +1087,113 @@ mod payload_wrapper_provenance {
     }
 
     #[test]
+    fn a_primitive_union_takes_a_literal_of_one_of_its_members() {
+        let program = |literal: &str, union: &str| {
+            format!(r#"app unions [version: "1.0.0"]
+    type Correlation = {union}
+    orbital Probe {{
+     entity Cell [runtime] {{
+      id : string!
+     }}
+     trait Run -> Cell {{
+      initial: ready
+      state ready {{ INIT -> ready (emit ANSWER {{ requestId: {literal} }}) }}
+      emits {{ ANSWER -> external {{ requestId : Correlation! }} @description "Probe." }}
+     }}
+     page boot as ProbeStart -> Run
+    }}
+    "#)
+        };
+        for literal in ["\"a\"", "7"] {
+            let mut schema = parse_and_lower_str(&program(literal, "string | number")).unwrap_or_else(|e| panic!("{literal}: {e}"));
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            let result = validate_comprehensive_without_services(&schema);
+            assert!(
+                !result.errors.iter().any(|e| e.code == ErrorCode::EmitPayloadFieldTypeMismatch),
+                "{literal}: {:?}",
+                result.errors
+            );
+        }
+        let refused = parse_and_lower_str(&program("true", "string | number"));
+        assert!(refused.is_err(), "control: a boolean is not a member of string | number");
+        let inline = parse_and_lower_str(&program("\"a\"", "string | number").replace("requestId : Correlation!", "requestId : string | number!"));
+        assert!(inline.is_ok(), "the inline union agrees with the alias: {:?}", inline.err());
+    }
+
+    #[test]
+    fn a_guard_that_rules_out_an_enum_literal_narrows_the_enum() {
+        let program = |guard: &str| {
+            format!(r#"app tiers [version: "1.0.0"]
+    orbital Probe {{
+     entity Build [runtime] {{
+      id : string!
+      tier : "none" | "fast" | "full" = none
+     }}
+     trait Run -> Build {{
+      initial: ready
+      state ready {{
+       INIT -> ready
+        (set @entity.tier "fast")
+       GO -> ready {guard}
+        (emit DONE {{ tier: @entity.tier, build: {{ tier: @entity.tier }} }})
+      }}
+      listens {{ GO {{ }} }}
+      emits {{ DONE -> external {{ tier : "fast" | "full"!  build : {{ tier : "fast" | "full"! }}! }} @description "Probe." }}
+     }}
+     page boot as ProbeStart -> Run
+    }}
+    "#)
+        };
+        let mismatches = |guard: &str| {
+            let mut schema = parse_and_lower_str(&program(guard)).unwrap_or_else(|e| panic!("{guard}: {e}"));
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            validate_comprehensive_without_services(&schema)
+                .errors
+                .into_iter()
+                .filter(|e| e.code == ErrorCode::EmitPayloadFieldTypeMismatch)
+                .count()
+        };
+        assert_eq!(mismatches("when (!= @entity.tier \"none\")"), 0, "the guard rules out none");
+        assert_eq!(mismatches(""), 2, "control: unguarded, the tier may be none (top level and nested record)");
+        assert_eq!(mismatches("when (!= @entity.tier \"fast\")"), 2, "control: ruling out another member leaves none");
+    }
+
+    #[test]
+    fn a_field_of_a_knob_named_entity_reads_its_type_from_that_entity() {
+        let source = r#"app keyed [version: "1.0.0"]
+    orbital Probe {
+     entity Item [runtime] {
+      id : string!
+      status : string = ""
+      kept : [string] = []
+     }
+     trait Run -> Item {
+      initial: ready
+      state ready {
+       INIT -> ready
+       LOADED -> ready
+        (set @entity.kept (array/map ?data (fn r (str/default (object/get @r @config.filterField) ""))))
+      }
+      listens { LOADED { data : [@entity @config.rowEntity]! } }
+      config {
+       rowEntity : entity = Item
+       filterField : field (@entity @config.rowEntity) string = status
+      }
+     }
+     page boot as ProbeStart -> Run
+    }
+    "#;
+        let mut schema = parse_and_lower_str(source).unwrap();
+        inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+        let result = validate_comprehensive_without_services(&schema);
+        assert!(
+            !result.errors.iter().any(|e| e.code == ErrorCode::OperatorArgUndetermined),
+            "{:?}",
+            result.errors
+        );
+    }
+
+    #[test]
     fn a_scalar_type_argument_has_no_entity_origin_after_two_hops() {
         let source = generic_source("type Saved (v : Type) = Event v")
             .replace("trait Run ->", "trait Run (v : Type) ->")

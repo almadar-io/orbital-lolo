@@ -74,7 +74,7 @@ orbitala ClockOrbital {
   entiteta Reminder [trajno: reminders] {
     id : niz!
   }
-  znacilnost ReminderScan -> Reminder [zivljenjskiCikel] {
+  znacilnost ReminderScan -> Reminder [odjemalec] {
     zacetno: idle
     stanje idle {
       INIT -> idle

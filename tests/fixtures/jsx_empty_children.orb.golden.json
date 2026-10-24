@@ -25,10 +25,10 @@
               "ref": "WidgetView"
             },
             {
-              "ref": "InlineSpinnerRender1"
+              "ref": "WidgetViewInlineSpinnerRender1"
             },
             {
-              "ref": "InlineSpinnerRender2"
+              "ref": "WidgetViewInlineSpinnerRender2"
             }
           ]
         }
@@ -44,7 +44,7 @@
           "linkedEntity": "Widget",
           "name": "WidgetView",
           "sourceDeclaration": {
-            "fingerprint": "c81e690d5eb7d85f8a37778354d15ff11f9d32dbacc336e0e950217502a8507d"
+            "fingerprint": "598e3938658e2a91c059f1b153e8987b3b6c7e5f829ee274772220285cccd7b1"
           },
           "stateMachine": {
             "events": [
@@ -74,8 +74,8 @@
                         {
                           "type": "badge"
                         },
-                        "@trait.InlineSpinnerRender1",
-                        "@trait.InlineSpinnerRender2"
+                        "@trait.WidgetViewInlineSpinnerRender1",
+                        "@trait.WidgetViewInlineSpinnerRender2"
                       ],
                       "direction": "vertical",
                       "type": "stack"
@@ -97,12 +97,12 @@
             }
           },
           "linkedEntity": "Widget",
-          "name": "InlineSpinnerRender1",
+          "name": "WidgetViewInlineSpinnerRender1",
           "ref": "UiSpinner.traits.SpinnerRender"
         },
         {
           "linkedEntity": "Widget",
-          "name": "InlineSpinnerRender2",
+          "name": "WidgetViewInlineSpinnerRender2",
           "ref": "UiSpinner.traits.SpinnerRender"
         }
       ],

@@ -32,8 +32,24 @@ fn primitive_union_alias_payload_matches_inline_union_in_every_value_position() 
     let inline = lower("(string | number)");
     let a = &aliased["orbitals"][0]["traits"][0];
     let b = &inline["orbitals"][0]["traits"][0];
-    assert_eq!(a["emits"], b["emits"]);
-    assert_eq!(a["stateMachine"]["events"], b["stateMachine"]["events"]);
+    // The alias is provenance on the field itself ("projectedFrom"); everything else, variants included, is identical.
+    let strip = |mut v: Value| -> Value {
+        if let Some(events) = v.as_array_mut() {
+            for event in events {
+                for field in event["payloadSchema"].as_array_mut().into_iter().flatten() {
+                    field.as_object_mut().unwrap().remove("projectedFrom");
+                }
+            }
+        }
+        v
+    };
+    assert_eq!(a["emits"][0]["payloadSchema"][0]["projectedFrom"]["type"], "Correlation");
+    assert!(b["emits"][0]["payloadSchema"][0].get("projectedFrom").is_none());
+    assert_eq!(strip(a["emits"].clone()), strip(b["emits"].clone()));
+    assert_eq!(
+        strip(a["stateMachine"]["events"].clone()),
+        strip(b["stateMachine"]["events"].clone())
+    );
     assert_eq!(a["emits"][0]["payloadSchema"][0]["type"], "union");
     let fields = aliased["orbitals"][0]["entity"]["fields"]
         .as_array()

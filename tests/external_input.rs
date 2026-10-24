@@ -143,8 +143,8 @@ fn control_lists_of_structs_and_of_primitives_are_unchanged() {
     let ev = event(&schema, "DO_SCAN");
     assert_eq!(ev["payloadSchema"][0]["type"], "[object]");
     assert_eq!(ev["payloadSchema"][1]["type"], "[string]");
-    assert!(ev["payloadSchema"][0].get("items").is_none());
-    assert!(ev["payloadSchema"][1].get("items").is_none());
+    assert_eq!(ev["payloadSchema"][0]["items"]["type"], "Adv");
+    assert_eq!(ev["payloadSchema"][1]["items"]["type"], "string");
 }
 
 #[test]
@@ -161,7 +161,7 @@ fn control_a_map_of_one_kind_keeps_its_type_string() {
     let schema = parse_and_lower_str(&union_program("tags : Map string number")).expect("lowers");
     let field = &event(&schema, "DO_SCAN")["payloadSchema"][0];
     assert_eq!(field["type"], "Map<string,number>");
-    assert!(field.get("items").is_none());
+    assert_eq!(field["items"]["type"], "number");
 }
 
 #[test]

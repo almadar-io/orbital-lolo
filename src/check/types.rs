@@ -237,6 +237,10 @@ fn substitute_expr(expr: &TypeExpr, binding: &HashMap<String, TypeExpr>) -> Type
             .unwrap_or_else(|| TypeExpr::Named(name.clone())),
         TypeExpr::Array(inner) => TypeExpr::Array(Box::new(substitute_expr(inner, binding))),
         TypeExpr::Optional(inner) => TypeExpr::Optional(Box::new(substitute_expr(inner, binding))),
+        TypeExpr::FieldRef { record, value } => TypeExpr::FieldRef {
+            record: Box::new(substitute_expr(record, binding)),
+            value: value.as_ref().map(|v| Box::new(substitute_expr(v, binding))),
+        },
         TypeExpr::Union(parts) => {
             TypeExpr::Union(parts.iter().map(|p| substitute_expr(p, binding)).collect())
         }
@@ -408,6 +412,11 @@ fn format_type_expr(te: &TypeExpr) -> String {
         }
         TypeExpr::NamedEntityRow(knob) => format!("@entity({knob})"),
         TypeExpr::ExpectedIdentityRow => "@user".to_string(),
+        TypeExpr::FieldRef { record, value } => format!(
+            "field {} {}",
+            format_type_expr(record),
+            value.as_deref().map(format_type_expr).unwrap_or_default()
+        ),
         TypeExpr::Named(s) => format!("named:{s}"),
         TypeExpr::StringLiteral(s) => format!("lit:{s:?}"),
         TypeExpr::Array(inner) => format!("[{}]", format_type_expr(inner)),
@@ -686,6 +695,12 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
         }
         // `@entity` references no NAMED type — nothing to collect.
         TypeExpr::BoundEntityRow => {}
+        // The record is an entity, an alias or a type variable, checked where the reference lowers.
+        TypeExpr::FieldRef { value, .. } => {
+            if let Some(value) = value {
+                visit_expr_refs(value, out);
+            }
+        }
         TypeExpr::Primitive(_)
         | TypeExpr::StringLiteral(_)
         | TypeExpr::Trait

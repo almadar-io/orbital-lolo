@@ -46,11 +46,12 @@ fn stamped_lolo_validates_clean() {
     );
 }
 
+// P-009: the dual-carry rules (ORB_ID_UNKNOWN_REF and siblings) are the std lint std-orb-lint-id-refs, whose coverage is
+// lint-id-refs.replay.goldens.json in almadar-std (this case: `unknown-ref-dangling-linked-entity`); the compiler no
+// longer reports them.
 #[test]
-fn corrupting_a_dual_carry_edge_fires_unknown_ref() {
+fn corrupting_a_dual_carry_edge_is_no_longer_a_compiler_diagnostic() {
     let mut schema = parse_and_lower_str(FIXTURE).expect("parse+lower");
-    // Point the Deposit trait's linked-entity edge at a well-formed but
-    // nonexistent entity id.
     let td = schema.orbitals[0]
         .traits
         .iter_mut()
@@ -62,9 +63,8 @@ fn corrupting_a_dual_carry_edge_fires_unknown_ref() {
     td.linked_entity_id = Some("ent_GHOST00000000000000000000".to_string());
 
     let diags = id_diagnostics(&schema);
-    assert_eq!(diags.len(), 1, "exactly one ORB_ID_* diagnostic: {diags:?}");
     assert!(
-        diags[0].starts_with("ORB_ID_UNKNOWN_REF"),
-        "dangling id edge must fire ORB_ID_UNKNOWN_REF: {diags:?}"
+        !diags.iter().any(|d| d.starts_with("ORB_ID_UNKNOWN_REF")),
+        "ORB_ID_UNKNOWN_REF is owned by the std lint: {diags:?}"
     );
 }

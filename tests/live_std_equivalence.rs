@@ -79,11 +79,18 @@ fn lower_and_resolve_on_stack(path: std::path::PathBuf, stack: usize) -> Result<
         .stack_size(stack)
         .spawn(move || {
             let lowered = orbital_lolo::parse_and_lower(&path).map_err(|e| e.to_string())?;
-            let resolved = orbital_compiler::phases::resolve_schema_with_path(
-                lowered,
-                &orbital_compiler::phases::CompilerOptions::default(),
-                Some(&path),
-            )
+            orbital_compiler::loader::register_source_lowerer(|path, _, _| orbital_test_support::lower_lolo_file(path));
+            let start = Path::new(env!("CARGO_MANIFEST_DIR"));
+            let user_store = orbital_core_base::behavior_packages::user_store_dir().unwrap_or_else(|| start.to_path_buf());
+            let packages = orbital_core_base::behavior_packages::discover(start, &user_store).map_err(|e| e.to_string())?;
+            let options = orbital_compiler::CompilerOptions {
+                inline: orbital_compiler::phases::inline::InlineConfig {
+                    loader_config: orbital_compiler::loader::LoaderConfig { packages, ..Default::default() },
+                    ..Default::default()
+                },
+                ..Default::default()
+            };
+            let resolved = orbital_compiler::phases::resolve_schema_with_path(lowered, &options, Some(&path))
             .map_err(|e| e.to_string())?;
             Ok(resolved.orbitals.len())
         })

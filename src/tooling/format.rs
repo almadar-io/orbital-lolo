@@ -878,7 +878,7 @@ impl Formatter {
 
     /// A type in a position that takes one atom: a union is parenthesized.
     fn fmt_grouped_type_expr(&mut self, ty: &TypeExpr) {
-        if matches!(ty, TypeExpr::Union(_)) {
+        if matches!(ty, TypeExpr::Union(_) | TypeExpr::FieldRef { value: Some(_), .. }) {
             self.output.push('(');
             self.fmt_type_expr(ty);
             self.output.push(')');
@@ -898,6 +898,20 @@ impl Formatter {
             TypeExpr::NamedEntityRow(knob) => {
                 self.output.push_str(&format!("@entity @config.{knob}"));
             }
+            TypeExpr::FieldRef { record, value } => {
+                self.output.push_str("field ");
+                if matches!(**record, TypeExpr::NamedEntityRow(_) | TypeExpr::EventPayloadOf(_)) {
+                    self.output.push('(');
+                    self.fmt_type_expr(record);
+                    self.output.push(')');
+                } else {
+                    self.fmt_type_expr(record);
+                }
+                if let Some(value) = value {
+                    self.output.push(' ');
+                    self.fmt_grouped_type_expr(value);
+                }
+            }
             TypeExpr::ExpectedIdentityRow => {
                 self.output.push_str("@user");
             }
@@ -912,7 +926,11 @@ impl Formatter {
             }
             TypeExpr::Array(inner) => {
                 self.output.push('[');
-                self.fmt_grouped_type_expr(inner);
+                if matches!(**inner, TypeExpr::FieldRef { .. }) {
+                    self.fmt_type_expr(inner);
+                } else {
+                    self.fmt_grouped_type_expr(inner);
+                }
                 self.output.push(']');
             }
             TypeExpr::Tuple(slots) => {
@@ -971,7 +989,14 @@ impl Formatter {
                 }
             }
             TypeExpr::Optional(inner) => {
-                self.fmt_grouped_type_expr(inner);
+                // `Map K V?` reads as a map of optional values, so an optional map keeps its parentheses.
+                if matches!(**inner, TypeExpr::Map(..)) {
+                    self.output.push('(');
+                    self.fmt_type_expr(inner);
+                    self.output.push(')');
+                } else {
+                    self.fmt_grouped_type_expr(inner);
+                }
                 self.output.push('?');
             }
             TypeExpr::FieldOf { ty, field, .. } => {
@@ -2780,6 +2805,15 @@ impl Formatter {
         }
     }
 
+    /// A name a form binds prints as written even when an enclosing scope binds the same name: a
+    /// shadowing parameter is a declaration, not a reference to the outer one.
+    fn fmt_binder(&mut self, binder: &SExpression) {
+        match binder {
+            SExpression::String(name) if is_bare_atom(name) => self.output.push_str(name),
+            other => self.fmt_sexpr_inner(other, false),
+        }
+    }
+
     fn fmt_sexpr_string(&mut self, s: &str) {
         // Reconstruct `@(...)` inline trait references from their synthesized
         // `@trait.InlineXxxN` form. This must run before the generic sigil
@@ -3402,7 +3436,20 @@ impl Formatter {
                 if i > 0 {
                     self.output.push(' ');
                 }
-                self.fmt_sexpr_inner(item, i == 1 && params.len() == 2);
+                match item {
+                    SExpression::Array(grouped) if i == 1 && params.len() == 2 => {
+                        self.output.push('(');
+                        for (j, param) in grouped.iter().enumerate() {
+                            if j > 0 {
+                                self.output.push(' ');
+                            }
+                            self.fmt_binder(param);
+                        }
+                        self.output.push(')');
+                    }
+                    _ if i == 0 => self.fmt_sexpr_inner(item, false),
+                    _ => self.fmt_binder(item),
+                }
             }
             self.output.push(' ');
             self.binding_scopes.push(names);

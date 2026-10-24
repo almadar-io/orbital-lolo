@@ -4,6 +4,7 @@ use super::UnlowerError;
 use crate::ast::{
     ConfigField, EntityField, EventField, MatchArm, MatchPattern, PayloadOfTarget, Span, TypeExpr,
 };
+use orbital_core_base::ir::types::{DeclaredShape, OirField, OirType};
 use orbital_core_base::schema::{
     Cardinality, ConfigField as SchemaConfigField, FieldDefinition, FieldType, PayloadField,
 };
@@ -40,6 +41,13 @@ fn source_reference(
             resolved: resolved.map(Box::new),
         },
         None => TypeExpr::Named(reference.type_name.clone()),
+    }
+}
+
+fn field_record_type(record: Option<&str>) -> Result<TypeExpr, UnlowerError> {
+    match record {
+        Some(text) => parse_type_string(text),
+        None => Err(UnlowerError::new("field reference without a record")),
     }
 }
 
@@ -113,6 +121,13 @@ fn field_def_type_inner(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> 
         FieldType::Pattern => TypeExpr::Pattern,
         FieldType::Event => TypeExpr::EventRef,
         FieldType::EventAddress => TypeExpr::EventAddress,
+        FieldType::Field => TypeExpr::FieldRef {
+            record: Box::new(field_record_type(fd.record.as_deref())?),
+            value: match &fd.items {
+                Some(item) => Some(Box::new(field_def_type(item)?)),
+                None => None,
+            },
+        },
         FieldType::TypeVar(v) => TypeExpr::Named(v.0.clone()),
         FieldType::Array => match &fd.items {
             Some(item) => TypeExpr::Array(Box::new(field_def_type(item)?)),
@@ -382,6 +397,24 @@ fn payload_type_inner(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> {
     }
 }
 
+/// A union variant's type from its type string; the string cannot say whether a list or map variant's element
+/// is nullable, so that comes from the variant's `items`.
+fn variant_container(text: &str, variant: &PayloadField) -> Result<TypeExpr, UnlowerError> {
+    let nullable = variant
+        .items
+        .as_deref()
+        .is_some_and(|item| printed_nullable(item.nullable));
+    let optional = |element: Box<TypeExpr>| match (nullable, *element) {
+        (true, element @ TypeExpr::Optional(_)) | (false, element) => Box::new(element),
+        (true, element) => Box::new(TypeExpr::Optional(Box::new(element))),
+    };
+    Ok(match parse_type_string(text)? {
+        TypeExpr::Array(element) => TypeExpr::Array(optional(element)),
+        TypeExpr::Map(key, element) => TypeExpr::Map(key, optional(element)),
+        other => other,
+    })
+}
+
 fn payload_type_without_items(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> {
     Ok(match (pf.field_type.as_str(), &pf.properties, &pf.entity) {
         ("array", None, _) if pf.items.is_some() => match pf.items.as_deref() {
@@ -409,9 +442,9 @@ fn payload_type_without_items(pf: &PayloadField) -> Result<TypeExpr, UnlowerErro
                         ("array", "[object]", Some(props)) => Ok(TypeExpr::Array(Box::new(
                             TypeExpr::Object(payload_members(props)?),
                         ))),
-                        ("array", other, _) => parse_type_string(other),
+                        ("array", other, _) => variant_container(other, v),
                         (name, "object", Some(_)) => Ok(TypeExpr::Named(name.to_string())),
-                        (_, other, _) => parse_type_string(other),
+                        (_, other, _) => variant_container(other, v),
                     },
                 )
                 .collect::<Result<_, UnlowerError>>()?,
@@ -465,6 +498,16 @@ pub(super) fn config_field(
                 .unwrap_or_default(),
             additional: Box::new(field_def_type(additional)?),
         }
+    } else if cf.field_type == "field" {
+        TypeExpr::FieldRef {
+            record: Box::new(field_record_type(cf.record.as_deref())?),
+            value: match &cf.items {
+                Some(item) => Some(Box::new(field_def_type(item)?)),
+                None => None,
+            },
+        }
+    } else if let ("[field]", Some(item)) = (cf.field_type.as_str(), &cf.items) {
+        TypeExpr::Array(Box::new(field_def_type(item)?))
     } else if cf.field_type == "unknown" {
         TypeExpr::Primitive("unknown".to_string())
     } else if cf.field_type == "object" {
@@ -685,4 +728,89 @@ pub(super) fn collect_trait_hints(
     for ev in td.state_machine.events.iter().flatten() {
         collect_payload_hints(ev.payload_schema.as_deref().unwrap_or(&[]), out);
     }
+}
+
+/// The type a baked local annotation (`["typed", value, "<declared shape>"]`) was written as: the alias the
+/// shape names, else its type spelled back as a type expression.
+pub(super) fn declared_shape_type(text: &str) -> Result<TypeExpr, UnlowerError> {
+    let shape = DeclaredShape::read(text)
+        .map_err(|e| UnlowerError::new(format!("local annotation shape: {e}")))?;
+    match shape.name {
+        Some(name) => Ok(TypeExpr::Named(name)),
+        None => oir_type_expr(&shape.ty),
+    }
+}
+
+fn oir_members(fields: &[OirField]) -> Result<Vec<(String, TypeExpr, bool)>, UnlowerError> {
+    fields
+        .iter()
+        .map(|f| Ok((f.name.clone(), oir_type_expr(&f.field_type)?, f.required)))
+        .collect()
+}
+
+fn oir_type_expr(ty: &OirType) -> Result<TypeExpr, UnlowerError> {
+    Ok(match ty {
+        OirType::String => primitive("string"),
+        OirType::Number => primitive("number"),
+        OirType::Integer => primitive("int"),
+        OirType::Boolean => primitive("boolean"),
+        OirType::Date => primitive("date"),
+        OirType::DateTime => primitive("datetime"),
+        OirType::Email => primitive("email"),
+        OirType::Url => primitive("url"),
+        OirType::Phone => primitive("phone"),
+        OirType::Uuid => primitive("uuid"),
+        OirType::Image => primitive("image"),
+        OirType::Money => primitive("money"),
+        OirType::File => primitive("file"),
+        OirType::Bytes => primitive("bytes"),
+        OirType::CallKey => primitive("CallKey"),
+        OirType::Node => TypeExpr::Named("node".to_string()),
+        OirType::SExpr => TypeExpr::SExpr,
+        OirType::Trait => TypeExpr::Trait,
+        OirType::Orbital => TypeExpr::Orbital,
+        OirType::Behavior => TypeExpr::Behavior,
+        OirType::Array { inner } => TypeExpr::Array(Box::new(oir_type_expr(inner)?)),
+        OirType::Optional { inner } => TypeExpr::Optional(Box::new(oir_type_expr(inner)?)),
+        OirType::Map { key, value } => TypeExpr::Map(
+            Box::new(oir_type_expr(key)?),
+            Box::new(oir_type_expr(value)?),
+        ),
+        OirType::Tuple { items } => {
+            TypeExpr::Tuple(items.iter().map(oir_type_expr).collect::<Result<_, _>>()?)
+        }
+        OirType::Struct { fields, additional } => match additional {
+            Some(additional) => TypeExpr::OpenObject {
+                fields: oir_members(fields)?,
+                additional: Box::new(oir_type_expr(additional)?),
+            },
+            None => TypeExpr::Object(oir_members(fields)?),
+        },
+        OirType::Union { variants } => TypeExpr::Union(
+            variants
+                .iter()
+                .map(|v| oir_type_expr(&v.field_type))
+                .collect::<Result<_, _>>()?,
+        ),
+        OirType::Enum { name } => {
+            let words = orbital_core_base::type_compat::literal_union_members(name)
+                .ok_or_else(|| UnlowerError::new(format!("local annotation enum `{name}`")))?;
+            values_union(&words)
+        }
+        OirType::FieldRef { record, value } => TypeExpr::FieldRef {
+            record: Box::new(oir_type_expr(record)?),
+            value: match value {
+                Some(value) => Some(Box::new(oir_type_expr(value)?)),
+                None => None,
+            },
+        },
+        OirType::Reference { entity: name } | OirType::TypeRef { name } | OirType::Var { name } => {
+            TypeExpr::Named(name.clone())
+        }
+        OirType::Json | OirType::Row { .. } => {
+            return Err(UnlowerError::new(format!(
+                "a local annotation of type {ty:?} has no source spelling"
+            )))
+        }
+    })
 }

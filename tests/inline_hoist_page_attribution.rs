@@ -9,7 +9,7 @@ use orbital_lolo::parse_str;
 fn inline_trait_names(page_traits: &[String]) -> Vec<&str> {
     page_traits
         .iter()
-        .filter(|t| t.starts_with("Inline"))
+        .filter(|t| t.contains("Inline"))
         .map(|t| t.as_str())
         .collect()
 }
@@ -70,6 +70,42 @@ fn disjoint_pages_get_only_their_own_producers_fragments() {
     // upstream short-name segment (`InlineSpinnerRenderN` / `InlineButtonRenderN`).
     assert!(a_inline[0].contains("Spinner"), "PageA fragment should come from TraitA's SpinnerRender child, got {a_inline:?}");
     assert!(b_inline[0].contains("Button"), "PageB fragment should come from TraitB's ButtonRender child, got {b_inline:?}");
+}
+
+/// Owner ruling 2026-10-24: a synthesized inline trait is named after its producer, so two producers (or two
+/// composed atoms) rendering the same reference never collide.
+#[test]
+fn a_synthesized_inline_trait_is_named_after_its_producer() {
+    let src = r#"orbital WidgetOrbital {
+  uses UiSpinner from "std/behaviors/ui-spinner"
+
+  entity Widget [persistent: widgets] {
+    id : string!
+    label : string
+  }
+
+  trait TraitA -> Widget {
+    state idle {
+      INIT -> idle
+        (render-ui main { type: "stack", children: [@(UiSpinner.traits.SpinnerRender -> Widget { config { size: "sm" } })] })
+    }
+  }
+
+  trait TraitB -> Widget {
+    state idle {
+      INIT -> idle
+        (render-ui main { type: "stack", children: [@(UiSpinner.traits.SpinnerRender -> Widget { config { size: "sm" } })] })
+    }
+  }
+
+  page "/a" -> TraitA
+  page "/b" -> TraitB
+}
+"#;
+    let file = parse_str(src).expect("parses");
+    let names: Vec<String> = file.orbitals[0].traits.iter().map(|t| t.name.clone()).collect();
+    assert!(names.iter().any(|n| n.starts_with("TraitAInlineSpinnerRender")), "{names:?}");
+    assert!(names.iter().any(|n| n.starts_with("TraitBInlineSpinnerRender")), "{names:?}");
 }
 
 #[test]
@@ -188,7 +224,7 @@ fn a_hoisted_fragment_takes_its_producers_declared_dispatch_mode() {
 "#;
     let program = parse_str(src).expect("parse must succeed");
     let orbital = &program.orbitals[0];
-    let fragments: Vec<_> = orbital.traits.iter().filter(|t| t.name.starts_with("Inline")).collect();
+    let fragments: Vec<_> = orbital.traits.iter().filter(|t| t.name.contains("Inline")).collect();
     assert_eq!(fragments.len(), 2);
     assert_eq!(fragments[0].dispatch, Some(orbital_lolo::ast::TraitDispatch::Client), "Fast's fragment");
     assert_eq!(fragments[1].dispatch, None, "control: Plain declares no mode, so its fragment stays on the server");

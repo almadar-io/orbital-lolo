@@ -77,7 +77,7 @@ orbitala ClockOrbital {
   entiteta Frame [izvajanje] {
     id : niz!
   }
-  znacilnost Spin -> Frame [interakcija] {
+  znacilnost Spin -> Frame [odjemalec] {
     zacetno: idle
     stanje idle {
       INIT -> idle

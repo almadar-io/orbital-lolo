@@ -30,10 +30,10 @@
               "ref": "WidgetView"
             },
             {
-              "ref": "InlineSpinnerRender1"
+              "ref": "WidgetViewInlineSpinnerRender1"
             },
             {
-              "ref": "InlineButtonRender2"
+              "ref": "WidgetViewInlineButtonRender2"
             }
           ]
         }
@@ -49,7 +49,7 @@
           "linkedEntity": "Widget",
           "name": "WidgetView",
           "sourceDeclaration": {
-            "fingerprint": "82f991e82c11b0b4c66f43801f750fc9d2a25af2ceec2f42a4687a32a205cb91"
+            "fingerprint": "016ab80d1ad91b32f0a5e8f223db72a20dfe2b342e6e3e97b799795fe2994ba9"
           },
           "stateMachine": {
             "events": [
@@ -72,8 +72,8 @@
                     "main",
                     {
                       "children": [
-                        "@trait.InlineSpinnerRender1",
-                        "@trait.InlineButtonRender2"
+                        "@trait.WidgetViewInlineSpinnerRender1",
+                        "@trait.WidgetViewInlineButtonRender2"
                       ],
                       "direction": "vertical",
                       "gap": "md",
@@ -96,7 +96,7 @@
             }
           },
           "linkedEntity": "Widget",
-          "name": "InlineSpinnerRender1",
+          "name": "WidgetViewInlineSpinnerRender1",
           "ref": "UiSpinner.traits.SpinnerRender"
         },
         {
@@ -111,7 +111,7 @@
             }
           },
           "linkedEntity": "Widget",
-          "name": "InlineButtonRender2",
+          "name": "WidgetViewInlineButtonRender2",
           "ref": "UiButton.traits.ButtonRender"
         }
       ],

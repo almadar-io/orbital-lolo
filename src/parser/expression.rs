@@ -658,31 +658,7 @@ impl Parser {
         // pass the trait-name validator — no underscores. The `Inline`
         // prefix reserves a namespace; the validator can forbid hand-authored
         // names starting with `Inline`.
-        let short = reference
-            .rsplit('.')
-            .next()
-            .filter(|s| !s.is_empty())
-            .unwrap_or("Ref");
-        let short = {
-            let mut c = short.chars();
-            match c.next() {
-                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-                None => String::from("Ref"),
-            }
-        };
-        let name = loop {
-            self.inline_ref_counter += 1;
-            let candidate = format!("Inline{}{}", short, self.inline_ref_counter);
-            // Guard against colliding with a hand-authored trait name or an
-            // earlier synthesis in this orbital.
-            let collides = self
-                .pending_inline_traits
-                .iter()
-                .any(|t| t.name == candidate);
-            if !collides {
-                break candidate;
-            }
-        };
+        let name = self.synthetic_trait_name(&reference);
 
         self.pending_inline_traits.push(Trait {
             name: name.clone(),

@@ -412,29 +412,7 @@ impl Parser {
                 orbital_core_base::schema::capture_callsite_payload(default);
             }
         }
-        let short = reference
-            .rsplit('.')
-            .next()
-            .filter(|s| !s.is_empty())
-            .unwrap_or("Ref");
-        let short = {
-            let mut c = short.chars();
-            match c.next() {
-                Some(f) => f.to_uppercase().collect::<String>() + c.as_str(),
-                None => String::from("Ref"),
-            }
-        };
-        let name = loop {
-            self.inline_ref_counter += 1;
-            let candidate = format!("Inline{}{}", short, self.inline_ref_counter);
-            let collides = self
-                .pending_inline_traits
-                .iter()
-                .any(|t| t.name == candidate);
-            if !collides {
-                break candidate;
-            }
-        };
+        let name = self.synthetic_trait_name(&reference);
 
         self.pending_inline_traits.push(Trait {
             name: name.clone(),
@@ -706,7 +684,7 @@ mod tests {
         assert!(
             name.as_deref()
                 .unwrap_or("")
-                .starts_with("InlineBadgeRender"),
+                .contains("InlineBadgeRender"),
             "synthetic name must be InlineBadgeRenderN, got {name:?}"
         );
         assert_eq!(linked.as_deref(), Some("E"));
@@ -725,7 +703,7 @@ mod tests {
         // The authoring site inside the lambda holds the @trait.InlineN string.
         let json = serde_json::to_string(&schema).expect("serialize");
         assert!(
-            json.contains("@trait.InlineBadgeRender"),
+            json.contains("InlineBadgeRender"),
             "render tree must reference the hoisted synthetic: {json}"
         );
     }
@@ -770,7 +748,7 @@ mod tests {
                     config,
                     ..
                 } if r == "Typography.traits.TypographyRender"
-                    && n.starts_with("InlineTypographyRender") =>
+                    && n.contains("InlineTypographyRender") =>
                 {
                     config.clone()
                 }

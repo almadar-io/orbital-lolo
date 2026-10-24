@@ -103,7 +103,7 @@ fn flashcards_shared_entity_inline_wrappers_are_one_authority() {
         })
         .collect();
     assert!(
-        names.iter().any(|n| n.starts_with("InlineBadgeRender")),
+        names.iter().any(|n| n.contains("InlineBadgeRender")),
         "non-lambda wrapper must keep trait composition: {names:?}"
     );
 

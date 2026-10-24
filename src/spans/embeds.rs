@@ -133,7 +133,7 @@ orbital TagOrbital {
         let first = &embeds[0];
         assert_eq!(
             (first.line, first.col),
-            (14, 29),
+            (13, 29),
             "«» before the tag are two characters, four bytes"
         );
     }

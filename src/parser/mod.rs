@@ -195,6 +195,25 @@ struct Parser {
 }
 
 impl Parser {
+    /// The name of a trait the parser synthesizes for an inline `<X.traits.Y />` render: the producing trait's name,
+    /// `Inline`, the referenced trait, and a file-wide counter, so atoms composed into one app never collide.
+    pub(crate) fn synthetic_trait_name(&mut self, reference: &str) -> String {
+        let short = reference.rsplit('.').next().filter(|s| !s.is_empty()).unwrap_or("Ref");
+        let mut chars = short.chars();
+        let short = match chars.next() {
+            Some(first) => first.to_uppercase().collect::<String>() + chars.as_str(),
+            None => String::from("Ref"),
+        };
+        let producer = self.current_hoist_producer.clone().unwrap_or_default();
+        loop {
+            self.inline_ref_counter += 1;
+            let candidate = format!("{producer}Inline{short}{}", self.inline_ref_counter);
+            if !self.pending_inline_traits.iter().any(|t| t.name == candidate) {
+                return candidate;
+            }
+        }
+    }
+
     fn new(tokens: Vec<Token>, lang: &'static Lang) -> Self {
         Self {
             tokens,
@@ -2084,6 +2103,7 @@ pub(crate) fn type_expr_config_only_type_allowing(
         TypeExpr::BoundEntityRow => Some("@entity"),
         TypeExpr::EventPayloadOf(_) => Some("@payload"),
         TypeExpr::NamedEntityRow(_) => Some("@entity <knob>"),
+        TypeExpr::FieldRef { .. } => Some("field"),
         TypeExpr::ExpectedIdentityRow => Some("@user"),
         TypeExpr::EntityRef => Some("entity"),
         TypeExpr::EventRef => Some("event"),

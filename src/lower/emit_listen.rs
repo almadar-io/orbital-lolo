@@ -741,7 +741,7 @@ pub(crate) fn decorate_source_payload(
         }
     }
     match inner {
-        TypeExpr::Array(item) | TypeExpr::Map(_, item) => {
+        TypeExpr::Array(item) | TypeExpr::Map(_, item) if field.items.is_none() => {
             field.items = Some(Box::new(source_payload_field(
                 "",
                 item,

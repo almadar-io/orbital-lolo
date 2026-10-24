@@ -813,6 +813,13 @@ pub enum TypeExpr {
     /// knob resolves to. The unary sibling of `BoundEntityRow`: same sigil,
     /// arity distinguishes "the bound entity" from "the entity that knob names".
     NamedEntityRow(String),
+    /// `field R T` — the name of a field of the record `R` whose value is a `T`; `field R` names a field of any type.
+    /// `R` is one type atom (`@entity`, a record alias, an entity name, a type variable, or a parenthesised sigil
+    /// form). Config-only.
+    FieldRef {
+        record: Box<TypeExpr>,
+        value: Option<Box<TypeExpr>>,
+    },
     /// `@user` — the row type of the identity this orbital `expects`. The
     /// identity axis's counterpart to `BoundEntityRow`: lets a reusable atom
     /// say "the acting user" without naming whose identity entity that is.
@@ -915,10 +922,12 @@ impl TypeExpr {
     pub fn projection(&self) -> Option<orbital_core_base::schema::types::FieldProjection> {
         match self {
             TypeExpr::Optional(inner) => inner.projection(),
-            TypeExpr::Named(name) => Some(orbital_core_base::schema::types::FieldProjection {
-                type_name: name.clone(),
-                field: None,
-            }),
+            TypeExpr::Named(name) if !crate::parser::is_primitive_type(name) => {
+                Some(orbital_core_base::schema::types::FieldProjection {
+                    type_name: name.clone(),
+                    field: None,
+                })
+            }
             TypeExpr::FieldOf { ty, field, .. } => {
                 Some(orbital_core_base::schema::types::FieldProjection {
                     type_name: ty.clone(),

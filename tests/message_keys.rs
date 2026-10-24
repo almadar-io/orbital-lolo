@@ -32,7 +32,7 @@ fn the_locales_header_lowers_to_schema_locales() {
 
 #[test]
 fn control_a_program_without_locales_has_none() {
-    let schema = parse_and_lower_str(&HOME.replace("locales [en, ar, sl]\n", "")).expect("lower");
+    let schema = parse_and_lower_str(&HOME.replace(", locales: [en, ar, sl]", "")).expect("lower");
     assert_eq!(schema.locales, None);
 }
 
