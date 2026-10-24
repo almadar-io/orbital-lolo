@@ -17,8 +17,7 @@ fn lower_one(src: &str) -> TraitDefinition {
     }
 }
 
-const RENDERING_TICK_TRAIT: &str = r#"app test-row "1.0.0"
-"effect row inference"
+const RENDERING_TICK_TRAIT: &str = r#"app test-row [version: "1.0.0", description: "effect row inference"]
 
 orbital BoardOrbital {
   entity Board [runtime] {
@@ -106,8 +105,7 @@ fn every_effect_kind_is_recorded_with_its_resource() {
 #[test]
 fn an_emit_only_trait_carries_no_render_and_no_tick() {
     let td = lower_one(
-        r#"app test-row "1.0.0"
-"emit-only data trait"
+        r#"app test-row [version: "1.0.0", description: "emit-only data trait"]
 
 orbital LevelOrbital {
   entity Level [runtime] {
@@ -143,8 +141,7 @@ orbital LevelOrbital {
 #[test]
 fn a_config_bound_slot_stays_unresolved_at_l1() {
     let td = lower_one(
-        r#"app test-row "1.0.0"
-"config-bound slot"
+        r#"app test-row [version: "1.0.0", description: "config-bound slot"]
 
 orbital PanelOrbital {
   entity Panel [runtime] {
@@ -186,8 +183,7 @@ orbital PanelOrbital {
 #[test]
 fn a_trait_with_no_effects_carries_no_row() {
     let td = lower_one(
-        r#"app test-row "1.0.0"
-"no effects"
+        r#"app test-row [version: "1.0.0", description: "no effects"]
 
 orbital InertOrbital {
   entity Inert [runtime] {

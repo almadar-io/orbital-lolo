@@ -54,7 +54,7 @@ pub mod reference;
 
 pub use ast::{Ast, Comment, EntityField, EventField, Span, TypeExpr};
 pub use error::{LexError, LoloError, LowerError, ParseError, TypeError};
-pub use format::format_program;
+pub use format::{format_path, format_program};
 pub use lexer::{tokenize, tokenize_with_comments, Token, TokenKind};
 pub use lower::{
     lower_to_orb, lower_to_orb_with, lower_to_orb_with_map, lower_to_orb_with_map_with,
@@ -93,14 +93,24 @@ pub fn parse_and_lower_str_with(
     source: &str,
     options: &LowerOptions,
 ) -> Result<OrbitalSchema, LoloError> {
-    let ast = parse_str(source).map_err(|e| LoloError::Parse {
-        path: "<input>".to_string(),
-        inner: e,
-    })?;
-    lower_to_orb_with(&ast, options).map_err(|e| LoloError::Lower {
-        path: "<input>".to_string(),
-        inner: e,
-    })
+    let ast = traced_parse(source, "<input>")?;
+    tracing::debug_span!(target: LOLO, "lower", file = "<input>")
+        .in_scope(|| lower_to_orb_with(&ast, options))
+        .map_err(|e| LoloError::Lower {
+            path: "<input>".to_string(),
+            inner: e,
+        })
+}
+
+const LOLO: &str = orbital_core_base::logging::ns::LOLO;
+
+fn traced_parse(source: &str, path: &str) -> Result<ast::Program, LoloError> {
+    tracing::debug_span!(target: LOLO, "parse", file = path)
+        .in_scope(|| parse_str(source))
+        .map_err(|e| LoloError::Parse {
+            path: path.to_string(),
+            inner: e,
+        })
 }
 
 /// [`parse_and_lower_str`] tagging errors with `path` instead of the generic
@@ -127,14 +137,13 @@ pub fn parse_and_lower_str_with_prior_at(
     prior: Option<&OrbitalSchema>,
     path: &str,
 ) -> Result<OrbitalSchema, LoloError> {
-    let ast = parse_str(source).map_err(|e| LoloError::Parse {
-        path: path.to_string(),
-        inner: e,
-    })?;
-    let schema = lower_to_orb_with_prior(&ast, prior).map_err(|e| LoloError::Lower {
-        path: path.to_string(),
-        inner: e,
-    })?;
+    let ast = traced_parse(source, path)?;
+    let schema = tracing::debug_span!(target: LOLO, "lower", file = path)
+        .in_scope(|| lower_to_orb_with_prior(&ast, prior))
+        .map_err(|e| LoloError::Lower {
+            path: path.to_string(),
+            inner: e,
+        })?;
     Ok(schema)
 }
 
@@ -145,13 +154,12 @@ pub fn parse_and_lower_str_with_map(
     source: &str,
     path: &str,
 ) -> Result<(OrbitalSchema, LoloSourceMap), LoloError> {
-    let ast = parse_str(source).map_err(|e| LoloError::Parse {
-        path: path.to_string(),
-        inner: e,
-    })?;
-    let (schema, map) = lower_to_orb_with_map(&ast).map_err(|e| LoloError::Lower {
-        path: path.to_string(),
-        inner: e,
-    })?;
+    let ast = traced_parse(source, path)?;
+    let (schema, map) = tracing::debug_span!(target: LOLO, "lower", file = path)
+        .in_scope(|| lower_to_orb_with_map(&ast))
+        .map_err(|e| LoloError::Lower {
+            path: path.to_string(),
+            inner: e,
+        })?;
     Ok((schema, map))
 }

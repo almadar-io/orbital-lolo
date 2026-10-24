@@ -1,5 +1,4 @@
-app std-lifecycle "1.1.0"
-"std-lifecycle — age-based status lifecycle for a target entity. A periodic tick scans the target for records in `fromStatus` whose `dateField` is older than `ageDays`, and transitions each one to `toStatus` — every matching record, via a self-driving scan loop (process the head of a filtered fetch, persist the status, re-fetch until the set drains). Compose onto any orbital and bind `targetEntity` + the status/date knobs."
+app std-lifecycle [version: "1.1.0", description: "std-lifecycle — age-based status lifecycle for a target entity. A periodic tick scans the target for records in `fromStatus` whose `dateField` is older than `ageDays`, and transitions each one to `toStatus` — every matching record, via a self-driving scan loop (process the head of a filtered fetch, persist the status, re-fetch until the set drains). Compose onto any orbital and bind `targetEntity` + the status/date knobs."]
 
 orbital LifecycleOrbital {
   entity LifecycleRunLog [persistent: lifecycle_runs] {

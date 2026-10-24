@@ -1,5 +1,4 @@
-app value-determinism "1.0.0"
-"Pure deterministic value computations for cross-path runtime-vs-compiled comparison."
+app value-determinism [version: "1.0.0", description: "Pure deterministic value computations for cross-path runtime-vs-compiled comparison."]
 orbital ValueDeterminismOrbital {
   type Computed = Event { n : number, s : string } "Emits computed pure values."
 

@@ -1,5 +1,4 @@
-app nest-deeplet "1.0.0"
-"Deep-let physics step: 21-level nested let chain with clamped velocity, AABB collision, hazard/goal detection, and a deep if-ladder."
+app nest-deeplet [version: "1.0.0", description: "Deep-let physics step: 21-level nested let chain with clamped velocity, AABB collision, hazard/goal detection, and a deep if-ladder."]
 orbital NestDeepLetOrbital {
   type Platform = {
     x : number!

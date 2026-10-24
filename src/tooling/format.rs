@@ -1593,6 +1593,16 @@ impl Formatter {
                     self.output.push_str(" -> ");
                     self.output.push_str(le);
                 }
+                let words = override_header_words(ov);
+                if !words.is_empty() {
+                    self.output.push_str(" [");
+                    self.output.push_str(&words.join(", "));
+                    self.output.push(']');
+                }
+                if override_body_is_empty(ov) && !words.is_empty() {
+                    self.write_newline();
+                    continue;
+                }
                 self.output.push_str(" {");
                 self.write_newline();
                 self.indent();
@@ -1747,10 +1757,20 @@ impl Formatter {
                 }
                 self.output.push_str(" } }");
             }
-            ExpectsKind::Page { path, traits } => {
-                self.output.push_str("page \"");
-                self.output.push_str(path);
-                self.output.push('"');
+            ExpectsKind::Page {
+                path,
+                protocol,
+                traits,
+            } => {
+                self.output.push_str("page ");
+                match protocol {
+                    Some(word) => self.output.push_str(word),
+                    None => {
+                        self.output.push('"');
+                        self.output.push_str(path);
+                        self.output.push('"');
+                    }
+                }
                 if !traits.is_empty() {
                     self.output.push_str(" -> ");
                     self.output.push_str(&traits.join(", "));
@@ -3678,10 +3698,31 @@ fn trait_header_words(tr: &Trait) -> Vec<String> {
     match tr.dispatch {
         Some(TraitDispatch::Client) => words.push("client".to_string()),
         Some(TraitDispatch::Optimistic) => words.push("optimistic".to_string()),
+        Some(TraitDispatch::Server) => words.push("server".to_string()),
         None => {}
     }
     words.extend(tr.retired_words.iter().map(|w| w.word.clone()));
     words
+}
+
+fn override_header_words(ov: &crate::ast::TraitOverride) -> Vec<String> {
+    let mut words = Vec::new();
+    match ov.dispatch {
+        Some(TraitDispatch::Client) => words.push("client".to_string()),
+        Some(TraitDispatch::Optimistic) => words.push("optimistic".to_string()),
+        Some(TraitDispatch::Server) => words.push("server".to_string()),
+        None => {}
+    }
+    words.extend(ov.retired_words.iter().map(|w| w.word.clone()));
+    words
+}
+
+fn override_body_is_empty(ov: &crate::ast::TraitOverride) -> bool {
+    ov.body.events.is_empty()
+        && ov.body.fields.is_empty()
+        && ov.body.config.is_empty()
+        && ov.body.listens.is_empty()
+        && ov.body.emits_scope.is_none()
 }
 
 fn head_modifier_sources(mods: &orbital_core_base::schema::PageModifiers) -> Vec<String> {
@@ -3785,4 +3826,198 @@ fn quote_lolo(s: &str) -> String {
     }
     out.push('"');
     out
+}
+
+/// The constructs `path` names in `program`'s authored AST, each formatted as [`format_node`]
+/// prints it. A path is `.`-separated segments, each a field with an index (`orbitals[0]`,
+/// `traits[2]`, `[*]` for every index) or the orbital's `entity`. Fields: from the program
+/// `orbitals`, `uses`, `typeAliases`; from an orbital `uses`, `expects`, `typeAliases`,
+/// `entity`, `entities`, `traits`, `pages`; from an entity `fields`; from a trait `states`,
+/// `emits`, `listens`, `ticks`, `config`; from a state `transitions`.
+pub fn format_path(program: &Program, path: &str) -> Result<Vec<String>, String> {
+    #[derive(Clone, Copy)]
+    enum At<'a> {
+        Program(&'a Program),
+        Node(NodeRef<'a>),
+    }
+    #[derive(Clone, Copy)]
+    enum NodeRef<'a> {
+        Orbital(&'a Orbital),
+        UseDecl(&'a UseDecl),
+        ExpectsDecl(&'a ExpectsDecl),
+        TypeAlias(&'a TypeAlias),
+        Entity(&'a Entity),
+        EntityField(&'a EntityField),
+        Trait(&'a Trait),
+        State(&'a State),
+        Transition(&'a Transition),
+        Emit(&'a Emit),
+        Listen(&'a Listen),
+        Tick(&'a Tick),
+        ConfigField(&'a ConfigField),
+        Page(&'a Page),
+    }
+    fn pick<'a, T>(items: &'a [T], index: Option<usize>, segment: &str, wrap: impl Fn(&'a T) -> NodeRef<'a>) -> Result<Vec<At<'a>>, String> {
+        match index {
+            None => Ok(items.iter().map(|item| At::Node(wrap(item))).collect()),
+            Some(i) => items
+                .get(i)
+                .map(|item| vec![At::Node(wrap(item))])
+                .ok_or_else(|| format!("`{segment}`: index {i} is out of range ({} present)", items.len())),
+        }
+    }
+    let segments: Vec<&str> = path.split('.').filter(|s| !s.is_empty()).collect();
+    if segments.is_empty() {
+        return Err("the node path is empty".to_string());
+    }
+    let mut cursor = vec![At::Program(program)];
+    for segment in segments {
+        let (field, index) = match segment.split_once('[') {
+            Some((field, rest)) => {
+                let inner = rest
+                    .strip_suffix(']')
+                    .ok_or_else(|| format!("`{segment}`: expected `field[index]`"))?;
+                let index = match inner {
+                    "*" => None,
+                    n => Some(n.parse::<usize>().map_err(|_| format!("`{segment}`: `{n}` is not an index or `*`"))?),
+                };
+                (field, Some(index))
+            }
+            None => (segment, None),
+        };
+        let mut next = Vec::new();
+        for at in cursor {
+            let unknown = || format!("`{segment}` does not name a field here");
+            let found = match (at, field, index) {
+                (At::Program(p), "orbitals", Some(i)) => pick(&p.orbitals, i, segment, NodeRef::Orbital)?,
+                (At::Program(p), "uses", Some(i)) => pick(&p.uses, i, segment, NodeRef::UseDecl)?,
+                (At::Program(p), "typeAliases", Some(i)) => pick(&p.type_aliases, i, segment, NodeRef::TypeAlias)?,
+                (At::Node(NodeRef::Orbital(o)), "uses", Some(i)) => pick(&o.uses, i, segment, NodeRef::UseDecl)?,
+                (At::Node(NodeRef::Orbital(o)), "expects", Some(i)) => pick(&o.expects, i, segment, NodeRef::ExpectsDecl)?,
+                (At::Node(NodeRef::Orbital(o)), "typeAliases", Some(i)) => pick(&o.type_aliases, i, segment, NodeRef::TypeAlias)?,
+                (At::Node(NodeRef::Orbital(o)), "entity", None) => match &o.entity {
+                    Some(entity) => vec![At::Node(NodeRef::Entity(entity))],
+                    None => return Err(format!("orbital `{}` declares no entity", o.name)),
+                },
+                (At::Node(NodeRef::Orbital(o)), "entities", Some(i)) => pick(&o.extra_entities, i, segment, NodeRef::Entity)?,
+                (At::Node(NodeRef::Orbital(o)), "traits", Some(i)) => pick(&o.traits, i, segment, NodeRef::Trait)?,
+                (At::Node(NodeRef::Orbital(o)), "pages", Some(i)) => pick(&o.pages, i, segment, NodeRef::Page)?,
+                (At::Node(NodeRef::Entity(e)), "fields", Some(i)) => pick(&e.fields, i, segment, NodeRef::EntityField)?,
+                (At::Node(NodeRef::Trait(t)), "states", Some(i)) => pick(&t.states, i, segment, NodeRef::State)?,
+                (At::Node(NodeRef::Trait(t)), "emits", Some(i)) => pick(&t.emits, i, segment, NodeRef::Emit)?,
+                (At::Node(NodeRef::Trait(t)), "listens", Some(i)) => pick(&t.listens, i, segment, NodeRef::Listen)?,
+                (At::Node(NodeRef::Trait(t)), "ticks", Some(i)) => pick(&t.ticks, i, segment, NodeRef::Tick)?,
+                (At::Node(NodeRef::Trait(t)), "config", Some(i)) => pick(&t.config, i, segment, NodeRef::ConfigField)?,
+                (At::Node(NodeRef::State(s)), "transitions", Some(i)) => pick(&s.transitions, i, segment, NodeRef::Transition)?,
+                _ => return Err(unknown()),
+            };
+            next.extend(found);
+        }
+        cursor = next;
+    }
+    Ok(cursor
+        .into_iter()
+        .filter_map(|at| match at {
+            At::Program(_) => None,
+            At::Node(node) => Some(format_node(match node {
+                NodeRef::Orbital(n) => Node::Orbital(n),
+                NodeRef::UseDecl(n) => Node::UseDecl(n),
+                NodeRef::ExpectsDecl(n) => Node::ExpectsDecl(n),
+                NodeRef::TypeAlias(n) => Node::TypeAlias(n),
+                NodeRef::Entity(n) => Node::Entity(n),
+                NodeRef::EntityField(n) => Node::EntityField(n),
+                NodeRef::Trait(n) => Node::Trait(n),
+                NodeRef::State(n) => Node::State(n),
+                NodeRef::Transition(n) => Node::Transition(n),
+                NodeRef::Emit(n) => Node::Emit(n),
+                NodeRef::Listen(n) => Node::Listen(n),
+                NodeRef::Tick(n) => Node::Tick(n),
+                NodeRef::ConfigField(n) => Node::ConfigField(n),
+                NodeRef::Page(n) => Node::Page(n),
+            })),
+        })
+        .collect())
+}
+
+#[cfg(test)]
+mod path_tests {
+    use super::*;
+
+    const SOURCE: &str = r#"app paths [
+  version: "1.0.0",
+  description: "Two traits."
+]
+
+orbital PathsOrbital {
+  entity Note [runtime] {
+    id : string!
+    text : string = ""
+  }
+
+  trait First -> Note {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+
+  trait Second -> Note {
+    initial: open
+    state open {
+      INIT -> open
+      CLOSE -> open
+    }
+  }
+
+  page "/notes" as NotesPage -> First, Second
+}
+"#;
+
+    fn program() -> Program {
+        crate::parse_str(SOURCE).expect("the fixture parses")
+    }
+
+    #[test]
+    fn a_path_formats_the_one_construct_it_names() {
+        let printed = format_path(&program(), "orbitals[0].traits[1]").expect("prints");
+        assert_eq!(printed.len(), 1);
+        assert!(printed[0].starts_with("trait Second"), "{}", printed[0]);
+        assert!(!printed[0].contains("trait First"), "{}", printed[0]);
+    }
+
+    #[test]
+    fn a_wildcard_formats_every_match_in_order() {
+        let printed = format_path(&program(), "orbitals[*].traits[*].states[*].transitions[*]").expect("prints");
+        assert_eq!(printed.len(), 3, "{printed:?}");
+        assert!(printed[2].contains("CLOSE"), "{printed:?}");
+    }
+
+    #[test]
+    fn the_entity_and_its_fields_are_reachable() {
+        let fields = format_path(&program(), "orbitals[0].entity.fields[*]").expect("prints");
+        assert_eq!(fields.len(), 2);
+        assert!(fields[1].contains("text"), "{fields:?}");
+    }
+
+    #[test]
+    fn an_out_of_range_index_is_refused_with_the_count() {
+        let error = format_path(&program(), "orbitals[0].traits[5]").unwrap_err();
+        assert!(error.contains("out of range (2 present)"), "{error}");
+    }
+
+    #[test]
+    fn a_field_the_construct_lacks_is_refused() {
+        assert!(format_path(&program(), "orbitals[0].states[0]").is_err());
+        assert!(format_path(&program(), "orbitals[0].traits").is_err(), "a list field needs an index");
+        assert!(format_path(&program(), "").is_err());
+    }
+
+    #[test]
+    fn control_the_whole_program_format_is_unchanged_by_paths() {
+        let program = program();
+        let whole = format_program(&program);
+        let traits = format_path(&program, "orbitals[0].traits[*]").expect("prints");
+        assert!(whole.contains("trait First") && whole.contains("trait Second"));
+        assert_eq!(traits.len(), 2);
+    }
 }

@@ -208,6 +208,10 @@ pub(crate) fn lower_orbital_reference(
         } else {
             let mut map = std::collections::HashMap::new();
             for t in &orb.trait_overrides {
+                if let Some(word) = t.retired_words.first() {
+                    return Err(crate::error::trait_header_word_error(&word.word)
+                        .located_exact(word.span));
+                }
                 let ref_data = TraitRefData {
                     reference: t.trait_name.clone(),
                     name_override: None,
@@ -231,6 +235,7 @@ pub(crate) fn lower_orbital_reference(
                         fields: lowered.fields,
                         listens: lowered.listens,
                         emits_scope: lowered.emits_scope,
+                        dispatch: t.dispatch.map(super::r#trait::lower_dispatch),
                     },
                 );
             }
@@ -239,7 +244,7 @@ pub(crate) fn lower_orbital_reference(
 
     let rebind_tags = orb.entity_rebind_tags.clone().unwrap_or_default();
     if let Some(word) = rebind_tags.retired_words.first() {
-        return Err(crate::error::entity_header_word_error(&word.word).located(word.span));
+        return Err(crate::error::entity_header_word_error(&word.word).located_exact(word.span));
     }
     super::r#trait::check_listens_spelling(&orb.import_listens)?;
     let ref_object = OrbitalRefObject {

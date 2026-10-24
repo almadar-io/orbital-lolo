@@ -183,9 +183,9 @@ impl Parser {
         })
     }
 
-    /// The bracket after a trait header: `[client]`, `[optimistic]`, or nothing for server
-    /// dispatch. Any other word is returned for lowering to reject with its fix-it.
-    fn parse_trait_header_words(
+    /// The bracket after a trait header: `[client]`, `[optimistic]`, `[server]`, or nothing
+    /// (undeclared, server dispatch). Any other word is returned for lowering to reject with its fix-it.
+    pub(crate) fn parse_trait_header_words(
         &mut self,
     ) -> Result<(Option<TraitDispatch>, Vec<RetiredWord>), ParseError> {
         self.expect_kind(&TokenKind::LBracket, "[")?;
@@ -209,13 +209,14 @@ impl Parser {
             let mode = match word.as_str() {
                 "client" => Some(TraitDispatch::Client),
                 "optimistic" => Some(TraitDispatch::Optimistic),
+                "server" => Some(TraitDispatch::Server),
                 _ => None,
             };
             match mode {
                 Some(mode) => {
                     if dispatch.is_some() {
                         return Err(ParseError::UnexpectedToken {
-                            expected: "at most one of `client` | `optimistic` in trait modifiers"
+                            expected: "at most one of `client` | `optimistic` | `server` in trait modifiers"
                                 .to_string(),
                             got: "duplicate dispatch mode".to_string(),
                             span,

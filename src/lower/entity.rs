@@ -20,7 +20,7 @@ pub(crate) fn lower_entity(
     entity_names: &HashSet<String>,
 ) -> Result<EntityDefinition, LowerError> {
     if let Some(word) = entity.retired_words.first() {
-        return Err(crate::error::entity_header_word_error(&word.word).located(word.span));
+        return Err(crate::error::entity_header_word_error(&word.word).located_exact(word.span));
     }
     check_shared_entity_has_persistence_mode(entity)?;
     let mut fields = Vec::with_capacity(entity.fields.len());

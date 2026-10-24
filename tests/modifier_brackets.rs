@@ -1,5 +1,5 @@
 //! App and page modifiers share one `[key: value, …]` bracket grammar:
-//! `app NAME "VER" [description: …, theme: …, locales: […], …]` and
+//! `app NAME [version: …, description: …, theme: …, locales: […], …]` and
 //! `page "/p" -> A, B [view: …, access: …, title: …]`.
 
 use orbital_core_base::schema::{PageAccess, PageIndexing, PageMeta, PageRef};
@@ -89,11 +89,11 @@ fn inline_page(source: &str) -> orbital_core_base::schema::PageDefinition {
 }
 
 #[test]
-fn the_bracket_header_lowers_like_the_legacy_lines() {
-    assert_eq!(
-        shape(&program(LEGACY_HEADER)),
-        shape(&program(BRACKET_HEADER))
-    );
+fn the_legacy_header_is_a_lowering_error_naming_the_bracket_form() {
+    let err = parse_and_lower_str(&program(LEGACY_HEADER)).unwrap_err().to_string();
+    assert!(err.contains("ORB_L_APP_HEADER_LEGACY"), "{err}");
+    assert!(err.contains("app NAME [ version:"), "{err}");
+    parse_and_lower_str(&program(BRACKET_HEADER)).expect("control: the bracket form lowers");
 }
 
 #[test]
@@ -338,9 +338,12 @@ fn a_page_reference_carries_explicit_overrides_and_omits_the_rest() {
 
 #[test]
 fn the_formatter_prints_brackets_and_round_trips() {
-    for source in [
-        program(LEGACY_HEADER),
-        with_page("[access: public, indexing: noindex, title: (i18n/t \"meta.title\")]"),
+    for (source, lowerable) in [
+        (program(LEGACY_HEADER), program(BRACKET_HEADER)),
+        (
+            with_page("[access: public, indexing: noindex, title: (i18n/t \"meta.title\")]"),
+            with_page("[access: public, indexing: noindex, title: (i18n/t \"meta.title\")]"),
+        ),
     ] {
         let formatted = format_program(&parse_str(&source).expect("parse"));
         assert!(
@@ -351,7 +354,7 @@ fn the_formatter_prints_brackets_and_round_trips() {
             !formatted.contains("\ntheme \"") && !formatted.contains("\nlocales ["),
             "{formatted}"
         );
-        assert_eq!(shape(&source), shape(&formatted), "{formatted}");
+        assert_eq!(shape(&lowerable), shape(&formatted), "{formatted}");
         let reparsed = parse_str(&formatted).unwrap();
         assert!(!reparsed.app.legacy_lines);
     }
@@ -381,10 +384,11 @@ fn localized_bracket_keys_and_values_lower_like_english() {
 }
 
 #[test]
-fn a_positional_version_is_legacy_and_lowers_like_the_bracket_version() {
+fn a_positional_version_is_legacy_and_a_lowering_error() {
     let positional = "app std-home \"1.0.0\" [\n  description: \"The home page\",\n  theme: \"orb-light\",\n  locales: [en, ar, sl],\n  public: \"./public\"\n]\n";
     assert!(parse_str(&program(positional)).unwrap().app.legacy_lines);
-    assert_eq!(shape(&program(positional)), shape(&program(BRACKET_HEADER)));
+    let err = parse_and_lower_str(&program(positional)).unwrap_err().to_string();
+    assert!(err.contains("ORB_L_APP_HEADER_LEGACY"), "{err}");
     assert_eq!(parse_and_lower_str(&program(BRACKET_HEADER)).unwrap().version.as_deref(), Some("1.0.0"));
 }
 
@@ -517,4 +521,237 @@ fn a_kv_grant_lowers_per_store_and_mode_and_survives_format_and_unlower() {
     assert!(err.contains("ORB_OS_GRANT_ENTRY_INVALID"), "{err}");
     let err = grants_error(&source.replace("kv: { rows: [read, write],", "kv: { rows: [read, write], rows: [read],"));
     assert!(err.contains("ORB_L_OPTION_DUPLICATE"), "edge: a store named twice: {err}");
+}
+
+fn protocol_program(page_lines: &str) -> String {
+    format!(
+        "app Srv [version: \"1.0.0\"]\norbital Srv {{\n  entity Req [runtime] {{\n    id : string!\n  }}\n  trait Router -> Req {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  {page_lines}\n}}\n"
+    )
+}
+
+const HTTP_PAGE: &str =
+    r#"page http { host: "0.0.0.0", port: 8080, path: "/" } as Api -> Router [access: authenticated]"#;
+
+fn lowered_error(source: &str) -> String {
+    parse_and_lower_str(source).expect_err("must not lower").to_string()
+}
+
+#[test]
+fn an_http_page_lowers_with_its_protocol_and_record_address() {
+    let page = inline_page(&protocol_program(HTTP_PAGE));
+    assert_eq!(page.protocol.as_deref(), Some("http"));
+    assert_eq!(page.path, "");
+    assert_eq!(page.name, "Api");
+    assert_eq!(page.access, Some(PageAccess::Authenticated));
+    let Some(orbital_core_base::schema::SExpression::Object(address)) = &page.address else {
+        panic!("expected a record address, got {:?}", page.address);
+    };
+    assert_eq!(address["port"], orbital_core_base::schema::SExpression::Number(8080.0));
+    assert_eq!(address["host"], orbital_core_base::schema::SExpression::String("0.0.0.0".into()));
+    assert!(!page.is_route());
+}
+
+#[test]
+fn an_address_value_is_an_expression_never_spliced_into_a_string() {
+    let page = inline_page(&protocol_program(
+        r#"page http { host: @config.host, port: @config.port, path: "/" } as Api -> Router"#,
+    ));
+    let Some(orbital_core_base::schema::SExpression::Object(address)) = &page.address else {
+        panic!("expected a record address");
+    };
+    assert_eq!(address["host"], orbital_core_base::schema::SExpression::String("@config.host".into()));
+    assert_eq!(address["port"], orbital_core_base::schema::SExpression::String("@config.port".into()));
+}
+
+#[test]
+fn stdio_and_boot_pages_lower_without_an_address() {
+    for word in ["stdio", "boot"] {
+        let page = inline_page(&protocol_program(&format!("page {word} as P -> Router")));
+        assert_eq!(page.protocol.as_deref(), Some(word));
+        assert_eq!(page.path, "");
+        assert!(page.address.is_none());
+    }
+}
+
+#[test]
+fn control_a_route_page_is_unchanged() {
+    let page = inline_page(&protocol_program(r#"page "/dashboard" as Dash -> Router [access: authenticated]"#));
+    assert!(page.protocol.is_none() && page.address.is_none());
+    assert_eq!(page.path, "/dashboard");
+    assert_eq!(page.name, "Dash");
+    assert!(page.is_route());
+    let json = serde_json::to_value(&page).unwrap();
+    assert!(json.get("protocol").is_none() && json.get("address").is_none(), "{json}");
+}
+
+#[test]
+fn an_unknown_protocol_word_is_a_lowering_error_listing_the_table() {
+    let err = lowered_error(&protocol_program("page smtp as Mail -> Router"));
+    assert!(err.contains("ORB_P_UNKNOWN_PROTOCOL") && err.contains("`smtp`"), "{err}");
+    assert!(err.contains("`http`") && err.contains("`stdio`") && err.contains("`boot`"), "{err}");
+}
+
+#[test]
+fn route_is_never_written_as_a_protocol_word() {
+    let err = lowered_error(&protocol_program("page route as Home -> Router"));
+    assert!(err.contains("ORB_P_UNKNOWN_PROTOCOL") && err.contains("string path"), "{err}");
+}
+
+#[test]
+fn a_protocol_with_no_address_row_refuses_one_and_one_with_required_fields_demands_it() {
+    let err = lowered_error(&protocol_program(r#"page stdio { host: "x" } as Mcp -> Router"#));
+    assert!(err.contains("ORB_P_ADDRESS_UNEXPECTED"), "{err}");
+    let err = lowered_error(&protocol_program("page http as Api -> Router"));
+    assert!(err.contains("ORB_P_ADDRESS_REQUIRED") && err.contains("host") && err.contains("port"), "{err}");
+}
+
+#[test]
+fn a_protocol_page_must_be_named() {
+    let err = lowered_error(&protocol_program("page boot -> Router"));
+    assert!(err.contains("ORB_P_PROTOCOL_PAGE_UNNAMED"), "{err}");
+}
+
+#[test]
+fn protocol_pages_round_trip_through_format_and_unlower() {
+    let source = protocol_program(&format!(
+        "{HTTP_PAGE}\n  page stdio as Mcp -> Router\n  page boot as Background -> Router\n  page \"/\" as Home -> Router"
+    ));
+    let formatted = format_program(&parse_str(&source).expect("parse"));
+    assert!(
+        formatted.contains(r#"page http { host: "0.0.0.0", port: 8080, path: "/" } as Api -> Router"#),
+        "{formatted}"
+    );
+    assert!(formatted.contains("page stdio as Mcp -> Router"), "{formatted}");
+    assert!(formatted.contains("page boot as Background -> Router"), "{formatted}");
+    assert_eq!(shape(&source), shape(&formatted), "{formatted}");
+    assert_eq!(formatted, format_program(&parse_str(&formatted).unwrap()), "idempotent");
+
+    let schema = parse_and_lower_str(&source).expect("lower");
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert_eq!(shape(&text)["orbitals"][0]["pages"], shape(&source)["orbitals"][0]["pages"], "{text}");
+}
+
+#[test]
+fn the_reference_form_carries_its_protocol_and_address_through_format() {
+    let source = protocol_program(
+        r#"page http { host: "0.0.0.0", port: 8080, path: "/" } = Server.pages.Api"#,
+    );
+    let parsed = parse_str(&source).expect("parse");
+    let page = &parsed.orbitals[0].pages[0];
+    assert_eq!(page.protocol.as_deref(), Some("http"));
+    assert_eq!(page.reference.as_deref(), Some("Server.pages.Api"));
+    let formatted = format_program(&parsed);
+    assert!(
+        formatted.contains(r#"page http { host: "0.0.0.0", port: 8080, path: "/" } = Server.pages.Api"#),
+        "{formatted}"
+    );
+}
+
+const TRAIT_HEADER_PROGRAM: &str = r#"app Hdr [version: "1.0.0"]
+orbital Hdr {
+  entity E [runtime] {
+    id : string!
+  }
+  trait T -> E HEADER {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+}
+"#;
+
+fn trait_with_header(header: &str) -> String {
+    TRAIT_HEADER_PROGRAM.replace(" HEADER", header)
+}
+
+fn dispatch_of(source: &str) -> Option<orbital_core_base::schema::DispatchMode> {
+    match &parse_and_lower_str(source).expect("lower").orbitals[0].traits[0] {
+        orbital_core_base::schema::TraitReference::Inline(td) => td.dispatch.clone(),
+        other => panic!("expected an inline trait, got {other:?}"),
+    }
+}
+
+#[test]
+fn trait_dispatch_words_lower_to_the_declared_mode() {
+    use orbital_core_base::schema::DispatchMode;
+    assert_eq!(dispatch_of(&trait_with_header(" [client]")), Some(DispatchMode::Client));
+    assert_eq!(dispatch_of(&trait_with_header(" [optimistic]")), Some(DispatchMode::Optimistic));
+    assert_eq!(dispatch_of(&trait_with_header(" [server]")), Some(DispatchMode::Server));
+}
+
+#[test]
+fn an_explicit_server_trait_serializes_dispatch_server_and_round_trips() {
+    let source = trait_with_header(" [server]");
+    let json = serde_json::to_value(parse_and_lower_str(&source).unwrap()).unwrap();
+    assert_eq!(json["orbitals"][0]["traits"][0]["dispatch"], "server", "{json}");
+    let printed = format_program(&parse_str(&source).expect("parse"));
+    assert!(printed.contains("trait T -> E [server] {"), "{printed}");
+    assert_eq!(dispatch_of(&printed), Some(orbital_core_base::schema::DispatchMode::Server));
+}
+
+#[test]
+fn a_trait_header_refuses_server_with_another_dispatch_mode() {
+    assert!(parse_str(&trait_with_header(" [client, server]")).is_err());
+}
+
+#[test]
+fn control_a_trait_with_no_header_words_dispatches_on_the_server() {
+    assert_eq!(dispatch_of(&trait_with_header("")), None);
+    let json = serde_json::to_value(parse_and_lower_str(&trait_with_header("")).unwrap()).unwrap();
+    assert!(json["orbitals"][0]["traits"][0].get("dispatch").is_none(), "{json}");
+}
+
+#[test]
+fn retired_trait_header_words_error_with_their_fix_its() {
+    for word in ["interaction", "integration", "lifecycle", "game-core", "game-entity", "game-ui"] {
+        let err = lowered_error(&trait_with_header(&format!(" [{word}]")));
+        assert!(
+            err.contains("ORB_T_HEADER_WORD_RETIRED")
+                && err.contains(&format!("`{word}`"))
+                && err.contains("delete it (P-009: checks follow the page)"),
+            "{word}: {err}"
+        );
+    }
+    for word in ["instance", "collection"] {
+        let err = lowered_error(&trait_with_header(&format!(" [{word}]")));
+        assert!(err.contains("ORB_T_HEADER_WORD_RETIRED") && err.contains("delete it"), "{word}: {err}");
+    }
+    let err = lowered_error(&trait_with_header(" [local]"));
+    assert!(err.contains("ORB_T_HEADER_WORD_RETIRED") && err.contains("write `[client]`"), "{err}");
+}
+
+#[test]
+fn an_unknown_trait_header_word_points_at_capabilities() {
+    let err = lowered_error(&trait_with_header(" [client, fetches]"));
+    assert!(err.contains("ORB_T_UNKNOWN_HEADER_WORD") && err.contains("`fetches`"), "{err}");
+    assert!(err.contains("move it to `;; @capabilities`"), "{err}");
+}
+
+#[test]
+fn a_retired_header_word_error_is_located_at_the_word() {
+    let source = trait_with_header(" [interaction]");
+    let err = parse_and_lower_str(&source).unwrap_err();
+    let located = orbital_lolo::lower_to_orb(&parse_str(&source).unwrap()).unwrap_err();
+    let span = located.span().expect("located");
+    assert_eq!(source.lines().nth(span.line as usize - 1).map(|l| l.contains("[interaction]")), Some(true), "{err}");
+}
+
+#[test]
+fn trait_dispatch_round_trips_through_format_and_unlower() {
+    for header in [" [client]", " [optimistic]"] {
+        let source = trait_with_header(header);
+        let formatted = format_program(&parse_str(&source).expect("parse"));
+        assert!(formatted.contains(&format!("trait T -> E{header} {{")), "{formatted}");
+        assert_eq!(shape(&source), shape(&formatted), "{formatted}");
+        let text = orbital_lolo::schema_to_lolo(&parse_and_lower_str(&source).unwrap()).expect("schema_to_lolo");
+        assert!(text.contains(&format!("trait T -> E{header} {{")), "{text}");
+        assert_eq!(
+            shape(&text)["orbitals"][0]["traits"][0]["dispatch"],
+            shape(&source)["orbitals"][0]["traits"][0]["dispatch"],
+            "{text}"
+        );
+    }
+    let plain = format_program(&parse_str(&trait_with_header("")).unwrap());
+    assert!(plain.contains("trait T -> E {"), "control: no brackets when no words\n{plain}");
 }

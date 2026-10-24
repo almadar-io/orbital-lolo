@@ -381,26 +381,27 @@ pub(crate) fn lower_call_site_overrides(
     })
 }
 
-fn lower_dispatch(mode: crate::ast::TraitDispatch) -> orbital_core_base::schema::DispatchMode {
+pub(crate) fn lower_dispatch(mode: crate::ast::TraitDispatch) -> orbital_core_base::schema::DispatchMode {
     match mode {
         crate::ast::TraitDispatch::Client => orbital_core_base::schema::DispatchMode::Client,
         crate::ast::TraitDispatch::Optimistic => {
             orbital_core_base::schema::DispatchMode::Optimistic
         }
+        crate::ast::TraitDispatch::Server => orbital_core_base::schema::DispatchMode::Server,
     }
 }
 
 /// Reject the header words and listen spellings the language no longer takes.
 pub(crate) fn check_trait_header(t: &Trait) -> Result<(), LowerError> {
     if let Some(word) = t.retired_words.first() {
-        return Err(crate::error::trait_header_word_error(&word.word).located(word.span));
+        return Err(crate::error::trait_header_word_error(&word.word).located_exact(word.span));
     }
     check_listens_spelling(&t.listens)
 }
 
 pub(crate) fn check_listens_spelling(listens: &[Listen]) -> Result<(), LowerError> {
     match listens.iter().find_map(|l| l.retired_external.as_ref()) {
-        Some(word) => Err(crate::error::listen_external_error().located(word.span)),
+        Some(word) => Err(crate::error::listen_external_error().located_exact(word.span)),
         None => Ok(()),
     }
 }

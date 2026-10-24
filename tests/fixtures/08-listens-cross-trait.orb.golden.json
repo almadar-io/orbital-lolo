@@ -22,7 +22,6 @@
       "name": "NotificationOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "emit",
@@ -44,9 +43,8 @@
           ],
           "linkedEntity": "Notification",
           "name": "OrderProcessing",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "2fce7e8e19ff61c8c48fb75754335bba71a5a4b715ce50e2bfeb5493138ef73f"
+            "fingerprint": "c50d421fd0039c67297db2a3f5b82eb92a2a41d7f347ee5a7d955c6268c2a2e8"
           },
           "stateMachine": {
             "events": [
@@ -92,7 +90,6 @@
           }
         },
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "set",
@@ -114,9 +111,8 @@
             }
           ],
           "name": "NotificationHandler",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "2acf7417539f8cb14f40b67e4e6c1eb7c4b42e977c39dba7b7496f85793c3665"
+            "fingerprint": "e535c56414664e202d60ee27713cf16e3fd1a61d8e1bbe35082e2f46eeae847d"
           },
           "stateMachine": {
             "events": [

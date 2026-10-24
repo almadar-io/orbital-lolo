@@ -22,12 +22,12 @@
           {
             "name": "itemCount",
             "nullable": false,
-            "type": "number"
+            "type": "int"
           },
           {
             "name": "total",
             "nullable": false,
-            "type": "number"
+            "type": "int"
           }
         ],
         "name": "Cart",
@@ -36,7 +36,6 @@
       "name": "CartOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "set",
@@ -45,9 +44,8 @@
           ],
           "linkedEntity": "Cart",
           "name": "CartActions",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "e46b392a3d261df009dca532c81caf0e84bd43885ca22755ff3cac6355e6d571"
+            "fingerprint": "3069e38afd6f28b6921e3c038a1fe6ae303e8c0d54226d0171b777f8b766b0ae"
           },
           "stateMachine": {
             "events": [

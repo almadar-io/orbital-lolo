@@ -23,7 +23,6 @@
       "name": "OrderOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "set",
@@ -32,9 +31,8 @@
           ],
           "linkedEntity": "Order",
           "name": "OrderLifecycle",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "165f9742eb452f7ec52f580f5df387d783b93b51ccd60c57cbd4144d4e73c3b5"
+            "fingerprint": "0c596d44d97c4cb7474f7fbce8923294cd8271a55b7daa4c01edab3e56d16996"
           },
           "stateMachine": {
             "events": [

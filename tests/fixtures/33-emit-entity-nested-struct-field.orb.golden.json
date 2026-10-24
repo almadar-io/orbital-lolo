@@ -60,7 +60,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "fetch",
@@ -131,9 +130,8 @@
           ],
           "linkedEntity": "Board",
           "name": "BoardView",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "7bdca456e140695965f2e5c6bb6322189506b99ba4fd611bbd43c4e6ebe0986f"
+            "fingerprint": "a2bdf5233ef6c9119af59d7fdd0331a05e3ccee9f7f8d3d669864957072674fa"
           },
           "stateMachine": {
             "events": [

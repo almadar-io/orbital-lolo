@@ -22,7 +22,6 @@
       "name": "ConfirmOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "render-ui",
@@ -35,9 +34,8 @@
           ],
           "linkedEntity": "ConfirmAction",
           "name": "ConfirmActionConfirmation",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "191b36ac054b22983928e8642982aab02591da9d7393d2a697805a64ad12f86c"
+            "fingerprint": "8d8dbbd27b36105333ab0130e7f7caa80ff39fc55c32239e0a1ecc975b7b13c5"
           },
           "stateMachine": {
             "events": [

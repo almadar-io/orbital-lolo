@@ -14,7 +14,7 @@
           {
             "name": "total",
             "nullable": false,
-            "type": "number"
+            "type": "int"
           }
         ],
         "name": "OrderEmit",
@@ -23,7 +23,6 @@
       "name": "OrderEmitOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "emit",
@@ -50,9 +49,8 @@
           ],
           "linkedEntity": "OrderEmit",
           "name": "OrderEmitter",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "4aa4ab1f245d4a8f978acd783b0e1a45e2bbfd11ab638b355b340544691bdfd0"
+            "fingerprint": "afcac80484bc17c30133fc6326129ed47d596e50fe0a24400349fbba3590db96"
           },
           "stateMachine": {
             "events": [

@@ -1,5 +1,4 @@
-app op-symbolic-math "1.0.0"
-"Stress-tests symbolic + - * / % == != < <= > >= and or not plus namespaced math/vector ops in guards and effects."
+app op-symbolic-math [version: "1.0.0", description: "Stress-tests symbolic + - * / % == != < <= > >= and or not plus namespaced math/vector ops in guards and effects."]
 orbital OpSymbolicMathOrbital {
   entity OpSymbolicMathData [runtime, shared] {
     id : string!

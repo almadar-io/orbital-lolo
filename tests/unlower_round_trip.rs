@@ -214,8 +214,8 @@ fn import_body_entity_bracket_round_trips() {
         "entity Note [persistent: notes]",
         "entity Note [runtime]",
         "entity Note [persistent]",
-        "entity Note [persistent: notes, local, shared, mock]",
-        "entity Note [local]",
+        "entity Note [persistent: notes, browser, shared]",
+        "entity Note [browser]",
         "entity Note",
     ] {
         round_trip(&import(&format!("  {line}\n")), &options)
@@ -246,6 +246,15 @@ fn import_body_trait_overrides_round_trip() {
         return;
     };
     let body = "  traits {\n    NoteList -> Note {\n      events { OPEN: SHOW }\n      fields { title: \"name\" }\n      config { pageSize: 5 }\n      emitsScope internal\n    }\n    NoteForm {\n      config { submitLabel: \"Save\" }\n    }\n  }\n";
+    round_trip(&import(body), &options).unwrap();
+}
+
+#[test]
+fn import_body_trait_dispatch_overrides_round_trip() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let body = "  traits {\n    NoteList [optimistic]\n    NoteForm -> Note [server] {\n      config { submitLabel: \"Save\" }\n    }\n  }\n";
     round_trip(&import(body), &options).unwrap();
 }
 
@@ -492,7 +501,7 @@ fn control_an_inline_record_stays_inline() {
     round_trip(&source, &options).unwrap();
 }
 
-const SPEC_PROGRAM: &str = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order { total : number }\n  expects trait Checkout { emits { PLACED } }\n  expects page \"/orders\"\n}\n";
+const SPEC_PROGRAM: &str = "app shop-spec [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects entity Order { total : number }\n  expects trait Checkout { emits { PLACED } }\n  expects page \"/orders\"\n}\n";
 
 #[test]
 fn a_spec_orbital_round_trips_without_growing_an_entity() {
@@ -510,7 +519,7 @@ fn a_spec_event_payload_round_trips() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let source = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects trait Checkout { emits { PLACED { orderId : string!, note : string } } }\n}\n";
+    let source = "app shop-spec [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects trait Checkout { emits { PLACED { orderId : string!, note : string } } }\n}\n";
     round_trip(source, &options).unwrap();
     let printed = schema_to_lolo(&parse_and_lower_str_with(source, &options).unwrap()).unwrap();
     assert!(printed.contains("orderId : string!"), "{printed}");
@@ -521,11 +530,28 @@ fn a_spec_with_storage_access_pages_and_edges_round_trips() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let source = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  expects page \"/orders\" -> Checkout, Receipt\n  expects trait Checkout { state idle { PAY -> paid } }\n  expects trait Checkout { state refunded }\n}\n";
+    let source = "app shop-spec [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n    email : string @unique\n  }\n  expects page \"/orders\" -> Checkout, Receipt\n  expects trait Checkout { state idle { PAY -> paid } }\n  expects trait Checkout { state refunded }\n}\n";
     round_trip(source, &options).unwrap();
 }
 
-const PROPOSITION_SPEC: &str = "app shop-spec \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order [persistent] {\n    total : number\n    paid : number\n    @invariant (>= @entity.total 0)\n    @invariant (<= @entity.paid @entity.total)\n  }\n  expects trait Checkout { state paid @holds (= @entity.status \"paid\") }\n}\n";
+#[test]
+fn a_spec_protocol_page_expectation_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = "app shop-spec [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects page boot -> Seed, Tick\n  expects page \"/orders\" -> Checkout\n}\n";
+    round_trip(source, &options).unwrap();
+    let schema = parse_and_lower_str_with(source, &options).unwrap();
+    let json = serde_json::to_value(&schema).unwrap();
+    let expects = json["orbitals"][0]["expects"].as_array().unwrap();
+    assert_eq!(expects[0]["protocol"], "boot", "{expects:?}");
+    assert!(expects[1].get("protocol").is_none(), "control: a route carries no protocol {expects:?}");
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert!(printed.contains("expects page boot -> Seed, Tick"), "{printed}");
+    assert!(printed.contains("expects page \"/orders\" -> Checkout"), "{printed}");
+}
+
+const PROPOSITION_SPEC: &str = "app shop-spec [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects entity Order [persistent] {\n    total : number\n    paid : number\n    @invariant (>= @entity.total 0)\n    @invariant (<= @entity.paid @entity.total)\n  }\n  expects trait Checkout { state paid @holds (= @entity.status \"paid\") }\n}\n";
 
 #[test]
 fn spec_invariants_and_holds_lower_into_the_ir_and_round_trip() {
@@ -554,7 +580,7 @@ fn a_spec_without_propositions_carries_no_invariant_fields() {
     assert!(!json.contains("invariants") && !json.contains("holds"), "{json}");
 }
 
-const WALLET: &str = "app wallet \"1.0.0\"\n\norbital Wallet {\n  entity Account [persistent: accounts] {\n    balance : number\n    @invariant (>= @entity.balance 0)\n  }\n  trait Wallet -> Account {\n    state active {\n      @holds (>= @entity.balance 0)\n      INIT -> active\n        (set @entity.balance 100)\n      SPEND -> active when (<= @payload.amount @entity.balance)\n        @ensures (= @entity.balance (- @fromEntity.balance @payload.amount))\n        (persist update Account @entity.id { balance: (- @entity.balance @payload.amount) })\n    }\n  }\n  page \"/wallet\" -> Wallet\n}\n";
+const WALLET: &str = "app wallet [version: \"1.0.0\"]\n\norbital Wallet {\n  entity Account [persistent: accounts] {\n    balance : number\n    @invariant (>= @entity.balance 0)\n  }\n  trait Wallet -> Account {\n    state active {\n      @holds (>= @entity.balance 0)\n      INIT -> active\n        (set @entity.balance 100)\n      SPEND -> active when (<= @payload.amount @entity.balance)\n        @ensures (= @entity.balance (- @fromEntity.balance @payload.amount))\n        (persist update Account @entity.id { balance: (- @entity.balance @payload.amount) })\n    }\n  }\n  page \"/wallet\" -> Wallet\n}\n";
 
 #[test]
 fn propositions_on_real_declarations_lower_into_the_ir_and_round_trip() {
@@ -583,7 +609,7 @@ fn propositions_on_a_spec_transition_round_trip() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let spec = "app wallet-spec \"1.0.0\"\n\norbital WalletSpec {\n  expects trait Wallet { state active { SPEND -> active @ensures (= @entity.balance (- @fromEntity.balance @payload.amount)) } }\n  expects trait Wallet { state idle { GO -> active } }\n}\n";
+    let spec = "app wallet-spec [version: \"1.0.0\"]\n\norbital WalletSpec {\n  expects trait Wallet { state active { SPEND -> active @ensures (= @entity.balance (- @fromEntity.balance @payload.amount)) } }\n  expects trait Wallet { state idle { GO -> active } }\n}\n";
     let schema = parse_and_lower_str_with(spec, &options).unwrap();
     let json = serde_json::to_value(&schema).unwrap();
     let edges: Vec<&serde_json::Value> = json["orbitals"][0]["expects"].as_array().unwrap().iter().filter(|e| e["kind"] == "transition").collect();
@@ -599,7 +625,7 @@ fn propositions_in_an_ordinary_orbital_are_accepted() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let in_body = "app shop \"1.0.0\"\n\norbital Shop {\n  entity Cart [runtime] { id : string }\n  expects entity Order { total : number\n    @invariant (>= @entity.total 0)\n  }\n  trait CartView -> Cart {\n    state idle {\n      INIT -> idle\n    }\n  }\n  page \"/cart\" -> CartView\n}\n";
+    let in_body = "app shop [version: \"1.0.0\"]\n\norbital Shop {\n  entity Cart [runtime] { id : string }\n  expects entity Order { total : number\n    @invariant (>= @entity.total 0)\n  }\n  trait CartView -> Cart {\n    state idle {\n      INIT -> idle\n    }\n  }\n  page \"/cart\" -> CartView\n}\n";
     let schema = parse_and_lower_str_with(in_body, &options).unwrap();
     let json = serde_json::to_string(&schema).unwrap();
     assert!(json.contains("invariants"), "{json}");
@@ -612,7 +638,7 @@ fn propositions_ensures_outside_a_transition_is_refused() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let on_state = "app w \"1.0.0\"\n\norbital W {\n  entity A [runtime] { n : number }\n  trait T -> A {\n    state s {\n      @ensures (>= @entity.n 0)\n      INIT -> s\n    }\n  }\n  page \"/w\" -> T\n}\n";
+    let on_state = "app w [version: \"1.0.0\"]\n\norbital W {\n  entity A [runtime] { n : number }\n  trait T -> A {\n    state s {\n      @ensures (>= @entity.n 0)\n      INIT -> s\n    }\n  }\n  page \"/w\" -> T\n}\n";
     let err = parse_and_lower_str_with(on_state, &options).unwrap_err().to_string();
     assert!(err.contains("@ensures"), "{err}");
 }
@@ -633,7 +659,7 @@ orbital TaskOrbital {
       DO_SCAN -> idle
     }
     listens {
-      DO_SCAN -> external { via : [(Adv | string)], holder : Holder }
+      DO_SCAN -> input { via : [(Adv | string)], holder : Holder }
     }
   }
   page "/" -> TaskPersistor [initial]

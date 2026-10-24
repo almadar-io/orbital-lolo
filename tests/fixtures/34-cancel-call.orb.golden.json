@@ -23,7 +23,6 @@
       "name": "BatchOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "call-service",
@@ -39,9 +38,8 @@
           ],
           "linkedEntity": "Batch",
           "name": "BatchRunner",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "3af85bb942ca90cfb09d4352a9dd862d476b5892f549619546a29c9937e784f6"
+            "fingerprint": "3bf45300b83472af0b3759ad5b9deadb725e2cb551abd9bbc9c43132c7bea0c2"
           },
           "stateMachine": {
             "events": [

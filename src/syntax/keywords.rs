@@ -27,7 +27,7 @@ pub struct Vocabulary {
 /// `app orbital uses expects entity type derived trait initial state for
 /// page as theme emits listens ticks config when with from to every
 /// capabilities match external internal on name fields events event
-/// emitsScope identity pages omit only roles entities extend lazy locales public
+/// emitsScope identity pages omit only roles entities extend lazy locales public input http boot
 /// access indexing title description origin icon siteName signIn authenticated
 /// index noindex version translationOf` (app/page modifier-bracket keys and values) — every
 /// `expect_keyword`/`check_ident` literal in `parser/*.rs` (`parser/mod.rs`,
@@ -114,44 +114,36 @@ const KEYWORDS: &[&str] = &[
     "version",
     "translationOf",
     "label",
+    "input",
+    "http",
+    "boot",
 ];
 
 /// `Entity Trait Page Orbital Event` — `check_ident` in `parser/type.rs`
 /// (`parse_type_body_atom`) plus `VALID_TYPE_PARAM_KINDS`.
 const SHAPES: &[&str] = &["Entity", "Trait", "Page", "Orbital", "Event"];
 
-/// `persistent runtime shared identity instance collection local background` — the
-/// entity `[...]` persistence-tag list (`parser/entity.rs
-/// parse_persistence_tag`) plus the trait `[category, scope, ...]` modifier
-/// list's `instance`/`collection` scope markers and `local` client-only-
-/// dispatch flag (`parser/trait.rs parse_trait`), and the tick `[background]` / `[visible]` flags
-/// (`parser/trait.rs parse_tick_tags`). `identity` is shared with
-/// `KEYWORDS` (same English word, same translation, B1 rule 3).
+/// `persistent runtime shared client optimistic server browser identity background visible store` — the
+/// entity `[...]` tag list (`parser/entity.rs parse_persistence_tag`), the trait
+/// `[client | optimistic | server]` dispatch-mode words (`parser/trait.rs parse_trait`), and the tick
+/// `[background]` / `[visible]` flags (`parser/trait.rs parse_tick_tags`). `identity` and `store`
+/// are shared with `KEYWORDS` (same English word, same translation, B1 rule 3).
 const TAGS: &[&str] = &[
     "persistent",
     "runtime",
     "shared",
+    "client",
+    "optimistic",
+    "server",
+    "browser",
     "identity",
-    "instance",
-    "collection",
-    "local",
     "background",
     "visible",
-    "mock",
     "store",
 ];
 
-/// `interaction integration lifecycle game-core game-entity game-ui` — the
-/// trait `[category]` modifier's first non-scope word
-/// (`parser/trait.rs parse_trait`, interpreted by `lower/trait.rs`).
-const CATEGORIES: &[&str] = &[
-    "interaction",
-    "integration",
-    "lifecycle",
-    "game-core",
-    "game-entity",
-    "game-ui",
-];
+/// The trait `[category]` words are retired (P-009: checks follow the page); no category is vocabulary.
+const CATEGORIES: &[&str] = &[];
 
 /// `read write browse create upsert update delete notify schedule invoke batch` — the
 /// trait `[category, scope, ...capabilities]` modifier's trailing words

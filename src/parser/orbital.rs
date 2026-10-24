@@ -552,7 +552,7 @@ impl Parser {
         Ok(out)
     }
 
-    /// `traits { UpstreamTrait [-> Entity] { <trait-reference body> } ... }` — per-imported-trait
+    /// `traits { UpstreamTrait [-> Entity] [client|optimistic|server] [{ <trait-reference body> }] ... }` — per-imported-trait
     /// overrides keyed by the UPSTREAM trait name; each body is exactly the §8 trait-reference
     /// body (`parse_trait_ref_body`). `name:` is not an override here (imports are renamed by
     /// the unconditional prefix). On entry the `traits` keyword has NOT been consumed.
@@ -592,8 +592,19 @@ impl Parser {
             } else {
                 None
             };
+            let (dispatch, retired_words) = if matches!(self.peek(), TokenKind::LBracket) {
+                self.parse_trait_header_words()?
+            } else {
+                (None, Vec::new())
+            };
             let name_span = self.peek_span();
-            let body = self.parse_trait_ref_body()?;
+            let body = if matches!(self.peek(), TokenKind::LBrace) {
+                self.parse_trait_ref_body()?
+            } else if dispatch.is_some() || !retired_words.is_empty() {
+                TraitRefBody::default()
+            } else {
+                self.parse_trait_ref_body()?
+            };
             if body.name_override.is_some() {
                 return Err(ParseError::InvalidType {
                     span: name_span,
@@ -605,6 +616,8 @@ impl Parser {
             out.push(TraitOverride {
                 trait_name,
                 linked_entity,
+                dispatch,
+                retired_words,
                 body,
                 span: self.scoped_span(span),
             });

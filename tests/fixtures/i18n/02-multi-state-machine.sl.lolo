@@ -4,7 +4,7 @@ orbitala OrderOrbital {
     id : niz!
     status : niz
   }
-  znacilnost OrderLifecycle -> Order [interakcija] {
+  znacilnost OrderLifecycle -> Order {
     zacetno: pending
     stanje pending {
       CONFIRM -> confirmed

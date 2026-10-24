@@ -1,5 +1,4 @@
-app std-list "1.0.0"
-"std-list as a Function"
+app std-list [version: "1.0.0", description: "std-list as a Function"]
 ;;
 ;; Daisy-chain composition showcase: no `on EVENT { ... }` trait-ref overrides.
 ;; Modal + Confirmation trait refs are configured via `config: { ... }` at the

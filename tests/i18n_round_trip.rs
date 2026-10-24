@@ -110,7 +110,7 @@ orbital OrderOrbital {
     id : string!
     status : string
   }
-  trait OrderLifecycle -> طلب [interaction] {
+  trait OrderLifecycle -> طلب {
     initial: pending
     state pending {
       تأكيد -> confirmed
@@ -173,4 +173,143 @@ fn headerless_lolo_is_detected_from_its_first_top_level_keyword() {
     assert_eq!(orbital_lolo::detect_language(source), "ar");
     let program = parse_str(source).expect("headerless Arabic program parses");
     assert_eq!(program.orbitals.len(), 1);
+}
+
+const EN_ENDPOINT_SOURCE: &str = r#"app Srv [version: "1.0.0"]
+orbital Srv {
+  entity Req [runtime] {
+    x : number
+  }
+  trait Router -> Req [client] {
+    initial: idle
+    state idle {
+      PING -> idle
+        (set @entity.x ?x)
+    }
+    listens {
+      PING -> input {
+        x : number
+      }
+    }
+  }
+  trait Worker -> Req [optimistic] {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+  trait Mirror -> Req [server] {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+  page http { host: "0.0.0.0", port: 8080, path: "/" } as Api -> Router
+  page stdio as Mcp -> Router
+  page boot as Background -> Worker
+}
+"#;
+
+const AR_ENDPOINT_SOURCE: &str = r#"تطبيق Srv [إصدار: "1.0.0"]
+مدار Srv {
+  كيان Req [وقت_التشغيل] {
+    x : رقم
+  }
+  سمة Router -> Req [عميل] {
+    أولي: idle
+    حالة idle {
+      PING -> idle
+        (تعيين @entity.x ?x)
+    }
+    يستمع {
+      PING -> مدخل {
+        x : رقم
+      }
+    }
+  }
+  سمة Worker -> Req [متفائل] {
+    أولي: idle
+    حالة idle {
+      INIT -> idle
+    }
+  }
+  سمة Mirror -> Req [خادم] {
+    أولي: idle
+    حالة idle {
+      INIT -> idle
+    }
+  }
+  صفحة ويب { host: "0.0.0.0", port: 8080, path: "/" } كـ Api -> Router
+  صفحة دخل_وخرج كـ Mcp -> Router
+  صفحة إقلاع كـ Background -> Worker
+}
+"#;
+
+const SL_ENDPOINT_SOURCE: &str = r#"aplikacija Srv [razlicica: "1.0.0"]
+orbitala Srv {
+  entiteta Req [izvajanje] {
+    x : stevilo
+  }
+  znacilnost Router -> Req [odjemalec] {
+    zacetno: idle
+    stanje idle {
+      PING -> idle
+        (nastavi @entity.x ?x)
+    }
+    poslusa {
+      PING -> vhod {
+        x : stevilo
+      }
+    }
+  }
+  znacilnost Worker -> Req [optimisticno] {
+    zacetno: idle
+    stanje idle {
+      INIT -> idle
+    }
+  }
+  znacilnost Mirror -> Req [streznik] {
+    zacetno: idle
+    stanje idle {
+      INIT -> idle
+    }
+  }
+  stran splet { host: "0.0.0.0", port: 8080, path: "/" } kot Api -> Router
+  stran vhod_izhod kot Mcp -> Router
+  stran zagon kot Background -> Worker
+}
+"#;
+
+#[test]
+fn endpoint_words_lower_like_english_in_arabic_and_slovenian() {
+    let expected = lower_canonical(EN_ENDPOINT_SOURCE);
+    for (code, source) in [("ar", AR_ENDPOINT_SOURCE), ("sl", SL_ENDPOINT_SOURCE)] {
+        assert_eq!(orbital_lolo::detect_language(source), code);
+        assert_eq!(lower_canonical(source), expected, "{code}");
+    }
+}
+
+#[test]
+fn the_localized_server_word_lowers_to_the_explicit_server_mode() {
+    use orbital_core_base::schema::{DispatchMode, TraitReference};
+    for source in [EN_ENDPOINT_SOURCE, AR_ENDPOINT_SOURCE, SL_ENDPOINT_SOURCE] {
+        let schema = parse_and_lower_str(source).expect("lower");
+        let mirror = schema.orbitals[0]
+            .traits
+            .iter()
+            .find_map(|t| match t {
+                TraitReference::Inline(td) if td.name == "Mirror" => Some(td.dispatch),
+                _ => None,
+            })
+            .expect("Mirror trait");
+        assert_eq!(mirror, Some(DispatchMode::Server));
+    }
+}
+
+#[test]
+fn control_a_localized_dispatch_word_changes_the_lowering() {
+    let plain = AR_ENDPOINT_SOURCE.replace(" [عميل]", "");
+    assert_ne!(lower_canonical(&plain), lower_canonical(AR_ENDPOINT_SOURCE));
+    let plain = SL_ENDPOINT_SOURCE.replace(" [odjemalec]", "");
+    assert_ne!(lower_canonical(&plain), lower_canonical(SL_ENDPOINT_SOURCE));
 }

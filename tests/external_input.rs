@@ -1,5 +1,5 @@
-// A declared external input: `listens { EVENT -> external { payload } }` lowers onto the
-// trait's own event definition, marked external, with its payload and annotations.
+// A declared input: `listens { EVENT -> input { payload } }` lowers onto the
+// trait's own event definition, marked input, with its payload and annotations.
 
 use orbital_lolo::{parse_and_lower_str, parse_str};
 use serde_json::Value;
@@ -43,11 +43,11 @@ fn event(schema: &orbital_core_base::schema::OrbitalSchema, key: &str) -> Value 
 #[test]
 fn an_external_input_lowers_marked_with_its_payload_and_annotations() {
     let src = program(
-        "      DO_CREATE -> external { data : { title : string! } }\n        @description \"Create a task\"\n        @synonyms \"add task, new task\"",
+        "      DO_CREATE -> input { data : { title : string! } }\n        @description \"Create a task\"\n        @synonyms \"add task, new task\"",
     );
     let schema = parse_and_lower_str(&src).expect("external input lowers");
     let ev = event(&schema, "DO_CREATE");
-    assert_eq!(ev["external"], Value::Bool(true));
+    assert_eq!(ev["input"], Value::Bool(true));
     assert_eq!(ev["description"], "Create a task");
     assert_eq!(ev["synonyms"], "add task, new task");
     assert_eq!(ev["payloadSchema"][0]["name"], "data");
@@ -58,23 +58,23 @@ fn control_a_local_listen_without_the_arrow_is_not_external() {
     let src = program("      DO_CREATE { data : { title : string! } }");
     let schema = parse_and_lower_str(&src).expect("local listen lowers");
     let ev = event(&schema, "DO_CREATE");
-    assert!(ev.get("external").is_none(), "{ev}");
+    assert!(ev.get("input").is_none(), "{ev}");
 }
 
 #[test]
 fn an_external_input_must_declare_its_payload() {
-    let src = program("      DO_CREATE -> external");
+    let src = program("      DO_CREATE -> input");
     assert!(
         parse_str(&src).is_err(),
-        "`-> external` with no payload braces must not parse"
+        "`-> input` with no payload braces must not parse"
     );
 }
 
 #[test]
 fn an_empty_payload_is_a_declared_payload() {
-    let src = program("      DO_CREATE -> external {}");
+    let src = program("      DO_CREATE -> input {}");
     let schema = parse_and_lower_str(&src).expect("empty declared payload lowers");
-    assert_eq!(event(&schema, "DO_CREATE")["external"], Value::Bool(true));
+    assert_eq!(event(&schema, "DO_CREATE")["input"], Value::Bool(true));
 }
 
 #[test]
@@ -108,7 +108,7 @@ orbital TaskOrbital {{
       DO_SCAN -> idle
     }}
     listens {{
-      DO_SCAN -> external {{ {field} }}
+      DO_SCAN -> input {{ {field} }}
     }}
   }}
   page "/" -> TaskPersistor [initial]
@@ -162,4 +162,38 @@ fn control_a_map_of_one_kind_keeps_its_type_string() {
     let field = &event(&schema, "DO_SCAN")["payloadSchema"][0];
     assert_eq!(field["type"], "Map<string,number>");
     assert!(field.get("items").is_none());
+}
+
+#[test]
+fn the_retired_external_spelling_on_a_listen_errors_with_the_input_fix_it() {
+    let src = program("      DO_CREATE -> external { data : { title : string! } }");
+    assert!(parse_str(&src).is_ok(), "the word still parses; lowering rejects it");
+    let err = parse_and_lower_str(&src).unwrap_err().to_string();
+    assert!(
+        err.contains("ORB_L_LISTEN_EXTERNAL_RETIRED") && err.contains("write `-> input {`"),
+        "{err}"
+    );
+}
+
+#[test]
+fn control_emits_keep_the_external_scope_spelling() {
+    let src = program("      DO_CREATE { data : string }").replace(
+        "    listens {",
+        "    emits {\n      DONE -> external { id : string }\n    }\n    listens {",
+    );
+    parse_and_lower_str(&src).expect("emit `-> external` is unchanged");
+}
+
+#[test]
+fn a_declared_input_round_trips_through_format_and_unlower() {
+    let src = program("      DO_CREATE -> input { data : { title : string! } }");
+    let formatted = orbital_lolo::format_program(&parse_str(&src).unwrap());
+    assert!(formatted.contains("DO_CREATE -> input {"), "{formatted}");
+    assert!(!formatted.contains("-> external"), "{formatted}");
+    let schema = parse_and_lower_str(&formatted).expect("formatted source lowers");
+    assert_eq!(event(&schema, "DO_CREATE")["input"], Value::Bool(true));
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert!(text.contains("DO_CREATE -> input {"), "{text}");
+    let back = parse_and_lower_str(&text).expect("unlowered text lowers");
+    assert_eq!(event(&back, "DO_CREATE")["input"], Value::Bool(true));
 }

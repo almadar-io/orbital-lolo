@@ -1,5 +1,4 @@
-app op-collection "1.0.0"
-"Stress-tests array/map array/filter array/find array/reduce array/sum array/includes array/len array/concat and str ops on entity collection fields."
+app op-collection [version: "1.0.0", description: "Stress-tests array/map array/filter array/find array/reduce array/sum array/includes array/len array/concat and str ops on entity collection fields."]
 orbital OpCollectionOrbital {
   type LineItem = {
     price : number!

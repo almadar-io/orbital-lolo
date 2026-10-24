@@ -1,4 +1,4 @@
-app AcmeOrg "1.0.0"
+app AcmeOrg [version: "1.0.0"]
 config {
   appName : string = "Acme"
     @label "Shell title"

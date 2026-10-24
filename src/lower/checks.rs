@@ -2628,7 +2628,7 @@ mod button_transition_embed_tests {
             ]]);
         }
         let mut t = serde_json::json!({
-            "name": name, "linkedEntity": "Row", "category": "interaction",
+            "name": name, "linkedEntity": "Row",
             "stateMachine": { "states": [], "events": [], "transitions": transitions }
         });
         if let Some(source) = listens {
@@ -2807,7 +2807,7 @@ mod set_program_type_literal_tests {
                     id : string!
                     who : Viewer
                 }}
-                trait TicketMint -> {tag}Ticket [lifecycle, instance] {{
+                trait TicketMint -> {tag}Ticket {{
                     initial: idle
                     state idle {{
                         MINT -> idle

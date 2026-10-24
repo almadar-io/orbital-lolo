@@ -6,7 +6,7 @@ use serde_json::{json, Value};
 
 fn program(egress: &str, effect: &str) -> String {
     format!(
-        r#"app HttpDemo "1.0.0" {egress}
+        r#"app HttpDemo {egress}
 
 orbital DemoOrbital {{
   entity Demo [runtime] {{
@@ -44,7 +44,7 @@ const CALL: &str = r#"(http GET "https://x.test" "/a" { query: { q: "v" } } { em
 
 #[test]
 fn http_lowers_to_the_contract_form() {
-    let effects = effects_of(&program("[ egress: [\"https://x.test\"] ]", CALL), "GO");
+    let effects = effects_of(&program("[ version: \"1.0.0\", egress: [\"https://x.test\"] ]", CALL), "GO");
     assert_eq!(
         effects,
         vec![json!([
@@ -62,7 +62,7 @@ fn http_lowers_to_the_contract_form() {
 fn every_method_word_is_a_string_literal() {
     for method in ["GET", "POST", "PUT", "PATCH", "DELETE"] {
         let call = format!(r#"(http {method} "https://x.test" "/a")"#);
-        let effects = effects_of(&program("[ egress: [\"https://x.test\"] ]", &call), "GO");
+        let effects = effects_of(&program("[ version: \"1.0.0\", egress: [\"https://x.test\"] ]", &call), "GO");
         assert_eq!(effects[0][1], json!(method), "method {method}");
     }
 }
@@ -70,7 +70,7 @@ fn every_method_word_is_a_string_literal() {
 #[test]
 fn egress_lowers_to_the_schema_and_absent_stays_none() {
     let with = parse_and_lower_str(&program(
-        "[ egress: [\"https://x.test\", \"https://y.test:8443\"] ]",
+        "[ version: \"1.0.0\", egress: [\"https://x.test\", \"https://y.test:8443\"] ]",
         CALL,
     ))
     .unwrap();
@@ -84,7 +84,7 @@ fn egress_lowers_to_the_schema_and_absent_stays_none() {
 
 #[test]
 fn egress_and_http_survive_unlower_and_format() {
-    let src = program("[ egress: [\"https://x.test\"] ]", CALL);
+    let src = program("[ version: \"1.0.0\", egress: [\"https://x.test\"] ]", CALL);
     let schema = parse_and_lower_str(&src).unwrap();
     let ast = unlower(&schema).expect("unlower");
     assert_eq!(ast.app.egress, vec!["https://x.test".to_string()]);
@@ -108,14 +108,14 @@ fn an_unknown_app_key_still_errors() {
 #[test]
 fn page_facts_and_beacon_lower_to_the_contract_forms() {
     let facts = effects_of(
-        &program("[ egress: [\"https://x.test\"] ]", r#"(browser/page-facts [referrer, screenWidth] { emit: { success: S, failure: F } })"#),
+        &program("[ version: \"1.0.0\", egress: [\"https://x.test\"] ]", r#"(browser/page-facts [referrer, screenWidth] { emit: { success: S, failure: F } })"#),
         "GO",
     );
     assert_eq!(facts, vec![json!(["browser/page-facts", ["referrer", "screenWidth"], { "emit": { "success": "S", "failure": "F" } }])]);
 
     let beacon = effects_of(
         &program(
-            "[ egress: [\"https://x.test\"] ]",
+            "[ version: \"1.0.0\", egress: [\"https://x.test\"] ]",
             r#"(browser/beacon "https://x.test/e" { text: @entity.id, key: @entity.id } { emit: { success: S, failure: F, cancelled: C } })"#,
         ),
         "GO",

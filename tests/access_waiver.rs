@@ -13,8 +13,7 @@ use orbital_lolo::parse_and_lower_str;
 
 fn entity_source(directives: &str) -> String {
     format!(
-        r#"app fixture "1.0.0"
-"Fixture."
+        r#"app fixture [version: "1.0.0", description: "Fixture."]
 orbital ReplyOrbital {{
   entity TicketReply [persistent: ticketreplies] {{
 {directives}

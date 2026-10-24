@@ -5,8 +5,7 @@ use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use orbital_core_base::schema::TraitReference;
 use orbital_core_base::schema::types::{EntityRef, FieldProjection, FieldType, OrbitalSchema, PayloadField, TraitDefinition};
 
-const APP: &str = r#"app projection-app "1.0.0"
-"Projection"
+const APP: &str = r#"app projection-app [version: "1.0.0", description: "Projection"]
 
 orbital NoteOrbital {
   entity Note [persistent: notes] {

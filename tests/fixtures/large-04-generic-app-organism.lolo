@@ -1,5 +1,4 @@
-app std-generic-app "1.0.0"
-"Generic fallback app: 8 reusable orbital factories (Contact, Item, Activity, Task, CalendarEvent, Widget, FeedPost, Note) under shared AppShell chrome. Picked by orbital-agent when no domain-specific organism is a confident match — agent maps prompt nouns to orbitals and supplies entity/title overrides via standard factory params."
+app std-generic-app [version: "1.0.0", description: "Generic fallback app: 8 reusable orbital factories (Contact, Item, Activity, Task, CalendarEvent, Widget, FeedPost, Note) under shared AppShell chrome. Picked by orbital-agent when no domain-specific organism is a confident match — agent maps prompt nouns to orbitals and supplies entity/title overrides via standard factory params."]
 
 orbital ContactOrbital {
   uses AppShell     from "std/behaviors/std-app-layout"
@@ -35,7 +34,7 @@ orbital ContactOrbital {
     }
   }
 
-  trait ContactCatalog [interaction, instance] {
+  trait ContactCatalog {
     initial: composing
     state composing {
       INIT -> composing
@@ -283,7 +282,7 @@ orbital ItemOrbital {
     }
   }
 
-  trait ItemCatalog [interaction, instance] {
+  trait ItemCatalog {
     initial: composing
     state composing {
       INIT -> composing
@@ -563,7 +562,7 @@ orbital ActivityOrbital {
     }
   }
 
-  trait ActivityCatalog [interaction, instance] {
+  trait ActivityCatalog {
     initial: composing
     state composing {
       INIT -> composing
@@ -750,7 +749,7 @@ orbital TaskOrbital {
     }
   }
 
-  trait TaskCatalog [interaction, instance] {
+  trait TaskCatalog {
     initial: composing
     state composing {
       INIT -> composing
@@ -988,7 +987,7 @@ orbital CalendarOrbital {
     }
   }
 
-  trait CalendarCatalog [interaction, instance] {
+  trait CalendarCatalog {
     initial: composing
     state composing {
       INIT -> composing
@@ -1204,7 +1203,7 @@ orbital WidgetOrbital {
     }
   }
 
-  trait WidgetCatalog [interaction, instance] {
+  trait WidgetCatalog {
     initial: composing
     state composing {
       INIT -> composing
@@ -1421,7 +1420,7 @@ orbital FeedOrbital {
     }
   }
 
-  trait FeedCatalog [interaction, instance] {
+  trait FeedCatalog {
     initial: composing
     state composing {
       INIT -> composing
@@ -1633,7 +1632,7 @@ orbital NoteOrbital {
     }
   }
 
-  trait NoteCatalog [interaction, instance] {
+  trait NoteCatalog {
     initial: composing
     state composing {
       INIT -> composing

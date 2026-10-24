@@ -23,7 +23,6 @@
       "name": "ItemOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "render-ui",
@@ -32,9 +31,8 @@
           ],
           "linkedEntity": "Item",
           "name": "ItemSearch",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "9ae76b5155f1b446a57e1eae9e1099ae4d28cffaab5cc8fb45b798a2a5f57378"
+            "fingerprint": "dd86ac9ed821b3df92a31d73a488706f2962306eeb3c01a9439fbcfca48a8e2a"
           },
           "stateMachine": {
             "events": [
@@ -69,7 +67,6 @@
           }
         },
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "render-ui",
@@ -78,9 +75,8 @@
           ],
           "linkedEntity": "Item",
           "name": "ItemBrowse",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "de1f81d63f893dc441ca46d978c944ac58f13ef55340c076f46ea1fa920c44e5"
+            "fingerprint": "897eb8137dba345371f7b5ca81e28d2e08d48afbf87b35a08d8755697c94b903"
           },
           "stateMachine": {
             "events": [
@@ -119,7 +115,6 @@
           }
         },
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "render-ui",
@@ -128,9 +123,8 @@
           ],
           "linkedEntity": "Item",
           "name": "ItemLayout",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "888e205f109d8c0e73488d9094f771b27ab5ae9e9ff326a2d25fdaba8dfac53b"
+            "fingerprint": "9b042cf3e8a403d0a5f62cb2b6b0feaac6fc527d9cc4638d472b6f31031c5230"
           },
           "stateMachine": {
             "events": [

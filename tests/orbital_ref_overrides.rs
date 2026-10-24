@@ -35,7 +35,7 @@ fn entity_line_bracket_overrides_persistence_and_collection() {
     assert_eq!(r.entity.as_deref(), Some("Note"));
     assert_eq!(r.persistence, Some(Persistence::Persistent));
     assert_eq!(r.collection.as_deref(), Some("notes"));
-    assert!(!r.local && !r.shared && !r.identity && !r.seed_mock);
+    assert!(!r.browser && !r.shared && !r.identity);
 }
 
 #[test]
@@ -49,14 +49,14 @@ fn entity_line_bracket_runtime_flags_and_bare_persistent() {
     assert_eq!(r.collection, None);
 
     let r = reference(&import(
-        "  entity Note [persistent: notes, local, shared, mock]\n",
+        "  entity Note [persistent: notes, browser, shared]\n",
     ));
     assert_eq!(r.collection.as_deref(), Some("notes"));
-    assert!(r.local && r.shared && r.seed_mock && !r.identity);
+    assert!(r.browser && r.shared && !r.identity);
 
-    let r = reference(&import("  entity Note [local]\n"));
+    let r = reference(&import("  entity Note [browser]\n"));
     assert_eq!(r.persistence, None);
-    assert!(r.local);
+    assert!(r.browser);
 }
 
 #[test]
@@ -78,12 +78,21 @@ fn control_entity_line_without_bracket_lowers_no_persistence() {
         "collection",
         "shared",
         "identity",
-        "local",
-        "seedMock",
+        "browser",
         "retype",
         "traits",
     ] {
         assert!(json.get(key).is_none(), "{key} must be absent: {json}");
+    }
+}
+
+#[test]
+fn entity_line_bracket_retired_words_error_with_their_fix_its() {
+    for (word, fixit) in [("local", "write `browser`"), ("mock", "delete it")] {
+        let err = orbital_lolo::parse_and_lower_str(&import(&format!("  entity Note [{word}]\n")))
+            .unwrap_err()
+            .to_string();
+        assert!(err.contains("ORB_E_HEADER_WORD_RETIRED") && err.contains(fixit), "{word}: {err}");
     }
 }
 
@@ -98,7 +107,7 @@ fn entity_line_bracket_round_trips_through_format() {
     for line in [
         "entity Note [persistent: notes]",
         "entity Note [runtime]",
-        "entity Note [persistent: notes, local]",
+        "entity Note [persistent: notes, browser]",
         "entity [persistent: notes]",
     ] {
         let printed = round_trips(&import(&format!("  {line}\n")));
@@ -210,6 +219,53 @@ fn traits_block_rejects_an_unknown_body_key() {
         "  traits {\n    NoteList {\n      bogus { }\n    }\n  }\n"
     ))
     .is_err());
+}
+
+const TRAIT_MODES: &str = "  traits {
+    NoteList [optimistic]
+    NoteForm -> Draft [server] {
+      config {
+        pageSize: 5
+      }
+    }
+    NoteView [client]
+    NoteBare {
+    }
+  }
+";
+
+#[test]
+fn traits_block_entries_take_a_dispatch_word_with_or_without_a_body() {
+    use orbital_core_base::schema::DispatchMode;
+    let traits = reference(&import(TRAIT_MODES)).traits.expect("traits lowered");
+    assert_eq!(traits["NoteList"].dispatch, Some(DispatchMode::Optimistic));
+    assert_eq!(traits["NoteForm"].dispatch, Some(DispatchMode::Server));
+    assert_eq!(traits["NoteForm"].linked_entity.as_deref(), Some("Draft"));
+    assert!(traits["NoteForm"].config.is_some());
+    assert_eq!(traits["NoteView"].dispatch, Some(DispatchMode::Client));
+    assert_eq!(traits["NoteBare"].dispatch, None);
+}
+
+#[test]
+fn traits_block_dispatch_serializes_and_round_trips_through_format() {
+    let json = serde_json::to_value(reference(&import(TRAIT_MODES))).unwrap();
+    assert_eq!(json["traits"]["NoteList"]["dispatch"], "optimistic", "{json}");
+    assert!(json["traits"]["NoteBare"].get("dispatch").is_none(), "{json}");
+    let printed = round_trips(&import(TRAIT_MODES));
+    assert!(printed.contains("NoteList [optimistic]"), "{printed}");
+    assert!(printed.contains("NoteForm -> Draft [server] {"), "{printed}");
+    assert!(printed.contains("NoteView [client]"), "{printed}");
+    let again = reference(&printed).traits.expect("traits");
+    assert_eq!(again["NoteList"].dispatch, Some(orbital_core_base::schema::DispatchMode::Optimistic));
+}
+
+#[test]
+fn traits_block_dispatch_refuses_two_modes_and_retired_words() {
+    assert!(parse_str(&import("  traits {\n    NoteList [client, server]\n  }\n")).is_err());
+    let err = parse_and_lower_str(&import("  traits {\n    NoteList [local]\n  }\n"))
+        .unwrap_err()
+        .to_string();
+    assert!(err.contains("ORB_T_HEADER_WORD_RETIRED") && err.contains("write `[client]`"), "{err}");
 }
 
 #[test]

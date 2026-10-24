@@ -24,7 +24,7 @@ orbital TaskOrbital {{
         (persist create Task ?data)
     }}
     listens {{
-      DO_CREATE -> external {{ data : {{ title : string! }} }}
+      DO_CREATE -> input {{ data : {{ title : string! }} }}
     }}
   }}
   trait Assistant -> Task {{

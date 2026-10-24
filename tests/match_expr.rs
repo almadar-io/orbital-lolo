@@ -380,7 +380,7 @@ fn question_field_sugar_scrutinee_is_accepted() {
     id : string!
   }}
 
-  trait Dispatch [interaction] {{
+  trait Dispatch {{
     listens {{
       GO {{ kind : "a" | "b" }}
     }}

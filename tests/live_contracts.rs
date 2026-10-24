@@ -19,7 +19,7 @@ orbital ChromeOrbital {{
     id : string!
   }}
 
-  trait {trait_name} -> @rebindable ChromeView [interaction, instance] {{
+  trait {trait_name} -> @rebindable ChromeView {{
     initial: idle
 
     state idle {{

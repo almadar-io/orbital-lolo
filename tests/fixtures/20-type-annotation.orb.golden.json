@@ -39,12 +39,10 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "linkedEntity": "Patient",
           "name": "PatientView",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "b12841e2b4ce8689efbcf6c847fbfce29a8d2d3344bf9bd512cb89069abe0a79"
+            "fingerprint": "339d2eb762339060a3d91c5e0c51d5fa5668153fa6e8d15d76ec7c8ffe55eab0"
           },
           "stateMachine": {
             "events": [

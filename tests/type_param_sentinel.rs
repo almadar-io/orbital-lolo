@@ -449,8 +449,7 @@ fn payload_of_sibling_literal_shape_match_passes() {
 #[test]
 fn union_of_primitive_and_struct_variants_lowers_to_a_union() {
     let src = r#"
-app u "1.0.0"
-"probe"
+app u [version: "1.0.0", description: "probe"]
 orbital P {
   type FileItem = { name : string!, url : string! }
   type Ctl = string | FileItem
@@ -498,8 +497,7 @@ orbital P {
 #[test]
 fn union_with_a_non_type_member_stays_an_enum() {
     let src = r#"
-app u "1.0.0"
-"probe"
+app u [version: "1.0.0", description: "probe"]
 orbital P {
   type Fmt = date | currency | number
   entity Item [runtime] {

@@ -364,7 +364,7 @@ orbital PfTimesheets = TimeTracking.orbitals.TimesheetPanelOrbital {
 #[test]
 fn app_level_config_block_parses_and_lowers() {
     let source = r#"
-app AcmeOrg "1.0.0"
+app AcmeOrg [version: "1.0.0"]
 config {
   appName : string = "Acme"
     @label "Shell title"

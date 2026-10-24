@@ -34,7 +34,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "persist",
@@ -63,9 +62,8 @@
           ],
           "linkedEntity": "Order",
           "name": "OrderShipper",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "2d34af290fc084cb035e4bce995a77dbc763b12fc3759e9808fa59d4be918d76"
+            "fingerprint": "78e47f7b9f8d2309b50fe92f2de709d6ba8885688a5ac07cd0960be932860197"
           },
           "stateMachine": {
             "events": [

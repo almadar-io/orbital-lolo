@@ -4,9 +4,7 @@
 
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 
-const HOME: &str = r#"app std-almadar-home "1.0.0"
-"Home"
-locales [en, ar, sl]
+const HOME: &str = r#"app std-almadar-home [version: "1.0.0", description: "Home", locales: [en, ar, sl]]
 
 orbital Home {
   entity HomeState [runtime] {
@@ -75,7 +73,7 @@ fn the_locale_binding_parses_inside_render_props() {
 
 #[test]
 fn the_public_header_lowers_to_public_dir() {
-    let source = HOME.replace("locales [en, ar, sl]\n", "locales [en, ar, sl]\npublic \"./public\"\n");
+    let source = HOME.replace("locales: [en, ar, sl]]", "locales: [en, ar, sl], public: \"./public\"]");
     assert_eq!(parse_and_lower_str(&source).expect("lower").public_dir.as_deref(), Some("./public"));
     let formatted = format_program(&parse_str(&source).expect("parse"));
     assert!(formatted.contains("public: \"./public\""), "{formatted}");

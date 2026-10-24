@@ -1,5 +1,4 @@
-app std-modal "1.0.0"
-"std-modal as a Function"
+app std-modal [version: "1.0.0", description: "std-modal as a Function"]
 ;;
 ;; Modal-only trait: renders ONLY to the `modal` slot. The parent molecule's
 ;; layout/browse trait is responsible for the `main` slot (the list, the

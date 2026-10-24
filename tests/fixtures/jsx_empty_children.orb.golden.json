@@ -35,7 +35,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "render-ui",
@@ -44,9 +43,8 @@
           ],
           "linkedEntity": "Widget",
           "name": "WidgetView",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "56e452ef5a1b4885f357540f5ab18ef4e8bf873514048c7a8ce461b546a5473d"
+            "fingerprint": "c81e690d5eb7d85f8a37778354d15ff11f9d32dbacc336e0e950217502a8507d"
           },
           "stateMachine": {
             "events": [

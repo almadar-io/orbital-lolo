@@ -1,5 +1,4 @@
-app guard-raw-truthiness "1.0.0"
-"Raw truthiness guards (no == true wrapping) — gap candidates if validator rejects."
+app guard-raw-truthiness [version: "1.0.0", description: "Raw truthiness guards (no == true wrapping) — gap candidates if validator rejects."]
 orbital GuardRawOrbital {
   type RawResult = Event { probe : string, fired : boolean } "Probe result."
 

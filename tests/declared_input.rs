@@ -59,12 +59,12 @@ fn a_bare_local_listen_is_tagged_listened() {
 #[test]
 fn an_external_input_is_also_a_declared_listen() {
     let src = program(
-        "      DO_CREATE -> external { data : { title : string! } }",
+        "      DO_CREATE -> input { data : { title : string! } }",
         "",
     );
     let ev = event(&src, "DO_CREATE");
     assert_eq!(ev["listened"], Value::Bool(true));
-    assert_eq!(ev["external"], Value::Bool(true));
+    assert_eq!(ev["input"], Value::Bool(true));
 }
 
 #[test]
@@ -186,7 +186,7 @@ fn an_inbound_listen_lowers_to_the_events_inbound_declaration_and_is_not_an_exte
     let ev = event(&src, "PUSH");
     assert_eq!(ev["inbound"], serde_json::json!({ "name": "google-calendar", "answers": "DONE" }));
     assert_eq!(ev["listened"], Value::Bool(true));
-    assert!(ev.get("external").is_none(), "{ev}");
+    assert!(ev.get("input").is_none(), "{ev}");
     assert_eq!(ev["payloadSchema"][0]["name"], "headers", "{ev}");
     let schema = parse_and_lower_str(&src).unwrap();
     assert_eq!(schema.inbound, Some(vec!["google-calendar".to_string()]));
@@ -197,8 +197,8 @@ fn control_no_header_entry_and_no_inbound_listen_leave_both_absent() {
     let src = inbound_program("", "      PUSH { rawBody : string }");
     assert_eq!(parse_and_lower_str(&src).unwrap().inbound, None);
     assert!(event(&src, "PUSH").get("inbound").is_none());
-    let external = inbound_program("", "      PUSH -> external { rawBody : string }");
-    assert_eq!(event(&external, "PUSH")["external"], Value::Bool(true));
+    let external = inbound_program("", "      PUSH -> input { rawBody : string }");
+    assert_eq!(event(&external, "PUSH")["input"], Value::Bool(true));
     assert!(event(&external, "PUSH").get("inbound").is_none());
 }
 

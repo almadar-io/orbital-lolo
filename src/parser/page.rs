@@ -18,7 +18,7 @@ impl Parser {
             }
             TokenKind::Identifier(word) => {
                 self.advance();
-                protocol = Some(word);
+                protocol = Some(self.lang.canon_keyword(&word).map(str::to_string).unwrap_or(word));
                 if matches!(self.peek(), TokenKind::LBrace) {
                     address = Some(self.parse_object_literal()?);
                 }

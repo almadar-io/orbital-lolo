@@ -228,33 +228,7 @@ mod language_data_export {
     }
 
     fn protocols() -> serde_json::Value {
-        use orbital_core_base::lang::protocols::PROTOCOLS;
-        serde_json::Value::Array(
-            PROTOCOLS
-                .iter()
-                .map(|row| {
-                    let address = row.address.map(|fields| {
-                        fields
-                            .iter()
-                            .map(|f| {
-                                serde_json::json!({
-                                    "name": f.name,
-                                    "type": f.ty,
-                                    "required": f.required,
-                                })
-                            })
-                            .collect::<Vec<_>>()
-                    });
-                    serde_json::json!({
-                        "name": row.name,
-                        "address": address,
-                        "viewer": row.viewer,
-                        "grant": row.grant.map(|g| format!("{g:?}")),
-                        "side": format!("{:?}", row.side),
-                    })
-                })
-                .collect(),
-        )
+        serde_json::to_value(orbital_core_base::protocols::PROTOCOLS).expect("serializes")
     }
 
     /// `(file name, generated text)` for the datasets and the codes' TS module.
@@ -295,7 +269,7 @@ mod language_data_export {
         let rows = rows.as_array().expect("array");
         assert_eq!(
             rows.len(),
-            orbital_core_base::lang::protocols::PROTOCOLS.len()
+            orbital_core_base::protocols::PROTOCOLS.len()
         );
         let http = rows
             .iter()
@@ -305,6 +279,7 @@ mod language_data_export {
         assert!(address
             .iter()
             .any(|f| f["name"] == "port" && f["required"] == true));
+        assert_eq!(http["grant"], "net-listen");
         let stdio = rows
             .iter()
             .find(|r| r["name"] == "stdio")

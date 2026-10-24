@@ -48,8 +48,7 @@ pub fn inline_embeds(source: &str) -> Result<Vec<InlineEmbed>, ParseError> {
 mod tests {
     use super::*;
 
-    const SRC: &str = r#"app a "1.0.0"
-"Á block — with non-ASCII before a tag."
+    const SRC: &str = r#"app a [version: "1.0.0", description: "Á block — with non-ASCII before a tag."]
 orbital NoteOrbital {
   uses Button from "std/behaviors/std-button"
   entity Note [runtime] {
@@ -141,7 +140,7 @@ orbital TagOrbital {
 
     #[test]
     fn control_a_named_trait_and_a_trait_reference_are_not_embeds() {
-        let src = "app a \"1.0.0\"\norbital O {\n  uses Button from \"std/behaviors/std-button\"\n  entity E [runtime] {\n    id : string!\n  }\n  trait B = Button.traits.ButtonRender -> E {\n    config {\n      label: \"Go\"\n    }\n  }\n}\n";
+        let src = "app a [version: \"1.0.0\"]\norbital O {\n  uses Button from \"std/behaviors/std-button\"\n  entity E [runtime] {\n    id : string!\n  }\n  trait B = Button.traits.ButtonRender -> E {\n    config {\n      label: \"Go\"\n    }\n  }\n}\n";
         assert_eq!(inline_embeds(src).expect("parses"), vec![]);
     }
 }

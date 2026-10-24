@@ -35,7 +35,6 @@
       },
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "set",
@@ -44,9 +43,8 @@
           ],
           "linkedEntity": "Timesheet",
           "name": "TimesheetApproval",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "5ed8abe622a00e0060948d9c50c4c985c14a3f82b0312efe41ee5de1d542e9b1"
+            "fingerprint": "c8d3853be38c82f398e2b6a977033227a071e675d3bc59b600b23411e02303e7"
           },
           "stateMachine": {
             "events": [

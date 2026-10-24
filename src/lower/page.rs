@@ -1,5 +1,5 @@
 use super::*;
-use orbital_core_base::lang::protocols::{self, ProtocolSide};
+use orbital_core_base::protocols::{self, ProtocolSide};
 
 /// Dispatch a `Page` AST node to either an inline definition or a reference,
 /// returning the `PageRef` shape that the core schema expects.
@@ -63,21 +63,7 @@ fn check_protocol(p: &Page) -> Result<(), LowerError> {
     let Some(word) = &p.protocol else {
         return Ok(());
     };
-    let spec = protocols::protocol(word).ok_or_else(|| {
-        protocol_error(
-            "ORB_P_UNKNOWN_PROTOCOL",
-            format!(
-                "unknown page protocol `{word}`: the protocols are {}",
-                written_protocols()
-            ),
-        )
-    })?;
-    if matches!(spec.side, ProtocolSide::Client) {
-        return Err(protocol_error(
-            "ORB_P_UNKNOWN_PROTOCOL",
-            format!("`{word}` is never written as a protocol word: give the page a string path (`page \"/path\" …`)"),
-        ));
-    }
+    let spec = check_protocol_word(word)?;
     match (spec.address, &p.address) {
         (None, Some(_)) => Err(protocol_error(
             "ORB_P_ADDRESS_UNEXPECTED",
@@ -99,6 +85,27 @@ fn check_protocol(p: &Page) -> Result<(), LowerError> {
         }
         _ => Ok(()),
     }
+}
+
+pub(crate) fn check_protocol_word(
+    word: &str,
+) -> Result<&'static protocols::ProtocolSpec, LowerError> {
+    let spec = protocols::protocol(word).ok_or_else(|| {
+        protocol_error(
+            "ORB_P_UNKNOWN_PROTOCOL",
+            format!(
+                "unknown page protocol `{word}`: the protocols are {}",
+                written_protocols()
+            ),
+        )
+    })?;
+    if matches!(spec.side, ProtocolSide::Client) {
+        return Err(protocol_error(
+            "ORB_P_UNKNOWN_PROTOCOL",
+            format!("`{word}` is never written as a protocol word: give the page a string path (`page \"/path\" …`)"),
+        ));
+    }
+    Ok(spec)
 }
 
 fn written_protocols() -> String {

@@ -1,5 +1,4 @@
-app op-divergence-probes "1.0.0"
-"Probes namespaced operators suspected of broken TS emit — each used in a real guard or effect to maximize validator coverage."
+app op-divergence-probes [version: "1.0.0", description: "Probes namespaced operators suspected of broken TS emit — each used in a real guard or effect to maximize validator coverage."]
 orbital OpDivergenceProbesOrbital {
   type Rect = {
     x : number!

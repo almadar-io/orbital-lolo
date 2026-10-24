@@ -30,7 +30,6 @@
       "name": "StatusOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "set",
@@ -39,9 +38,8 @@
           ],
           "linkedEntity": "StatusItem",
           "name": "StatusActions",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "63dd92aa1701ad70a294dd6cc6322c33a75fda2d59c6137105f39bd351a1806c"
+            "fingerprint": "4a426fe06bc002f19db78fa79c45b1606f7b7d029ad8d51f154085a5b37013a5"
           },
           "stateMachine": {
             "events": [

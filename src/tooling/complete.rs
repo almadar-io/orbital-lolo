@@ -793,7 +793,7 @@ mod tests {
 
     #[test]
     fn app_bracket_offers_the_unwritten_modifiers() {
-        let src = "app Shop \"1.0.0\" [\n  theme: \"orb-light\",\n  ";
+        let src = "app Shop [\n  theme: \"orb-light\",\n  ";
         let r = complete(src, src.len(), None);
         assert_eq!(r.context, "modifier-key");
         assert!(labels(&r).contains(&"signIn") && labels(&r).contains(&"locales"));

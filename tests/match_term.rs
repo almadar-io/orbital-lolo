@@ -39,7 +39,7 @@ fn wrap_payload_trait(trait_body: &str) -> String {
     id : string!
   }}
 
-  trait PayloadDispatch [interaction] {{
+  trait PayloadDispatch {{
 {trait_body}
   }}
 }}

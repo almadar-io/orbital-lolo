@@ -1,5 +1,4 @@
-app bind-matrix "1.0.0"
-"Stress every @-binding in one transition: entity, payload, config, now, state, let, fn param."
+app bind-matrix [version: "1.0.0", description: "Stress every @-binding in one transition: entity, payload, config, now, state, let, fn param."]
 orbital BindMatrixOrbital {
   type Logged = Event { amount : number, at : number, via : string } "Computed log entry."
 

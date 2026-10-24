@@ -531,6 +531,10 @@ pub struct TraitOverride {
     /// The trait's UPSTREAM name.
     pub trait_name: String,
     pub linked_entity: Option<String>,
+    /// `UpstreamTrait [optimistic]`: replaces the imported trait's dispatch mode.
+    pub dispatch: Option<TraitDispatch>,
+    /// Bracket words outside the dispatch modes; lowering rejects each.
+    pub retired_words: Vec<RetiredWord>,
     pub body: TraitRefBody,
     pub span: Span,
 }
@@ -609,7 +613,12 @@ pub enum ExpectsKind {
     /// `expects page "/articles/:slug"` — a route a sibling orbital declares
     /// and this one navigates to. The provider's PATTERN, which a navigate
     /// effect's static prefix cannot supply.
-    Page { path: String, traits: Vec<String> },
+    /// `expects page boot -> A, B` names a protocol endpoint instead (`path` empty, `protocol` the word).
+    Page {
+        path: String,
+        protocol: Option<String>,
+        traits: Vec<String>,
+    },
     /// `expects trait T { state paid }` — the provider trait declares this state; `state paid @holds <expr>` adds a
     /// proposition over `@entity` that holds while the trait is in it.
     State {
@@ -983,7 +992,7 @@ impl MatchPattern {
 }
 
 /// One trait-level type parameter (Increment 3-II): `(V : Type)` in
-/// `trait LookupRun (V : Type, R : Type) -> KeyLookup [lifecycle, instance] { ... }`.
+/// `trait LookupRun (V : Type, R : Type) -> KeyLookup { ... }`.
 /// Parsed immediately after the trait name, before `::`/`->`/`=`. `kind` is
 /// validated against the same six kind names Increment 3-I's alias params
 /// accept (`Type | Entity | Trait | Page | Orbital | Event`); only `Type` and
@@ -1010,12 +1019,14 @@ pub struct RetiredWord {
     pub span: Span,
 }
 
-/// The dispatch mode a trait header declares: `[client]` or `[optimistic]`.
-/// No header word means server dispatch.
+/// The dispatch mode a trait header declares: `[client]`, `[optimistic]` or
+/// `[server]`. No header word means server dispatch that a call site may not
+/// distinguish from an atom's own mode; `[server]` is the explicit override.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum TraitDispatch {
     Client,
     Optimistic,
+    Server,
 }
 
 /// A `trait` declaration: an inline state machine bound to an entity, or a
@@ -1045,7 +1056,7 @@ pub struct Trait {
     pub entity_binding_description: Option<String>,
     /// `@synonyms "..."` annotation on the rebindable binding (body-level).
     pub entity_binding_synonyms: Option<String>,
-    /// `[client]` / `[optimistic]` header word; `None` is server dispatch.
+    /// `[client]` / `[optimistic]` / `[server]` header word; `None` is undeclared (server).
     pub dispatch: Option<TraitDispatch>,
     /// Header words outside the dispatch modes; lowering rejects each.
     pub retired_words: Vec<RetiredWord>,

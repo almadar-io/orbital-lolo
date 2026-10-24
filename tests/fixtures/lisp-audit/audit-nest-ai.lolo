@@ -1,5 +1,4 @@
-app nest-ai "1.0.0"
-"Deep-nested AI: enemies find nearest player via reduce over filtered array with double object/get access, then clamp-stepped toward target."
+app nest-ai [version: "1.0.0", description: "Deep-nested AI: enemies find nearest player via reduce over filtered array with double object/get access, then clamp-stepped toward target."]
 orbital NestAiOrbital {
   type Unit = {
     id : string!

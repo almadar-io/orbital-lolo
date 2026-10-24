@@ -22,7 +22,7 @@
           {
             "name": "itemCount",
             "nullable": false,
-            "type": "number"
+            "type": "int"
           },
           {
             "name": "isEmpty",
@@ -36,7 +36,6 @@
       "name": "InventoryOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "set",
@@ -45,9 +44,8 @@
           ],
           "linkedEntity": "Inventory",
           "name": "InventoryActions",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "092d5b8fe669cf521b3a573a61cf64fa19876e1e7b8c18b42bb9425eea51a700"
+            "fingerprint": "0c9f09b45849ef5d818801b27df15541cf5a37b27eedae9ea1b93a6d0ef48798"
           },
           "stateMachine": {
             "events": [

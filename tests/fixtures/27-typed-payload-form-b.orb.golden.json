@@ -34,7 +34,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "fetch",
@@ -90,9 +89,8 @@
           ],
           "linkedEntity": "Place",
           "name": "MapPicker",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "b4ef85b73c5179ad763c7abf4e44abc9909809917829d35d67f6a9f22137eba8"
+            "fingerprint": "452f12276b436ca37e41159815ecccfb7dee9a7f6a4702806b08bb8ec97af618"
           },
           "stateMachine": {
             "events": [

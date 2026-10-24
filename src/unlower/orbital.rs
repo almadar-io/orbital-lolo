@@ -219,8 +219,14 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
                 .transpose()?
                 .unwrap_or_default(),
         },
-        ExpectDeclaration::Page { path, traits, .. } => ExpectsKind::Page {
+        ExpectDeclaration::Page {
+            path,
+            protocol,
+            traits,
+            ..
+        } => ExpectsKind::Page {
             path: path.clone(),
+            protocol: protocol.clone(),
             traits: traits.clone().unwrap_or_default(),
         },
         ExpectDeclaration::State {
@@ -499,6 +505,8 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
             out.trait_overrides.push(crate::ast::TraitOverride {
                 trait_name: name.clone(),
                 linked_entity: o.linked_entity.clone(),
+                dispatch: o.dispatch.as_ref().map(super::trait_::unlower_dispatch),
+                retired_words: Vec::new(),
                 body: crate::ast::TraitRefBody {
                     events: o.events.as_ref().map(sorted_str_pairs).unwrap_or_default(),
                     fields: o.fields.as_ref().map(sorted_str_pairs).unwrap_or_default(),

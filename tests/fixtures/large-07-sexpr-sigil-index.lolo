@@ -1,5 +1,4 @@
-app std-feature-detail-page "1.0.0"
-"Feature detail page molecule for marketing sites. Composes hero, alternating split sections, and CTA as a vertical stack of individual marketing patterns. Pick for product deep-dives and capability explainers."
+app std-feature-detail-page [version: "1.0.0", description: "Feature detail page molecule for marketing sites. Composes hero, alternating split sections, and CTA as a vertical stack of individual marketing patterns. Pick for product deep-dives and capability explainers."]
 
 orbital FeatureDetailPageItemOrbital {
   entity FeatureDetailPageItem [runtime] {

@@ -20,7 +20,7 @@ fn program(loaded_type: &str, linked: &str, binding: &str) -> String {
     id : string!
   }}
 
-  trait ProbeView -> {linked} [interaction, instance] {{
+  trait ProbeView -> {linked} {{
     initial: idle
 
     state idle {{

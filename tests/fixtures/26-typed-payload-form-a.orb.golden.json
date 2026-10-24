@@ -34,7 +34,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "fetch",
@@ -68,9 +67,8 @@
           ],
           "linkedEntity": "Account",
           "name": "UserLoadedNotifier",
-          "scope": "collection",
           "sourceDeclaration": {
-            "fingerprint": "781079433f4518f4b162ec065b0e29d500f9f3f675043b2873781f05bb8806de"
+            "fingerprint": "73ba1d8dbf925cd1cba47cc64eb1199f55505780ce05465d19e74867e428ef2c"
           },
           "stateMachine": {
             "events": [

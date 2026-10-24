@@ -37,7 +37,6 @@
       "name": "Shell",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "set",
@@ -46,9 +45,8 @@
           ],
           "linkedEntity": "Widget",
           "name": "WidgetPanel",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "02a9233915c280beaacfbb180c9e9faed1f1c3336188e6572d8dee26d60dc508"
+            "fingerprint": "289ad7fbb778101a5d71ebb7c4b9ce8a1d2d2ef050a8a0869a1c3bbf897db7f8"
           },
           "stateMachine": {
             "events": [

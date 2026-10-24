@@ -38,7 +38,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "fetch",
@@ -72,9 +71,8 @@
           ],
           "linkedEntity": "BrowseItem",
           "name": "BrowseItemBrowse",
-          "scope": "collection",
           "sourceDeclaration": {
-            "fingerprint": "fed16e6b19bd9a5b0107c54270541e97ad3933f172cceb7041d8e0937ff45a84"
+            "fingerprint": "772e990e2091bfe95cbf61fdc70303127d47c72da47ffc2e807210ad1cd0c1b6"
           },
           "stateMachine": {
             "events": [

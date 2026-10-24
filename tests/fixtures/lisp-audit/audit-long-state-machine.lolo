@@ -1,5 +1,4 @@
-app long-state-machine "1.0.0"
-"Order fulfillment lifecycle with 15 states, 31 transitions, 5 tick timers, and cancel/refund/return branching."
+app long-state-machine [version: "1.0.0", description: "Order fulfillment lifecycle with 15 states, 31 transitions, 5 tick timers, and cancel/refund/return branching."]
 orbital LongStateMachineOrbital {
   type OrderItem = {
     sku : string!

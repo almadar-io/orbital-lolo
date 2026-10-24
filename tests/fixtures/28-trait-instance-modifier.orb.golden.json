@@ -42,7 +42,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "fetch",
@@ -51,9 +50,8 @@
           ],
           "linkedEntity": "Task",
           "name": "TaskBrowse",
-          "scope": "collection",
           "sourceDeclaration": {
-            "fingerprint": "c10a2e99e6b224f29453af189da9354245cec17250f4c81b27a4d540b1b923dd"
+            "fingerprint": "026155738b81f6358bdefcacbe9ed68d6f07239461c89ede9f3829f429ecd0fa"
           },
           "stateMachine": {
             "events": [
@@ -84,7 +82,6 @@
           }
         },
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "persist",
@@ -93,9 +90,8 @@
           ],
           "linkedEntity": "Task",
           "name": "TaskEdit",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "8a0aec41b82ab0f4605bca0e6a60cc28b3ee4d1e3c417182923494e1ca7816b0"
+            "fingerprint": "6f52c4a551c41b9091028512cdd0160d6efbb3b45bfe8a87231a2da653c9b05f"
           },
           "stateMachine": {
             "events": [

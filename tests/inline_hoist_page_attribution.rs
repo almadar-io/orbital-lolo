@@ -158,3 +158,38 @@ fn trait_declared_on_both_pages_gives_fragments_to_both() {
     assert_eq!(b_inline.len(), 1, "PageB declares SharedTrait, so it gets its fragment too, got {b_inline:?}");
     assert_eq!(a_inline[0], b_inline[0], "both pages share the SAME synthesized fragment trait");
 }
+
+#[test]
+fn a_hoisted_fragment_takes_its_producers_declared_dispatch_mode() {
+    let src = r#"orbital WidgetOrbital {
+  uses UiButton from "std/behaviors/ui-button"
+
+  entity Widget [runtime] {
+    id : string!
+  }
+
+  trait Fast -> Widget [client] {
+    state idle {
+      INIT -> idle
+        (render-ui main { type: "stack", children: [@(UiButton.traits.ButtonRender -> Widget { config { label: "Go" } })] })
+    }
+  }
+
+  trait Plain -> Widget {
+    state idle {
+      INIT -> idle
+        (render-ui main { type: "stack", children: [@(UiButton.traits.ButtonRender -> Widget { config { label: "Stop" } })] })
+    }
+  }
+
+  page "/fast" as FastPage -> Fast
+  page "/plain" as PlainPage -> Plain
+}
+"#;
+    let program = parse_str(src).expect("parse must succeed");
+    let orbital = &program.orbitals[0];
+    let fragments: Vec<_> = orbital.traits.iter().filter(|t| t.name.starts_with("Inline")).collect();
+    assert_eq!(fragments.len(), 2);
+    assert_eq!(fragments[0].dispatch, Some(orbital_lolo::ast::TraitDispatch::Client), "Fast's fragment");
+    assert_eq!(fragments[1].dispatch, None, "control: Plain declares no mode, so its fragment stays on the server");
+}

@@ -1,5 +1,4 @@
-app std-notes "1.0.0"
-"Notes: Notion-style personal hierarchical notes with rich-text content, page tree, search, and favorites. Pick for personal/lightweight notes (vs std-wiki for collaborative team KB)."
+app std-notes [version: "1.0.0", description: "Notes: Notion-style personal hierarchical notes with rich-text content, page tree, search, and favorites. Pick for personal/lightweight notes (vs std-wiki for collaborative team KB)."]
 
 type BlockSpec = { type : string!, content : string, id : string }
 
@@ -52,7 +51,7 @@ orbital NoteOrbital {
     }
   }
 
-  trait NoteCatalog [interaction, instance] {
+  trait NoteCatalog {
     initial: composing
     state composing {
       INIT -> composing
@@ -423,7 +422,7 @@ orbital RichEditorPanelOrbital {
     }
   }
 
-  trait RichEditorPanel [interaction, instance] {
+  trait RichEditorPanel {
     initial: composing
     state composing {
       INIT -> composing

@@ -1,5 +1,4 @@
-app guard-truthiness "1.0.0"
-"Guard truthiness edge cases: boolean, number, string, array, object, null, short-circuit, missing field."
+app guard-truthiness [version: "1.0.0", description: "Guard truthiness edge cases: boolean, number, string, array, object, null, short-circuit, missing field."]
 orbital GuardTruthinessOrbital {
   type GuardResult = Event { probe : string, passed : boolean } "Each probe reports whether it fired."
 

@@ -23,7 +23,6 @@
       "name": "PatientOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "call-service",
@@ -47,9 +46,8 @@
           ],
           "linkedEntity": "Patient",
           "name": "PatientLoader",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "b911df58997b83a4f37cde5286d59c39fff1897b632f8ad746cdf72e7be6dc01"
+            "fingerprint": "9da071ed78dcf082b69884867fb5cc049ba6fa5e6a032ca29908f94350a20306"
           },
           "stateMachine": {
             "events": [

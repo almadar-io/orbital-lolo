@@ -23,7 +23,6 @@
       "name": "TaskOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "render-ui",
@@ -32,9 +31,8 @@
           ],
           "linkedEntity": "Task",
           "name": "TaskList",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "c250d38624872d77d05a9104f11e90d22b9a845f54530a714713de270dc9d8ce"
+            "fingerprint": "ae20be1064621545af8e0b45fad9ee5103cc28170b78fc1a065e715408619815"
           },
           "stateMachine": {
             "events": [

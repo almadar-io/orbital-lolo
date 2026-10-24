@@ -20,7 +20,7 @@ fn behavior_lolo(key: &str, traits: &[&str]) -> String {
     let mut out = format!("app {key} [version: \"1.0.0\", description: \"fixture\"]\norbital FixtureOrbital {{\n  entity FixtureView [runtime] {{\n    id : string!\n  }}\n");
     for t in traits {
         out.push_str(&format!(
-            "  trait {t} -> @rebindable FixtureView [interaction, instance] {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (render-ui main {{ type: typography, content: \"x\" }})\n    }}\n  }}\n  page \"/{t}\" as {t}Page -> {t}\n"
+            "  trait {t} -> @rebindable FixtureView {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (render-ui main {{ type: typography, content: \"x\" }})\n    }}\n  }}\n  page \"/{t}\" as {t}Page -> {t}\n"
         ));
     }
     out.push_str("}\n");

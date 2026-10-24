@@ -795,8 +795,19 @@ pub(crate) fn lower_expects_decl(
             }
         }
         // A route pattern is a path, not an identifier — verbatim likewise.
-        ExpectsKind::Page { path, traits } => ExpectDeclaration::Page {
+        ExpectsKind::Page {
+            path,
+            protocol,
+            traits,
+        } => ExpectDeclaration::Page {
             path: path.clone(),
+            protocol: match protocol {
+                Some(word) => {
+                    page::check_protocol_word(word)?;
+                    Some(word.clone())
+                }
+                None => None,
+            },
             traits: (!traits.is_empty()).then(|| traits.clone()),
             strict,
         },
@@ -1308,7 +1319,7 @@ fn lower_orbital(
                     payload_schema: None,
                     payload_entity: None,
                     input: None,
-                    listened: None
+                    listened: None,
                     inbound: None,
                 }]),
                 transitions: vec![TransitionDefinition {
@@ -1412,7 +1423,7 @@ mod tests {
 
     #[test]
     fn lower_app_theme_and_format_round_trip() {
-        let src = "app MyApp \"1.0.0\"\n\"Desc\"\ntheme \"linear-clean-light\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}";
+        let src = "app MyApp [version: \"1.0.0\", description: \"Desc\", theme: \"linear-clean-light\"]\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}";
         let s = lower(src);
         match &s.theme {
             Some(orbital_core_base::schema::ThemeRef::Reference(k)) => {
@@ -1945,7 +1956,7 @@ mod tests {
         let src = "
             orbital O {
                 entity E { id : string! }
-                trait T [interaction, instance] {
+                trait T {
                     state s {
                         INIT -> s
                             (render-ui main { type: \"text\", value: \"@entity.x\" })
@@ -2771,6 +2782,19 @@ mod tests {
             // A route pattern, verbatim — `:slug` must survive lowering.
             ExpectDeclaration::Page { path, .. } => assert_eq!(path, "/articles/:slug"),
             other => panic!("expected page, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn lower_expects_page_protocol_word_checks_the_table() {
+        let s = lower("orbital O {\n  expects page boot -> Seed\n  expects page \"/p\"\n  entity E { id : string! }\n}");
+        let expects = s.orbitals[0].expects.as_ref().expect("expects lowered");
+        assert!(matches!(&expects[0], ExpectDeclaration::Page { protocol: Some(w), path, traits: Some(t), .. }
+            if w == "boot" && path.is_empty() && t == &vec!["Seed".to_string()]));
+        assert!(matches!(&expects[1], ExpectDeclaration::Page { protocol: None, .. }));
+        for bad in ["bogus", "route"] {
+            let ast = parse_str(&format!("orbital O {{\n  expects page {bad}\n  entity E {{ id : string! }}\n}}")).expect("parse");
+            assert!(lower_to_orb(&ast).is_err(), "{bad}");
         }
     }
 

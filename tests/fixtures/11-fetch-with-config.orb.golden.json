@@ -18,7 +18,6 @@
       "name": "ProductOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "fetch",
@@ -27,9 +26,8 @@
           ],
           "linkedEntity": "Product",
           "name": "ProductFetch",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "7f90746f590678ad760af361d00440e2741560493a28f013b65552b538f567bf"
+            "fingerprint": "6168bb54110622531b070999a1748133847aab3a4d2ae5ab5585c4d931a1539f"
           },
           "stateMachine": {
             "events": [

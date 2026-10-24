@@ -17,7 +17,6 @@
       "name": "NotifyOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "render-ui",
@@ -26,9 +25,8 @@
           ],
           "linkedEntity": "Toast",
           "name": "Notifier",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "a1ecf09df17843a175739ed822c6ac50c01da24c2df591d7b2a11cc01e876ae3"
+            "fingerprint": "0b92fe456909a0254be010c89d83696c39d496650e9fd0653ba0fac7e24890b9"
           },
           "stateMachine": {
             "events": [

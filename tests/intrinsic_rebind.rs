@@ -15,8 +15,7 @@ use orbital_lolo::parse_and_lower_str;
 /// is not required to declare it.
 #[test]
 fn intrinsic_field_lowers_and_is_excluded_from_requires() {
-    let src = r#"app test-intrinsic "1.0.0"
-"intrinsic marking test"
+    let src = r#"app test-intrinsic [version: "1.0.0", description: "intrinsic marking test"]
 
 orbital WidgetOrbital {
   entity WidgetView [runtime] {
@@ -74,8 +73,7 @@ orbital WidgetOrbital {
 /// coexist with flag annotations (`@intrinsic`) and a trailing `= default`.
 #[test]
 fn description_and_synonyms_lower_onto_field() {
-    let src = r#"app test-field-annots "1.0.0"
-"field annotation test"
+    let src = r#"app test-field-annots [version: "1.0.0", description: "field annotation test"]
 
 orbital ApptOrbital {
   entity Appt [runtime] {
@@ -122,8 +120,7 @@ orbital ApptOrbital {
 /// parser) is what treats the string literally / splits it on commas.
 #[test]
 fn mock_lowers_onto_field_and_coexists_with_other_annotations() {
-    let src = r#"app test-field-mock "1.0.0"
-"field mock annotation test"
+    let src = r#"app test-field-mock [version: "1.0.0", description: "field mock annotation test"]
 
 orbital ClientOrbital {
   entity Client [runtime] {
@@ -171,8 +168,7 @@ orbital ClientOrbital {
 
 #[test]
 fn description_synonyms_tier_lower_onto_events() {
-    let src = r#"app test-event-annots "1.0.0"
-"event annotation test"
+    let src = r#"app test-event-annots [version: "1.0.0", description: "event annotation test"]
 
 orbital EvtOrbital {
   entity Thing [runtime] {
@@ -248,8 +244,7 @@ orbital EvtOrbital {
 /// the defect is caught at the atom.
 #[test]
 fn rebindable_trait_reading_unsatisfied_data_field_is_rejected() {
-    let src = r#"app test-missing-data "1.0.0"
-"unsatisfied rebind test"
+    let src = r#"app test-missing-data [version: "1.0.0", description: "unsatisfied rebind test"]
 
 orbital BadOrbital {
   entity BadView [runtime] {
@@ -279,8 +274,7 @@ orbital BadOrbital {
 /// same trait lower cleanly — intrinsic reads need no DATA backing.
 #[test]
 fn marking_missing_field_intrinsic_unblocks_lowering() {
-    let src = r#"app test-intrinsic-unblock "1.0.0"
-"intrinsic unblocks read test"
+    let src = r#"app test-intrinsic-unblock [version: "1.0.0", description: "intrinsic unblocks read test"]
 
 orbital OkOrbital {
   entity OkView [runtime] {

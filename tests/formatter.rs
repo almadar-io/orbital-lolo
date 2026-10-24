@@ -369,12 +369,11 @@ fn fixture_32_inline_trait_ref() {
 
 /// Consistency cleanup (docs/Almadar_LOLO_Audit.md): the permissive forms —
 /// optional colon after block keywords (`initial idle`, `emits:`/`listens:`),
-/// optional comma in trait-modifier (`[interaction collection]`) and page-trait
-/// (`-> V W`) lists — must lower to exactly the same schema as the canonical
+/// optional comma in page-trait (`-> V W`) lists — must lower to exactly the same schema as the canonical
 /// comma+`initial:`+colonless form. Proves the fixes are non-breaking sugar.
 #[test]
 fn consistency_optional_colon_and_comma_forms() {
-    let permissive = r#"app t "1.0.0"
+    let permissive = r#"app t [version: "1.0.0"]
 orbital O {
   entity Item [runtime] {
     id : string!
@@ -390,7 +389,7 @@ orbital O {
   page "/a" as A -> V V
 }
 "#;
-    let canonical = r#"app t "1.0.0"
+    let canonical = r#"app t [version: "1.0.0"]
 orbital O {
   entity Item [runtime] {
     id : string!
@@ -421,8 +420,7 @@ orbital O {
 /// source on the next `orb fmt` — this test is the guard for that class.
 #[test]
 fn identity_tag_survives_reformat() {
-    let source = r#"app test-identity "1.0.0"
-"Identity tag round-trip."
+    let source = r#"app test-identity [version: "1.0.0", description: "Identity tag round-trip."]
 orbital PersonOrbital {
   entity Person [persistent: people, identity] {
     id : string!
@@ -463,8 +461,7 @@ orbital PersonOrbital {
 /// survive a reformat with unchanged semantics.
 #[test]
 fn access_directives_survive_reformat() {
-    let source = r#"app test-access "1.0.0"
-"Access directive round-trip."
+    let source = r#"app test-access [version: "1.0.0", description: "Access directive round-trip."]
 orbital TicketOrbital {
   entity Ticket [persistent: tickets] {
     @read (or (= @user.role "supervisor") (= @entity.assignee @user.id))
@@ -526,8 +523,7 @@ orbital TicketOrbital {
 /// A duplicate directive of the same kind is a parse error.
 #[test]
 fn duplicate_access_directive_is_rejected() {
-    let source = r#"app test-access-dup "1.0.0"
-"Duplicate directive rejection."
+    let source = r#"app test-access-dup [version: "1.0.0", description: "Duplicate directive rejection."]
 orbital TicketOrbital {
   entity Ticket [persistent: tickets] {
     @read (= @user.id @entity.assignee)
@@ -555,8 +551,7 @@ fn identity_composes_with_runtime_and_shared() {
         "[identity]",
     ] {
         let source = format!(
-            r#"app test-identity "1.0.0"
-"Identity tag composition."
+            r#"app test-identity [version: "1.0.0", description: "Identity tag composition."]
 orbital PersonOrbital {{
   entity Person {tag} {{
     id : string!
@@ -639,8 +634,7 @@ fn a_page_reference_carries_its_nav_annotations() {
 /// to a stable output (idempotent).
 #[test]
 fn expects_survive_reformat() {
-    let source = r#"app test-expects "1.0.0"
-"Expects round-trip."
+    let source = r#"app test-expects [version: "1.0.0", description: "Expects round-trip."]
 orbital ProductOrbital {
   uses AppShell from "std/behaviors/std-app-layout"
   expects entity Customer [identity] {
@@ -988,7 +982,7 @@ mod xml_parse_list_paths {
 
 #[test]
 fn an_expects_trait_payload_survives_reformat() {
-    let source = "app s \"1.0.0\"\n\norbital ShopSpec {\n  expects trait Checkout { emits { PLACED { orderId : string!, note : string } } }\n}\n";
+    let source = "app s [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects trait Checkout { emits { PLACED { orderId : string!, note : string } } }\n}\n";
     let formatted = format_program(&parse_str(source).expect("parse"));
     assert!(formatted.contains("expects trait Checkout { emits { PLACED {"), "{formatted}");
     assert!(formatted.contains("orderId : string!"), "{formatted}");
@@ -998,7 +992,7 @@ fn an_expects_trait_payload_survives_reformat() {
 
 #[test]
 fn a_spec_with_storage_access_pages_and_edges_survives_reformat() {
-    let source = "app s \"1.0.0\"\n\norbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n  }\n  expects page \"/orders\" -> Checkout, Receipt\n  expects trait Checkout { state idle { PAY -> paid } }\n  expects trait Checkout { state refunded }\n}\n";
+    let source = "app s [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects entity Order [persistent, shared] {\n    @read (= @entity.id \"x\")\n    @update none \"joins another entity\"\n    id : string! @key\n  }\n  expects page \"/orders\" -> Checkout, Receipt\n  expects trait Checkout { state idle { PAY -> paid } }\n  expects trait Checkout { state refunded }\n}\n";
     let formatted = format_program(&parse_str(source).expect("parse"));
     for needle in [
         "expects entity Order [persistent, shared] {",
@@ -1017,8 +1011,7 @@ fn a_spec_with_storage_access_pages_and_edges_survives_reformat() {
 /// first element is an operator word, and never turns `["idle", "walk"]` into a call.
 #[test]
 fn data_lists_round_trip_as_brackets() {
-    let source = r#"app test-lists "1.0.0"
-"Data list round-trip."
+    let source = r#"app test-lists [version: "1.0.0", description: "Data list round-trip."]
 orbital ListOrbital {
   entity Row [runtime] {
     id : string!

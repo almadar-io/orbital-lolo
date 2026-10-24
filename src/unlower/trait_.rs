@@ -83,10 +83,11 @@ pub(super) struct EventAlias {
     pub description: Option<String>,
 }
 
-fn unlower_dispatch(mode: &DispatchMode) -> TraitDispatch {
+pub(super) fn unlower_dispatch(mode: &DispatchMode) -> TraitDispatch {
     match mode {
         DispatchMode::Client => TraitDispatch::Client,
         DispatchMode::Optimistic => TraitDispatch::Optimistic,
+        DispatchMode::Server => TraitDispatch::Server,
     }
 }
 

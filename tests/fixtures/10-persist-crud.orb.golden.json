@@ -23,7 +23,6 @@
       "name": "UserOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "persist",
@@ -32,9 +31,8 @@
           ],
           "linkedEntity": "User",
           "name": "UserCrud",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "3d53de4de22db97492728fa5d90b6034088c901ec754547b8b69657b59099083"
+            "fingerprint": "8644aaf526babf8172c93e093e8d408a86b554fc4bd2d18d83e3166f82fce831"
           },
           "stateMachine": {
             "events": [

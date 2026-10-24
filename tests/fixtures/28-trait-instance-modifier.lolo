@@ -1,6 +1,4 @@
-;; Stage 2 fixture — trait modifier list accepts `instance` / `collection`.
-;; The AST carries the scope; today the modifier is informational and does not
-;; change the lowered .orb (Phase 4 of the V2 plan adds the type-checker).
+;; Stage 2 fixture — traits with no header words dispatch on the server.
 
 orbital TaskOrbital {
   entity Task [persistent: tasks] {

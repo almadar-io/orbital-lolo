@@ -18,8 +18,7 @@ use orbital_lolo::{format_program, parse_str};
 
 fn program(effect: &str) -> String {
     format!(
-        r#"app probe "1.0.0"
-"bare-binding probe"
+        r#"app probe [version: "1.0.0", description: "bare-binding probe"]
 
 orbital ProbeOrbital {{
   entity Probe [runtime] {{

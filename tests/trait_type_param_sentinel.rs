@@ -29,7 +29,7 @@ orbital MLRungs {
     id : string!
   }
 
-  trait LookupRun (v : Type, r : Type) -> KeyLookup [lifecycle, instance] {
+  trait LookupRun (v : Type, r : Type) -> KeyLookup {
     state idle {
       INIT -> idle (ref KeyLookup)
     }
@@ -291,7 +291,7 @@ orbital MLRungsDefaulted {
     id : string!
   }
 
-  trait LookupRun (v : Type = ApprovalDemoPayload, r : Type = string) -> KeyLookup [lifecycle, instance] {
+  trait LookupRun (v : Type = ApprovalDemoPayload, r : Type = string) -> KeyLookup {
     state idle {
       INIT -> idle (ref KeyLookup)
     }

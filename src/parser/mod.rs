@@ -1127,7 +1127,17 @@ impl Parser {
                 .map(|t| t.name.clone())
                 .zip(pending_producers)
                 .collect();
-            traits.extend(pending);
+            // EXEC-ENDPOINT-3a: a fragment with no declared mode takes its producer's.
+            for (fragment, (_, producer)) in pending.into_iter().zip(&named) {
+                let mut fragment = fragment;
+                if fragment.dispatch.is_none() {
+                    fragment.dispatch = producer
+                        .as_deref()
+                        .and_then(|p| traits.iter().find(|t| t.name == p))
+                        .and_then(|t| t.dispatch.clone());
+                }
+                traits.push(fragment);
+            }
             let inline_page_count = pages.iter().filter(|p| p.reference.is_none()).count();
             for page in pages.iter_mut() {
                 // Only inline pages own their trait roster; a reference page's
@@ -1574,23 +1584,25 @@ impl Parser {
             match self.peek().clone() {
                 TokenKind::String(path) => {
                     self.advance();
-                    let mut traits = Vec::new();
-                    if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
-                        self.advance();
-                        loop {
-                            traits.push(self.expect_ident()?);
-                            if matches!(self.peek(), TokenKind::Comma) {
-                                self.advance();
-                                continue;
-                            }
-                            break;
-                        }
-                    }
-                    vec![ExpectsKind::Page { path, traits }]
+                    let traits = self.parse_expects_page_traits()?;
+                    vec![ExpectsKind::Page {
+                        path,
+                        protocol: None,
+                        traits,
+                    }]
+                }
+                TokenKind::Identifier(word) => {
+                    self.advance();
+                    let traits = self.parse_expects_page_traits()?;
+                    vec![ExpectsKind::Page {
+                        path: String::new(),
+                        protocol: Some(self.lang.canon_keyword(&word).map(str::to_string).unwrap_or(word)),
+                        traits,
+                    }]
                 }
                 other => {
                     return Err(ParseError::UnexpectedToken {
-                        expected: "a quoted route pattern, e.g. expects page \"/articles/:slug\""
+                        expected: "a quoted route pattern (expects page \"/articles/:slug\") or a protocol word (expects page boot)"
                             .to_string(),
                         got: format!("{:?}", other),
                         span: self.peek_span(),
@@ -1636,6 +1648,22 @@ impl Parser {
 
     /// `expects config { name : type [= default] … }`: the real `config` block, restricted to each knob's name, type
     /// and default (annotations describe a provider, not a requirement).
+    fn parse_expects_page_traits(&mut self) -> Result<Vec<String>, ParseError> {
+        let mut traits = Vec::new();
+        if matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
+            self.advance();
+            loop {
+                traits.push(self.expect_ident()?);
+                if matches!(self.peek(), TokenKind::Comma) {
+                    self.advance();
+                    continue;
+                }
+                break;
+            }
+        }
+        Ok(traits)
+    }
+
     fn parse_expects_config(&mut self) -> Result<Vec<ExpectsKind>, ParseError> {
         let span = self.peek_span();
         let fields = self.parse_config_block()?;
@@ -1947,9 +1975,21 @@ fn expects_duplicate(existing: &[ExpectsDecl], new: &ExpectsDecl) -> Option<Stri
                 ..
             },
         ) if ta == tb && ea == eb => Some(format!("`expects trait {tb} {{ emits {{ {eb} }} }}`")),
-        (ExpectsKind::Page { path: a, .. }, ExpectsKind::Page { path: b, .. }) if a == b => {
-            Some(format!("`expects page \"{b}\"`"))
-        }
+        (
+            ExpectsKind::Page {
+                path: a,
+                protocol: pa,
+                ..
+            },
+            ExpectsKind::Page {
+                path: b,
+                protocol: pb,
+                ..
+            },
+        ) if a == b && pa == pb => Some(match pb {
+            Some(word) => format!("`expects page {word}`"),
+            None => format!("`expects page \"{b}\"`"),
+        }),
         (ExpectsKind::Config { field: a }, ExpectsKind::Config { field: b })
             if a.name == b.name =>
         {
@@ -2244,7 +2284,7 @@ mod tests {
 
     #[test]
     fn parse_app_header_theme_after_description() {
-        let prog = p("app MyApp \"1.0.0\"\n\"A themed app\"\ntheme \"linear-clean-light\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
+        let prog = p("app MyApp [version: \"1.0.0\", description: \"A themed app\", theme: \"linear-clean-light\"]\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
         assert_eq!(prog.app.description, Some("A themed app".to_string()));
         assert_eq!(
             prog.app.theme,
@@ -2255,7 +2295,7 @@ mod tests {
 
     #[test]
     fn parse_app_header_theme_without_description() {
-        let prog = p("app MyApp \"1.0.0\"\ntheme \"terminal-dark\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
+        let prog = p("app MyApp [version: \"1.0.0\", theme: \"terminal-dark\"]\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}");
         assert_eq!(prog.app.description, None);
         assert_eq!(
             prog.app.theme,
@@ -2266,7 +2306,7 @@ mod tests {
 
     #[test]
     fn app_theme_does_not_capture_orbital_theme() {
-        let prog = p("app MyApp \"1.0.0\"\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme \"clay-light\"\n}");
+        let prog = p("app MyApp [version: \"1.0.0\"]\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n  theme \"clay-light\"\n}");
         assert_eq!(prog.app.theme, None);
         assert_eq!(
             prog.orbitals[0].theme,
@@ -2463,6 +2503,7 @@ mod tests {
         for (word, mode) in [
             ("client", TraitDispatch::Client),
             ("optimistic", TraitDispatch::Optimistic),
+            ("server", TraitDispatch::Server),
         ] {
             let src = format!("orbital O {{\n  entity E {{ id : string! }}\n  trait T -> E [{word}] {{\n    state s {{\n      EVT -> s\n        (set @x 1)\n    }}\n  }}\n}}");
             let prog = p(&src);
@@ -2484,6 +2525,8 @@ mod tests {
 
     #[test]
     fn parse_trait_refuses_two_dispatch_modes() {
+        let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [server, client] {\n    state s { EVT -> s }\n  }\n}";
+        assert!(parse_str(src).is_err());
         let src = "orbital O {\n  entity E { id : string! }\n  trait T -> E [client, optimistic] {\n    state s { EVT -> s }\n  }\n}";
         assert!(parse_str(src).is_err());
     }
@@ -3196,12 +3239,21 @@ mod tests {
     fn expects_page_names_the_traits_it_mounts() {
         let prog = p("orbital O {\n  expects page \"/orders\" -> Checkout, Receipt\n  expects page \"/plain\"\n  entity E { id : string! }\n}");
         assert!(matches!(&prog.orbitals[0].expects[0].kind,
-            ExpectsKind::Page { path, traits } if path == "/orders" && traits == &vec!["Checkout".to_string(), "Receipt".to_string()]));
+            ExpectsKind::Page { path, traits, protocol: None } if path == "/orders" && traits == &vec!["Checkout".to_string(), "Receipt".to_string()]));
         assert!(
             matches!(&prog.orbitals[0].expects[1].kind,
             ExpectsKind::Page { traits, .. } if traits.is_empty()),
             "control: a bare page names none"
         );
+    }
+
+    #[test]
+    fn expects_page_protocol_word_names_an_endpoint() {
+        let prog = p("orbital O {\n  expects page boot -> Seed, Tick\n  expects page stdio\n  entity E { id : string! }\n}");
+        assert!(matches!(&prog.orbitals[0].expects[0].kind,
+            ExpectsKind::Page { path, protocol: Some(w), traits } if path.is_empty() && w == "boot" && traits == &vec!["Seed".to_string(), "Tick".to_string()]));
+        assert!(matches!(&prog.orbitals[0].expects[1].kind,
+            ExpectsKind::Page { protocol: Some(w), traits, .. } if w == "stdio" && traits.is_empty()));
     }
 
     #[test]

@@ -1,5 +1,4 @@
-app std-trade-order "1.0.0"
-"std-trade-order — trade-order lifecycle (pending → working → filled) with position limits, VaR ceilings, and pre-trade risk-check knobs."
+app std-trade-order [version: "1.0.0", description: "std-trade-order — trade-order lifecycle (pending → working → filled) with position limits, VaR ceilings, and pre-trade risk-check knobs."]
 
 type FieldSpec = { name : string!, label : string, variant : string, icon : string, format : string, key : string, header : string }
 type ItemAction = { label : string!, event : string!, variant : string, icon : string }

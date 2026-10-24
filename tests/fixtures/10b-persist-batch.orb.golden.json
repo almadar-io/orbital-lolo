@@ -24,7 +24,6 @@
       "name": "RowOrbital",
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "fetch",
@@ -104,9 +103,8 @@
           ],
           "linkedEntity": "Row",
           "name": "RowBatch",
-          "scope": "collection",
           "sourceDeclaration": {
-            "fingerprint": "1af0f93354155e94010dbffcb89db6d4357e7d5ff86d7bc6bf5c8e1db857ac4d"
+            "fingerprint": "6c429234bbe74092fb93d0d7150a742bd57e6c7371bc59779919c5246a6ffbbc"
           },
           "stateMachine": {
             "events": [

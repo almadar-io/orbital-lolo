@@ -151,7 +151,7 @@ fn unquoted_multiword_value_gets_quote_hint() {
 #[test]
 fn emits_scope_form_in_listens_gets_direction_hint() {
     // Observed live (C-LISTENS-ARROW): emits' `EVENT -> internal { … }` form
-    // copied into a listens block. `-> external` is the external-input form.
+    // copied into a listens block. `-> input` is the declared-input form.
     let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      RUN -> idle\n        (set @entity.x 1)\n    }\n    listens {\n      PING -> internal {\n        x : number\n      }\n    }\n  }\n}";
     let err = parse_err(src);
     let (suggestion, fix) = err.hint();
@@ -161,12 +161,12 @@ fn emits_scope_form_in_listens_gets_direction_hint() {
             .is_some_and(|s| s.contains("belong to `emits`")),
         "expected listens-form hint, got {suggestion:?} for {err:?}"
     );
-    assert!(fix.as_deref().is_some_and(|f| f.contains("-> external")));
+    assert!(fix.as_deref().is_some_and(|f| f.contains("-> input")));
 }
 
 #[test]
-fn external_input_form_in_listens_parses() {
-    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      PING -> idle\n        (set @entity.x ?x)\n    }\n    listens {\n      PING -> external {\n        x : number\n      }\n    }\n  }\n}";
+fn input_form_in_listens_parses() {
+    let src = "orbital O {\n  entity E [runtime] {\n    x : number = 0\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      PING -> idle\n        (set @entity.x ?x)\n    }\n    listens {\n      PING -> input {\n        x : number\n      }\n    }\n  }\n}";
     assert!(parse_str(src).is_ok());
 }
 

@@ -1,6 +1,6 @@
-//! Browser-stored entities: `[persistent: x, local]` declares the rows live in
-//! the browser, `mock` opts an empty store into the shared mock seeder, and
-//! `instances [ … ]` writes out the rows the entity starts with.
+//! Browser-stored entities: `[persistent: x, browser]` declares the rows live in
+//! the browser, and `instances [ … ]` writes out the rows the entity starts with.
+//! The retired `local` and `mock` header words are lowering errors with a fix-it.
 
 use orbital_core_base::schema::{EntityDefinition, EntityRef, OrbitalSchema, SExpression};
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
@@ -14,8 +14,7 @@ fn primary(schema: &OrbitalSchema) -> &EntityDefinition {
 
 fn program(tags: &str, body_extra: &str) -> String {
     format!(
-        r#"app fixture "1.0.0"
-"Fixture."
+        r#"app fixture [version: "1.0.0", description: "Fixture."]
 orbital InvoiceOrbital {{
   entity Invoice [{tags}] {{
     id : string!
@@ -35,24 +34,29 @@ const ROWS: &str = r#"    instances [
     ]"#;
 
 #[test]
-fn local_lowers_to_a_browser_resident_persistent_entity() {
-    let schema = parse_and_lower_str(&program("persistent: invoices, local", "")).unwrap();
+fn browser_lowers_to_a_browser_resident_persistent_entity() {
+    let schema = parse_and_lower_str(&program("persistent: invoices, browser", "")).unwrap();
     let e = primary(&schema);
-    assert!(e.local);
-    assert!(!e.seed_mock);
+    assert!(e.browser);
     assert_eq!(e.collection.as_deref(), Some("invoices"));
     assert!(e.is_client_resident());
 }
 
 #[test]
-fn mock_lowers_to_seed_mock() {
-    let schema = parse_and_lower_str(&program("persistent: invoices, local, mock", "")).unwrap();
-    assert!(primary(&schema).seed_mock);
+fn the_retired_local_word_errors_with_the_browser_fix_it() {
+    let err = parse_and_lower_str(&program("persistent: invoices, local", "")).unwrap_err().to_string();
+    assert!(err.contains("ORB_E_HEADER_WORD_RETIRED") && err.contains("write `browser`"), "{err}");
+}
+
+#[test]
+fn the_retired_mock_word_errors_with_the_delete_fix_it() {
+    let err = parse_and_lower_str(&program("persistent: invoices, browser, mock", "")).unwrap_err().to_string();
+    assert!(err.contains("ORB_E_HEADER_WORD_RETIRED") && err.contains("`mock`") && err.contains("delete it"), "{err}");
 }
 
 #[test]
 fn instances_lower_to_the_written_rows() {
-    let schema = parse_and_lower_str(&program("persistent: invoices, local", ROWS)).unwrap();
+    let schema = parse_and_lower_str(&program("persistent: invoices, browser", ROWS)).unwrap();
     let rows = primary(&schema).instances.as_ref().expect("instances");
     assert_eq!(rows.len(), 2);
     assert_eq!(rows[0].get("id"), Some(&SExpression::String("INV-1042".into())));
@@ -64,20 +68,20 @@ fn instances_lower_to_the_written_rows() {
 fn control_an_entity_without_the_new_tags_or_rows_is_unchanged() {
     let schema = parse_and_lower_str(&program("persistent: invoices", "")).unwrap();
     let e = primary(&schema);
-    assert!(!e.local && !e.seed_mock);
+    assert!(!e.browser);
     assert!(e.instances.is_none());
     assert!(!e.is_client_resident());
 }
 
 #[test]
 fn tags_are_order_independent() {
-    let a = parse_and_lower_str(&program("local, persistent: invoices", "")).unwrap();
-    assert!(primary(&a).local);
+    let a = parse_and_lower_str(&program("browser, persistent: invoices", "")).unwrap();
+    assert!(primary(&a).browser);
 }
 
 #[test]
 fn duplicate_instances_is_a_parse_error() {
-    let err = parse_and_lower_str(&program("persistent: invoices, local", &format!("{ROWS}\n{ROWS}")))
+    let err = parse_and_lower_str(&program("persistent: invoices, browser", &format!("{ROWS}\n{ROWS}")))
         .unwrap_err()
         .to_string();
     assert!(err.contains("ELOLO_DUPLICATE_INSTANCES"), "{err}");
@@ -85,7 +89,7 @@ fn duplicate_instances_is_a_parse_error() {
 
 #[test]
 fn a_row_that_is_not_an_object_is_a_parse_error() {
-    let err = parse_and_lower_str(&program("persistent: invoices, local", "    instances [\"INV-1\"]"))
+    let err = parse_and_lower_str(&program("persistent: invoices, browser", "    instances [\"INV-1\"]"))
         .unwrap_err()
         .to_string();
     assert!(err.contains("ELOLO_INSTANCE_NOT_A_ROW"), "{err}");
@@ -93,19 +97,19 @@ fn a_row_that_is_not_an_object_is_a_parse_error() {
 
 #[test]
 fn arabic_and_slovenian_spellings_lower_identically() {
-    let ar = "مدار InvoiceOrbital {\n  كيان Invoice [دائم: invoices, محلي, وهمي] {\n    id : نص!\n    amount : رقم\n    نسخ [\n      { id: \"INV-1\", amount: 5 }\n    ]\n  }\n}\n";
-    let sl = "orbitala InvoiceOrbital {\n  entiteta Invoice [trajno: invoices, lokalno, lazno] {\n    id : niz!\n    amount : stevilo\n    primerki [\n      { id: \"INV-1\", amount: 5 }\n    ]\n  }\n}\n";
+    let ar = "مدار InvoiceOrbital {\n  كيان Invoice [دائم: invoices, متصفح] {\n    id : نص!\n    amount : رقم\n    نسخ [\n      { id: \"INV-1\", amount: 5 }\n    ]\n  }\n}\n";
+    let sl = "orbitala InvoiceOrbital {\n  entiteta Invoice [trajno: invoices, brskalnik] {\n    id : niz!\n    amount : stevilo\n    primerki [\n      { id: \"INV-1\", amount: 5 }\n    ]\n  }\n}\n";
     for source in [ar, sl] {
         let schema = parse_and_lower_str(source).unwrap_or_else(|e| panic!("{e}\n{source}"));
         let e = primary(&schema);
-        assert!(e.local && e.seed_mock, "{source}");
         assert_eq!(e.instances.as_ref().map(Vec::len), Some(1), "{source}");
+        assert!(e.browser, "{source}");
     }
 }
 
 #[test]
 fn the_formatter_round_trips_tags_and_rows() {
-    let source = program("persistent: invoices, local, mock", ROWS);
+    let source = program("persistent: invoices, browser", ROWS);
     let formatted = format_program(&parse_str(&source).unwrap());
     let before = serde_json::to_value(parse_and_lower_str(&source).unwrap()).unwrap();
     let after = serde_json::to_value(parse_and_lower_str(&formatted).unwrap_or_else(|e| panic!("{e}\n{formatted}"))).unwrap();
@@ -129,7 +133,7 @@ const LOCALE_ROWS: &str = r#"    instances [
 
 #[test]
 fn locale_instances_lower_per_locale_beside_the_default_rows() {
-    let schema = parse_and_lower_str(&program("persistent: invoices, local", LOCALE_ROWS)).unwrap();
+    let schema = parse_and_lower_str(&program("persistent: invoices, browser", LOCALE_ROWS)).unwrap();
     let e = primary(&schema);
     assert_eq!(e.instances.as_ref().map(Vec::len), Some(1));
     let by_locale = e.locale_instances.as_ref().expect("locale instances");
@@ -139,20 +143,20 @@ fn locale_instances_lower_per_locale_beside_the_default_rows() {
 
 #[test]
 fn control_without_locale_blocks_there_are_no_locale_instances() {
-    let schema = parse_and_lower_str(&program("persistent: invoices, local", ROWS)).unwrap();
+    let schema = parse_and_lower_str(&program("persistent: invoices, browser", ROWS)).unwrap();
     assert!(primary(&schema).locale_instances.is_none());
 }
 
 #[test]
 fn a_locale_block_written_twice_is_a_parse_error() {
     let twice = format!("{LOCALE_ROWS}\n    instances ar [\n      {{ id: \"INV-1042\" }}\n    ]");
-    let err = parse_and_lower_str(&program("persistent: invoices, local", &twice)).unwrap_err().to_string();
+    let err = parse_and_lower_str(&program("persistent: invoices, browser", &twice)).unwrap_err().to_string();
     assert!(err.contains("ELOLO_DUPLICATE_INSTANCES"), "{err}");
 }
 
 #[test]
 fn the_formatter_round_trips_locale_blocks() {
-    let source = program("persistent: invoices, local", LOCALE_ROWS);
+    let source = program("persistent: invoices, browser", LOCALE_ROWS);
     let formatted = format_program(&parse_str(&source).unwrap());
     assert!(formatted.contains("instances ar ["), "{formatted}");
     let before = serde_json::to_value(parse_and_lower_str(&source).unwrap()).unwrap();
@@ -173,7 +177,7 @@ fn store_tag_and_app_key_lower_to_the_driver_binding() {
     assert_eq!(primary(&entity).collection.as_deref(), Some("invoices"));
     assert_eq!(entity.store, None);
     let app = parse_and_lower_str(&program("persistent: invoices", "").replace(
-        "app fixture \"1.0.0\"\n\"Fixture.\"",
+        "app fixture [version: \"1.0.0\", description: \"Fixture.\"]",
         "app fixture [version: \"1.0.0\", description: \"Fixture.\", store: Rows]",
     ))
     .unwrap();
@@ -195,7 +199,7 @@ fn store_is_refused_where_it_binds_nothing() {
 #[test]
 fn the_formatter_round_trips_the_store_binding() {
     let source = program("persistent: invoices, store: Rows", "").replace(
-        "app fixture \"1.0.0\"\n\"Fixture.\"",
+        "app fixture [version: \"1.0.0\", description: \"Fixture.\"]",
         "app fixture [version: \"1.0.0\", description: \"Fixture.\", store: Rows]",
     );
     let formatted = format_program(&parse_str(&source).unwrap());
@@ -203,4 +207,13 @@ fn the_formatter_round_trips_the_store_binding() {
     let before = serde_json::to_value(parse_and_lower_str(&source).unwrap()).unwrap();
     let after = serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap();
     assert_eq!(before, after);
+}
+
+#[test]
+fn control_localized_entity_without_the_browser_word_is_not_browser_resident() {
+    let ar = "مدار InvoiceOrbital {\n  كيان Invoice [دائم: invoices] {\n    id : نص!\n  }\n}\n";
+    let sl = "orbitala InvoiceOrbital {\n  entiteta Invoice [trajno: invoices] {\n    id : niz!\n  }\n}\n";
+    for source in [ar, sl] {
+        assert!(!primary(&parse_and_lower_str(source).unwrap()).browser, "{source}");
+    }
 }

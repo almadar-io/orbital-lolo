@@ -1,5 +1,4 @@
-app op-control-flow "1.0.0"
-"Stress-tests if let do when fn nesting, multi-arg fns, and complex guard expressions with and/or/not."
+app op-control-flow [version: "1.0.0", description: "Stress-tests if let do when fn nesting, multi-arg fns, and complex guard expressions with and/or/not."]
 orbital OpControlFlowOrbital {
   type Point = {
     x : number!

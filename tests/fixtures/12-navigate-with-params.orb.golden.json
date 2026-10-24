@@ -37,7 +37,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "navigate",
@@ -50,9 +49,8 @@
           ],
           "linkedEntity": "Page",
           "name": "Router",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "30c3b9420e0e381732de6f371f4dfd0a4e58ad4610896414bd8e9bf65008ae7e"
+            "fingerprint": "e24316ac9eee7f92c29bf1034d07a0ab78be67f80b82a0735dbc536d75af9309"
           },
           "stateMachine": {
             "events": [

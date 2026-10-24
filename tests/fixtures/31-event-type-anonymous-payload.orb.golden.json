@@ -28,7 +28,6 @@
       ],
       "traits": [
         {
-          "category": "interaction",
           "effectRow": [
             {
               "kind": "emit",
@@ -55,9 +54,8 @@
           ],
           "linkedEntity": "ErrorReport",
           "name": "ErrorReporter",
-          "scope": "instance",
           "sourceDeclaration": {
-            "fingerprint": "4595b83b758ed20d521c39d76e39a1adbc68d8dde1ab13220630cf3bc0f357eb"
+            "fingerprint": "c90cbf7213488adf8a0f4667b911f2c31d09fb3e4f1352b1a59af13d1e45fcb2"
           },
           "stateMachine": {
             "events": [

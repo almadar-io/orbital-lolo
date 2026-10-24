@@ -15,7 +15,7 @@ fn program(app: &str, trait_name: &str) -> String {
             id : string!
             balance : number = 0
         }}
-        trait {trait_name} -> Account [interaction, instance] {{
+        trait {trait_name} -> Account {{
             initial: idle
             state idle {{
                 DEPOSIT -> idle

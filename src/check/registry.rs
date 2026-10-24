@@ -232,7 +232,7 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
     let schema = match lowered {
         Ok(schema) => schema,
         Err(e) => {
-            tracing::warn!(path = %path.display(), error = %e, "live behavior did not lower; its contract is unknown");
+            tracing::warn!(target: orbital_core_base::logging::ns::LOLO, path = %path.display(), error = %e, "live behavior did not lower; its contract is unknown");
             return None;
         }
     };
