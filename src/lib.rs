@@ -61,7 +61,7 @@ pub use lower::{
     lower_to_orb_with_prior, lower_to_orb_with_prior_and_map, lower_to_orb_with_prior_and_map_with,
     lower_to_orb_with_prior_with, stamp_schema_identity, LowerOptions,
 };
-pub use parser::{detect_language, parse, parse_str};
+pub use parser::{detect_language, parse, parse_app_header, parse_str};
 pub use source_map::LoloSourceMap;
 pub use unlower::{schema_to_lolo, unlower, UnlowerError};
 

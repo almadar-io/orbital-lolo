@@ -95,6 +95,15 @@ pub fn parse_str(source: &str) -> Result<Program, ParseError> {
     Ok(program)
 }
 
+/// Parse only the `app` header of a `.lolo` source, leaving the body unread.
+pub fn parse_app_header(source: &str) -> Result<AppHeader, ParseError> {
+    let (tokens, _) = tokenize_with_comments(source)?;
+    let language = detect_lang(&tokens);
+    let mut parser = Parser::new(tokens, language);
+    parser.skip_newlines();
+    parser.parse_app_header()
+}
+
 /// Alias matching the public lib name `parse`.
 pub fn parse(source: &str) -> Result<Program, ParseError> {
     parse_str(source)
