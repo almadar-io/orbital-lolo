@@ -165,11 +165,15 @@ fn field_def_type_inner(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> 
                 .relation
                 .as_ref()
                 .ok_or_else(|| UnlowerError::new("relation field without a relation target"))?;
+            // `(@entity <knob>)` lowers its target to the `@entity(<knob>)` sigil form.
+            let target = if rel.entity.starts_with('@') {
+                parse_type_string(&rel.entity)?
+            } else {
+                TypeExpr::Named(rel.entity.clone())
+            };
             match rel.cardinality {
-                Some(Cardinality::Many) => {
-                    TypeExpr::Array(Box::new(TypeExpr::Named(rel.entity.clone())))
-                }
-                _ => TypeExpr::Named(rel.entity.clone()),
+                Some(Cardinality::Many) => TypeExpr::Array(Box::new(target)),
+                _ => target,
             }
         }
         FieldType::Tuple => TypeExpr::Tuple(

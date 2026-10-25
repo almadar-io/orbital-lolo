@@ -925,7 +925,13 @@ impl Formatter {
                 }
                 if let Some(value) = value {
                     self.output.push(' ');
-                    self.fmt_grouped_type_expr(value);
+                    if matches!(**value, TypeExpr::NamedEntityRow(_)) {
+                        self.output.push('(');
+                        self.fmt_type_expr(value);
+                        self.output.push(')');
+                    } else {
+                        self.fmt_grouped_type_expr(value);
+                    }
                 }
             }
             TypeExpr::ExpectedIdentityRow => {

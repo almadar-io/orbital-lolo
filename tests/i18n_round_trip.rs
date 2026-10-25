@@ -239,7 +239,7 @@ const AR_ENDPOINT_SOURCE: &str = r#"تطبيق Srv [إصدار: "1.0.0"]
       INIT -> idle
     }
   }
-  صفحة ويب { host: "0.0.0.0", port: 8080, path: "/" } كـ Api -> Router
+  صفحة طلب_شبكة { host: "0.0.0.0", port: 8080, path: "/" } كـ Api -> Router
   صفحة دخل_وخرج كـ Mcp -> Router
   صفحة إقلاع كـ Background -> Worker
 }
@@ -274,7 +274,7 @@ orbitala Srv {
       INIT -> idle
     }
   }
-  stran splet { host: "0.0.0.0", port: 8080, path: "/" } kot Api -> Router
+  stran http-zahteva { host: "0.0.0.0", port: 8080, path: "/" } kot Api -> Router
   stran vhod_izhod kot Mcp -> Router
   stran zagon kot Background -> Worker
 }

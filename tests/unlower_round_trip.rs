@@ -902,3 +902,96 @@ fn control_a_lambda_with_fresh_parameters_round_trips() {
     };
     round_trip(&nested_fn_program("a", "b"), &options).unwrap();
 }
+
+fn file_and_local_types_program() -> &'static str {
+    r#"app Probe [
+  version: "1.0.0"
+]
+type Spec = { label : string! }
+orbital ProbeOrbital {
+  type Local = { count : number! }
+  entity ProbeData [runtime] {
+    id : string!
+    spec : Spec
+    local : Local
+  }
+  trait ProbeView -> ProbeData [client] {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (render-ui main { type: typography, content: "probe" })
+    }
+  }
+  page "/" -> ProbeView
+}"#
+}
+
+#[test]
+fn single_orbital_file_types_print_once_at_file_scope() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let schema = parse_and_lower_str_with(file_and_local_types_program(), &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert_eq!(printed.matches("type Spec =").count(), 1, "{printed}");
+    let orbital_at = printed.find("orbital ProbeOrbital").unwrap();
+    assert!(printed.find("type Spec =").unwrap() < orbital_at, "{printed}");
+    round_trip(file_and_local_types_program(), &options).unwrap();
+}
+
+#[test]
+fn control_single_orbital_local_types_stay_inside_the_orbital() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let schema = parse_and_lower_str_with(file_and_local_types_program(), &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert_eq!(printed.matches("type Local =").count(), 1, "{printed}");
+    let orbital_at = printed.find("orbital ProbeOrbital").unwrap();
+    assert!(printed.find("type Local =").unwrap() > orbital_at, "{printed}");
+}
+
+fn field_ref_program(value: &str) -> String {
+    format!(
+        r#"app Probe [
+  version: "1.0.0"
+]
+orbital ProbeOrbital {{
+  entity ProbeData [runtime] {{
+    id : string!
+    name : string
+  }}
+  trait ProbeView -> ProbeData [client] {{
+    config {{
+      relatedEntity : entity = ProbeData
+      pick : (field @entity {value})?
+    }}
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (render-ui main {{ type: typography, content: (object/get @entity @config.pick "") }})
+        (fetch @config.relatedEntity {{ emit: {{ success: LOADED, failure: FAILED }} }})
+      LOADED -> idle
+      FAILED -> idle
+    }}
+  }}
+  page "/" -> ProbeView
+}}"#
+    )
+}
+
+#[test]
+fn a_field_ref_to_a_knob_named_entity_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&field_ref_program("(@entity @config.relatedEntity)"), &options).unwrap();
+}
+
+#[test]
+fn control_a_field_ref_to_a_primitive_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(&field_ref_program("string"), &options).unwrap();
+}

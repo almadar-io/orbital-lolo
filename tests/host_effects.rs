@@ -296,7 +296,7 @@ mod supervisor {
             let errors: Arc<Mutex<Vec<String>>> = Arc::default();
             let on_done: Arc<CompletionDone> = {
                 let (events, errors) = (events.clone(), errors.clone());
-                Arc::new(move |_site: &CallSite, event: &str, result: Result<DispatchOutcomes, DispatchError>| match result {
+                Arc::new(move |_site: &CallSite, event: &str, _: Option<&str>, result: Result<DispatchOutcomes, DispatchError>| match result {
                     Ok(outcomes) => lock(&events).extend(emits(&outcomes)),
                     Err(error) => lock(&errors).push(format!("{event}: {error}")),
                 })

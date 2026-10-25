@@ -279,6 +279,18 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
             type_aliases.push(alias);
         }
     }
+    // Lowering copies every file-scoped type into each orbital's `types`; a copy identical to the file's prints once.
+    if let Some(root) = &schema.types {
+        for (ast, core) in orbitals.iter_mut().zip(&schema.orbitals) {
+            let Some(local) = &core.types else { continue };
+            ast.type_aliases.retain(|a| {
+                match (root.get(&a.name), local.get(&a.name)) {
+                    (Some(r), Some(l)) => serde_json::to_value(r).ok() != serde_json::to_value(l).ok(),
+                    _ => true,
+                }
+            });
+        }
+    }
     let program = Program {
         app,
         type_aliases,
