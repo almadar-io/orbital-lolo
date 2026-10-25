@@ -225,6 +225,9 @@ pub(crate) fn lower_field(
     // Resolve the type expression. Named types may be enum aliases (lower to
     // string + values list), entity references (lower to a Relation field with
     // cardinality), or struct aliases (lower to inline object schema).
+    if f.derived.is_some() {
+        return Err(crate::error::derived_field_error(&f.name).located_exact(f.span));
+    }
     let shape = lower_source_field(&f.type_expr, aliases, entity_names, &[])?;
     let field = FieldDefinition {
         merged_from: None,
@@ -294,6 +297,27 @@ pub(crate) fn field_ref_record(
             }))
         }
     }))
+}
+
+/// The value `T` of a `field R T` type. `(@entity <knob>)` is a relation to the entity the knob names, the way a field
+/// typed by an entity name is a relation to it; the sigil pass names the entity.
+fn field_ref_value(
+    ty: &TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    entity_names: &HashSet<String>,
+    params: &[&str],
+) -> Result<FieldDefinition, LowerError> {
+    let mut field = lower_source_field(ty, aliases, entity_names, params)?;
+    if let TypeExpr::NamedEntityRow(knob) = ty.peel() {
+        field.field_type = FieldType::Relation;
+        field.relation = Some(RelationDefinition {
+            entity: format!("@entity({knob})"),
+            entity_id: None,
+            cardinality: None,
+            on_delete: None,
+        });
+    }
+    Ok(field)
 }
 
 type LoweredType = (
@@ -368,7 +392,7 @@ pub(crate) fn lower_type_expr(
                 None,
                 value
                     .as_deref()
-                    .map(|ty| lower_source_field(ty, aliases, entity_names, params).map(Box::new))
+                    .map(|ty| field_ref_value(ty, aliases, entity_names, params).map(Box::new))
                     .transpose()?,
                 properties,
                 None,

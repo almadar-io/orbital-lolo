@@ -1194,6 +1194,218 @@ mod payload_wrapper_provenance {
     }
 
     #[test]
+    fn a_field_reference_inside_a_list_of_records_is_checked_against_the_knob_named_entity() {
+        let source = |name: &str| {
+            format!(
+                r#"app probenest [version: "1.0.0"]
+orbital Probe {{
+  type Where = {{ field : field (@entity @config.rowEntity) number!, bound : number! }}
+  entity Sale [runtime] {{
+    id : string!
+    amount : number!
+    note : string!
+  }}
+  entity Item [runtime] {{
+    id : string!
+    total : number = 0
+  }}
+  trait Run -> Item {{
+    initial: ready
+    state ready {{
+      INIT -> ready
+      LOAD -> ready
+        (set @entity.total (array/len (array/filter ?data (fn row (array/every @config.where (fn w (> (str/default (object/get @row @w.field) 0) @w.bound)))))))
+    }}
+    listens {{ LOAD {{ data : [@entity @config.rowEntity]! }} }}
+    config {{
+      rowEntity : entity = Sale
+      where : [Where] = [{{ field: {name}, bound: 3 }}]
+    }}
+  }}
+  page boot as ProbeStart -> Run
+}}
+"#
+            )
+        };
+        let codes = |name: &str| {
+            let mut schema = parse_and_lower_str(&source(name)).unwrap();
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            validate_comprehensive_without_services(&schema)
+                .errors
+                .into_iter()
+                .map(|e| (e.code, e.message))
+                .collect::<Vec<_>>()
+        };
+        let good = codes("amount");
+        assert!(good.is_empty(), "{good:?}");
+        assert!(codes("nope").iter().any(|(c, _)| *c == ErrorCode::ConfigFieldRefUnknown), "an unknown column is reported");
+        assert!(codes("note").iter().any(|(c, _)| *c == ErrorCode::ConfigFieldRefTypeMismatch), "a text column is not a number");
+    }
+
+    #[test]
+    fn a_set_whose_branches_each_fit_the_declared_list_is_admitted() {
+        let source = |generated: &str| {
+            format!(
+                r#"app branches [version: "1.0.0"]
+orbital Probe {{
+  type Tile = {{ id : string, x : number!, y : number!, passable : boolean }}
+  entity Board [runtime] {{
+    id : string!
+    tiles : [Tile] = []
+  }}
+  trait Run -> Board [client] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (set @entity.tiles (if (> (array/len @config.tiles) 0) @config.tiles (array/map (array/range 0 3) (fn gx {generated}))))
+    }}
+    config {{
+      tiles : [Tile] = []
+    }}
+  }}
+  page boot as ProbeStart -> Run
+}}
+"#
+            )
+        };
+        let errors = |generated: &str| {
+            let mut schema = parse_and_lower_str(&source(generated)).unwrap();
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            validate_comprehensive_without_services(&schema).errors
+        };
+        let fits = errors("{ id: (str/concat \"t-\" @gx), x: @gx, y: 0, passable: true }");
+        assert!(fits.is_empty(), "{fits:?}");
+        assert!(
+            !errors("{ id: (str/concat \"t-\" @gx), y: 0 }").is_empty(),
+            "control: a generated tile without its required x does not fit"
+        );
+    }
+
+    #[test]
+    fn an_empty_config_list_keeps_its_declared_element_type() {
+        let source = |default: &str| {
+            format!(
+                r#"app emptylist [version: "1.0.0"]
+orbital Probe {{
+  type Item = {{ key : string!, name : string }}
+  entity Holder [runtime] {{
+    id : string!
+    byKey : Map string Item = {{}}
+  }}
+  trait Run -> Holder [client] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (set @entity.byKey (object/fromEntries (array/map @config.keys (fn k [@k {{ key: @k, name: @k }}]))))
+    }}
+    config {{
+      keys : [string] = {default}
+    }}
+  }}
+  page boot as ProbeStart -> Run
+}}
+"#
+            )
+        };
+        for default in ["[\"a\"]", "[]"] {
+            let mut schema = parse_and_lower_str(&source(default)).unwrap();
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            let errors = validate_comprehensive_without_services(&schema).errors;
+            assert!(errors.is_empty(), "{default}: {errors:?}");
+        }
+    }
+
+    #[test]
+    fn an_annotated_let_keeps_the_narrowing_of_an_if_inside_it() {
+        let source = |condition: &str| {
+            format!(
+                r#"app probehas [version: "1.0.0"]
+type PA = {{ scope : "declared"! }}
+type PB = {{ read : string! }}
+type PU = PA | PB
+orbital Probe {{
+  entity Item [runtime] {{
+    id : string!
+    names : [[string]] = []
+  }}
+  trait Run -> Item {{
+    initial: ready
+    state ready {{
+      INIT -> ready
+      LOAD -> ready
+        (set @entity.names (array/map ?tools (fn t (let ((r : [string] (if {condition} (let ((rd : PB @t)) [@rd.read]) ["other"]))) @r))))
+    }}
+    listens {{ LOAD {{ tools : [PU]! }} }}
+  }}
+  page boot as ProbeStart -> Run
+}}
+"#
+            )
+        };
+        let errors = |condition: &str| {
+            let mut schema = parse_and_lower_str(&source(condition)).unwrap();
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            validate_comprehensive_without_services(&schema).errors
+        };
+        let narrowed = errors("(object/has @t read)");
+        assert!(narrowed.is_empty(), "{narrowed:?}");
+        assert!(
+            errors("(object/has @t scope)").iter().any(|e| e.code == ErrorCode::OperatorArgTypeMismatch),
+            "control: the scope variant is not a PB"
+        );
+    }
+
+    #[test]
+    fn a_derived_field_is_a_retired_lowering_error() {
+        let derived = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int = derived (array/len [])\n  }\n}";
+        let err = parse_and_lower_str(derived).expect_err("a derived field must not lower");
+        assert!(format!("{err}").contains("ORB_L_DERIVED_RETIRED") || format!("{err:?}").contains("ORB_L_DERIVED_RETIRED"), "{err:?}");
+        let defaulted = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int = 0\n  }\n}";
+        assert!(parse_and_lower_str(defaulted).is_ok(), "control: a default still lowers");
+    }
+
+    #[test]
+    fn a_field_whose_value_is_a_knob_named_entity_reads_the_related_row() {
+        let source = r#"app keyed [version: "1.0.0"]
+    orbital Probe {
+     entity Owner [runtime] {
+      id : string!
+      name : string!
+     }
+     entity Item [runtime] {
+      id : string!
+      owner : Owner
+      label : string = "none"
+      last : Item @intrinsic
+     }
+     trait Run -> Item {
+      initial: ready
+      state ready {
+       INIT -> ready
+       LOADED -> ready
+        (set @entity.label (if (!= @config.via null) (str/default (object/get (object/get ?data @config.via) @config.shown) "none") "none"))
+      }
+      listens { LOADED { data : Item! } }
+      config {
+       viaEntity : entity = Item
+       via : (field @entity (@entity @config.viaEntity))?
+       shown : (field (@entity @config.viaEntity) string)?
+      }
+     }
+     page boot as ProbeStart -> Run
+    }
+    "#;
+        let mut schema = parse_and_lower_str(source).unwrap();
+        inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+        let result = validate_comprehensive_without_services(&schema);
+        assert!(
+            result.errors.is_empty(),
+            "{:?}",
+            result.errors
+        );
+    }
+
+    #[test]
     fn a_scalar_type_argument_has_no_entity_origin_after_two_hops() {
         let source = generic_source("type Saved (v : Type) = Event v")
             .replace("trait Run ->", "trait Run (v : Type) ->")

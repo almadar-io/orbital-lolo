@@ -512,6 +512,14 @@ pub(crate) fn entity_header_word_error(word: &str) -> LowerError {
     }
 }
 
+/// The error for a retired `= derived (…)` entity field.
+pub(crate) fn derived_field_error(field: &str) -> LowerError {
+    LowerError::Coded {
+        code: "ORB_L_DERIVED_RETIRED",
+        message: format!("`{field} : … = derived (…)` is retired: nothing computes a derived field. Compute the value in a trait with `(set @entity.{field} …)`"),
+    }
+}
+
 /// The error for the retired `-> external {` listen spelling.
 pub(crate) fn listen_external_error() -> LowerError {
     LowerError::Coded {

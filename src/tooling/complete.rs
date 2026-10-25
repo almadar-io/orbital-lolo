@@ -209,7 +209,7 @@ const TRAIT_REF_BODY: &[&str] = &[
     "listens",
     "emitsScope",
 ];
-const ENTITY_BODY: &[&str] = &["derived"];
+const ENTITY_BODY: &[&str] = &[];
 
 /// The statements the parser dispatches on at the start of a line inside the block
 /// headed `header` (`""` = top level) — `parser/mod.rs`, `orbital.rs`, `trait.rs`,
@@ -714,7 +714,7 @@ mod tests {
             "entity is not a trait statement"
         );
         let (src, off) = at("orbital O {\n  entity E [runtime] {\n    id : string!\n    de|");
-        assert_eq!(labels(&complete(&src, off, None)), vec!["derived"]);
+        assert!(labels(&complete(&src, off, None)).is_empty(), "`derived` is retired");
         let (src, off) = at("orbital O {\n  trait L = Browse.traits.B -> E {\n    na|");
         assert_eq!(labels(&complete(&src, off, None)), vec!["name"]);
     }
