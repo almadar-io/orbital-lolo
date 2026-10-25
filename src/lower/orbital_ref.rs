@@ -115,7 +115,7 @@ pub(crate) fn lower_orbital_reference(
 
     // `.lolo` spans (Stage C): record each override key's span so the L2
     // `ORB_O_*`/`ORB_U_*` validators (`orbital_ref_config.rs`,
-    // `orbital_ref_extend.rs`) resolve back to the offending `.lolo`
+    // the std `orbital-ref-extend` lint) resolve back to the offending `.lolo`
     // KEY, not just the orbital's own span. The suffix shape MUST match
     // the paren-style path `orbital_ref_config.rs` already builds from
     // `diag.path` (`{path}.config(key)`, `{path}.roles(key)`, …) — see
