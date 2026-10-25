@@ -523,6 +523,34 @@ fn a_kv_grant_lowers_per_store_and_mode_and_survives_format_and_unlower() {
     assert!(err.contains("ORB_L_OPTION_DUPLICATE"), "edge: a store named twice: {err}");
 }
 
+#[test]
+fn a_dev_grant_lowers_per_target_and_kind_and_survives_format_and_unlower() {
+    use orbital_core_base::os_grants::{DevKind, DevResource};
+    let source = GRANTS_PROGRAM.replace(
+        "  desktop: [notify]\n",
+        "  desktop: [notify],\n  dev: { \"mmio:0x09000000+0x1000\": [read, write], \"irq:33\": [wait, ack] }\n",
+    );
+    let schema = parse_and_lower_str(&source).expect("lower");
+    let orders = schema.orbitals[0].os_grants.as_ref().expect("orbital grants");
+    let mmio = DevResource::Mmio { base: 0x0900_0000, offset: 0x18, width: 4 };
+    assert!(orders.dev_allows(&mmio, DevKind::Read) && orders.dev_allows(&DevResource::Irq { line: 33 }, DevKind::Ack));
+    assert!(!orders.dev_allows(&DevResource::Irq { line: 34 }, DevKind::Wait), "control: an ungranted line");
+    assert!(schema.os_grants.as_ref().expect("app grants").dev.is_empty(), "control: the app level declares none");
+
+    let formatted = format_program(&parse_str(&source).expect("parse"));
+    assert!(formatted.contains(r#"dev: { "mmio:0x09000000+0x1000": [read, write], "irq:33": [wait, ack] }"#), "{formatted}");
+    assert_eq!(parse_and_lower_str(&formatted).expect("reparse").orbitals[0].os_grants, schema.orbitals[0].os_grants);
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert_eq!(parse_and_lower_str(&text).expect("lower the unlowered text").orbitals[0].os_grants, schema.orbitals[0].os_grants);
+
+    let err = grants_error(&source.replace("[wait, ack]", "[wait, poke]"));
+    assert!(err.contains("ORB_OS_GRANT_ENTRY_INVALID"), "{err}");
+    let err = grants_error(&source.replace("\"mmio:0x09000000+0x1000\": [read, write]", "uart: [read, write]"));
+    assert!(err.contains("ORB_OS_GRANT_ENTRY_INVALID"), "edge: an unquoted target: {err}");
+    let err = grants_error(&source.replace("\"irq:33\": [wait, ack]", "\"irq:33\": [wait], \"irq:33\": [ack]"));
+    assert!(err.contains("ORB_L_OPTION_DUPLICATE"), "edge: a target named twice: {err}");
+}
+
 fn protocol_program(page_lines: &str) -> String {
     format!(
         "app Srv [version: \"1.0.0\"]\norbital Srv {{\n  entity Req [runtime] {{\n    id : string!\n  }}\n  trait Router -> Req {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  {page_lines}\n}}\n"

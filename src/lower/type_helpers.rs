@@ -234,6 +234,10 @@ pub(crate) fn emit_primitive_compatible(
     if declared_core.starts_with('[') && declared_core.ends_with(']') {
         return actual == "array";
     }
+    // A map takes an object literal (`{}` included); its member types are the L2 backstop's check, as for arrays.
+    if declared_core.starts_with("Map<") {
+        return actual == "object";
+    }
     match declared_core {
         "any" => true,
         "date" | "datetime" | "timestamp" => actual == "string" || actual == "number",
@@ -242,6 +246,9 @@ pub(crate) fn emit_primitive_compatible(
         "email" | "url" | "phone" | "uuid" | "image" => actual == "string",
         // Money is numeric at rest; file is the canonical struct value.
         "money" => actual == "number",
+        "number" => actual == "instant",
+        // A literal moment (epoch milliseconds written in the program) is a valid instant.
+        "instant" => actual == "number",
         "file" => actual == "object",
         "bytes" => actual == "string",
         // A call key reads as a string; a string never reads as a call key.

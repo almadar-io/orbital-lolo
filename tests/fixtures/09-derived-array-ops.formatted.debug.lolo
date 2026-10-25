@@ -3,8 +3,8 @@ orbital InventoryOrbital {
   entity Inventory [runtime] {
     id : string!
     items : [string]
-    itemCount : int = derived (array/length @items)
-    isEmpty : bool = derived (== (array/length @items) 0)
+    itemCount : int
+    isEmpty : bool
   }
 
   trait InventoryActions -> Inventory [interaction] {

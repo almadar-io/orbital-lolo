@@ -1528,7 +1528,7 @@ pub(crate) fn is_type_union(
     aliases: &BTreeMap<String, TypeAliasResolved>,
 ) -> bool {
     is_type_union_with(parts, |name| match aliases.get(name) {
-        Some(TypeAliasResolved::Type(inner, _)) if inner.record_fields().is_some() => Some(true),
+        Some(TypeAliasResolved::Type(..)) => Some(true),
         Some(_) => Some(false),
         None => None,
     })
@@ -1547,9 +1547,10 @@ pub(crate) fn is_type_union_with(
     fn variant(ty: &TypeExpr, named: &dyn Fn(&str) -> Option<bool>) -> bool {
         match ty {
             TypeExpr::Optional(inner) => variant(inner, named),
-            TypeExpr::Named(name) => {
-                named(name).unwrap_or_else(|| primitive_field_type(name).is_some())
-            }
+            TypeExpr::Named(name) => named(name).unwrap_or_else(|| {
+                primitive_field_type(name).is_some()
+                    || orbital_core_base::language::program_types::program_type_field(name).is_some()
+            }),
             TypeExpr::Primitive(name) => primitive_field_type(name).is_some(),
             TypeExpr::Array(_)
             | TypeExpr::Map(..)
@@ -1591,18 +1592,17 @@ fn struct_union_variants(
         }
         let (variant_name, inner, scope): (String, TypeExpr, Vec<&str>) = match candidate {
             TypeExpr::Named(name) => match aliases.get(name) {
-                Some(TypeAliasResolved::Type(inner, own_param))
-                    if inner.record_fields().is_some() =>
-                {
-                    (
-                        name.clone(),
-                        inner.clone(),
-                        own_param.iter().map(String::as_str).collect(),
-                    )
-                }
+                Some(TypeAliasResolved::Type(inner, own_param)) => (
+                    name.clone(),
+                    inner.clone(),
+                    own_param.iter().map(String::as_str).collect(),
+                ),
                 // A named PRIMITIVE (`string`, `number`, `node`, …).
                 None if primitive_field_type(name).is_some() => {
                     (name.clone(), TypeExpr::Primitive(name.clone()), Vec::new())
+                }
+                None if orbital_core_base::language::program_types::program_type_field(name).is_some() => {
+                    (name.clone(), candidate.clone(), Vec::new())
                 }
                 _ => return Ok(None),
             },

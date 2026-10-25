@@ -3,12 +3,12 @@
 
 use super::*;
 use orbital_core_base::os_grants::{
-    AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, DesktopKind, FsGrant, FsMode, GrantAnchor,
+    AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, DesktopKind, DevGrant, DevKind, FsGrant, FsMode, GrantAnchor,
     KvMode, NetGrant, NetKind, NetPart, OsGrants, StdioKind, SysKind,
 };
 
 pub(crate) const GRANT_KEYS: &[&str] =
-    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv"];
+    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv", "dev"];
 
 const ENTRY_INVALID: &str = "ORB_OS_GRANT_ENTRY_INVALID";
 
@@ -37,6 +37,7 @@ impl Parser {
                 grants.desktop = self.parse_grant_words(key, DesktopKind::ALL, |k| k.name())?
             }
             "kv" => self.parse_kv_grants(grants)?,
+            "dev" => self.parse_dev_grants(grants)?,
             _ => unreachable!("GRANT_KEYS covers every key"),
         }
         Ok(())
@@ -112,6 +113,38 @@ impl Parser {
     }
 
     /// `{ store: [read, write], "store-glob*": [read], … }`.
+    /// `dev: { "mmio:<base>+<length>": [read, write], "irq:<line>": [wait, ack] }`.
+    fn parse_dev_grants(&mut self, grants: &mut OsGrants) -> Result<(), ParseError> {
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                return Ok(());
+            }
+            let span = self.peek_span();
+            let TokenKind::String(target) = self.peek().clone() else {
+                return Err(ParseError::InvalidOptionValue {
+                    code: ENTRY_INVALID,
+                    key: "dev".to_string(),
+                    message: "a device target is a string: `\"mmio:0x09000000+0x1000\"` or `\"irq:33\"`".to_string(),
+                    span,
+                });
+            };
+            self.advance();
+            if grants.dev.iter().any(|g| g.target == target) {
+                return Err(ParseError::DuplicateOption { key: target, context: "dev", span });
+            }
+            self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
+            let kinds = self.parse_grant_words("dev", DevKind::ALL, |k| k.name())?;
+            grants.dev.push(DevGrant { target, kinds });
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+    }
+
     fn parse_kv_grants(&mut self, grants: &mut OsGrants) -> Result<(), ParseError> {
         self.expect_kind(&TokenKind::LBrace, "{")?;
         loop {

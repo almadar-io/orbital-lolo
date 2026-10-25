@@ -1210,6 +1210,14 @@ pub enum TypeError {
         span: Span,
     },
 
+    #[error("type {alias:?} mixes type names ({types}) with bare words ({words}); a bare word in a union is an enum member, so name only types or only words")]
+    AmbiguousUnion {
+        alias: String,
+        types: String,
+        words: String,
+        span: Span,
+    },
+
     #[error("unknown type parameter {name:?} in alias {alias:?}")]
     UnknownTypeParam {
         name: String,
@@ -1309,6 +1317,7 @@ impl TypeError {
             | TypeError::CompositionConflict { span, .. }
             | TypeError::AnnotationMismatch { span, .. }
             | TypeError::UnknownTypeParam { span, .. }
+            | TypeError::AmbiguousUnion { span, .. }
             | TypeError::WrongTypeArgCount { span, .. }
             | TypeError::EventTypeWrongKind { span, .. }
             | TypeError::GenericTypeForbidden { span, .. }

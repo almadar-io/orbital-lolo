@@ -1243,6 +1243,55 @@ orbital Probe {{
     }
 
     #[test]
+    fn a_relation_reads_as_the_related_rows_id() {
+        let source = |predicate: &str| {
+            format!(
+                r#"app relid [version: "1.0.0"]
+orbital StaffOrbital {{
+  entity Staff [persistent: staff] {{
+    id : string!
+    name : string
+  }}
+  entity Employee [persistent: employees] {{
+    id : string!
+    staffAccount : Staff
+    name : string = "none"
+    owner : string = "none"
+  }}
+  trait Self -> Employee {{
+    initial: loading
+    state loading {{
+      INIT -> loading
+        (fetch Employee {{ emit: {{ failure: SelfFailed, success: SelfLoaded }} }})
+      SelfLoaded -> loading
+        (set @entity.name (str/default (object/get (array/find ?data (fn row {predicate})) name) "none"))
+        (set @entity.owner (str/default (object/get (array/first ?data) staffAccount) "none"))
+      SelfFailed -> loading
+    }}
+    emits {{ SelfLoaded {{ data : [Employee]! }} SelfFailed {{ error : string }} }}
+    listens {{ SelfLoaded {{ data : [Employee]! }} SelfFailed {{ error : string }} }}
+  }}
+  page boot as SelfStart -> Self
+}}
+"#
+            )
+        };
+        let codes = |predicate: &str| {
+            let mut schema = parse_and_lower_str(&source(predicate)).unwrap();
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            validate_comprehensive_without_services(&schema)
+                .errors
+                .into_iter()
+                .filter(|e| matches!(e.code, ErrorCode::OperatorArgTypeMismatch | ErrorCode::SetReturnTypeMismatch | ErrorCode::OperatorArgUndetermined))
+                .map(|e| e.message)
+                .collect::<Vec<_>>()
+        };
+        let by_id = codes("(= @row.staffAccount @user.id)");
+        assert!(by_id.is_empty(), "a relation compares with an id: {by_id:?}");
+        assert!(!codes("(= @row.staffAccount 5)").is_empty(), "control: an id is not a number");
+    }
+
+    #[test]
     fn a_set_whose_branches_each_fit_the_declared_list_is_admitted() {
         let source = |generated: &str| {
             format!(
@@ -1353,6 +1402,115 @@ orbital Probe {{
             errors("(object/has @t scope)").iter().any(|e| e.code == ErrorCode::OperatorArgTypeMismatch),
             "control: the scope variant is not a PB"
         );
+    }
+
+    #[test]
+    fn a_null_test_on_a_let_local_narrows_it_inside_a_record_the_let_returns() {
+        let source = |value: &str| {
+            format!(
+                r#"app probenull [version: "1.0.0"]
+type Pol = {{ name : string!, hasRead : boolean! }}
+type Reg = {{ label : string!, hasRead : boolean! }}
+orbital Probe {{
+  entity Item [runtime] {{
+    id : string!
+    key : string = ""
+    reg : Reg? = null
+    regs : [Reg] = []
+  }}
+  trait Run -> Item {{
+    initial: ready
+    state ready {{
+      INIT -> ready
+      LOAD -> ready
+        (set @entity.key "a")
+        (let ((pols : Map string Pol {{}}))
+          {value})
+    }}
+  }}
+  page boot as ProbeStart -> Run
+}}
+"#
+            )
+        };
+        let errors = |value: &str| {
+            let mut schema = parse_and_lower_str(&source(value)).unwrap();
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            validate_comprehensive_without_services(&schema).errors
+        };
+        let po = r#"(object/get @pols @entity.key null)"#;
+        let refused = [
+            format!(r#"(set @entity.reg (let ((po {po})) {{ label: "x", hasRead: (if (= @po null) false (object/get @po "hasRead")) }}))"#),
+            format!(r#"(set @entity.regs [{{ label: "x", hasRead: (let ((po {po})) (if (= @po null) false (object/get @po "hasRead"))) }}])"#),
+            format!(r#"(set @entity.regs [{{ label: "x", hasRead: (let ((po {po})) (if (!= @po null) (object/get @po "hasRead") false)) }}])"#),
+            format!(r#"(set @entity.regs (let ((inner : Map string Pol {{}})) [{{ label: "x", hasRead: (let ((po (object/get @inner @entity.key null))) (if (= @po null) false (object/get @po "hasRead"))) }}]))"#),
+        ]
+        .into_iter()
+        .filter_map(|value| {
+            let found = errors(&value);
+            (!found.is_empty()).then(|| format!("{value}: {found:?}"))
+        })
+        .collect::<Vec<_>>();
+        assert!(refused.is_empty(), "{refused:#?}");
+        assert!(
+            errors(&format!(r#"(set @entity.regs [{{ label: "x", hasRead: (let ((po {po})) (object/get @po "hasRead")) }}])"#))
+                .iter()
+                .any(|e| e.code == ErrorCode::SetReturnTypeMismatch),
+            "control: an untested local stays maybe-missing"
+        );
+    }
+
+    #[test]
+    fn a_relation_the_fetch_includes_reads_as_the_related_row() {
+        let source = |include: &str, second: &str| {
+            format!(
+                r#"app probeinclude [version: "1.0.0"]
+orbital Probe {{
+  entity Trader [persistent: traders] {{
+    id : string!
+    name : string!
+  }}
+  entity Position [persistent: positions] {{
+    id : string!
+    trader : Trader
+  }}
+  entity Desk [runtime] {{
+    id : string!
+    traderName : string = ""
+  }}
+  trait Run -> Desk {{
+    initial: ready
+    state ready {{
+      INIT -> ready
+        (fetch Position {{ {include} emit: {{ success: PositionsLoaded, failure: PositionsFailed }} }})
+        {second}
+      PositionsLoaded -> ready
+        (set @entity.traderName (str/default (object/get (object/get (array/first ?data) "trader") "name") ""))
+      PositionsFailed -> ready
+    }}
+    emits {{
+      PositionsLoaded {{ data : [Position]! }}
+      PositionsFailed {{ error : string! }}
+    }}
+  }}
+  page boot as ProbeStart -> Run
+}}
+"#
+            )
+        };
+        let errors = |include: &str, second: &str| {
+            let mut schema = parse_and_lower_str(&source(include, second)).unwrap();
+            inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
+            validate_comprehensive_without_services(&schema).errors
+        };
+        let included = errors("include: [trader]", "");
+        assert!(included.is_empty(), "{included:?}");
+        assert!(!errors("", "").is_empty(), "control: without include the relation is the related row's id");
+        let partly = errors(
+            "include: [trader]",
+            "(fetch Position { emit: { success: PositionsLoaded, failure: PositionsFailed } })",
+        );
+        assert!(!partly.is_empty(), "edge: one fetch of the event without the include leaves it an id");
     }
 
     #[test]
@@ -1648,4 +1806,35 @@ orbital AuditOrbital {
             }
         }
     }
+}
+
+#[test]
+fn an_object_literal_fills_a_map_payload_field_and_a_number_literal_an_instant() {
+    let source = |value: &str, ty: &str| {
+        format!(
+            r#"app probemap [version: "1.0.0"]
+orbital Probe {{
+  entity Item [runtime] {{
+    id : string!
+  }}
+  trait Run -> Item {{
+    initial: ready
+    state ready {{
+      INIT -> ready
+      GO -> ready
+        (emit DONE {{ v: {value} }})
+    }}
+    emits {{ DONE {{ v : {ty}! }} }}
+  }}
+  page boot as ProbeStart -> Run
+}}
+"#
+        )
+    };
+    let lowers = |value: &str, ty: &str| parse_and_lower_str(&source(value, ty)).is_ok();
+    assert!(lowers("{}", "Map string string"), "an empty map literal");
+    assert!(lowers(r#"{ a: "x" }"#, "Map string string"), "a map literal with members");
+    assert!(lowers("0", "instant"), "a literal moment");
+    assert!(!lowers(r#""x""#, "Map string string"), "control: a string is not a map");
+    assert!(!lowers(r#""x""#, "instant"), "control: a string is not an instant");
 }

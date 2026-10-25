@@ -255,7 +255,7 @@ fn lower_to_orb_names_only(
             resolve_type_alias(&ta.body, ta.type_param.as_ref()),
         );
     }
-    reclassify_struct_unions(&mut type_aliases);
+    reclassify_struct_unions(&mut type_aliases)?;
 
     // Entity-shaped type aliases retained in their full field form so the
     // emit-payload lowerer can flatten `:: TypeName` references. The regular
@@ -323,7 +323,7 @@ fn lower_to_orb_names_only(
                 resolve_type_alias(&ta.body, ta.type_param.as_ref()),
             );
         }
-        reclassify_struct_unions(&mut local_aliases);
+        reclassify_struct_unions(&mut local_aliases)?;
         let mut local_entities = file_entity_bodies.clone();
         local_entities.extend(collect_entity_type_bodies(&orb.type_aliases));
         local_entities.extend(crate::types::composed_entity_fields(
@@ -673,7 +673,9 @@ fn collect_entity_type_bodies(
 /// Without this, `DrawShape | DrawText` declares a field whose only legal
 /// values are the literal WORDS "DrawShape"/"DrawText" — it accepts the
 /// variant's name and rejects the variant's value.
-fn reclassify_struct_unions(aliases: &mut BTreeMap<String, TypeAliasResolved>) {
+fn reclassify_struct_unions(
+    aliases: &mut BTreeMap<String, TypeAliasResolved>,
+) -> Result<(), LowerError> {
     let mut rewrites: Vec<(String, TypeExpr)> = Vec::new();
     for (name, resolved) in aliases.iter() {
         let TypeAliasResolved::Enum(members) = resolved else {
@@ -681,6 +683,19 @@ fn reclassify_struct_unions(aliases: &mut BTreeMap<String, TypeAliasResolved>) {
         };
         let parts: Vec<TypeExpr> = members.iter().map(|m| TypeExpr::Named(m.clone())).collect();
         if !crate::lower::entity::is_type_union(&parts, aliases) {
+            let (types, words): (Vec<&String>, Vec<&String>) = members.iter().partition(|m| {
+                matches!(aliases.get(m.as_str()), Some(TypeAliasResolved::Type(..)))
+                    || orbital_core_base::language::program_types::program_type_field(m).is_some()
+            });
+            if !types.is_empty() && !words.is_empty() {
+                let join = |v: Vec<&String>| v.iter().map(|s| s.as_str()).collect::<Vec<_>>().join(", ");
+                return Err(LowerError::Type(crate::error::TypeError::AmbiguousUnion {
+                    alias: name.clone(),
+                    types: join(types),
+                    words: join(words),
+                    span: crate::ast::Span::default(),
+                }));
+            }
             continue;
         }
         rewrites.push((name.clone(), TypeExpr::Union(parts)));
@@ -688,6 +703,7 @@ fn reclassify_struct_unions(aliases: &mut BTreeMap<String, TypeAliasResolved>) {
     for (name, ty) in rewrites {
         aliases.insert(name, TypeAliasResolved::Type(ty, None));
     }
+    Ok(())
 }
 
 fn resolve_type_alias(body: &TypeBody, param: Option<&String>) -> TypeAliasResolved {
@@ -1757,6 +1773,41 @@ mod tests {
             status.values,
             Some(vec!["active".to_string(), "inactive".to_string()])
         );
+    }
+
+    #[test]
+    fn a_union_of_type_names_that_are_not_records_is_a_type_union() {
+        let field = |src: &str| {
+            let s = lower(src);
+            let EntityRef::Inline(ent) = &s.orbitals[0].entity else {
+                panic!()
+            };
+            ent.fields[1].clone()
+        };
+        for src in [
+            "type Pairs = Map string string\ntype Who = Viewer | Pairs\norbital O { entity E { id : string!\n who : Who } }",
+            "type Pairs = Map string string\norbital O { entity E { id : string!\n who : { at : Viewer | Pairs } } }",
+            "orbital O { entity E { id : string!\n who : Map string string? | Viewer } }",
+        ] {
+            let who = field(src);
+            let at = if who.field_type == FieldType::Object {
+                who.properties.as_ref().and_then(|p| p.values().next()).cloned().unwrap()
+            } else {
+                who
+            };
+            assert_eq!(at.field_type, FieldType::Union, "{src}: {at:?}");
+            assert_eq!(at.properties.as_ref().map(|p| p.len()), Some(2), "{src}: {at:?}");
+        }
+        let mixed = crate::parse_and_lower_str(
+            "type Pairs = Map string string\ntype Who = Pairs | nobody\norbital O { entity E { id : string!\n who : Who } }",
+        );
+        assert!(
+            matches!(&mixed, Err(e) if e.to_string().contains("mixes type names")),
+            "a union of a type name and a bare word is refused: {mixed:?}"
+        );
+        let control = field("type Who = viewer | pairs\norbital O { entity E { id : string!\n who : Who } }");
+        assert_eq!(control.field_type, FieldType::String, "control: bare words are an enum");
+        assert_eq!(control.values, Some(vec!["viewer".to_string(), "pairs".to_string()]));
     }
 
     #[test]
