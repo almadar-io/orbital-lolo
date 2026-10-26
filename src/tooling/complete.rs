@@ -714,7 +714,7 @@ mod tests {
             "entity is not a trait statement"
         );
         let (src, off) = at("orbital O {\n  entity E [runtime] {\n    id : string!\n    de|");
-        assert!(labels(&complete(&src, off, None)).is_empty(), "`derived` is retired");
+        assert!(labels(&complete(&src, off, None)).is_empty(), "`derived` is an annotation, not a line-start keyword");
         let (src, off) = at("orbital O {\n  trait L = Browse.traits.B -> E {\n    na|");
         assert_eq!(labels(&complete(&src, off, None)), vec!["name"]);
     }

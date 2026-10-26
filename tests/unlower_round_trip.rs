@@ -1030,3 +1030,35 @@ fn control_an_entity_without_indexes_unlowers_without_index_directives() {
     assert!(!printed.contains("@index"), "{printed}");
     round_trip(&source, &options).unwrap();
 }
+
+const DERIVED_PROGRAM: &str = r#"app derivedprobe [version: "1.0.0"]
+orbital PersonOrbital {
+  entity Person [persistent: people] {
+    id : string!
+    email : string!
+    emailKey : string! @derived (str/lower (object/get @entity email))
+  }
+}
+"#;
+
+#[test]
+fn a_derived_field_unlowers_to_the_annotation_and_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let schema = parse_and_lower_str_with(DERIVED_PROGRAM, &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert!(printed.contains("@derived"), "{printed}");
+    round_trip(DERIVED_PROGRAM, &options).unwrap();
+}
+
+#[test]
+fn control_an_entity_without_a_derived_field_unlowers_without_the_annotation() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = DERIVED_PROGRAM.lines().filter(|l| !l.contains("@derived")).collect::<Vec<_>>().join("\n");
+    let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
+    assert!(!printed.contains("@derived"), "{printed}");
+    round_trip(&source, &options).unwrap();
+}

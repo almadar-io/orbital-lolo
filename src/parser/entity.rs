@@ -299,10 +299,7 @@ impl Parser {
         // lets domain-natural field names like `to`, `from`, `type`, `state`
         // declare entity fields without colliding with orbital-level keywords.
         match self.peek() {
-            TokenKind::Identifier(name) => {
-                matches!(self.peek_n(1), TokenKind::Colon)
-                    || (name == "derived" && matches!(self.peek_n(1), TokenKind::Identifier(_)))
-            }
+            TokenKind::Identifier(_) => matches!(self.peek_n(1), TokenKind::Colon),
             _ => false,
         }
     }
@@ -460,6 +457,7 @@ impl Parser {
         let mut description = None;
         let mut synonyms = None;
         let mut mock = None;
+        let mut derived = None;
         while let TokenKind::Sigil(raw) = self.peek().clone() {
             let name = self.canon_annotation_sigil(&raw);
             match name.as_str() {
@@ -474,6 +472,10 @@ impl Parser {
                 "intrinsic" => {
                     is_intrinsic = true;
                     self.advance();
+                }
+                "derived" => {
+                    self.advance();
+                    derived = Some(self.parse_sexpr_or_value()?);
                 }
                 "description" | "synonyms" | "mock" => {
                     self.advance();
@@ -499,18 +501,19 @@ impl Parser {
                 _ => break,
             }
         }
-        // Optional `= sexpr` default value, or `= derived (...)` derivation.
+        // Optional `= sexpr` default value.
         let mut default = None;
-        let mut derived = None;
         if matches!(self.peek(), TokenKind::Equals) {
+            let equals_span = self.peek_span();
             self.advance();
-            if self.check_ident("derived") {
-                self.advance();
-                let expr = self.parse_sexpr_or_value()?;
-                derived = Some(expr);
-            } else {
-                let expr = self.parse_sexpr_or_value()?;
-                default = Some(expr);
+            default = Some(self.parse_sexpr_or_value()?);
+            if derived.is_some() {
+                return Err(ParseError::InvalidType {
+                    span: equals_span,
+                    message: format!(
+                        "ELOLO_DERIVED_WITH_DEFAULT: field '{name}' is `@derived`, so the kernel computes it on every write and it has no default"
+                    ),
+                });
             }
         }
         // Detect leading nullable from a Question after a primitive identifier (rare).

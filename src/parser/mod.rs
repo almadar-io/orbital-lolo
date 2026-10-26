@@ -2226,7 +2226,6 @@ pub(crate) fn is_block_keyword(name: &str) -> bool {
             | "when"
             | "with"
             | "every"
-            | "derived"
     )
 }
 
@@ -2781,7 +2780,7 @@ mod tests {
 
     #[test]
     fn parse_derived_field() {
-        let src = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int = derived (array/length @items)\n  }\n}";
+        let src = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int @derived (array/length @items)\n  }\n}";
         let prog = p(src);
         let f = &prog.orbitals[0].entity.as_ref().unwrap().fields[1];
         assert!(f.derived.is_some());

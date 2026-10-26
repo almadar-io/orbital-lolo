@@ -1155,13 +1155,13 @@ impl Formatter {
             self.output.push_str(" @mock ");
             self.write_quoted_string(mock);
         }
+        if let Some(derived) = &field.derived {
+            self.output.push_str(" @derived ");
+            self.fmt_sexpr(derived);
+        }
         if let Some(def) = &field.default {
             self.output.push_str(" = ");
             self.fmt_sexpr(def);
-        }
-        if let Some(derived) = &field.derived {
-            self.output.push_str(" = derived ");
-            self.fmt_sexpr(derived);
         }
     }
 

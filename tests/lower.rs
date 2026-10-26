@@ -1514,10 +1514,11 @@ orbital Probe {{
     }
 
     #[test]
-    fn a_derived_field_is_a_retired_lowering_error() {
-        let derived = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int = derived (array/len [])\n  }\n}";
-        let err = parse_and_lower_str(derived).expect_err("a derived field must not lower");
-        assert!(format!("{err}").contains("ORB_L_DERIVED_RETIRED") || format!("{err:?}").contains("ORB_L_DERIVED_RETIRED"), "{err:?}");
+    fn the_retired_equals_derived_field_no_longer_parses_and_the_annotation_lowers() {
+        let retired = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int = derived (array/len [])\n  }\n}";
+        parse_and_lower_str(retired).expect_err("`= derived (...)` is retired");
+        let annotated = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int @derived (array/len [])\n  }\n}";
+        assert!(parse_and_lower_str(annotated).is_ok(), "the annotation is the one spelling");
         let defaulted = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int = 0\n  }\n}";
         assert!(parse_and_lower_str(defaulted).is_ok(), "control: a default still lowers");
     }
@@ -1953,4 +1954,91 @@ fn index_directive_inside_expects_entity_is_refused_and_a_field_there_still_pars
         .expect_err("@index is not part of an expects shape");
     assert!(format!("{err}").contains("field declaration or }"), "{err}");
     parse_and_lower_str(&source("")).expect("control: the same shape without @index parses");
+}
+
+fn derived_program(field: &str) -> String {
+    format!(
+        r#"app derivedprobe [version: "1.0.0"]
+orbital PersonOrbital {{
+  entity Person [persistent: people] {{
+    id : string!
+    email : string!
+    {field}
+  }}
+}}
+"#
+    )
+}
+
+fn field_json(schema: &orbital_core_base::schema::OrbitalSchema, entity: &str, field: &str) -> Value {
+    entity_json(schema, entity)["fields"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|f| f["name"] == field)
+        .unwrap_or_else(|| panic!("field {field} is declared"))
+        .clone()
+}
+
+#[test]
+fn a_derived_annotation_lowers_to_the_field_derived_expression() {
+    let schema = parse_and_lower_str(&derived_program(
+        "emailKey : string! @derived (str/lower (object/get @entity email))",
+    ))
+    .expect("lowers");
+    let field = field_json(&schema, "Person", "emailKey");
+    assert_eq!(
+        field["derived"],
+        serde_json::json!(["str/lower", ["object/get", "@entity", "email"]])
+    );
+    assert_eq!(field["required"], serde_json::json!(true));
+    assert!(
+        field_json(&schema, "Person", "email").get("derived").is_none(),
+        "control: a plain field serializes no `derived` key"
+    );
+}
+
+#[test]
+fn a_derived_field_may_be_unique_and_carry_the_other_annotations() {
+    let schema = parse_and_lower_str(&derived_program(
+        "emailKey : string! @unique @description \"lower-cased email\" @derived (str/lower (object/get @entity email))",
+    ))
+    .expect("lowers");
+    let field = field_json(&schema, "Person", "emailKey");
+    assert_eq!(field["unique"], serde_json::json!(true));
+    assert!(field.get("derived").is_some());
+}
+
+#[test]
+fn a_derived_field_with_a_default_is_refused_and_each_alone_lowers() {
+    let err = parse_and_lower_str(&derived_program(
+        "emailKey : string! @derived (str/lower (object/get @entity email)) = \"x\"",
+    ))
+    .map(|_| ())
+    .expect_err("a computed field has no default");
+    assert!(format!("{err}").contains("ELOLO_DERIVED_WITH_DEFAULT"), "{err}");
+    parse_and_lower_str(&derived_program("emailKey : string! @derived (str/lower (object/get @entity email))"))
+        .expect("control: derived alone");
+    parse_and_lower_str(&derived_program("emailKey : string = \"x\"")).expect("control: default alone");
+}
+
+#[test]
+fn the_retired_equals_derived_spelling_is_a_parse_error() {
+    let err = parse_and_lower_str(&derived_program("emailKey : string! = derived (str/lower (object/get @entity email))"))
+        .map(|_| ())
+        .expect_err("`= derived (...)` is retired");
+    assert!(!format!("{err}").is_empty());
+}
+
+#[test]
+fn a_derived_annotation_without_an_expression_is_refused() {
+    parse_and_lower_str(&derived_program("emailKey : string! @derived"))
+        .map(|_| ())
+        .expect_err("@derived needs its expression");
+}
+
+#[test]
+fn a_field_named_derived_is_an_ordinary_field_again() {
+    let schema = parse_and_lower_str(&derived_program("derived : string")).expect("the word is free");
+    assert!(field_json(&schema, "Person", "derived").get("derived").is_none());
 }

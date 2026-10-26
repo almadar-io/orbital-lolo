@@ -214,6 +214,7 @@ pub(crate) fn lower_source_field(
         mock: None,
         projected_from: ty.projection(),
         record: field_ref_record(ty, aliases, entity_names, params)?,
+        derived: None,
     })
 }
 
@@ -226,9 +227,6 @@ pub(crate) fn lower_field(
     // Resolve the type expression. Named types may be enum aliases (lower to
     // string + values list), entity references (lower to a Relation field with
     // cardinality), or struct aliases (lower to inline object schema).
-    if f.derived.is_some() {
-        return Err(crate::error::derived_field_error(&f.name).located_exact(f.span));
-    }
     let shape = lower_source_field(&f.type_expr, aliases, entity_names, &[])?;
     let field = FieldDefinition {
         merged_from: None,
@@ -250,6 +248,7 @@ pub(crate) fn lower_field(
         mock: f.mock.clone(),
         projected_from: f.type_expr.projection(),
         record: None,
+        derived: f.derived.clone(),
     };
     if let Some((ty, via)) =
         config_only_through_aliases(&f.type_expr, aliases, allow, &mut HashSet::new())
@@ -547,6 +546,7 @@ pub(crate) fn lower_type_expr(
                 synonyms: None,
                 projected_from: inner.projection(),
                 record: field_ref_record(inner, aliases, entity_names, params)?,
+                derived: None,
             };
             (FieldType::Array, None, Some(Box::new(item)), None, None)
         }
@@ -582,6 +582,7 @@ pub(crate) fn lower_type_expr(
                         synonyms: None,
                         projected_from: slot.projection(),
                         record: field_ref_record(slot, aliases, entity_names, params)?,
+                        derived: None,
                     };
                     Ok((i.to_string(), field))
                 })
@@ -621,6 +622,7 @@ pub(crate) fn lower_type_expr(
                 synonyms: None,
                 projected_from: value.projection(),
                 record: field_ref_record(value, aliases, entity_names, params)?,
+                derived: None,
             };
             (
                 FieldType::Object,
@@ -665,6 +667,7 @@ pub(crate) fn lower_type_expr(
                         synonyms: None,
                         projected_from: v.projection(),
                         record: field_ref_record(v, aliases, entity_names, params)?,
+                        derived: None,
                     },
                 );
             }
@@ -1666,6 +1669,7 @@ fn struct_union_variants(
                 synonyms: None,
                 projected_from: None,
                 record: None,
+                derived: None,
             },
         ));
     }

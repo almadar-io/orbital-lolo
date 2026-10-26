@@ -24,7 +24,7 @@ pub struct Vocabulary {
     pub reserved_events: &'static [&'static str],
 }
 
-/// `app orbital uses expects entity type derived trait initial state for
+/// `app orbital uses expects entity type trait initial state for
 /// page as theme emits listens ticks config when with from to every
 /// capabilities match external internal on name fields events event
 /// emitsScope identity pages omit only roles entities extend lazy locales public input http boot
@@ -44,7 +44,6 @@ const KEYWORDS: &[&str] = &[
     "expects",
     "entity",
     "type",
-    "derived",
     "trait",
     "initial",
     "state",
@@ -190,6 +189,7 @@ const ANNOTATIONS: &[&str] = &[
     "holds",
     "ensures",
     "index",
+    "derived",
 ];
 
 /// `entity payload state now config user trait event prevEvents prevStates

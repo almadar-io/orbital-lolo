@@ -1083,3 +1083,23 @@ orbital EdgeOrbital {
     let formatted = format_program(&parse_str(source).expect("parse"));
     assert!(!formatted.contains("@index"), "{formatted}");
 }
+
+#[test]
+fn derived_annotation_survives_reformat() {
+    let source = r#"app test-derived [version: "1.0.0", description: "Derived field round-trip."]
+orbital PersonOrbital {
+  entity Person [persistent: people] {
+    id : string!
+    email : string!
+    emailKey : string! @unique @derived (str/lower (object/get @entity email))
+  }
+}
+"#;
+    let formatted = format_program(&parse_str(source).expect("parse original"));
+    assert!(formatted.contains("@derived"), "formatter dropped `@derived`; got:\n{formatted}");
+    assert!(!formatted.contains("= derived"), "the retired spelling must not be printed:\n{formatted}");
+    let v1 = canonicalize(strip_nulls(serde_json::to_value(parse_and_lower_str(source).unwrap()).unwrap()));
+    let v2 = canonicalize(strip_nulls(serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap()));
+    assert_eq!(v1, v2, "@derived changed semantics across a reformat");
+    assert!(v1.to_string().contains("\"derived\""), "control: the IR carries the expression this test round-trips");
+}

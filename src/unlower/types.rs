@@ -232,7 +232,7 @@ pub(super) fn entity_field(fd: &FieldDefinition) -> Result<EntityField, UnlowerE
         synonyms: fd.synonyms.clone(),
         mock: fd.mock.clone(),
         default: fd.default.clone(),
-        derived: None,
+        derived: fd.derived.clone(),
         span: Span::dummy(),
     })
 }
