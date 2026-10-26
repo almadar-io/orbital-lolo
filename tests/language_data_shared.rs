@@ -21,6 +21,7 @@ fn a_prop_only_in_the_installed_json_is_visible_to_l1_and_l2() {
             "services":"dist/patterns/services-registry.json",
             "bindingRules":"dist/language/binding-rules.json",
             "programTypes":"dist/language/program-types.json",
+            "protocols":"dist/language/protocols.json",
             "themes":"themes"}}"#,
     )
     .unwrap();
@@ -45,6 +46,11 @@ fn a_prop_only_in_the_installed_json_is_visible_to_l1_and_l2() {
     )
     .unwrap();
     fs::write(core.join("dist/language/program-types.json"), "{}").unwrap();
+    fs::write(
+        core.join("dist/language/protocols.json"),
+        r#"[{"name":"route","address":null,"viewer":true,"grant":null,"side":"client"}]"#,
+    )
+    .unwrap();
     fs::create_dir_all(core.join("themes")).unwrap();
     fs::write(core.join("themes/zz.json"), r#"{"name":"zz","tokens":{}}"#).unwrap();
 

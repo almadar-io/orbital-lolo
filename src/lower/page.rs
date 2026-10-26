@@ -64,7 +64,7 @@ fn check_protocol(p: &Page) -> Result<(), LowerError> {
         return Ok(());
     };
     let spec = check_protocol_word(word)?;
-    match (spec.address, &p.address) {
+    match (spec.address.as_deref(), &p.address) {
         (None, Some(_)) => Err(protocol_error(
             "ORB_P_ADDRESS_UNEXPECTED",
             format!("page protocol `{word}` takes no address: delete the `{{ … }}`"),
@@ -73,7 +73,7 @@ fn check_protocol(p: &Page) -> Result<(), LowerError> {
             let required: Vec<&str> = fields
                 .iter()
                 .filter(|f| f.required)
-                .map(|f| f.name)
+                .map(|f| f.name.as_str())
                 .collect();
             Err(protocol_error(
                 "ORB_P_ADDRESS_REQUIRED",
@@ -90,12 +90,13 @@ fn check_protocol(p: &Page) -> Result<(), LowerError> {
 pub(crate) fn check_protocol_word(
     word: &str,
 ) -> Result<&'static protocols::ProtocolSpec, LowerError> {
-    let spec = protocols::protocol(word).ok_or_else(|| {
+    let table = protocols::table().map_err(|e| protocol_error(e.code(), e.to_string()))?;
+    let spec = table.iter().find(|row| row.name == word).ok_or_else(|| {
         protocol_error(
             "ORB_P_UNKNOWN_PROTOCOL",
             format!(
                 "unknown page protocol `{word}`: the protocols are {}",
-                written_protocols()
+                written_protocols(table)
             ),
         )
     })?;
@@ -108,8 +109,8 @@ pub(crate) fn check_protocol_word(
     Ok(spec)
 }
 
-fn written_protocols() -> String {
-    protocols::PROTOCOLS
+fn written_protocols(table: &[protocols::ProtocolSpec]) -> String {
+    table
         .iter()
         .filter(|row| !matches!(row.side, ProtocolSide::Client))
         .map(|row| format!("`{}`", row.name))

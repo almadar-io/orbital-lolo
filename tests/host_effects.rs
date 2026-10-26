@@ -296,7 +296,7 @@ mod supervisor {
             let errors: Arc<Mutex<Vec<String>>> = Arc::default();
             let on_done: Arc<CompletionDone> = {
                 let (events, errors) = (events.clone(), errors.clone());
-                Arc::new(move |_site: &CallSite, event: &str, _: Option<&str>, result: Result<DispatchOutcomes, DispatchError>| match result {
+                Arc::new(move |_site: &CallSite, event: &str, _: &orbital_core_base::value::Value, _: Option<&str>, result: Result<DispatchOutcomes, DispatchError>| match result {
                     Ok(outcomes) => lock(&events).extend(emits(&outcomes)),
                     Err(error) => lock(&errors).push(format!("{event}: {error}")),
                 })
@@ -352,6 +352,41 @@ mod supervisor {
             }
             self.handles.close_all();
         }
+    }
+
+    fn send(rig: &Rig, event: &str, payload: Json) {
+        let payload: Value = serde_json::from_value(payload).expect("payload");
+        let progress = rig.kernel.start_dispatch("Supervisor", None, event, payload, None, None).expect(event);
+        let outcomes = rig.sink.drive(progress).expect("the request drives to its end");
+        lock(&rig.events).extend(emits(&outcomes));
+    }
+
+    #[test]
+    fn a_requested_restart_stops_the_running_child_before_one_new_copy_starts() {
+        let rig = Rig::start(lowered("one-for-one", json!([child("a", "permanent"), child("b", "permanent")]), 1));
+        let booted = rig.events();
+        let (a0, b0) = (pids_of(&booted, "a")[0], pids_of(&booted, "b")[0]);
+        send(&rig, "RESTART", json!({ "index": 0 }));
+        rig.wait_until("a second CHILD_STARTED for a", |ev| pids_of(ev, "a").len() == 2);
+        let a1 = pids_of(&rig.events(), "a")[1];
+        assert_ne!(a1, a0);
+        rig.wait_dead(&[a0]);
+        assert!(alive(a1) && alive(b0), "control: the sibling keeps running");
+        assert_eq!(pids_of(&rig.events(), "b").len(), 1, "control: one-for-one never touches the sibling");
+        assert_eq!(count(&rig.events(), "SUPERVISOR_GAVE_UP"), 0, "a requested restart does not count toward maxRestarts=1");
+        send(&rig, "RESTART", json!({ "index": 0 }));
+        rig.wait_until("a third CHILD_STARTED for a", |ev| pids_of(ev, "a").len() == 3);
+        assert_eq!(count(&rig.events(), "SUPERVISOR_GAVE_UP"), 0, "edge: a second request still does not count");
+    }
+
+    #[test]
+    fn control_a_restart_of_an_index_out_of_range_changes_nothing() {
+        let rig = Rig::start(lowered("one-for-one", json!([child("a", "permanent")]), 1));
+        let a0 = pids_of(&rig.events(), "a")[0];
+        send(&rig, "RESTART", json!({ "index": 5 }));
+        std::thread::sleep(Duration::from_millis(300));
+        assert_eq!(pids_of(&rig.events(), "a"), vec![a0]);
+        assert!(alive(a0));
     }
 
     #[test]

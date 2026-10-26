@@ -227,16 +227,11 @@ mod language_data_export {
         out
     }
 
-    fn protocols() -> serde_json::Value {
-        serde_json::to_value(orbital_core_base::protocols::PROTOCOLS).expect("serializes")
-    }
-
     /// `(file name, generated text)` for the datasets and the codes' TS module.
     fn generated() -> Vec<(&'static str, String)> {
         vec![
             ("vocabulary.json", pretty(&vocabulary_with_orb())),
             ("constructs.json", pretty(super::constructs())),
-            ("protocols.json", pretty(&protocols())),
             ("validation-codes.json", pretty(&validation_codes())),
             ("validation-codes.ts", validation_codes_ts()),
         ]
@@ -261,30 +256,6 @@ mod language_data_export {
 
         let dropped = ts.replace("  ORB_T_TYPE_UNKNOWN: \"ORB_T_TYPE_UNKNOWN\",\n", "");
         assert_ne!(ts_keys(&dropped), json);
-    }
-
-    #[test]
-    fn protocols_json_carries_every_table_row_with_its_address() {
-        let rows = protocols();
-        let rows = rows.as_array().expect("array");
-        assert_eq!(
-            rows.len(),
-            orbital_core_base::protocols::PROTOCOLS.len()
-        );
-        let http = rows
-            .iter()
-            .find(|r| r["name"] == "http")
-            .expect("http row");
-        let address = http["address"].as_array().expect("http address");
-        assert!(address
-            .iter()
-            .any(|f| f["name"] == "port" && f["required"] == true));
-        assert_eq!(http["grant"], "net-listen");
-        let stdio = rows
-            .iter()
-            .find(|r| r["name"] == "stdio")
-            .expect("stdio row");
-        assert!(stdio["address"].is_null());
     }
 
     fn core_dir() -> PathBuf {

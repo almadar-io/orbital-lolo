@@ -709,10 +709,10 @@ orbital O {
             run_fold(&count, value(serde_json::json!("a"))).unwrap(),
             value(serde_json::json!(1))
         );
-        let err = run_fold(&count, value(serde_json::json!({ "kind": "x" }))).unwrap_err();
-        assert!(
-            err.contains("no variant"),
-            "control: an object is no variant of Expr: {err}"
+        assert_eq!(
+            run_fold(&count, value(serde_json::json!({ "kind": "x" }))).unwrap(),
+            orbital_core_base::value::Value::Null,
+            "control: an object is no variant of Expr, so the failable fold answers null (owner ruling 2026-10-25)"
         );
     }
 
