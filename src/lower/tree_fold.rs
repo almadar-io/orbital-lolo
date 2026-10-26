@@ -623,7 +623,7 @@ orbital O {
         let mut payload = orbital_core_base::value::ValueMap::new();
         payload.insert("v".to_string(), v);
         let ctx = orbital_core_eval::evaluator::BindingContextBuilder::new()
-            .payload(orbital_core_base::value::Value::Object(payload))
+            .payload(orbital_core_base::value::Value::Object(payload.into()))
             .build();
         orbital_core_eval::evaluator::Evaluator::new()
             .evaluate(call, &ctx)
@@ -725,7 +725,7 @@ orbital O {
                 let (_, count) = expr_folds();
                 let mut nested = Value::Bool(true);
                 for _ in 0..1000 {
-                    nested = Value::Array(vec![Value::String("not".to_string()), nested]);
+                    nested = Value::Array(vec![Value::String(("not".to_string()).into()), nested].into());
                 }
                 let out = run_fold(&count, nested);
                 out.map(|v| match v {

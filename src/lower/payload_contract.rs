@@ -129,7 +129,7 @@ fn check_effect(
         return None;
     };
     // A `@config.`-bound or otherwise non-literal entity is not decidable here.
-    let entity_fields = entities.get(entity_name)?;
+    let entity_fields = entities.get(entity_name.as_str())?;
     let success_event = emit_success_event(arr.as_slice())?;
     let declared = emit_payloads.get(success_event.as_str())?;
 
@@ -140,7 +140,7 @@ fn check_effect(
         event: success_event,
         field: (*first).to_string(),
         operator: format!("persist {action}"),
-        entity: entity_name.clone(),
+        entity: entity_name.clone().into_inner(),
     })
 }
 
@@ -157,5 +157,5 @@ fn emit_success_event(args: &[SExpression]) -> Option<String> {
             SExpression::String(s) => Some(s.clone()),
             _ => None,
         }
-    })
+    }).map(|v| v.into_inner())
 }

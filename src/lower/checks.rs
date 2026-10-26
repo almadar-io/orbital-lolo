@@ -347,7 +347,7 @@ fn check_set_in_expr(
                 for binding in bindings.iter() {
                     if let SExpression::Array(pair) = binding {
                         if let Some(SExpression::String(name)) = pair.first() {
-                            nested.insert(name.clone());
+                            nested.insert(name.clone().into_inner());
                         }
                     }
                 }
@@ -485,7 +485,7 @@ fn check_one_set_value(
                         orbital: t.name.clone(),
                         trait_name: t.name.clone(),
                         field: field.to_string(),
-                        value: s.clone(),
+                        value: s.clone().into_inner(),
                         suggestion: crate::types::closest_name(s, &members),
                         members: members.join(", "),
                     });
@@ -592,7 +592,7 @@ fn check_one_set_value(
                 // has its type determined by the binding's initializer, which
                 // L1 can't reliably infer (often an operator call). Defer to
                 // L2 rather than false-classifying it as a string literal.
-                if let_bindings.contains(s) {
+                if let_bindings.contains(s.as_str()) {
                     None
                 } else {
                     Some(("string".to_string(), "literal".to_string()))
@@ -1460,7 +1460,7 @@ fn check_one_expr_match(
 fn pattern_from_literal_sexpr(e: &SExpression) -> MatchPattern {
     match e {
         SExpression::String(s) if s == "_" => MatchPattern::Wildcard,
-        SExpression::String(s) => MatchPattern::Str(s.clone()),
+        SExpression::String(s) => MatchPattern::Str(s.clone().into_inner()),
         SExpression::Bool(b) => MatchPattern::Bool(*b),
         SExpression::Number(n) => MatchPattern::Int(*n as i64),
         _ => unreachable!("parse_expr_match only ever encodes MatchPattern::literal_sexpr atoms"),
@@ -1472,7 +1472,7 @@ fn pattern_from_literal_sexpr(e: &SExpression) -> MatchPattern {
 /// literal scrutinee (which carries no vocabulary to check against anyway).
 fn expr_match_scrutinee_label(expr: &SExpression) -> String {
     match expr {
-        SExpression::String(s) => s.clone(),
+        SExpression::String(s) => s.clone().into_inner(),
         _ => "<literal>".to_string(),
     }
 }
@@ -1701,7 +1701,7 @@ fn collect_button_actions_recursive(expr: &SExpression, actions: &mut HashSet<St
                 if event_keys.contains(key) {
                     match value {
                         SExpression::String(s) => {
-                            actions.insert(s.clone());
+                            actions.insert(s.clone().into_inner());
                         }
                         // Some legacy event props accept an array of
                         // strings (every element is an event name). The
@@ -1710,7 +1710,7 @@ fn collect_button_actions_recursive(expr: &SExpression, actions: &mut HashSet<St
                         SExpression::Array(arr) => {
                             for item in arr {
                                 if let SExpression::String(s) = item {
-                                    actions.insert(s.clone());
+                                    actions.insert(s.clone().into_inner());
                                 }
                             }
                         }

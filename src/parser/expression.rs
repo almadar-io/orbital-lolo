@@ -28,11 +28,11 @@ impl Parser {
                     .canon_head(&name)
                     .map(str::to_string)
                     .unwrap_or(name);
-                SExpression::String(name)
+                SExpression::string(name)
             }
             TokenKind::Equals => {
                 self.advance();
-                SExpression::String("=".to_string())
+                SExpression::string("=")
             }
             TokenKind::Arrow | TokenKind::UnicodeArrow => {
                 return Err(ParseError::InvalidSExpr {
@@ -54,7 +54,7 @@ impl Parser {
             });
         }
         let head = match &op {
-            SExpression::String(s) => Some(s.clone()),
+            SExpression::String(s) => Some(s.to_string()),
             _ => None,
         };
         // `(match <scrutinee> (<pattern> <value>) … (_ <value>))` — Phase 3b
@@ -210,8 +210,8 @@ impl Parser {
             };
             let body = orbital_core_base::schema::quote::encode_quote_body(quoted);
             return Ok(SExpression::Array(vec![
-                SExpression::String("quote".to_string()),
-                SExpression::String(body),
+                SExpression::string("quote"),
+                SExpression::string(body),
             ]));
         }
         // `(quasiquote x)`: `x` becomes one encoded body with each `(unquote e)`
@@ -247,7 +247,7 @@ impl Parser {
         if head.as_deref() == Some("persist") {
             if let Some(SExpression::String(s)) = items.get_mut(1) {
                 if let Some(canon) = self.lang.canon_capability(s) {
-                    *s = canon.to_string();
+                    *s = canon.to_string().into();
                 }
             }
         }
@@ -287,7 +287,7 @@ impl Parser {
             });
         }
 
-        let mut items = vec![SExpression::String("match".to_string()), scrutinee];
+        let mut items = vec![SExpression::string("match"), scrutinee];
         let mut non_wildcard = 0usize;
         loop {
             self.skip_newlines();
@@ -362,7 +362,7 @@ impl Parser {
                 self.advance();
             }
             self.advance();
-            emitted.push(SExpression::Array(names.iter().cloned().map(SExpression::String).collect()));
+            emitted.push(SExpression::Array(names.iter().cloned().map(SExpression::string).collect()));
             self.binding_scopes.push(names);
             return Ok(emitted);
         }
@@ -371,7 +371,7 @@ impl Parser {
             if let SExpression::Array(entries) = &grouped {
                 for entry in entries {
                     if let SExpression::String(name) = entry {
-                        names.push(name.clone());
+                        names.push(name.clone().into_inner());
                     }
                 }
             }
@@ -408,14 +408,14 @@ impl Parser {
         };
         for (name, _) in &flat {
             names.push(name.clone());
-            emitted.push(SExpression::String(name.clone()));
+            emitted.push(SExpression::string(name.clone()));
         }
         self.binding_scopes.push(names);
         if let Some((body, span)) = trailing_body {
             if self.is_lexically_bound(&body) {
                 return Err(ParseError::BareBindingReference { name: body, span });
             }
-            emitted.push(SExpression::String(body));
+            emitted.push(SExpression::string(body));
         }
         Ok(emitted)
     }
@@ -451,7 +451,7 @@ impl Parser {
             let name = match self.peek().clone() {
                 TokenKind::Identifier(n) => {
                     self.advance();
-                    SExpression::String(n)
+                    SExpression::string(n)
                 }
                 other => {
                     return Err(ParseError::InvalidSExpr {
@@ -474,7 +474,7 @@ impl Parser {
             let value = self.with_trail_seg(value_trail, |p| p.parse_sexpr_or_value())?;
             let value = match annotation {
                 Some(ty) => SExpression::Array(vec![
-                    SExpression::String("typed".to_string()),
+                    SExpression::string("typed"),
                     value,
                     serde_json::from_value(
                         serde_json::to_value(ty).expect("a type expression serializes"),
@@ -488,7 +488,7 @@ impl Parser {
             // so the name only enters scope after its own value is parsed.
             if let SExpression::String(bound) = &name {
                 if let Some(frame) = self.binding_scopes.last_mut() {
-                    frame.push(bound.clone());
+                    frame.push(bound.clone().into_inner());
                 }
             }
             pairs.push(SExpression::Array(vec![name, value]));
@@ -511,7 +511,7 @@ impl Parser {
             TokenKind::LBracket => self.parse_array_literal(),
             TokenKind::String(s) => {
                 self.advance();
-                Ok(SExpression::String(s))
+                Ok(SExpression::string(s))
             }
             TokenKind::Integer(n) => {
                 self.advance();
@@ -532,14 +532,14 @@ impl Parser {
             TokenKind::Sigil(name) => {
                 self.advance();
                 let name = self.canon_sigil_root(&name);
-                Ok(SExpression::String(format!("@{}", lower_self_sigil(&name))))
+                Ok(SExpression::string(format!("@{}", lower_self_sigil(&name))))
             }
             TokenKind::PayloadSigil(name) => {
                 self.advance();
                 if name.is_empty() {
-                    Ok(SExpression::String("@payload".to_string()))
+                    Ok(SExpression::string("@payload"))
                 } else {
-                    Ok(SExpression::String(format!("@payload.{name}")))
+                    Ok(SExpression::string(format!("@payload.{name}")))
                 }
             }
             TokenKind::Identifier(name) => {
@@ -555,7 +555,7 @@ impl Parser {
                     return Ok(value);
                 }
                 if let Some(dotted) = self.take_dotted_event_ref(&name, span) {
-                    return Ok(SExpression::String(dotted));
+                    return Ok(SExpression::string(dotted));
                 }
                 // A native rendering of `true`/`false`/`null` lexes as a
                 // plain identifier (the lexer stays language-free); the
@@ -588,7 +588,7 @@ impl Parser {
                     "state" => "@state".to_string(),
                     _ => name,
                 };
-                Ok(SExpression::String(atom))
+                Ok(SExpression::string(atom))
             }
             TokenKind::Dot => {
                 let span = self.peek_span();
@@ -691,7 +691,7 @@ impl Parser {
         self.pending_inline_producers
             .push(self.current_hoist_producer.clone());
 
-        Ok(SExpression::String(format!("@trait.{}", name)))
+        Ok(SExpression::string(format!("@trait.{}", name)))
     }
 
     pub(crate) fn parse_object_literal(&mut self) -> Result<SExpression, ParseError> {
@@ -787,7 +787,7 @@ impl Parser {
             return Ok(parsed);
         };
         let mut marked = Vec::with_capacity(items.len() + 1);
-        marked.push(SExpression::String("list".to_string()));
+        marked.push(SExpression::string("list"));
         marked.extend(items);
         Ok(SExpression::Array(marked))
     }

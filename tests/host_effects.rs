@@ -196,7 +196,7 @@ mod supervisor {
 
     fn text(payload: &Value, field: &str) -> Option<String> {
         match payload.get_path(field) {
-            Some(Value::String(s)) => Some(s.clone()),
+            Some(Value::String(s)) => Some(s.clone().into_inner()),
             _ => None,
         }
     }

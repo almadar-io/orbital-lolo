@@ -3459,14 +3459,14 @@ impl Formatter {
                 SExpression::Array(grouped) if params.len() == 2 => grouped
                     .iter()
                     .filter_map(|p| match p {
-                        SExpression::String(n) => Some(n.clone()),
+                        SExpression::String(n) => Some(n.to_string()),
                         _ => None,
                     })
                     .collect(),
                 _ => params[1..]
                     .iter()
                     .filter_map(|p| match p {
-                        SExpression::String(n) => Some(n.clone()),
+                        SExpression::String(n) => Some(n.to_string()),
                         _ => None,
                     })
                     .collect(),

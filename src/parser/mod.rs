@@ -2840,7 +2840,7 @@ mod tests {
         };
         let keys: Vec<&str> = address.keys().map(String::as_str).collect();
         assert_eq!(keys, ["host", "port", "path"]);
-        assert_eq!(address["host"], SExpression::String("@config.host".to_string()));
+        assert_eq!(address["host"], SExpression::String(("@config.host".to_string()).into()));
     }
 
     #[test]
@@ -3003,11 +3003,11 @@ mod tests {
         assert_eq!(
             paren,
             SExpression::Array(vec![
-                SExpression::String("if".into()),
+                SExpression::string("if"),
                 SExpression::Array(vec![
-                    SExpression::String("=".into()),
-                    SExpression::String("@user.role".into()),
-                    SExpression::String("reader".into()),
+                    SExpression::string("="),
+                    SExpression::string("@user.role"),
+                    SExpression::string("reader"),
                 ]),
                 SExpression::Bool(false),
                 SExpression::Bool(true),
@@ -3026,7 +3026,7 @@ mod tests {
         );
         assert_ne!(paren, bracket);
         assert!(
-            matches!(&bracket, SExpression::Array(items) if items.first() == Some(&SExpression::String("list".into()))),
+            matches!(&bracket, SExpression::Array(items) if items.first() == Some(&SExpression::string("list"))),
             "{bracket:?}"
         );
     }
@@ -3391,16 +3391,16 @@ fn behavior_value_object(raw: &str) -> Option<SExpression> {
     if let Some(t) = TraitValueRef::parse(raw) {
         return Some(SExpression::Object(
             orbital_core_base::schema::SObject::from([
-                ("behavior".to_string(), SExpression::String(t.behavior)),
-                ("trait".to_string(), SExpression::String(t.trait_name)),
+                ("behavior".to_string(), SExpression::string(t.behavior)),
+                ("trait".to_string(), SExpression::string(t.trait_name)),
             ]),
         ));
     }
     let o = OrbitalValueRef::parse(raw)?;
     Some(SExpression::Object(
         orbital_core_base::schema::SObject::from([
-            ("behavior".to_string(), SExpression::String(o.behavior)),
-            ("orbital".to_string(), SExpression::String(o.orbital)),
+            ("behavior".to_string(), SExpression::string(o.behavior)),
+            ("orbital".to_string(), SExpression::string(o.orbital)),
         ]),
     ))
 }

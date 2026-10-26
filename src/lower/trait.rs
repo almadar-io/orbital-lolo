@@ -24,8 +24,8 @@ pub(crate) fn expand_term_match(tr: &Transition) -> Vec<Transition> {
             let guard = match &arm.pattern {
                 MatchPattern::Wildcard => None,
                 other => Some(SExpression::Array(vec![
-                    SExpression::String("==".to_string()),
-                    SExpression::String(scrutinee_sigil.clone()),
+                    SExpression::string("=="),
+                    SExpression::string(scrutinee_sigil.clone()),
                     other.literal_sexpr(),
                 ])),
             };
@@ -133,17 +133,17 @@ pub(crate) fn desugar_notify(expr: &SExpression) -> Result<SExpression, LowerErr
             let level = arr.pop().expect("a notify has three parts");
             if let SExpression::String(s) = &level {
                 if !s.starts_with('@') && !NOTIFY_LEVELS.contains(&s.as_str()) {
-                    return Err(LowerError::NotifyInvalidLevel { level: s.clone() });
+                    return Err(LowerError::NotifyInvalidLevel { level: s.clone().into_inner() });
                 }
             }
             let mut props = orbital_core_base::schema::SObject::new();
-            props.insert("type".to_string(), SExpression::String("alert".to_string()));
+            props.insert("type".to_string(), SExpression::string("alert"));
             props.insert("variant".to_string(), level);
             props.insert("message".to_string(), message);
             props.insert("dismissible".to_string(), SExpression::Bool(true));
             Ok(SExpression::Array(vec![
-                SExpression::String("render-ui".to_string()),
-                SExpression::String("toast".to_string()),
+                SExpression::string("render-ui"),
+                SExpression::string("toast"),
                 SExpression::Object(props),
             ]))
         },
@@ -165,13 +165,13 @@ fn build_nested_if(scrutinee: &SExpression, arms: &[(SExpression, SExpression)])
         return value.clone();
     }
     let cond = SExpression::Array(vec![
-        SExpression::String("==".to_string()),
+        SExpression::string("=="),
         scrutinee.clone(),
         pattern.clone(),
     ]);
     let else_branch = build_nested_if(scrutinee, rest);
     SExpression::Array(vec![
-        SExpression::String("if".to_string()),
+        SExpression::string("if"),
         cond,
         value.clone(),
         else_branch,

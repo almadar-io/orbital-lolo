@@ -1318,7 +1318,7 @@ fn check_payload_sibling_literals(
         let Some(SExpression::String(event_name)) = item.get(sibling) else {
             continue;
         };
-        let Some(declared_fields) = payload_index.get(event_name) else {
+        let Some(declared_fields) = payload_index.get(event_name.as_str()) else {
             continue;
         };
         let Some(payload_value) = item.get(member).and_then(sexpr_as_object) else {

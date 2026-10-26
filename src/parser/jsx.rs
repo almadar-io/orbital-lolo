@@ -95,7 +95,7 @@ impl Parser {
                         span,
                     });
                 }
-                Ok(SExpression::String(format!("@trait.{}", member)))
+                Ok(SExpression::string(format!("@trait.{}", member)))
             }
             JsxTag::Pattern(name) => {
                 let children = if self_closing {
@@ -170,7 +170,7 @@ impl Parser {
         match self.peek().clone() {
             TokenKind::String(s) => {
                 self.advance();
-                Ok(SExpression::String(s))
+                Ok(SExpression::string(s))
             }
             TokenKind::LBrace => {
                 self.advance();
@@ -341,7 +341,7 @@ impl Parser {
             match key.as_str() {
                 "linkedEntity" => {
                     linked_entity = match &value {
-                        SExpression::String(s) => Some(s.clone()),
+                        SExpression::String(s) => Some(s.clone().into_inner()),
                         other => {
                             return Err(ParseError::InvalidSExpr {
                                 message: format!(
@@ -445,7 +445,7 @@ impl Parser {
         self.pending_inline_producers
             .push(self.current_hoist_producer.clone());
 
-        SExpression::String(format!("@trait.{}", name))
+        SExpression::string(format!("@trait.{}", name))
     }
 }
 
@@ -463,7 +463,7 @@ fn desugar_pattern(
         .iter()
         .find(|(k, _)| k == "type")
         .map(|(_, v)| v.clone())
-        .unwrap_or_else(|| SExpression::String(kebab_case(name)));
+        .unwrap_or_else(|| SExpression::string(kebab_case(name)));
     map.insert("type".to_string(), type_value);
     for (key, value) in attrs {
         if key == "type" {
@@ -515,7 +515,7 @@ fn listens_from_object(value: &SExpression, span: Span) -> Result<Vec<Listen>, P
         };
         out.push(Listen {
             event: event.clone(),
-            triggers: Some(triggers),
+            triggers: Some(triggers.into_inner()),
             guard: None,
             payload_mapping: Vec::new(),
             payload: Vec::new(),
@@ -691,12 +691,12 @@ mod tests {
         let config = config.expect("config map");
         assert_eq!(
             config.get("amount").and_then(|f| f.default.as_ref()),
-            Some(&SExpression::String("@entity.displayIndex".to_string())),
+            Some(&SExpression::String(("@entity.displayIndex".to_string()).into())),
             "@entity prop expression must land verbatim in the config default"
         );
         assert_eq!(
             config.get("label").and_then(|f| f.default.as_ref()),
-            Some(&SExpression::String("@party.title".to_string())),
+            Some(&SExpression::String(("@party.title".to_string()).into())),
             "lambda-param prop expression must land verbatim in the config default"
         );
 

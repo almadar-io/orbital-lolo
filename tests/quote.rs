@@ -142,6 +142,6 @@ fn formatter_round_trips_quote() {
 fn quote_body_of_reads_the_lowered_form() {
     let mut bodies = Vec::new();
     quote_bodies(&lowered(&program("quote", GUARD_QUOTED)), &mut bodies);
-    let call = SExpression::Array(vec![SExpression::String("quote".into()), SExpression::String(bodies[0].clone())]);
+    let call = SExpression::Array(vec![SExpression::String("quote".into()), SExpression::String((bodies[0].clone()).into())]);
     assert_eq!(quote_body_of(&call), Some(bodies[0].as_str()));
 }

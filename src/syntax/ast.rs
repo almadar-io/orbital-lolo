@@ -994,10 +994,10 @@ impl MatchPattern {
     /// value positions) — neither duplicates it.
     pub fn literal_sexpr(&self) -> SExpression {
         match self {
-            MatchPattern::Str(s) | MatchPattern::Word(s) => SExpression::String(s.clone()),
+            MatchPattern::Str(s) | MatchPattern::Word(s) => SExpression::string(s.clone()),
             MatchPattern::Bool(b) => SExpression::Bool(*b),
             MatchPattern::Int(n) => SExpression::Number(*n as f64),
-            MatchPattern::Wildcard => SExpression::String("_".to_string()),
+            MatchPattern::Wildcard => SExpression::string("_"),
         }
     }
 }

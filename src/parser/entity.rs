@@ -192,7 +192,7 @@ impl Parser {
         let fields = items
             .iter()
             .map(|item| match item {
-                SExpression::String(name) if !name.is_empty() => Some(name.clone()),
+                SExpression::String(name) if !name.is_empty() => Some(name.to_string()),
                 _ => None,
             })
             .collect::<Option<Vec<String>>>()
@@ -208,7 +208,7 @@ impl Parser {
                 ))
             }
         };
-        Ok(orbital_core_base::schema::EntityIndex { fields, order_by })
+        Ok(orbital_core_base::schema::EntityIndex { fields, order_by: order_by.map(|v| v.into_inner()) })
     }
 
     /// The `read|create|update|delete` op at a `@<op>` directive, if the cursor is on one.

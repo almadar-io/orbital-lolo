@@ -2914,7 +2914,7 @@ mod tests {
             ExpectDeclaration::Config { name, knob, strict } => {
                 assert_eq!(name, "stdio");
                 assert_eq!(knob.field_type, "string");
-                assert_eq!(knob.default, Some(SExpression::String("pipe".to_string())));
+                assert_eq!(knob.default, Some(SExpression::String(("pipe".to_string()).into())));
                 assert!(*strict);
             }
             other => panic!("expected a config obligation, got {other:?}"),
@@ -2934,7 +2934,7 @@ mod tests {
             .expect("expects re-lowered");
         assert_eq!(again.len(), 2);
         assert!(
-            matches!(&again[0], ExpectDeclaration::Config { knob, .. } if knob.default == Some(SExpression::String("pipe".to_string())))
+            matches!(&again[0], ExpectDeclaration::Config { knob, .. } if knob.default == Some(SExpression::String(("pipe".to_string()).into())))
         );
     }
 
