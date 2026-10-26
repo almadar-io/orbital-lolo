@@ -46,6 +46,7 @@ impl Parser {
         let mut fields = Vec::new();
         let mut access = ExpectedAccess::default();
         let mut invariants = Vec::new();
+        let mut indexes = Vec::new();
         let mut instances: Vec<orbital_core_base::schema::SObject> = Vec::new();
         let mut locale_instances: std::collections::BTreeMap<
             String,
@@ -97,6 +98,11 @@ impl Parser {
                 self.expect_newline_or_eof()?;
                 continue;
             }
+            if matches!(self.peek(), TokenKind::Sigil(raw) if self.canon_annotation_sigil(raw) == "index")
+            {
+                indexes.push(self.parse_index_directive()?);
+                continue;
+            }
             if self.is_entity_field_start() {
                 fields.push(self.parse_field_decl()?);
             } else {
@@ -144,9 +150,65 @@ impl Parser {
             update_policy: access.update_policy,
             delete_policy: access.delete_policy,
             invariants,
+            indexes,
             fields,
             span,
         })
+    }
+
+    /// One `@index { fields: [..], orderBy?: ".." }` access path, in `fetch`'s own record keys.
+    fn parse_index_directive(
+        &mut self,
+    ) -> Result<orbital_core_base::schema::EntityIndex, ParseError> {
+        let directive_span = self.peek_span();
+        self.advance();
+        let invalid = |code: &str, detail: &str| ParseError::InvalidType {
+            span: directive_span,
+            message: format!("{code}: {detail}"),
+        };
+        let value = self.parse_sexpr_or_value()?;
+        self.expect_newline_or_eof()?;
+        let SExpression::Object(record) = value else {
+            return Err(invalid(
+                "ELOLO_INDEX_NOT_A_RECORD",
+                "`@index` takes one record, e.g. `@index { fields: [\"graphId\"], orderBy: \"weight:desc\" }`",
+            ));
+        };
+        if let Some(key) = record.keys().find(|k| !matches!(k.as_str(), "fields" | "orderBy")) {
+            return Err(invalid(
+                "ELOLO_INDEX_UNKNOWN_KEY",
+                &format!("`@index` has no key `{key}`; its keys are `fields` and `orderBy`"),
+            ));
+        }
+        let fields_invalid = || {
+            invalid(
+                "ELOLO_INDEX_FIELDS_INVALID",
+                "`@index` needs `fields`: a non-empty list of field-name strings",
+            )
+        };
+        let Some(SExpression::Array(items)) = record.get("fields") else {
+            return Err(fields_invalid());
+        };
+        let fields = items
+            .iter()
+            .map(|item| match item {
+                SExpression::String(name) if !name.is_empty() => Some(name.clone()),
+                _ => None,
+            })
+            .collect::<Option<Vec<String>>>()
+            .filter(|names| !names.is_empty())
+            .ok_or_else(fields_invalid)?;
+        let order_by = match record.get("orderBy") {
+            None => None,
+            Some(SExpression::String(order)) if !order.is_empty() => Some(order.clone()),
+            Some(_) => {
+                return Err(invalid(
+                    "ELOLO_INDEX_ORDER_BY_INVALID",
+                    "`orderBy` is a string like \"weight\" or \"weight:desc\"",
+                ))
+            }
+        };
+        Ok(orbital_core_base::schema::EntityIndex { fields, order_by })
     }
 
     /// The `read|create|update|delete` op at a `@<op>` directive, if the cursor is on one.

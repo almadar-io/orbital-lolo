@@ -1991,6 +1991,7 @@ impl Formatter {
         if !entity.fields.is_empty()
             || has_access_directives
             || !entity.invariants.is_empty()
+            || !entity.indexes.is_empty()
             || !entity.instances.is_empty()
             || !entity.locale_instances.is_empty()
         {
@@ -2003,6 +2004,23 @@ impl Formatter {
                 &entity.delete_policy,
                 &entity.access_waivers,
             );
+            for index in &entity.indexes {
+                self.write_indent();
+                self.output.push_str("@index { fields: [");
+                for (i, field) in index.fields.iter().enumerate() {
+                    if i > 0 {
+                        self.output.push_str(", ");
+                    }
+                    self.write_quoted_string(field);
+                }
+                self.output.push(']');
+                if let Some(order) = &index.order_by {
+                    self.output.push_str(", orderBy: ");
+                    self.write_quoted_string(order);
+                }
+                self.output.push_str(" }");
+                self.write_newline();
+            }
             for field in &entity.fields {
                 self.write_indent();
                 self.fmt_entity_field(field);

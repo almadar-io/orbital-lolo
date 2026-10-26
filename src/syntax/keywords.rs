@@ -189,6 +189,7 @@ const ANNOTATIONS: &[&str] = &[
     "invariant",
     "holds",
     "ensures",
+    "index",
 ];
 
 /// `entity payload state now config user trait event prevEvents prevStates

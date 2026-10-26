@@ -1838,3 +1838,119 @@ orbital Probe {{
     assert!(!lowers(r#""x""#, "Map string string"), "control: a string is not a map");
     assert!(!lowers(r#""x""#, "instant"), "control: a string is not an instant");
 }
+
+fn index_program(directives: &str) -> String {
+    format!(
+        r#"app indexprobe [version: "1.0.0"]
+orbital EdgeOrbital {{
+  entity Edge [persistent: edges] {{
+{directives}
+    id : string!
+    graphId : string!
+    relation : string
+    weight : number
+  }}
+  entity Plain [persistent: plains] {{
+    id : string!
+  }}
+}}
+"#
+    )
+}
+
+fn entity_json(schema: &orbital_core_base::schema::OrbitalSchema, name: &str) -> Value {
+    let value = serde_json::to_value(schema).unwrap();
+    let orbital = &value["orbitals"][0];
+    std::iter::once(&orbital["entity"])
+        .chain(orbital["auxiliaryEntities"].as_array().into_iter().flatten())
+        .find(|e| e["name"] == name)
+        .unwrap_or_else(|| panic!("entity {name} is declared"))
+        .clone()
+}
+
+#[test]
+fn index_directives_lower_to_entity_indexes_in_declaration_order() {
+    let schema = parse_and_lower_str(&index_program(
+        "    @index { fields: [\"graphId\"] }\n    @index { fields: [\"graphId\", \"relation\"], orderBy: \"weight:desc\" }",
+    ))
+    .expect("lowers");
+    let edge = entity_json(&schema, "Edge");
+    assert_eq!(
+        edge["indexes"],
+        serde_json::json!([
+            { "fields": ["graphId"] },
+            { "fields": ["graphId", "relation"], "orderBy": "weight:desc" }
+        ])
+    );
+    assert!(
+        entity_json(&schema, "Plain").get("indexes").is_none(),
+        "control: an entity with no @index serializes no `indexes` key"
+    );
+}
+
+#[test]
+fn control_an_entity_without_index_directives_has_no_indexes() {
+    let schema = parse_and_lower_str(&index_program("")).expect("lowers");
+    assert!(entity_json(&schema, "Edge").get("indexes").is_none());
+}
+
+#[test]
+fn an_index_orders_by_the_fetch_string_verbatim_and_a_bare_field_is_ascending() {
+    let schema = parse_and_lower_str(&index_program(
+        "    @index { fields: [\"graphId\"], orderBy: \"weight\" }",
+    ))
+    .expect("lowers");
+    assert_eq!(
+        entity_json(&schema, "Edge")["indexes"],
+        serde_json::json!([{ "fields": ["graphId"], "orderBy": "weight" }])
+    );
+}
+
+#[test]
+fn index_directive_errors_name_their_code_and_valid_forms_lower() {
+    let lower = |directive: &str| {
+        parse_and_lower_str(&index_program(&format!("    @index {directive}")))
+            .map(|_| ())
+            .map_err(|e| format!("{e}"))
+    };
+    for (directive, code) in [
+        (r#"{ fields: ["graphId"], unique: true }"#, "ELOLO_INDEX_UNKNOWN_KEY"),
+        (r#"{ fields: [] }"#, "ELOLO_INDEX_FIELDS_INVALID"),
+        (r#"{ orderBy: "weight" }"#, "ELOLO_INDEX_FIELDS_INVALID"),
+        (r#"{ fields: "graphId" }"#, "ELOLO_INDEX_FIELDS_INVALID"),
+        (r#"{ fields: [1] }"#, "ELOLO_INDEX_FIELDS_INVALID"),
+        (r#"{ fields: ["graphId"], orderBy: 3 }"#, "ELOLO_INDEX_ORDER_BY_INVALID"),
+        (r#"{ fields: ["graphId"], orderBy: ["weight"] }"#, "ELOLO_INDEX_ORDER_BY_INVALID"),
+        (r#""graphId""#, "ELOLO_INDEX_NOT_A_RECORD"),
+    ] {
+        let err = lower(directive).expect_err(directive);
+        assert!(err.contains(code), "{directive}: expected {code}, got {err}");
+    }
+    // Controls: the same shapes, valid, lower.
+    lower(r#"{ fields: ["graphId"] }"#).expect("one field");
+    lower(r#"{ fields: ["graphId", "relation"], orderBy: "weight:desc" }"#).expect("two fields and order");
+}
+
+#[test]
+fn index_directive_may_repeat_unlike_the_access_directives() {
+    let source = |directive: &str| index_program(&format!("    {directive}\n    {directive}"));
+    parse_and_lower_str(&source(r#"@index { fields: ["graphId"] }"#)).expect("@index repeats");
+    let err = parse_and_lower_str(&source(r#"@read (= @entity.graphId "g")"#))
+        .map(|_| ())
+        .expect_err("control: @read may not repeat");
+    assert!(format!("{err}").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
+}
+
+#[test]
+fn index_directive_inside_expects_entity_is_refused_and_a_field_there_still_parses() {
+    let source = |body: &str| {
+        format!(
+            "app expectsprobe [version: \"1.0.0\"]\norbital Spec {{\n  expects entity Edge [persistent] {{\n{body}\n    graphId : string!\n  }}\n}}\n"
+        )
+    };
+    let err = parse_and_lower_str(&source(r#"    @index { fields: ["graphId"] }"#))
+        .map(|_| ())
+        .expect_err("@index is not part of an expects shape");
+    assert!(format!("{err}").contains("field declaration or }"), "{err}");
+    parse_and_lower_str(&source("")).expect("control: the same shape without @index parses");
+}

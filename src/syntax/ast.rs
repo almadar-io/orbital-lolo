@@ -687,6 +687,8 @@ pub struct Entity {
     pub access_waivers: Vec<(String, String)>,
     /// `@invariant <expr>` lines: propositions every stored row satisfies, proved by `orb validate`.
     pub invariants: Vec<SExpression>,
+    /// `@index { fields, orderBy? }` lines: declared access paths, in declaration order.
+    pub indexes: Vec<orbital_core_base::schema::EntityIndex>,
     pub fields: Vec<EntityField>,
     pub span: Span,
 }

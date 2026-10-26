@@ -995,3 +995,38 @@ fn control_a_field_ref_to_a_primitive_round_trips() {
     };
     round_trip(&field_ref_program("string"), &options).unwrap();
 }
+
+const INDEX_PROGRAM: &str = r#"app indexprobe [version: "1.0.0"]
+orbital EdgeOrbital {
+  entity Edge [persistent: edges] {
+    @index { fields: ["graphId"] }
+    @index { fields: ["graphId", "relation"], orderBy: "weight:desc" }
+    id : string!
+    graphId : string!
+    relation : string
+    weight : number
+  }
+}
+"#;
+
+#[test]
+fn entity_indexes_unlower_to_index_directives_and_round_trip() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let schema = parse_and_lower_str_with(INDEX_PROGRAM, &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert_eq!(printed.matches("@index").count(), 2, "{printed}");
+    round_trip(INDEX_PROGRAM, &options).unwrap();
+}
+
+#[test]
+fn control_an_entity_without_indexes_unlowers_without_index_directives() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = INDEX_PROGRAM.lines().filter(|l| !l.contains("@index")).collect::<Vec<_>>().join("\n");
+    let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
+    assert!(!printed.contains("@index"), "{printed}");
+    round_trip(&source, &options).unwrap();
+}

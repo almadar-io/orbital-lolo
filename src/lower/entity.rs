@@ -61,6 +61,7 @@ pub(crate) fn lower_entity(
         access_waivers: access_waivers_of(&entity.access_waivers),
         id: None,
         invariants: (!entity.invariants.is_empty()).then(|| entity.invariants.clone()),
+        indexes: (!entity.indexes.is_empty()).then(|| entity.indexes.clone()),
     })
 }
 

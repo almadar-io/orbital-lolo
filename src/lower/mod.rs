@@ -1113,6 +1113,7 @@ fn spec_placeholder_entity(name: &str) -> EntityDefinition {
         instances: None,
         id: None,
         invariants: None,
+        indexes: None,
     }
 }
 

@@ -127,6 +127,7 @@ pub(super) fn entity(
         delete_policy: def.delete_policy.clone(),
         access_waivers: waivers,
         invariants: def.invariants.clone().unwrap_or_default(),
+        indexes: def.indexes.clone().unwrap_or_default(),
         fields: def
             .fields
             .iter()

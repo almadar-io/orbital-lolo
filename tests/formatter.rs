@@ -1041,3 +1041,45 @@ orbital ListOrbital {
     assert_eq!(v1, v2, "a data list changed meaning across a reformat");
     assert_eq!(formatted, format_program(&parse_str(&formatted).expect("reparse")));
 }
+
+/// `@index` survives a reformat: printed back, repeated and in order, with the same IR.
+#[test]
+fn index_directives_survive_reformat() {
+    let source = r#"app test-index [version: "1.0.0", description: "Index directive round-trip."]
+orbital EdgeOrbital {
+  entity Edge [persistent: edges] {
+    @index { fields: ["graphId"] }
+    @index { fields: ["graphId", "relation"], orderBy: "weight:desc" }
+    id : string!
+    graphId : string!
+    relation : string
+    weight : number
+  }
+}
+"#;
+    let ast = parse_str(source).expect("parse original");
+    let formatted = format_program(&ast);
+    assert_eq!(formatted.matches("@index").count(), 2, "formatter dropped or merged `@index`; got:\n{formatted}");
+    assert!(formatted.contains("weight:desc"), "formatter dropped orderBy; got:\n{formatted}");
+
+    let v1 = canonicalize(strip_nulls(serde_json::to_value(parse_and_lower_str(source).unwrap()).unwrap()));
+    let v2 = canonicalize(strip_nulls(serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap()));
+    assert_eq!(v1, v2, "@index changed semantics across a reformat");
+    assert!(
+        v1.to_string().contains("\"indexes\""),
+        "control: the lowered IR carries the indexes this test round-trips"
+    );
+}
+
+#[test]
+fn control_an_entity_without_index_prints_no_index_directive() {
+    let source = r#"app test-noindex [version: "1.0.0", description: "No index."]
+orbital EdgeOrbital {
+  entity Edge [persistent: edges] {
+    id : string!
+  }
+}
+"#;
+    let formatted = format_program(&parse_str(source).expect("parse"));
+    assert!(!formatted.contains("@index"), "{formatted}");
+}
