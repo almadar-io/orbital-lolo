@@ -3451,7 +3451,7 @@ impl Formatter {
         // Lambda: parameters print bare, the body sees them as bound. Handles
         // both the grouped `["fn", ["a", "b"], body]` and flat
         // `["fn", "a", "b", body]` shapes.
-        let is_lambda = matches!(&arr[0], SExpression::String(s) if s == "fn" || s == "lambda")
+        let is_lambda = matches!(&arr[0], SExpression::String(s) if s == "fn")
             && arr.len() >= 3;
         if is_lambda {
             let (params, body) = arr.split_at(arr.len() - 1);
@@ -3712,7 +3712,7 @@ fn is_call_array(arr: &[SExpression]) -> bool {
     }
     matches!(
         head.as_str(),
-        "let" | "fn" | "lambda" | "match" | "quote" | "quasiquote" | "unquote" | "render-ui"
+        "let" | "fn" | "match" | "quote" | "quasiquote" | "unquote" | "render-ui"
     ) || is_operator_symbol(head)
         || orbital_core_eval::lower::recognized_call_head(&SExpression::Array(vec![
             SExpression::String(head.clone()),

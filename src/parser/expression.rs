@@ -71,7 +71,7 @@ impl Parser {
         let is_let = matches!(items.first(), Some(SExpression::String(s)) if s == "let");
         let has_let_bindings = is_let && matches!(self.peek(), TokenKind::LParen);
         let is_lambda =
-            matches!(items.first(), Some(SExpression::String(s)) if s == "fn" || s == "lambda");
+            matches!(items.first(), Some(SExpression::String(s)) if s == "fn");
         // Both forms open a lexical scope that stays live for the body args
         // parsed by the loop below.
         let mut opened_scope = false;
@@ -100,7 +100,7 @@ impl Parser {
             // `(fn (a b) body)` — parenthesized params aren't consumed by
             // `parse_lambda_params`, so they reach the loop as its first arg;
             // the budget then covers params + body.
-            Some("fn") | Some("lambda") if opened_scope => {
+            Some("fn") if opened_scope => {
                 Some(if items.len() == 1 { 2 } else { 1 })
             }
             _ => None,

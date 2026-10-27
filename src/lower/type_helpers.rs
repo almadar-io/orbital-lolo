@@ -176,7 +176,7 @@ pub(crate) fn literal_record_type(value: &SExpression) -> orbital_core_base::ir:
                 .map(|(name, member)| OirField::new(name.clone(), literal_record_type(member)))
                 .collect();
             fields.sort_by(|a, b| a.name.cmp(&b.name));
-            OirType::Struct { additional: None, fields }
+            OirType::Struct { additional: None, fields: fields.into() }
         }
         SExpression::String(s) if !s.starts_with('@') && !s.starts_with('?') => OirType::String,
         SExpression::Number(_) => OirType::Number,

@@ -253,7 +253,6 @@ const EFFECTS: &[&str] = &[
     "if",
     "let",
     "fn",
-    "lambda",
     "quote",
     "quasiquote",
     "unquote",
