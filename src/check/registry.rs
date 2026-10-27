@@ -21,6 +21,7 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
+use std::time::SystemTime;
 use thiserror::Error;
 
 /// The prefix `@almadar/std`'s `orb` block declares — the std source on the
@@ -127,12 +128,34 @@ enum Slice {
     Live(LiveSlice),
 }
 
-/// A live package's `.lolo` tree: behavior key → file, indexed on first use
-/// and re-indexed on a miss (a file added since).
+/// A live package's `.lolo` tree: behavior key → file, indexed on first use. A miss re-indexes only when the tree
+/// changed since: a file added or removed changes its directory's modified time, so a miss re-reads the directories'
+/// times instead of walking every file.
 struct LiveSlice {
     root: PathBuf,
-    index: Mutex<Option<HashMap<String, PathBuf>>>,
+    index: Mutex<Option<LiveIndex>>,
 }
+
+struct LiveIndex {
+    files: HashMap<String, PathBuf>,
+    /// Every directory walked, with its modified time when it was read.
+    dirs: Vec<(PathBuf, Option<SystemTime>)>,
+    scanned_at: SystemTime,
+}
+
+impl LiveIndex {
+    /// A directory changed since the scan, or was modified too close to it for its time to tell (a filesystem with
+    /// coarse timestamps can stamp a later addition with the same time).
+    fn stale(&self) -> bool {
+        self.dirs.iter().any(|(dir, seen)| {
+            let now = std::fs::metadata(dir).and_then(|m| m.modified()).ok();
+            now != *seen || now.is_some_and(|t| self.scanned_at.duration_since(t).map_or(true, |age| age < RACY_WINDOW))
+        })
+    }
+}
+
+/// How close to a scan a directory's modified time must be for the time not to prove the directory unchanged.
+const RACY_WINDOW: std::time::Duration = std::time::Duration::from_secs(2);
 
 impl LiveSlice {
     fn new(root: PathBuf) -> Self {
@@ -142,37 +165,45 @@ impl LiveSlice {
         }
     }
 
-    fn scan(&self) -> HashMap<String, PathBuf> {
-        let mut out = HashMap::new();
+    fn scan(&self) -> LiveIndex {
+        let scanned_at = SystemTime::now();
+        let mut files = HashMap::new();
+        let mut dirs = Vec::new();
         let mut stack = vec![self.root.clone()];
         while let Some(dir) = stack.pop() {
+            dirs.push((dir.clone(), std::fs::metadata(&dir).and_then(|m| m.modified()).ok()));
             for entry in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
                 let path = entry.path();
                 if path.is_dir() {
                     stack.push(path);
                 } else if path.extension().is_some_and(|e| e == "lolo") {
                     if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        out.insert(stem.to_string(), path);
+                        files.insert(stem.to_string(), path);
                     }
                 }
             }
         }
-        out
+        LiveIndex { files, dirs, scanned_at }
     }
 
     fn file(&self, key: &str) -> Option<PathBuf> {
         let mut index = self.index.lock().expect("live contract index poisoned");
-        if let Some(path) = index.get_or_insert_with(|| self.scan()).get(key) {
+        let current = index.get_or_insert_with(|| self.scan());
+        if let Some(path) = current.files.get(key) {
             return Some(path.clone());
         }
-        *index = Some(self.scan());
-        index.as_ref().and_then(|i| i.get(key).cloned())
+        if !current.stale() {
+            return None;
+        }
+        let rescanned = index.insert(self.scan());
+        rescanned.files.get(key).cloned()
     }
 
     fn keys(&self) -> Vec<String> {
         let mut index = self.index.lock().expect("live contract index poisoned");
         index
             .get_or_insert_with(|| self.scan())
+            .files
             .keys()
             .cloned()
             .collect()
@@ -561,6 +592,46 @@ pub fn behavior_key_from_path(path: &str) -> &str {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn live_tree(name: &str) -> PathBuf {
+        let root = std::env::temp_dir().join(format!("orb-live-slice-{name}-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        std::fs::create_dir_all(root.join("atoms")).expect("tree");
+        std::fs::write(root.join("atoms").join("std-a.lolo"), "").expect("file");
+        root
+    }
+
+    fn age(dir: &std::path::Path) {
+        let past = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+        std::fs::File::open(dir).and_then(|f| f.set_modified(past)).expect("set dir time");
+    }
+
+    #[test]
+    fn a_miss_in_an_unchanged_tree_does_not_walk_it_again() {
+        let root = live_tree("unchanged");
+        age(&root);
+        age(&root.join("atoms"));
+        let slice = LiveSlice::new(root.clone());
+        assert!(slice.file("std-a").is_some(), "an indexed key is found");
+        assert!(slice.file("std-b").is_none(), "a key no file names is a miss");
+        std::fs::write(root.join("atoms").join("std-b.lolo"), "").expect("file");
+        age(&root.join("atoms"));
+        assert!(slice.file("std-b").is_none(), "a directory whose time did not move is not walked again");
+        std::fs::write(root.join("atoms").join("std-c.lolo"), "").expect("file");
+        assert!(slice.file("std-c").is_some(), "control: a file added since the scan is found");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn a_directory_stamped_close_to_the_scan_is_read_again_on_a_miss() {
+        let root = live_tree("racy");
+        let slice = LiveSlice::new(root.clone());
+        assert!(slice.file("std-a").is_some());
+        std::fs::write(root.join("atoms").join("std-d.lolo"), "").expect("file");
+        assert!(slice.file("std-d").is_some(), "a recently stamped directory cannot prove itself unchanged");
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
 
     #[test]
     fn behavior_key_from_canonical_and_browse_paths() {
