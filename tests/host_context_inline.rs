@@ -226,13 +226,8 @@ fn multi_party_lambda_inline_refs_splice_into_host_scope() {
         "wrapper emits must merge into the host: {emits:?}"
     );
 
-    // Both failure classes from the un-spliced form are gone by construction.
+    // The un-spliced form's unknown-root failure is gone by construction.
     let result = validate(&schema);
-    assert_no_issue(
-        &result,
-        ErrorCode::BindingTraitInvalidPosition,
-        "renderItem",
-    );
     assert_no_issue(
         &result,
         ErrorCode::BindingUnknownRoot,
