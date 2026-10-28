@@ -181,6 +181,7 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
             persistence,
             shared,
             browser,
+            own,
             read_policy,
             create_policy,
             update_policy,
@@ -197,6 +198,7 @@ fn expects_decl(e: &ExpectDeclaration) -> Result<ExpectsDecl, UnlowerError> {
             }),
             shared: *shared,
             browser: *browser,
+            own: *own,
             access: ExpectedAccess {
                 read_policy: read_policy.clone(),
                 create_policy: create_policy.clone(),

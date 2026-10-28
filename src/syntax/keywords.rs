@@ -137,6 +137,7 @@ const TAGS: &[&str] = &[
     "server",
     "browser",
     "identity",
+    "self",
     "background",
     "visible",
     "store",

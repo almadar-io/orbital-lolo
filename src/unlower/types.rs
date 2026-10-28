@@ -90,6 +90,9 @@ fn field_def_type_inner(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> 
     if let Some(p) = &fd.projected_from {
         return Ok(source_reference(p, None));
     }
+    if let (FieldType::Object, None, Some(record)) = (&fd.field_type, &fd.properties, &fd.record) {
+        return parse_type_string(record);
+    }
     Ok(match &fd.field_type {
         FieldType::String => match &fd.values {
             Some(values) if !values.is_empty() => values_union(values),
@@ -494,6 +497,20 @@ pub(super) fn config_field(
     name: &str,
     cf: &SchemaConfigField,
 ) -> Result<ConfigField, UnlowerError> {
+    if cf.wired {
+        return Ok(ConfigField {
+            name: name.to_string(),
+            type_expr: TypeExpr::Primitive("unknown".to_string()),
+            default: cf.default.clone(),
+            label: None,
+            description: None,
+            synonyms: None,
+            tier: None,
+            required: false,
+            event_refs: Vec::new(),
+            span: Span::dummy(),
+        });
+    }
     // A call-site `key: value` override carries the parser's `"unknown"` sentinel, not a type.
     let base = if let Some(additional) = &cf.additional_properties {
         TypeExpr::OpenObject {

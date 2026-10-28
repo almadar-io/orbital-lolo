@@ -593,13 +593,15 @@ pub enum ExpectsKind {
         name: Option<String>,
         shape: Option<Vec<EntityField>>,
     },
-    /// `expects entity Name [persistent, shared] [{ fields, @read … }]` — shape omitted = opaque reference.
+    /// `expects entity Name [persistent, shared, self] [{ fields, @read … }]` — shape omitted = opaque reference.
     Entity {
         name: String,
         shape: Option<Vec<EntityField>>,
         persistence: Option<Persistence>,
         shared: bool,
         browser: bool,
+        /// `[self]`: the providing entity is declared by this same orbital body.
+        own: bool,
         access: ExpectedAccess,
         /// `@invariant <expr>` lines: propositions every stored row satisfies.
         invariants: Vec<SExpression>,

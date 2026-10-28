@@ -1,4 +1,5 @@
 use super::*;
+use orbital_core_base::collections::IndexMap;
 
 /// Owner ruling: nothing about a `[shared]` entity may be inferred. A bare
 /// `entity Foo [shared]` with no explicit persistence tag used to default
@@ -2123,9 +2124,10 @@ fn check_one_emit_literal(
                             entity_names,
                         )?
                     } else if actual != "object" && !members(key).is_empty() {
-                        members(key)
-                            .into_iter()
-                            .any(|member| member == actual || emit_primitive_compatible(member, actual, entity_names))
+                        members(key).into_iter().any(|member| {
+                            member == actual
+                                || emit_primitive_compatible(member, actual, entity_names)
+                        })
                     } else {
                         emit_primitive_compatible(expected, actual, entity_names)
                     };
@@ -2189,26 +2191,6 @@ pub(crate) fn check_behavior_contracts(
                     ed.name.clone(),
                     ed.fields.iter().filter_map(|f| f.name.clone()).collect(),
                 );
-            }
-        }
-
-        // Knob name → declared type, from THIS orbital's own inline trait config
-        // declarations. A plain-wiring override that binds `@config.X` carries no
-        // type of its own — the parser tags it `"unknown"`, which is the
-        // structural discriminator for wiring-vs-declaration and must stay — so
-        // without this map check 3.4 below has no `got` side and silently
-        // no-ops on every reference. Same prepass shape as
-        // `entity_fields_by_name` above.
-        let mut knob_types: HashMap<String, String> = HashMap::new();
-        for tref in &orbital.traits {
-            if let TraitReference::Inline(td) = tref {
-                if let Some(cfg) = &td.config {
-                    for (k, cf) in cfg {
-                        if cf.field_type != "unknown" {
-                            knob_types.insert(k.clone(), cf.field_type.clone());
-                        }
-                    }
-                }
             }
         }
 
@@ -2298,7 +2280,10 @@ pub(crate) fn check_behavior_contracts(
                                 // validated clean and only surfaced when
                                 // something RESOLVED the reference downstream.
                                 let got = orbital_core_eval::literal_type::literal_value_type(v)
-                                    .or_else(|| config_ref_knob_type(v, &knob_types));
+                                    .or_else(|| {
+                                        (cf.wired && cf.field_type != "unknown")
+                                            .then_some(cf.field_type.as_str())
+                                    });
                                 if let (Some(expected), Some(got)) = (tc.config.get(k), got) {
                                     if !config_type_compatible(got, expected) {
                                         return Err(LowerError::ConfigTypeMismatch {
@@ -2365,7 +2350,10 @@ pub(crate) fn check_behavior_contracts(
                                     if let Some(v) = cf.default.as_ref() {
                                         let got =
                                             orbital_core_eval::literal_type::literal_value_type(v)
-                                                .or_else(|| config_ref_knob_type(v, &knob_types));
+                                                .or_else(|| {
+                                                    (cf.wired && cf.field_type != "unknown")
+                                                        .then_some(cf.field_type.as_str())
+                                                });
                                         if let (Some(expected), Some(got)) = (oc.config.get(k), got)
                                         {
                                             if !config_type_compatible(got, expected) {
@@ -2389,36 +2377,74 @@ pub(crate) fn check_behavior_contracts(
     Ok(())
 }
 
+/// A plain wiring `config { key: @config.source }` on a trait reference carries the declared type of the source knob:
+/// the composing orbital's own `config` knob, else a knob an inline trait of the orbital declares, else the app-level
+/// one. A source declared in none of them is an error.
+pub(crate) fn type_config_wiring(
+    orbitals: &mut [CoreOrbital],
+    app_config: Option<&IndexMap<String, SchemaConfigField>>,
+) -> Result<(), LowerError> {
+    for orbital in orbitals.iter_mut().filter(|o| o.reference.is_none()) {
+        let own = orbital.config.clone();
+        let siblings: Vec<_> = orbital
+            .traits
+            .iter()
+            .filter_map(|t| match t {
+                TraitReference::Inline(td) => td.config.clone(),
+                _ => None,
+            })
+            .collect();
+        for tref in orbital.traits.iter_mut() {
+            let TraitReference::Reference {
+                config: Some(config),
+                name,
+                ..
+            } = tref
+            else {
+                continue;
+            };
+            for (key, cf) in config.iter_mut().filter(|(_, cf)| cf.wired) {
+                let Some(SExpression::String(value)) = &cf.default else {
+                    continue;
+                };
+                let Some(source) = value.strip_prefix("@config.") else {
+                    continue;
+                };
+                if source.contains(['.', '[']) {
+                    continue;
+                }
+                let Some(declared) = own
+                    .as_ref()
+                    .and_then(|c| c.get(source))
+                    .or_else(|| siblings.iter().find_map(|c| c.get(source)))
+                    .or_else(|| app_config.and_then(|c| c.get(source)))
+                else {
+                    return Err(LowerError::UndeclaredConfigWiring {
+                        orbital: orbital.name.clone(),
+                        trait_name: name.clone().unwrap_or_default(),
+                        key: key.clone(),
+                        knob: source.to_string(),
+                    });
+                };
+                cf.field_type = declared.field_type.clone();
+                cf.nullable = declared.nullable;
+                cf.additional_properties = declared.additional_properties.clone();
+                cf.values = declared.values.clone();
+                cf.items = declared.items.clone();
+                cf.properties = declared.properties.clone();
+                cf.record = declared.record.clone();
+                cf.projected_from = declared.projected_from.clone();
+            }
+        }
+    }
+    Ok(())
+}
+
 /// Lenient config value↔declared-type compatibility: returns `false` only for
 /// clear scalar contradictions (a number where a string/boolean is declared,
 /// etc.); permissive for arrays/objects/`pattern`/`slot`/`SExpr`/unknown
 /// declared types so the check never false-positives on a knob it can't reason
 /// about.
-/// Resolve a `@config.X` binding to the declared type of knob `X` on this
-/// orbital, so a reference can be type-checked like a literal.
-///
-/// Scoped to `@config` deliberately. `@trait` is a sentinel the render-ui
-/// binding checker already exempts, and `@user`/`@item`/`@row`/`@callsitePayload`
-/// have no scope handler yet — each needs its own measured pass before it can
-/// reject anything.
-///
-/// A nested or indexed path (`@config.articles[0].title`) resolves to the knob's
-/// INNER shape, which this map does not carry, so it returns None rather than
-/// compare against the container's type and produce a false positive.
-fn config_ref_knob_type<'a>(
-    value: &SExpression,
-    knob_types: &'a HashMap<String, String>,
-) -> Option<&'a str> {
-    let SExpression::String(s) = value else {
-        return None;
-    };
-    let key = s.strip_prefix("@config.")?;
-    if key.contains('.') || key.contains('[') {
-        return None;
-    }
-    knob_types.get(key).map(String::as_str)
-}
-
 fn config_type_compatible(got: &str, expected: &str) -> bool {
     match got {
         "number" => !matches!(
@@ -2838,8 +2864,11 @@ mod set_program_type_literal_tests {
     #[test]
     fn a_record_literal_fills_a_program_typed_entity_field() {
         for tag in ["", "@rebindable "] {
-            lower_set(tag, r#"{ id: "anonymous", role: "anonymous", permissions: [], claims: [] }"#)
-                .unwrap_or_else(|e| panic!("{tag:?}: {e:?}"));
+            lower_set(
+                tag,
+                r#"{ id: "anonymous", role: "anonymous", permissions: [], claims: [] }"#,
+            )
+            .unwrap_or_else(|e| panic!("{tag:?}: {e:?}"));
         }
     }
 
@@ -2855,7 +2884,10 @@ mod set_program_type_literal_tests {
 
     #[test]
     fn a_literal_missing_a_required_field_never_fills_a_program_typed_entity_field() {
-        match lower_set("", r#"{ id: "anonymous", role: "anonymous", permissions: [] }"#) {
+        match lower_set(
+            "",
+            r#"{ id: "anonymous", role: "anonymous", permissions: [] }"#,
+        ) {
             Err(crate::error::LowerError::SetValueTypeMismatch { .. }) => {}
             other => panic!("expected SetValueTypeMismatch, got {other:?}"),
         }
@@ -2863,7 +2895,10 @@ mod set_program_type_literal_tests {
 
     #[test]
     fn a_literal_with_a_wrong_typed_field_never_fills_a_program_typed_entity_field() {
-        match lower_set("", r#"{ id: 5, role: "anonymous", permissions: [], claims: [] }"#) {
+        match lower_set(
+            "",
+            r#"{ id: 5, role: "anonymous", permissions: [], claims: [] }"#,
+        ) {
             Err(crate::error::LowerError::SetValueTypeMismatch { .. }) => {}
             other => panic!("expected SetValueTypeMismatch, got {other:?}"),
         }

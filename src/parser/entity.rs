@@ -10,6 +10,7 @@ pub(crate) struct EntityTags {
     pub shared: bool,
     pub identity: bool,
     pub browser: bool,
+    pub own: bool,
     pub retired_words: Vec<RetiredWord>,
     pub store: Option<String>,
 }
@@ -31,6 +32,7 @@ impl Parser {
             browser,
             retired_words,
             store,
+            ..
         } = if matches!(self.peek(), TokenKind::LBracket) {
             self.parse_persistence_tag()?
         } else {
@@ -310,12 +312,18 @@ impl Parser {
     /// `identity` flags, e.g. `[runtime, shared]`, `[persistent: bars]`,
     /// `[shared]`, `[persistent: people, identity]`.
     pub(crate) fn parse_persistence_tag(&mut self) -> Result<EntityTags, ParseError> {
+        self.parse_tag_list(false)
+    }
+
+    /// The `[...]` tag list; `allow_self` admits the `self` mark, which only an `expects entity` carries.
+    pub(crate) fn parse_tag_list(&mut self, allow_self: bool) -> Result<EntityTags, ParseError> {
         self.expect_kind(&TokenKind::LBracket, "[")?;
         let mut persistence: Option<Persistence> = None;
         let mut collection: Option<String> = None;
         let mut shared = false;
         let mut identity = false;
         let mut browser = false;
+        let mut own = false;
         let mut retired_words: Vec<RetiredWord> = Vec::new();
         let mut store: Option<String> = None;
         loop {
@@ -330,6 +338,7 @@ impl Parser {
                 "shared" => shared = true,
                 "identity" => identity = true,
                 "browser" => browser = true,
+                "self" if allow_self => own = true,
                 "local" | "mock" => retired_words.push(RetiredWord {
                     word: kind,
                     span: tag_span,
@@ -389,6 +398,7 @@ impl Parser {
             shared,
             identity,
             browser,
+            own,
             retired_words,
             store,
         })

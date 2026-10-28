@@ -423,6 +423,7 @@ pub(crate) fn lower_config_fields_to_map(
                 ref_id: None,
                 forwarded_from: None,
                 nested_forwarded_from: Vec::new(),
+                wired: false,
                 payload_for: None,
                 projected_from: cf.type_expr.projection(),
                 record: entity::field_ref_record(cf.type_expr.peel(), aliases, entity_names, type_params)?,

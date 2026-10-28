@@ -377,11 +377,6 @@ fn lower_to_orb_names_only(
         }
     }
 
-    check_listens_integrity(&orbitals)?;
-    check_button_transitions(&orbitals)?;
-    check_emit_payload_literals(&orbitals, &orbital_entity_names)?;
-    check_behavior_contracts(&orbitals, contracts)?;
-
     // App-level `config { ... }` (orbital-import Stage A, `OrbitalSchema.config`)
     // — ORGANISM-wide knobs, resolved against the file-level type/entity scope
     // (no trait type params at this level). Declaration site: the
@@ -394,6 +389,13 @@ fn lower_to_orb_names_only(
         &type_aliases,
         &file_entity_names,
     )?;
+
+    checks::type_config_wiring(&mut orbitals, app_config.as_ref())?;
+
+    check_listens_integrity(&orbitals)?;
+    check_button_transitions(&orbitals)?;
+    check_emit_payload_literals(&orbitals, &orbital_entity_names)?;
+    check_behavior_contracts(&orbitals, contracts)?;
 
     let mut schema = OrbitalSchema {
         type_contract_version: Some(1),
@@ -762,6 +764,7 @@ pub(crate) fn lower_expects_decl(
             persistence,
             shared,
             browser,
+            own,
             access,
             invariants,
         } => ExpectDeclaration::Entity {
@@ -773,6 +776,7 @@ pub(crate) fn lower_expects_decl(
             }),
             shared: *shared,
             browser: *browser,
+            own: *own,
             read_policy: access.read_policy.clone(),
             create_policy: access.create_policy.clone(),
             update_policy: access.update_policy.clone(),

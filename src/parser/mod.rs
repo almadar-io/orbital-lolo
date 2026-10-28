@@ -1600,6 +1600,7 @@ impl Parser {
                     persistence: tags.persistence,
                     shared: tags.shared,
                     browser: tags.browser,
+                    own: tags.own,
                     access,
                     invariants,
                 }]
@@ -1727,7 +1728,7 @@ impl Parser {
     /// are the provider's own business.
     fn parse_expects_entity_tags(&mut self) -> Result<ExpectedTags, ParseError> {
         let span = self.peek_span();
-        let tags = self.parse_persistence_tag()?;
+        let tags = self.parse_tag_list(true)?;
         if let Some(retired) = tags.retired_words.first() {
             return Err(ParseError::InvalidType {
                 span: retired.span,
@@ -1740,7 +1741,7 @@ impl Parser {
                 message: "an `expects entity` header names the storage mode, `shared` or `browser` only — a collection name and `store` describe a provider, not a requirement".to_string(),
             });
         }
-        if tags.identity && (tags.persistence.is_some() || tags.shared || tags.browser) {
+        if tags.identity && (tags.persistence.is_some() || tags.shared || tags.browser || tags.own) {
             return Err(ParseError::InvalidType {
                 span,
                 message: "an `expects entity [identity]` takes only the `identity` tag".to_string(),
@@ -1751,6 +1752,7 @@ impl Parser {
             persistence: tags.persistence,
             shared: tags.shared,
             browser: tags.browser,
+            own: tags.own,
         })
     }
 
@@ -1947,6 +1949,7 @@ struct ExpectedTags {
     persistence: Option<Persistence>,
     shared: bool,
     browser: bool,
+    own: bool,
 }
 
 /// Duplicate key for `ELOLO_DUPLICATE_EXPECTATION`: same kind+name, or the

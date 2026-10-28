@@ -14,12 +14,6 @@ use std::path::{Path, PathBuf};
 
 const GENERIC: [&str; 3] = ["any", "json", "unknown"];
 
-/// `payload : @payload event` (a struct member whose type is the payload of the event its sibling names)
-/// lowers to a property-less `object`: the lowering erases the dependent type after the L1 sibling check
-/// (`check_payload_sibling_refs`). There is no honest static type for it, so it is a tracked erasure with a
-/// ratchet, not a pass: the count over the std behaviors may only fall (owner design: a payload-of carrier).
-const PAYLOAD_OF_ERASURES: usize = 7;
-
 fn has(map: &serde_json::Map<String, Value>, key: &str) -> bool {
     match map.get(key) {
         None | Some(Value::Null) => false,
@@ -47,6 +41,8 @@ fn generic_types(value: &Value, path: &str, out: &mut Vec<String>) {
                 let shaped = has(map, "properties") || has(map, "items") || has(map, "values");
                 if ty == "object" && !shaped && has(map, "relation") {
                     // a relation field is typed by its target
+                } else if ty == "object" && !shaped && has(map, "record") {
+                    // `@payload(.sibling)`: typed by the payload of the event its sibling names
                 } else if ty == "object" && !shaped && map.contains_key("name") {
                     out.push(format!("{path}: bare object"));
                 }
@@ -121,6 +117,27 @@ fn a_program_of_every_declared_type_lowers_with_no_generic_type() {
 }
 
 #[test]
+fn a_payload_of_sibling_member_is_typed_by_its_record() {
+    let source = r#"
+orbital Doc {
+  type Item = { id : string!, action : event, actionPayload : @payload action }
+  entity Doc [runtime] { id : string! }
+  trait Walker -> Doc {
+    initial: idle
+    state idle { INIT -> idle when @config.items (render-ui main { type: box  padding: md }) }
+    emits { SAVE { amount : number! } }
+    config { items : [Item] = [{ id: "a", action: "SAVE", actionPayload: { amount: 1 } }] }
+  }
+}
+"#;
+    assert_eq!(found(source), Vec::<String>::new());
+    let bare = serde_json::json!({ "properties": { "p": { "name": "p", "type": "object" } } });
+    let mut out = Vec::new();
+    generic_types(&bare, "", &mut out);
+    assert_eq!(out.len(), 1, "control: an object with no record is still bare: {out:?}");
+}
+
+#[test]
 fn control_the_scan_sees_a_generic_type() {
     let mut out = Vec::new();
     let bad = serde_json::json!({
@@ -152,7 +169,7 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>) {
     }
 }
 
-/// Lowers every behavior under `relative` and returns (generic types, `@payload <sibling>` erasures, files scanned).
+/// Lowers every behavior under `relative` and returns (generic types, bare objects, files scanned).
 fn scan(relative: &str) -> Option<(Vec<String>, Vec<String>, usize)> {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
     let base = root.join(relative);
@@ -197,7 +214,7 @@ fn the_std_behaviors_lower_with_no_generic_type() {
     };
     assert!(scanned > 400, "the corpus must not shrink to nothing ({scanned})");
     assert!(report.is_empty(), "{} generic types:\n{}", report.len(), report.join("\n"));
-    assert_eq!(erasures.len(), PAYLOAD_OF_ERASURES, "the tracked `@payload <sibling>` erasures changed:\n{}", erasures.join("\n"));
+    assert!(erasures.is_empty(), "{} bare objects:\n{}", erasures.len(), erasures.join("\n"));
 }
 
 #[test]
@@ -207,5 +224,5 @@ fn the_io_behaviors_lower_with_no_generic_type() {
     };
     assert!(scanned > 1000, "the corpus must not shrink to nothing ({scanned})");
     assert!(report.is_empty(), "{} generic types:\n{}", report.len(), report.join("\n"));
-    assert_eq!(erasures.len(), 0, "the io behaviors erase no payload type:\n{}", erasures.join("\n"));
+    assert!(erasures.is_empty(), "{} bare objects:\n{}", erasures.len(), erasures.join("\n"));
 }

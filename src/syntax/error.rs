@@ -476,7 +476,9 @@ pub(crate) fn trait_header_word_error(word: &str) -> LowerError {
     if RETIRED_TRAIT_CATEGORIES.contains(&word) {
         LowerError::Coded {
             code: "ORB_T_HEADER_WORD_RETIRED",
-            message: format!("trait header word `{word}` is retired: delete it (P-009: checks follow the page)"),
+            message: format!(
+                "trait header word `{word}` is retired: delete it (P-009: checks follow the page)"
+            ),
         }
     } else if word == "instance" || word == "collection" {
         LowerError::Coded {
@@ -937,6 +939,17 @@ pub enum LowerError {
         key: String,
         expected: String,
         got: String,
+    },
+
+    /// A trait reference's `config { key: @config.source }` wires a knob the composing orbital (or the app) never declares.
+    #[error(
+        "config wiring {key:?} on trait {trait_name:?} reads `@config.{knob}`, but orbital {orbital:?} declares no config knob {knob:?}"
+    )]
+    UndeclaredConfigWiring {
+        orbital: String,
+        trait_name: String,
+        key: String,
+        knob: String,
     },
 
     /// A `config { key = value }` override on a `uses`-imported trait reference

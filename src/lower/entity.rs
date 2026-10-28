@@ -263,7 +263,8 @@ pub(crate) fn lower_field(
 }
 
 /// The record `R` of a `field R T` type as the IR spells it: `@entity`, `@entity(<knob>)`, `@payload(<knob>)`, an entity
-/// or alias name, or `$r` for a type variable. `None` for any other type.
+/// or alias name, or `$r` for a type variable. A struct member `@payload <sibling>` is itself the payload record of the
+/// event its sibling names, spelled `@payload(.<sibling>)`. `None` for any other type.
 pub(crate) fn field_ref_record(
     ty: &TypeExpr,
     aliases: &BTreeMap<String, TypeAliasResolved>,
@@ -273,6 +274,9 @@ pub(crate) fn field_ref_record(
     let mut ty = ty.peel();
     while let TypeExpr::Optional(inner) = ty {
         ty = inner.peel();
+    }
+    if let TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(member)) = ty {
+        return Ok(Some(format!("@payload(.{member})")));
     }
     let TypeExpr::FieldRef { record, .. } = ty else {
         return Ok(None);
@@ -343,20 +347,10 @@ pub(crate) fn lower_type_expr(
         | TypeExpr::EventPayloadOf(PayloadOfTarget::ConfigKnob(_))
         | TypeExpr::NamedEntityRow(_)
         | TypeExpr::ExpectedIdentityRow => (FieldType::Object, None, None, None, None),
-        // `@payload <sibling>` inside a struct member position (a
-        // `type X = { action: event, actionPayload: @payload <action> }`
-        // body): the concrete event isn't knowable here — `action` is a TYPE
-        // (`event`), not a literal — so there is no single named shape to
-        // carry through the closed `FieldType` wire tag. Lowers to a
-        // shapeless `Object` (no `properties`, no `items`) — the same
-        // "target declares nothing" carrier `resolve_field_shape` already
-        // collapses to `OirType::Json`, which codegen renders as the generic
-        // `EventPayload` TS type (`shell_typescript::backend::shared`).
-        // `types::check_payload_sibling_refs` is the actual gate: it
-        // validates the sibling exists and is `event`-typed, and (where both
-        // are literal) that a literal instance's value matches the sibling's
-        // declared payload — entirely at L1, against the AST, before this
-        // erasure happens.
+        // `@payload <sibling>` inside a struct member position: the event is the
+        // sibling's VALUE, so the member is an `Object` that declares no shape of
+        // its own; `lower_source_field` records the dependency in `record`
+        // (`@payload(.<sibling>)`) and the checker resolves it per instance.
         TypeExpr::EventPayloadOf(PayloadOfTarget::SiblingMember(_)) => {
             (FieldType::Object, None, None, None, None)
         }

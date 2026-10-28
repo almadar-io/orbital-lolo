@@ -369,15 +369,25 @@ fn toolbar_item_member(src: &str, member: &str) -> orbital_core_base::schema::Fi
 }
 
 #[test]
-fn payload_of_sibling_lowers_to_a_shapeless_object() {
-    // The concrete event isn't knowable here — `action` is a TYPE (`event`),
-    // not a literal — so this erases to the same "declares nothing" carrier
-    // `resolve_field_shape` collapses to `OirType::Json` (-> the generic
-    // `EventPayload` TS type), never a named struct.
+fn payload_of_sibling_lowers_to_the_payload_of_carrier() {
+    // The event is the sibling's VALUE, so the member declares no shape of its own: an `object` with no
+    // `properties` whose `record` is `@payload(.<sibling>)`, which the checker resolves per instance.
     let member = toolbar_item_member(SIBLING_SRC, "actionPayload");
     assert_eq!(member.field_type, orbital_core_base::schema::FieldType::Object);
+    assert_eq!(member.record.as_deref(), Some("@payload(.action)"));
+    assert_eq!(member.payload_sibling(), Some("action"));
     assert!(member.properties.is_none());
     assert!(member.items.is_none());
+}
+
+#[test]
+fn control_only_the_payload_member_carries_the_carrier() {
+    let sibling = toolbar_item_member(SIBLING_SRC, "action");
+    assert_eq!(sibling.field_type, orbital_core_base::schema::FieldType::Event);
+    assert!(sibling.record.is_none());
+    let plain = toolbar_item_member(SIBLING_SRC, "id");
+    assert!(plain.record.is_none());
+    assert_eq!(plain.payload_sibling(), None);
 }
 
 #[test]

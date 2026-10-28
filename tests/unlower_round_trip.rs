@@ -1482,3 +1482,105 @@ orbital TwoOrbital {
 }"#;
     assert_round_trips(source);
 }
+
+const PAYLOAD_OF_SOURCE: &str = r#"orbital ItemOrbital {
+  type Item = {
+    id : string!
+    action : event
+    actionPayload : @payload action
+  }
+  entity Row [runtime] {
+    id : string!
+  }
+  trait Items -> Row {
+    initial: idle
+    state idle {
+      INIT -> idle when @config.items
+        (render-ui main { type: box  padding: md })
+      SAVE -> idle
+        (notify info "saved")
+    }
+    emits {
+      SAVE {
+        amount : number!
+      }
+    }
+    config {
+      items : [Item] = [{ id: "a", action: "SAVE", actionPayload: { amount: 1 } }]
+    }
+  }
+  page "/" -> Items [initial]
+}"#;
+
+#[test]
+fn a_payload_of_sibling_member_round_trips_byte_identically() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(PAYLOAD_OF_SOURCE, &options).unwrap();
+    let first = parse_and_lower_str_with(PAYLOAD_OF_SOURCE, &options).unwrap();
+    let items =
+        &serde_json::to_value(&first).unwrap()["orbitals"][0]["traits"][0]["config"]["items"];
+    assert_eq!(
+        items["items"]["properties"]["actionPayload"]["record"], "@payload(.action)",
+        "{items}"
+    );
+    let printed = schema_to_lolo(&first).unwrap();
+    assert!(
+        printed.contains("actionPayload : @payload action"),
+        "{printed}"
+    );
+    let again = schema_to_lolo(&parse_and_lower_str_with(&printed, &options).unwrap()).unwrap();
+    assert_eq!(printed, again);
+}
+
+#[test]
+fn control_a_plain_object_member_prints_as_an_object() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = PAYLOAD_OF_SOURCE.replace(
+        "actionPayload : @payload action",
+        "actionPayload : { amount : number }",
+    );
+    round_trip(&source, &options).unwrap();
+    let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
+    assert!(!printed.contains("@payload"), "{printed}");
+}
+
+#[test]
+fn an_expects_entity_self_mark_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = "app shop-spec [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects entity Order [persistent, self] { total : number }\n  expects entity Cart [persistent] { total : number }\n}\n";
+    round_trip(source, &options).unwrap();
+    let schema = parse_and_lower_str_with(source, &options).unwrap();
+    let json = serde_json::to_value(&schema).unwrap();
+    let expects = json["orbitals"][0]["expects"].as_array().unwrap();
+    assert_eq!(expects[0]["self"], true, "{expects:?}");
+    assert!(
+        expects[1].get("self").is_none(),
+        "control: an unmarked expectation carries no self {expects:?}"
+    );
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert!(
+        printed.contains("expects entity Order [persistent, self]"),
+        "{printed}"
+    );
+    assert!(
+        printed.contains("expects entity Cart [persistent]"),
+        "{printed}"
+    );
+}
+
+#[test]
+fn the_self_mark_is_refused_where_it_means_nothing() {
+    use orbital_lolo::parse_str;
+    for source in [
+        "orbital A {\n  expects entity [identity, self]\n}",
+        "orbital A {\n  entity Thing [self] {\n    id : string!\n  }\n}",
+    ] {
+        assert!(parse_str(source).is_err(), "{source}");
+    }
+}

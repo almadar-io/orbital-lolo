@@ -1775,6 +1775,7 @@ impl Formatter {
                 persistence,
                 shared,
                 browser,
+                own,
                 access,
                 invariants,
             } => {
@@ -1791,6 +1792,9 @@ impl Formatter {
                 }
                 if *browser {
                     tags.push("browser");
+                }
+                if *own {
+                    tags.push("self");
                 }
                 if !tags.is_empty() {
                     self.output.push_str(" [");
