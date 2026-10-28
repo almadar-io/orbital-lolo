@@ -1172,7 +1172,7 @@ mod payload_wrapper_provenance {
       state ready {
        INIT -> ready
        LOADED -> ready
-        (set @entity.kept (array/map ?data (fn r (str/default (object/get @r @config.filterField) ""))))
+        (set @entity.kept (array/map ?data (fn r (default (object/get @r @config.filterField) ""))))
       }
       listens { LOADED { data : [@entity @config.rowEntity]! } }
       config {
@@ -1214,7 +1214,7 @@ orbital Probe {{
     state ready {{
       INIT -> ready
       LOAD -> ready
-        (set @entity.total (array/len (array/filter ?data (fn row (array/every @config.where (fn w (> (str/default (object/get @row @w.field) 0) @w.bound)))))))
+        (set @entity.total (array/len (array/filter ?data (fn row (array/every @config.where (fn w (> (default (object/get @row @w.field) 0) @w.bound)))))))
     }}
     listens {{ LOAD {{ data : [@entity @config.rowEntity]! }} }}
     config {{
@@ -1264,8 +1264,8 @@ orbital StaffOrbital {{
       INIT -> loading
         (fetch Employee {{ emit: {{ failure: SelfFailed, success: SelfLoaded }} }})
       SelfLoaded -> loading
-        (set @entity.name (str/default (object/get (array/find ?data (fn row {predicate})) name) "none"))
-        (set @entity.owner (str/default (object/get (array/first ?data) staffAccount) "none"))
+        (set @entity.name (default (object/get (array/find ?data (fn row {predicate})) name) "none"))
+        (set @entity.owner (default (object/get (array/first ?data) staffAccount) "none"))
       SelfFailed -> loading
     }}
     emits {{ SelfLoaded {{ data : [Employee]! }} SelfFailed {{ error : string }} }}
@@ -1485,7 +1485,7 @@ orbital Probe {{
         (fetch Position {{ {include} emit: {{ success: PositionsLoaded, failure: PositionsFailed }} }})
         {second}
       PositionsLoaded -> ready
-        (set @entity.traderName (str/default (object/get (object/get (array/first ?data) "trader") "name") ""))
+        (set @entity.traderName (default (object/get (object/get (array/first ?data) "trader") "name") ""))
       PositionsFailed -> ready
     }}
     emits {{
@@ -1542,7 +1542,7 @@ orbital Probe {{
       state ready {
        INIT -> ready
        LOADED -> ready
-        (set @entity.label (if (!= @config.via null) (str/default (object/get (object/get ?data @config.via) @config.shown) "none") "none"))
+        (set @entity.label (if (!= @config.via null) (default (object/get (object/get ?data @config.via) @config.shown) "none") "none"))
       }
       listens { LOADED { data : Item! } }
       config {
