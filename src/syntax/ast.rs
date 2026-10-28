@@ -1464,17 +1464,13 @@ pub struct Page {
 /// `lower_to_orb` which takes one of these.
 pub type Ast = Program;
 
-/// The source-only declaration retained until alias-aware expression lowering.
-pub(crate) fn local_annotation_type(expr: &SExpression) -> Option<TypeExpr> {
-    let SExpression::Array(parts) = expr else {
+/// The source-only type of a `let` binding `[name, value, <type descriptor>]`, retained until alias-aware lowering.
+pub(crate) fn binding_annotation_type(binding: &SExpression) -> Option<TypeExpr> {
+    let SExpression::Array(parts) = binding else {
         return None;
     };
-    let [SExpression::String(head), _, declaration @ SExpression::Object(_)] = parts.as_slice()
-    else {
+    let [_, _, declaration @ SExpression::Object(_)] = parts.as_slice() else {
         return None;
     };
-    if head != "typed" {
-        return None;
-    }
     serde_json::from_value(serde_json::to_value(declaration).ok()?).ok()
 }

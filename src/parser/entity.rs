@@ -422,7 +422,7 @@ impl Parser {
         };
         rows.into_iter()
             .map(|row| match row {
-                SExpression::Object(fields) => Ok(fields.into_iter().collect()),
+                SExpression::Object(fields) => Ok((*fields).into_iter().collect()),
                 other => Err(ParseError::InvalidType {
                     span,
                     message: format!(

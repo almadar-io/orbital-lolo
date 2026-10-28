@@ -95,7 +95,7 @@ pub(crate) fn desugar_expr_match(expr: &SExpression) -> SExpression {
             build_nested_if(&scrutinee, &arms)
         }
         SExpression::Array(arr) => SExpression::Array(arr.iter().map(desugar_expr_match).collect()),
-        SExpression::Object(obj) => SExpression::Object(
+        SExpression::Object(obj) => SExpression::object(
             obj.iter()
                 .map(|(k, v)| (k.clone(), desugar_expr_match(v)))
                 .collect(),
@@ -144,7 +144,7 @@ pub(crate) fn desugar_notify(expr: &SExpression) -> Result<SExpression, LowerErr
             Ok(SExpression::Array(vec![
                 SExpression::string("render-ui"),
                 SExpression::string("toast"),
-                SExpression::Object(props),
+                SExpression::object(props),
             ]))
         },
     )

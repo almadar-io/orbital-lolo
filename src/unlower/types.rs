@@ -55,8 +55,8 @@ fn primitive(name: &str) -> TypeExpr {
     TypeExpr::Primitive(name.to_string())
 }
 
-fn sorted<V>(map: &HashMap<String, V>) -> Vec<(&String, &V)> {
-    let mut entries: Vec<_> = map.iter().collect();
+fn sorted<'a, V: 'a>(map: impl IntoIterator<Item = (&'a String, &'a V)>) -> Vec<(&'a String, &'a V)> {
+    let mut entries: Vec<_> = map.into_iter().collect();
     entries.sort_by(|a, b| a.0.cmp(b.0));
     entries
 }
@@ -207,7 +207,7 @@ fn field_def_type_inner(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> 
 }
 
 pub(super) fn object_members(
-    props: &HashMap<String, FieldDefinition>,
+    props: &orbital_core_base::collections::IndexMap<String, FieldDefinition>,
 ) -> Result<Vec<(String, TypeExpr, bool)>, UnlowerError> {
     sorted(props)
         .into_iter()
@@ -584,8 +584,8 @@ pub(super) struct AliasShapes {
     pub entity_field_types: HashMap<(String, String), String>,
 }
 
-fn sorted_keys<V>(m: &HashMap<String, V>) -> Vec<String> {
-    let mut k: Vec<String> = m.keys().cloned().collect();
+fn sorted_keys<'a, V: 'a>(m: impl IntoIterator<Item = (&'a String, &'a V)>) -> Vec<String> {
+    let mut k: Vec<String> = m.into_iter().map(|(k, _)| k.clone()).collect();
     k.sort();
     k
 }
@@ -735,7 +735,7 @@ pub(super) fn collect_trait_hints(
     }
 }
 
-/// The type a baked local annotation (`["typed", value, "<declared shape>"]`) was written as: the alias the
+/// The type a baked local annotation (`[name, value, "<declared shape>"]`) was written as: the alias the
 /// shape names, else its type spelled back as a type expression.
 pub(super) fn declared_shape_type(text: &str) -> Result<TypeExpr, UnlowerError> {
     let shape = DeclaredShape::read(text)

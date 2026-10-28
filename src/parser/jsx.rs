@@ -478,7 +478,7 @@ fn desugar_pattern(
     if !children.is_empty() || explicit_closing {
         map.insert("children".to_string(), SExpression::Array(children));
     }
-    SExpression::Object(map)
+    SExpression::object(map)
 }
 
 /// Convert a `listens={…}` attribute value (an object literal `{ KEY: TRIGGER }`)

@@ -324,7 +324,7 @@ type LoweredType = (
     FieldType,
     Option<Vec<String>>,
     Option<Box<FieldDefinition>>,
-    Option<HashMap<String, FieldDefinition>>,
+    Option<orbital_core_base::collections::IndexMap<String, FieldDefinition>>,
     Option<RelationDefinition>,
 );
 
@@ -633,7 +633,7 @@ pub(crate) fn lower_type_expr(
             )
         }
         TypeExpr::Object(fields) | TypeExpr::OpenObject { fields, .. } => {
-            let mut props = std::collections::HashMap::new();
+            let mut props = orbital_core_base::collections::IndexMap::new();
             for (k, v, req) in fields {
                 let (ft, values, items, properties, relation) =
                     lower_type_expr(v, aliases, entity_names, params)?;
@@ -681,7 +681,7 @@ pub(crate) fn lower_type_expr(
             // accept the variant's name and reject the variant's value.
             if let Some(variants) = struct_union_variants(parts, aliases, entity_names, params)? {
                 let names: Vec<String> = variants.iter().map(|(n, _)| n.clone()).collect();
-                let props: HashMap<String, FieldDefinition> = variants.into_iter().collect();
+                let props: orbital_core_base::collections::IndexMap<String, FieldDefinition> = variants.into_iter().collect();
                 return Ok((FieldType::Union, Some(names), None, Some(props), None));
             }
             // If every variant is a bare Named / Primitive (`a | b | c`) or
@@ -962,7 +962,7 @@ mod tests {
             serde_json::from_value(serde_json::json!({ "type": "object" })).expect("object");
         order.field_type = oft;
         order.relation = orel;
-        page.substitute_type_vars(&std::collections::HashMap::from([("t".to_string(), order)]));
+        page.substitute_type_vars(&orbital_core_base::collections::IndexMap::from([("t".to_string(), order)]));
         let elem = page.properties.as_ref().expect("members")["items"]
             .items
             .clone()

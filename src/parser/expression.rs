@@ -47,12 +47,6 @@ impl Parser {
                 })
             }
         };
-        if op.as_str() == Some("typed") && self.template_depth == 0 {
-            return Err(ParseError::InvalidSExpr {
-                message: "`typed` is compiler-internal; declare a local binding with `(name : Type value)`".to_string(),
-                span,
-            });
-        }
         let head = match &op {
             SExpression::String(s) => Some(s.to_string()),
             _ => None,
@@ -466,23 +460,8 @@ impl Parser {
             } else {
                 None
             };
-            let value_trail = if annotation.is_some() {
-                format!("[1][{pair_index}][1][1]")
-            } else {
-                format!("[1][{pair_index}][1]")
-            };
+            let value_trail = format!("[1][{pair_index}][1]");
             let value = self.with_trail_seg(value_trail, |p| p.parse_sexpr_or_value())?;
-            let value = match annotation {
-                Some(ty) => SExpression::Array(vec![
-                    SExpression::string("typed"),
-                    value,
-                    serde_json::from_value(
-                        serde_json::to_value(ty).expect("a type expression serializes"),
-                    )
-                    .expect("a serialized type expression is an s-expression"),
-                ]),
-                None => value,
-            };
             self.expect_kind(&TokenKind::RParen, ")")?;
             // `let` is sequential: a binding's value may read earlier bindings,
             // so the name only enters scope after its own value is parsed.
@@ -491,7 +470,16 @@ impl Parser {
                     frame.push(bound.clone().into_inner());
                 }
             }
-            pairs.push(SExpression::Array(vec![name, value]));
+            let mut binding = vec![name, value];
+            if let Some(ty) = annotation {
+                binding.push(
+                    serde_json::from_value(
+                        serde_json::to_value(ty).expect("a type expression serializes"),
+                    )
+                    .expect("a serialized type expression is an s-expression"),
+                );
+            }
+            pairs.push(SExpression::Array(binding));
             pair_index += 1;
         }
         Ok(SExpression::Array(pairs))
@@ -739,7 +727,7 @@ impl Parser {
             }
             self.skip_newlines();
         }
-        Ok(SExpression::Object(map))
+        Ok(SExpression::object(map))
     }
 
     /// A guard, access policy or fetch filter is a `boolean` slot. A bracket there is a data list

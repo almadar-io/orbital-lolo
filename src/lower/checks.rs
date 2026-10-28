@@ -1697,7 +1697,7 @@ fn collect_button_actions_recursive(expr: &SExpression, actions: &mut HashSet<St
         }
         SExpression::Object(obj) => {
             let event_keys = event_prop_names();
-            for (key, value) in obj {
+            for (key, value) in obj.iter() {
                 if event_keys.contains(key) {
                     match value {
                         SExpression::String(s) => {
@@ -2060,7 +2060,7 @@ fn check_one_emit_literal(
     entity_names: &HashSet<String>,
 ) -> Result<(), LowerError> {
     let payload_obj = match payload {
-        Some(SExpression::Object(o)) => Some(o),
+        Some(SExpression::Object(o)) => Some(&**o),
         _ => None,
     };
 

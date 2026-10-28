@@ -33,9 +33,6 @@
               "resource": "Patient"
             },
             {
-              "kind": "os/watch-http"
-            },
-            {
               "kind": "persist",
               "resource": "Patient"
             },
@@ -47,7 +44,7 @@
           "linkedEntity": "Patient",
           "name": "PatientLoader",
           "sourceDeclaration": {
-            "fingerprint": "fb1d0087f969acdfa51eeebee51fd950b14b5a383b4426ff035ada29389da468"
+            "fingerprint": "3b3d094503b4f3ac918534bbde1c6915184af56baedf91787ddfdfcf23b6585e"
           },
           "stateMachine": {
             "events": [
@@ -70,10 +67,6 @@
               {
                 "key": "SUBSCRIBE",
                 "name": "Subscribe"
-              },
-              {
-                "key": "WATCH_PUSH",
-                "name": "Watch Push"
               }
             ],
             "states": [
@@ -171,22 +164,6 @@
                   ]
                 ],
                 "event": "SUBSCRIBE",
-                "from": "loading",
-                "to": "loading"
-              },
-              {
-                "effects": [
-                  [
-                    "os/watch-http",
-                    "wss://push",
-                    {
-                      "emit": {
-                        "on_message": "PUSH_RECEIVED"
-                      }
-                    }
-                  ]
-                ],
-                "event": "WATCH_PUSH",
                 "from": "loading",
                 "to": "loading"
               }

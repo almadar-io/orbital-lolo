@@ -71,7 +71,7 @@ fn strip_baked_list_paths(value: &mut serde_json::Value) {
     }
 }
 
-/// The lowerer replaces a `(let ((x : T v)) …)` annotation's type with its declared shape text; the source
+/// The lowerer replaces a `(let ((x : T v)) …)` binding's type with its declared shape text; the source
 /// spelling is the type.
 fn restore_local_annotations(value: &mut serde_json::Value) -> Result<(), UnlowerError> {
     match value {
@@ -79,20 +79,15 @@ fn restore_local_annotations(value: &mut serde_json::Value) -> Result<(), Unlowe
             if items.len() == 3 && items[0].as_str() == Some("let") {
                 if let serde_json::Value::Array(bindings) = &mut items[1] {
                     for binding in bindings {
-                        let Some(serde_json::Value::Array(typed)) =
-                            binding.as_array_mut().and_then(|pair| pair.get_mut(1))
-                        else {
+                        let Some(parts) = binding.as_array_mut() else {
                             continue;
                         };
-                        if let [serde_json::Value::String(head), _, annotation @ serde_json::Value::String(_)] =
-                            typed.as_mut_slice()
+                        if let [_, _, annotation @ serde_json::Value::String(_)] =
+                            parts.as_mut_slice()
                         {
-                            if head == "typed" {
-                                let text = annotation.as_str().unwrap_or_default().to_string();
-                                *annotation =
-                                    serde_json::to_value(types::declared_shape_type(&text)?)
-                                        .map_err(|e| UnlowerError::new(e.to_string()))?;
-                            }
+                            let text = annotation.as_str().unwrap_or_default().to_string();
+                            *annotation = serde_json::to_value(types::declared_shape_type(&text)?)
+                                .map_err(|e| UnlowerError::new(e.to_string()))?;
                         }
                     }
                 }

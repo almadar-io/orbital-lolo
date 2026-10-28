@@ -397,7 +397,7 @@ fn lower_to_orb_names_only(
 
     let mut schema = OrbitalSchema {
         type_contract_version: Some(1),
-        types: orbital_types(&type_aliases, &file_entity_bodies),
+        resolved: None,        types: orbital_types(&type_aliases, &file_entity_bodies),
         store: ast.app.store.clone(),
         theme_definitions: None,
         themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.clone()),

@@ -79,7 +79,7 @@ fn walk_pattern(
         return Ok(());
     };
     if let Some(SExpression::String(pattern_type)) = obj.get("type") {
-        for (prop, value) in obj {
+        for (prop, value) in obj.iter() {
             let Some(entity_kind) = record_prop(pattern_type, prop) else {
                 continue;
             };

@@ -312,8 +312,8 @@ fn fixture_33_emit_entity_nested_struct_field() {
 
 #[test]
 fn fixture_25_emit_config() {
-    // Positive fixture for `emit:` config on all six operator shapes:
-    //   fetch, persist, set, call-service, os/watch-http.
+    // Positive fixture for `emit:` config on the operator shapes:
+    //   fetch, persist, set, call-service.
     // Ensures the lolo surface parses + lowers emit options intact.
     assert_lowering_matches("25-emit-config");
 }
@@ -751,14 +751,18 @@ mod checked_local_annotations {
     }
 
     #[test]
-    fn checked_local_annotation_does_not_expose_internal_typed_operator() {
-        let src = source("(vm (typed {} ValueMap))", "(set @entity.result \"done\")");
-        assert!(parse_str(&src).is_err());
-        let quoted = source(
-            "(vm (quote (typed {} ValueMap)))",
-            "(set @entity.result \"done\")",
-        );
-        assert!(parse_str(&quoted).is_ok(), "quoted data remains data");
+    fn checked_local_annotation_is_a_third_binding_item_not_an_operator() {
+        let src = source("(vm : ValueMap {})", "(set @entity.result \"done\")");
+        let parsed = parse_str(&src).expect("annotation parses");
+        let effect = &parsed.orbitals[0].traits[0].states[0].transitions[0].effects;
+        let json = serde_json::to_string(effect).unwrap();
+        assert!(!json.contains("typed"), "{json}");
+        let binding = &effect[0].as_array().unwrap()[1].as_array().unwrap()[0];
+        assert_eq!(binding.as_array().map(Vec::len), Some(3), "{json}");
+        let plain = parse_str(&source("(vm {})", "(set @entity.result \"done\")")).unwrap();
+        let effect = &plain.orbitals[0].traits[0].states[0].transitions[0].effects;
+        let binding = &effect[0].as_array().unwrap()[1].as_array().unwrap()[0];
+        assert_eq!(binding.as_array().map(Vec::len), Some(2), "control: a plain binding stays a pair");
     }
 
     #[test]
@@ -786,7 +790,7 @@ mod checked_local_annotations {
                 .as_ref()
                 .unwrap()[0];
             let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
-            let declaration = &binding.as_array().unwrap()[1].as_array().unwrap()[2];
+            let declaration = &binding.as_array().unwrap()[2];
             let encoded = declaration
                 .as_str()
                 .expect("L1 removes source-only AST descriptor");
@@ -831,7 +835,7 @@ mod checked_local_annotations {
             .as_ref()
             .unwrap()[0];
         let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
-        let encoded = binding.as_array().unwrap()[1].as_array().unwrap()[2]
+        let encoded = binding.as_array().unwrap()[2]
             .as_str()
             .unwrap();
         let shape = DeclaredShape::parse(encoded).unwrap();
@@ -870,7 +874,7 @@ mod checked_local_annotations {
         }).unwrap();
         let effect = &transition.effects.as_ref().unwrap()[0];
         let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
-        let encoded = binding.as_array().unwrap()[1].as_array().unwrap()[2].as_str().unwrap();
+        let encoded = binding.as_array().unwrap()[2].as_str().unwrap();
         let shape = DeclaredShape::parse(encoded).expect("canonical declaration survives import");
         assert_eq!(shape.name.as_deref(), Some("ValueMap"));
         assert!(matches!(shape.ty, OirType::Map { .. }), "{shape:?}");
@@ -903,7 +907,7 @@ mod checked_local_annotations {
             let trait_def = super::payload_wrapper_provenance::first_trait(&schema);
             let effect = &trait_def.state_machine.transitions.iter().find_map(|t| t.effects.as_ref().filter(|e| !e.is_empty())).unwrap()[0];
             let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
-            let declaration = binding.as_array().unwrap()[1].as_array().unwrap()[2].as_str().unwrap();
+            let declaration = binding.as_array().unwrap()[2].as_str().unwrap();
             let shape = DeclaredShape::parse(declaration).expect("recorded generic declaration");
             assert_eq!(shape.ty, expected, "{argument}: {shape:?}");
             assert_ne!(shape.name.as_deref(), Some("v"));
@@ -1062,7 +1066,7 @@ mod payload_wrapper_provenance {
     orbital Probe {{
      entity Cell [runtime] {{
       id : string!
-      out : Out
+      out : Out!
      }}
      trait Run -> Cell {{
       initial: ready
@@ -1455,8 +1459,8 @@ orbital Probe {{
         assert!(
             errors(&format!(r#"(set @entity.regs [{{ label: "x", hasRead: (let ((po {po})) (object/get @po "hasRead")) }}])"#))
                 .iter()
-                .any(|e| e.code == ErrorCode::SetReturnTypeMismatch),
-            "control: an untested local stays maybe-missing"
+                .any(|e| matches!(e.code, ErrorCode::SetReturnTypeMismatch | ErrorCode::OperatorNullOperand)),
+            "control: an untested local stays maybe-missing (object/get raises on it, G-ORB-546)"
         );
     }
 
@@ -1485,7 +1489,7 @@ orbital Probe {{
         (fetch Position {{ {include} emit: {{ success: PositionsLoaded, failure: PositionsFailed }} }})
         {second}
       PositionsLoaded -> ready
-        (set @entity.traderName (default (object/get (object/get (array/first ?data) "trader") "name") ""))
+        (set @entity.traderName (if (> (array/len ?data) 0) (default (object/get (object/get (array/first ?data) "trader") "name") "") ""))
       PositionsFailed -> ready
     }}
     emits {{
@@ -1542,7 +1546,7 @@ orbital Probe {{
       state ready {
        INIT -> ready
        LOADED -> ready
-        (set @entity.label (if (!= @config.via null) (default (object/get (object/get ?data @config.via) @config.shown) "none") "none"))
+        (set @entity.label (if (!= @config.via null) (let ((owner (object/get ?data @config.via))) (if (= @owner null) "none" (default (object/get @owner @config.shown) "none"))) "none"))
       }
       listens { LOADED { data : Item! } }
       config {

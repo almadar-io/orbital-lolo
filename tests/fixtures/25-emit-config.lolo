@@ -36,10 +36,6 @@ orbital PatientOrbital {
           id: "@entity.id",
           emit: { success: "PATIENT_LOADED" }
         })
-      WATCH_PUSH -> loading
-        (os/watch-http "wss://push" {
-          emit: { on_message: "PUSH_RECEIVED" }
-        })
     }
   }
 }

@@ -184,16 +184,24 @@ fn visit_expression(
     if matches!(expr.operator(), Some("quote")) {
         return Ok(());
     }
-    if let Some(mut ty) = crate::ast::local_annotation_type(expr) {
-        visit(&mut ty)?;
-        let parts = match expr {
-            SExpression::Array(parts) => parts,
-            _ => unreachable!(),
-        };
-        parts[2] =
-            serde_json::from_value(serde_json::to_value(ty).expect("type expression serializes"))
-                .expect("type expression is an s-expression");
-        return visit_expression(&mut parts[1], visit);
+    if matches!(expr.operator(), Some("let")) {
+        if let SExpression::Array(items) = expr {
+            if let Some(SExpression::Array(bindings)) = items.get_mut(1) {
+                for binding in bindings {
+                    let Some(mut ty) = crate::ast::binding_annotation_type(binding) else {
+                        continue;
+                    };
+                    visit(&mut ty)?;
+                    let SExpression::Array(parts) = binding else {
+                        unreachable!()
+                    };
+                    parts[2] = serde_json::from_value(
+                        serde_json::to_value(ty).expect("type expression serializes"),
+                    )
+                    .expect("type expression is an s-expression");
+                }
+            }
+        }
     }
     match expr {
         SExpression::Array(items) => items

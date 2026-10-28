@@ -3398,7 +3398,7 @@ mod tests {
 fn behavior_value_object(raw: &str) -> Option<SExpression> {
     use orbital_core_base::schema::behavior_value::{OrbitalValueRef, TraitValueRef};
     if let Some(t) = TraitValueRef::parse(raw) {
-        return Some(SExpression::Object(
+        return Some(SExpression::object(
             orbital_core_base::schema::SObject::from([
                 ("behavior".to_string(), SExpression::string(t.behavior)),
                 ("trait".to_string(), SExpression::string(t.trait_name)),
@@ -3406,7 +3406,7 @@ fn behavior_value_object(raw: &str) -> Option<SExpression> {
         ));
     }
     let o = OrbitalValueRef::parse(raw)?;
-    Some(SExpression::Object(
+    Some(SExpression::object(
         orbital_core_base::schema::SObject::from([
             ("behavior".to_string(), SExpression::string(o.behavior)),
             ("orbital".to_string(), SExpression::string(o.orbital)),

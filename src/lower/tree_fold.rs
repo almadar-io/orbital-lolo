@@ -275,30 +275,22 @@ fn bake(
             if items.first().and_then(J::as_str) == Some("let") {
                 if let Some(J::Array(bindings)) = items.get_mut(1) {
                     for binding in bindings {
-                        let Some(initializer) =
-                            binding.as_array_mut().and_then(|parts| parts.get_mut(1))
-                        else {
+                        let Some(parts) = binding.as_array_mut() else {
                             continue;
                         };
-                        if let J::Array(parts) = initializer {
-                            if parts.len() == 3
-                                && parts[0].as_str() == Some("typed")
-                                && parts[2].is_object()
-                            {
-                                let ty = serde_json::from_value::<TypeExpr>(parts[2].clone())
-                                    .map_err(|error| {
-                                        LowerError::Internal(format!(
-                                            "invalid source type descriptor: {error}"
-                                        ))
-                                    })?;
-                                let shape =
-                                    declared_source_shape(&ty, aliases, entity_names, params)?;
-                                parts[2] = J::String(
-                                    serde_json::to_string(&shape)
-                                        .expect("a declared shape serializes"),
-                                );
-                                changed = true;
-                            }
+                        if parts.len() == 3 && parts[2].is_object() {
+                            let ty = serde_json::from_value::<TypeExpr>(parts[2].clone()).map_err(
+                                |error| {
+                                    LowerError::Internal(format!(
+                                        "invalid source type descriptor: {error}"
+                                    ))
+                                },
+                            )?;
+                            let shape = declared_source_shape(&ty, aliases, entity_names, params)?;
+                            parts[2] = J::String(
+                                serde_json::to_string(&shape).expect("a declared shape serializes"),
+                            );
+                            changed = true;
                         }
                     }
                 }
@@ -725,7 +717,9 @@ orbital O {
                 let (_, count) = expr_folds();
                 let mut nested = Value::Bool(true);
                 for _ in 0..1000 {
-                    nested = Value::Array(vec![Value::String(("not".to_string()).into()), nested].into());
+                    nested = Value::Array(
+                        vec![Value::String(("not".to_string()).into()), nested].into(),
+                    );
                 }
                 let out = run_fold(&count, nested);
                 out.map(|v| match v {

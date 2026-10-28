@@ -164,8 +164,8 @@ impl Formatter {
                     }
                     SExpression::Array(items.into_iter().map(|i| restore(i, holes)).collect())
                 }
-                SExpression::Object(map) => SExpression::Object(
-                    map.into_iter()
+                SExpression::Object(map) => SExpression::object(
+                    (*map).into_iter()
                         .map(|(k, v)| (k, restore(v, holes)))
                         .collect(),
                 ),
@@ -3413,21 +3413,20 @@ impl Formatter {
                             self.output.push(' ');
                         }
                         match pair {
-                            SExpression::Array(pair)
-                                if pair.len() == 2 && pair[0].as_str().is_some() =>
+                            SExpression::Array(parts)
+                                if parts[0].as_str().is_some()
+                                    && (parts.len() == 2
+                                        || crate::ast::binding_annotation_type(pair).is_some()) =>
                             {
-                                let name = pair[0].as_str().unwrap();
+                                let name = parts[0].as_str().unwrap();
                                 self.output.push('(');
                                 self.output.push_str(name);
-                                if let Some(ty) = crate::ast::local_annotation_type(&pair[1]) {
+                                if let Some(ty) = crate::ast::binding_annotation_type(pair) {
                                     self.output.push_str(" : ");
                                     self.fmt_type_expr(&ty);
-                                    self.output.push(' ');
-                                    self.fmt_sexpr_inner(&pair[1].as_array().unwrap()[1], false);
-                                } else {
-                                    self.output.push(' ');
-                                    self.fmt_sexpr_inner(&pair[1], false);
                                 }
+                                self.output.push(' ');
+                                self.fmt_sexpr_inner(&parts[1], false);
                                 self.output.push(')');
                                 self.binding_scopes
                                     .last_mut()

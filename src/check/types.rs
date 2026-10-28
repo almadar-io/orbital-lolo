@@ -1282,7 +1282,7 @@ fn struct_alias_fields<'a>(
 
 fn sexpr_as_object(e: &SExpression) -> Option<&orbital_core_base::schema::SObject> {
     match e {
-        SExpression::Object(o) => Some(o),
+        SExpression::Object(o) => Some(&**o),
         _ => None,
     }
 }
@@ -1311,7 +1311,7 @@ fn check_payload_sibling_literals(
     };
     let items: Vec<&orbital_core_base::schema::SObject> = match default {
         SExpression::Array(items) => items.iter().filter_map(sexpr_as_object).collect(),
-        SExpression::Object(obj) => vec![obj],
+        SExpression::Object(obj) => vec![&**obj],
         _ => Vec::new(),
     };
     for item in items {
