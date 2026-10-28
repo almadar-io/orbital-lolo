@@ -1674,7 +1674,7 @@ orbital OrbA {
     note : string
   }
   trait RecTrait -> Rec {
-    state idle { INIT -> idle (ref Rec) }
+    state idle { INIT -> idle (fetch Rec) }
   }
   page "/recs" -> RecTrait
 }
@@ -1689,7 +1689,7 @@ orbital OrbX {
   entity Foo :: DoesNotExist [persistent: foos] {
     id : string!
   }
-  trait FooTrait -> Foo { state idle { INIT -> idle (ref Foo) } }
+  trait FooTrait -> Foo { state idle { INIT -> idle (fetch Foo) } }
   page "/foos" -> FooTrait
 }
 "#;
@@ -1707,7 +1707,7 @@ orbital OrbY {
     id : string!
     status : Statsu
   }
-  trait OrderTrait -> Order { state idle { INIT -> idle (ref Order) } }
+  trait OrderTrait -> Order { state idle { INIT -> idle (fetch Order) } }
   page "/orders" -> OrderTrait
 }
 "#;
@@ -1731,7 +1731,7 @@ orbital OrbY {
                 r#"
 orbital OrbG {{
   {body}
-  trait OrderTrait -> Order {{ state idle {{ INIT -> idle (ref Order) }} }}
+  trait OrderTrait -> Order {{ state idle {{ INIT -> idle (fetch Order) }} }}
   page "/orders" -> OrderTrait
 }}
 "#
@@ -1761,7 +1761,7 @@ orbital OrbG {{
                 r#"
 orbital OrbS {{
   {body}
-  trait OrderTrait -> Order {{ state idle {{ INIT -> idle (ref Order) }} }}
+  trait OrderTrait -> Order {{ state idle {{ INIT -> idle (fetch Order) }} }}
   page "/orders" -> OrderTrait
 }}
 "#
@@ -1778,12 +1778,12 @@ orbital OrbS {{
     fn app_and_orbital_config_type_names_must_resolve() {
         let app = |decl: &str| {
             format!(
-                "app Shop [version: \"1.0.0\"]\nconfig {{\n  navItems : [NavItem] = []\n}}\n{decl}\norbital OrbN {{\n  entity Rec [persistent: recs] {{ id : string! }}\n  trait RecTrait -> Rec {{\n    config {{ size : number = 1 }}\n    state idle {{ INIT -> idle (ref Rec) }}\n  }}\n  page \"/recs\" -> RecTrait\n}}\n"
+                "app Shop [version: \"1.0.0\"]\nconfig {{\n  navItems : [NavItem] = []\n}}\n{decl}\norbital OrbN {{\n  entity Rec [persistent: recs] {{ id : string! }}\n  trait RecTrait -> Rec {{\n    config {{ size : number = 1 }}\n    state idle {{ INIT -> idle (fetch Rec) }}\n  }}\n  page \"/recs\" -> RecTrait\n}}\n"
             )
         };
         let orbital = |decl: &str, ty: &str| {
             format!(
-                "{decl}\norbital OrbO {{\n  config {{\n    pick : {ty}\n  }}\n  entity Rec [persistent: recs] {{ id : string! }}\n  trait RecTrait -> Rec {{\n    config {{ size : number = 1 }}\n    state idle {{ INIT -> idle (ref Rec) }}\n  }}\n  page \"/recs\" -> RecTrait\n}}\n"
+                "{decl}\norbital OrbO {{\n  config {{\n    pick : {ty}\n  }}\n  entity Rec [persistent: recs] {{ id : string! }}\n  trait RecTrait -> Rec {{\n    config {{ size : number = 1 }}\n    state idle {{ INIT -> idle (fetch Rec) }}\n  }}\n  page \"/recs\" -> RecTrait\n}}\n"
             )
         };
         let nav = "type NavItem = { label : string!, href : string! }";
@@ -1813,7 +1813,7 @@ orbital OrbH {
   entity Rec [persistent: recs] { id : string! }
   trait RecTrait -> Rec {
     config { extra : json }
-    state idle { INIT -> idle (ref Rec) }
+    state idle { INIT -> idle (fetch Rec) }
   }
   page "/recs" -> RecTrait
 }
@@ -1829,7 +1829,7 @@ orbital OrbI {
   entity Rec [persistent: recs] { id : string! }
   trait RecTrait -> Rec {
     emits { DONE -> external { value : any! } }
-    state idle { INIT -> idle (ref Rec) }
+    state idle { INIT -> idle (fetch Rec) }
   }
   page "/recs" -> RecTrait
 }
@@ -1853,22 +1853,22 @@ orbital OrbI {
             (
                 "entity field",
                 "entity Rec [persistent: recs] { id : string!\n    files : array! }",
-                "trait RecTrait -> Rec { state idle { INIT -> idle (ref Rec) } }",
+                "trait RecTrait -> Rec { state idle { INIT -> idle (fetch Rec) } }",
             ),
             (
                 "config knob",
                 "entity Rec [persistent: recs] { id : string! }",
-                "trait RecTrait -> Rec {\n    config { files : array }\n    state idle { INIT -> idle (ref Rec) }\n  }",
+                "trait RecTrait -> Rec {\n    config { files : array }\n    state idle { INIT -> idle (fetch Rec) }\n  }",
             ),
             (
                 "emit payload",
                 "entity Rec [persistent: recs] { id : string! }",
-                "trait RecTrait -> Rec {\n    emits { UPLOAD -> external { files : array! } }\n    state idle { INIT -> idle (ref Rec) }\n  }",
+                "trait RecTrait -> Rec {\n    emits { UPLOAD -> external { files : array! } }\n    state idle { INIT -> idle (fetch Rec) }\n  }",
             ),
             (
                 "listen payload",
                 "entity Rec [persistent: recs] { id : string! }",
-                "trait RecTrait -> Rec {\n    listens { UPLOAD { files : array! } }\n    state idle { INIT -> idle (ref Rec) }\n  }",
+                "trait RecTrait -> Rec {\n    listens { UPLOAD { files : array! } }\n    state idle { INIT -> idle (fetch Rec) }\n  }",
             ),
         ];
         for (label, entity, trait_body) in positions {
@@ -1899,7 +1899,7 @@ orbital OrbArrOk {
     files : [string]! }
   trait RecTrait -> Rec {
     listens { UPLOAD { files : [string]! } }
-    state idle { INIT -> idle (ref Rec) }
+    state idle { INIT -> idle (fetch Rec) }
   }
   page "/recs" -> RecTrait
 }
@@ -1920,7 +1920,7 @@ orbital OrbJ {
     meta : Map string number
     point : { x : number!, y : number! }
   }
-  trait RecTrait -> Rec { state idle { INIT -> idle (ref Rec) } }
+  trait RecTrait -> Rec { state idle { INIT -> idle (fetch Rec) } }
   page "/recs" -> RecTrait
 }
 "#;
@@ -1948,7 +1948,7 @@ orbital OrbK {{
     id : string!
     {field}
   }}
-  trait RecTrait -> Rec {{ state idle {{ INIT -> idle (ref Rec) }} }}
+  trait RecTrait -> Rec {{ state idle {{ INIT -> idle (fetch Rec) }} }}
   page "/recs" -> RecTrait
 }}
 "#
@@ -1965,7 +1965,7 @@ orbital OrbL {
   entity Rec [persistent: recs] { id : string! }
   trait RecTrait -> Rec {
     config { extra : opaque }
-    state idle { INIT -> idle (ref Rec) }
+    state idle { INIT -> idle (fetch Rec) }
   }
   page "/recs" -> RecTrait
 }
@@ -1981,7 +1981,7 @@ orbital OrbM {
   entity Rec [persistent: recs] { id : string! }
   trait RecTrait -> Rec {
     emits { DONE -> external { value : opaque } }
-    state idle { INIT -> idle (ref Rec) }
+    state idle { INIT -> idle (fetch Rec) }
   }
   page "/recs" -> RecTrait
 }
@@ -2006,7 +2006,7 @@ orbital OrbE {
     customer : Customer
     watchers : [Customer]
   }
-  trait OrderTrait -> Order { state idle { INIT -> idle (ref Order) } }
+  trait OrderTrait -> Order { state idle { INIT -> idle (fetch Order) } }
   page "/orders" -> OrderTrait
 }
 "#;
@@ -2022,7 +2022,7 @@ orbital OrbF {
     id : string!
     customer : Nonexistent
   }
-  trait OrderTrait -> Order { state idle { INIT -> idle (ref Order) } }
+  trait OrderTrait -> Order { state idle { INIT -> idle (fetch Order) } }
   page "/orders" -> OrderTrait
 }
 "#;
@@ -2084,7 +2084,7 @@ orbital OrbZ {
     site : url
     tel  : phone
   }
-  trait ContactTrait -> Contact { state idle { INIT -> idle (ref Contact) } }
+  trait ContactTrait -> Contact { state idle { INIT -> idle (fetch Contact) } }
   page "/contacts" -> ContactTrait
 }
 "#;
@@ -2105,7 +2105,7 @@ orbital OrbW {
     id : string!
     addr : Addr
   }
-  trait ItemTrait -> Item { state idle { INIT -> idle (ref Item) } }
+  trait ItemTrait -> Item { state idle { INIT -> idle (fetch Item) } }
   page "/items" -> ItemTrait
 }
 "#;
@@ -2124,7 +2124,7 @@ orbital OrbY {
   entity Foo :: Required [persistent: foos] {
     id : string!
   }
-  trait FooTrait -> Foo { state idle { INIT -> idle (ref Foo) } }
+  trait FooTrait -> Foo { state idle { INIT -> idle (fetch Foo) } }
   page "/foos" -> FooTrait
 }
 "#;
@@ -2141,7 +2141,7 @@ type Mixed = Foo & Bar
 
 orbital OrbZ {
   entity Rec :: Mixed [persistent: recs] { id : string! }
-  trait R -> Rec { state s { INIT -> s (ref Rec) } }
+  trait R -> Rec { state s { INIT -> s (fetch Rec) } }
   page "/rs" -> R
 }
 "#;
@@ -2156,7 +2156,7 @@ orbital OrbU {
   type DecisionMatch = string | [float]
   entity Rec { id : string! }
   trait R -> Rec {
-    state s { INIT -> s (ref Rec) }
+    state s { INIT -> s (fetch Rec) }
     emits {
       DECIDED -> external { matched : DecisionMatch!, label : string }
     }
@@ -2176,7 +2176,7 @@ type Step = StepCall | StepResult
 orbital OrbT {
   entity Rec { id : string! }
   trait R -> Rec {
-    state s { INIT -> s (ref Rec) }
+    state s { INIT -> s (fetch Rec) }
     emits {
       STEPPED -> external { step : Step! }
     }
@@ -2196,7 +2196,7 @@ orbital OrbT2 {
   type Step = StepCall | StepResult
   entity Rec { id : string! }
   trait R -> Rec {
-    state s { INIT -> s (ref Rec) }
+    state s { INIT -> s (fetch Rec) }
     emits {
       STEPPED -> external { step : Step! }
     }
@@ -2214,7 +2214,7 @@ orbital OrbV {
   type Direction = up | down | left | right
   entity Rec { id : string! }
   trait R -> Rec {
-    state s { INIT -> s (ref Rec) }
+    state s { INIT -> s (fetch Rec) }
     emits {
       MOVED -> external { dir : Direction! }
     }
@@ -2247,7 +2247,7 @@ orbital OrbC {
   trait RTrait -> Rec {
     state idle {
       INIT -> idle
-        (ref Rec)
+        (fetch Rec)
     }
   }
   page "/recs" -> RTrait
@@ -2270,7 +2270,7 @@ orbital OrbW {
   trait FooTrait -> Foo {
     state idle {
       INIT -> idle
-        (ref Foo)
+        (fetch Foo)
     }
   }
   page "/foos" -> FooTrait
@@ -2302,7 +2302,7 @@ orbital OrbP {
     id : string!
     payload : Inner
   }
-  trait OuterTrait -> Outer { state idle { INIT -> idle (ref Outer) } }
+  trait OuterTrait -> Outer { state idle { INIT -> idle (fetch Outer) } }
   page "/outers" -> OuterTrait
 }
 "#;
@@ -2318,7 +2318,7 @@ type B = Entity { back : A }
 
 orbital Dummy {
   entity E [runtime] { id : string! }
-  trait T -> E { state s { INIT -> s (ref E) } }
+  trait T -> E { state s { INIT -> s (fetch E) } }
   page "/es" -> T
 }
 "#;
@@ -2398,7 +2398,7 @@ orbital OrbU {{
   trait RecTrait -> Rec {{
     emits {{ DONE -> external {{ {emit_field} }} }}
     listens {{ GOT {{ {listen_field} }} }}
-    state idle {{ INIT -> idle (ref Rec) }}
+    state idle {{ INIT -> idle (fetch Rec) }}
   }}
   page "/recs" -> RecTrait
 }}

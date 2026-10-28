@@ -49,10 +49,16 @@
       ],
       "traits": [
         {
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "Rec"
+            }
+          ],
           "linkedEntity": "Rec",
           "name": "RecBrowse",
           "sourceDeclaration": {
-            "fingerprint": "4e3604259e2a40351a781d7e83b51d983a4d45c94154dc5b9a1abf9c8c77bc83"
+            "fingerprint": "ae1297949cc162ca68e9f12b3bbe04f93ed5f6ce43b770b3597ccba8d1449425"
           },
           "stateMachine": {
             "events": [
@@ -71,7 +77,7 @@
               {
                 "effects": [
                   [
-                    "ref",
+                    "fetch",
                     "Rec"
                   ]
                 ],

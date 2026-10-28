@@ -23,7 +23,7 @@ orbital PatientOrbital :: PatientModule {
   trait PatientView :: PatientViewTrait -> Patient [interaction] {
     state idle {
       INIT -> idle
-        (ref Patient)
+        (fetch Patient)
     }
   }
 

@@ -28,8 +28,8 @@ orbital PatientOrbital {
           emit: { failure: EMAIL_FAILED, success: EMAIL_SENT }
         })
       SUBSCRIBE -> loading
-        (ref Patient {
-          emit: { on_change: PATIENT_UPDATED }
+        (fetch Patient {
+          emit: { success: PATIENT_LOADED }
           id: @entity.id
         })
       WATCH_PUSH -> loading

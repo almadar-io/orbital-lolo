@@ -216,7 +216,7 @@ const SIGILS: &[&str] = &[
     "locale",
 ];
 
-/// `set fetch persist emit navigate navigate-back render-ui notify ref
+/// `set fetch persist emit navigate navigate-back render-ui notify
 /// call-service http redis cancel-call random-bytes credential-status credential-forget invoke do if let fn lambda quote quasiquote unquote match when` — s-expression
 /// heads special-cased in `parser/expression.rs` (`parse_sexpr`'s
 /// `loop_arg_max` dispatch, the `let`/`fn`/`lambda`/`quote`/`match` sugar, the
@@ -230,7 +230,6 @@ const EFFECTS: &[&str] = &[
     "navigate-back",
     "render-ui",
     "notify",
-    "ref",
     "call-service",
     "http",
     "redis",

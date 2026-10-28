@@ -21,7 +21,7 @@ orbital ItemOrbital :: MyItemListOrbital {
 
   trait MyItemBrowse :: MyItemBrowsable = Browse.traits.BrowseItemBrowse -> MyItem {
     on INIT {
-      (ref MyItem)
+      (fetch MyItem)
     }
   }
 

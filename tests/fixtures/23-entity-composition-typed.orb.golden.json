@@ -71,6 +71,10 @@
         {
           "effectRow": [
             {
+              "kind": "fetch",
+              "resource": "Patient"
+            },
+            {
               "kind": "render-ui",
               "resource": "main"
             }
@@ -78,7 +82,7 @@
           "linkedEntity": "Patient",
           "name": "PatientManage",
           "sourceDeclaration": {
-            "fingerprint": "ed283dfa4f0312d1953b34028778fd6feae254add606f47396af9987f709922d"
+            "fingerprint": "21fc3526856717f4bd82c218ca9301d116bd8e8a6af78584434e0ff3e137f1c4"
           },
           "stateMachine": {
             "events": [
@@ -97,7 +101,7 @@
               {
                 "effects": [
                   [
-                    "ref",
+                    "fetch",
                     "Patient"
                   ],
                   [

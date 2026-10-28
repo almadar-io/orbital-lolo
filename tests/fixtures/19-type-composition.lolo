@@ -23,7 +23,7 @@ orbital AuditOrbital {
   trait RecBrowse -> Rec {
     state idle {
       INIT -> idle
-        (ref Rec)
+        (fetch Rec)
     }
   }
   page "/recs" -> RecBrowse

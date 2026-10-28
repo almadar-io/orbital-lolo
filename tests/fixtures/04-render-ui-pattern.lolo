@@ -6,7 +6,7 @@ orbital TaskOrbital {
   trait TaskList -> Task {
     state listing {
       INIT -> listing
-        (ref Task)
+        (fetch Task)
         (render-ui main { type: "data-grid", entity: "Task", columns: [{ name: "title", label: "Title" }] })
     }
   }

@@ -31,7 +31,7 @@ orbital MLRungs {
 
   trait LookupRun (v : Type, r : Type) -> KeyLookup {
     state idle {
-      INIT -> idle (ref KeyLookup)
+      INIT -> idle (fetch KeyLookup)
     }
     emits
       CandidateFound { candidate : v, request : r }
@@ -242,7 +242,7 @@ orbital ApprovalOrbital {
 
   trait ApprovalRun -> ApprovalRecord {
     state idle {
-      INIT -> idle (ref ApprovalRecord)
+      INIT -> idle (fetch ApprovalRecord)
     }
   }
 
@@ -293,7 +293,7 @@ orbital MLRungsDefaulted {
 
   trait LookupRun (v : Type = ApprovalDemoPayload, r : Type = string) -> KeyLookup {
     state idle {
-      INIT -> idle (ref KeyLookup)
+      INIT -> idle (fetch KeyLookup)
     }
     emits
       CandidateFound { candidate : v, request : r }

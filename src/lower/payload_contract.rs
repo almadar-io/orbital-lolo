@@ -14,7 +14,7 @@
 //!   not fixed until a consumer binds it, which is inherently post-inline (L2).
 //! - `@config.`-bound entity names — resolved by config folding, also L2.
 //! - the legacy 3-element `persist` form, which carries no action keyword.
-//! - `fetch` / `ref` — their `{ data, totalCount }` wrapper is a contract L2
+//! - `fetch` — its `{ data, totalCount }` wrapper is a contract L2
 //!   checks against the registry; nothing here adds certainty L1 has.
 //!
 //! Anything L1 reports, L2 would also report. The value is the feedback

@@ -8,7 +8,7 @@ orbital TaskOrbital {
   trait TaskList -> Task [interaction] {
     state listing {
       INIT -> listing
-        (ref Task)
+        (fetch Task)
         (render-ui main <DataGrid columns={[{ label: Title, name: title }]} entity={Task} />)
     }
   }

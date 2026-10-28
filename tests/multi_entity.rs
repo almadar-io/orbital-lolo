@@ -27,7 +27,7 @@ orbital PostOrbital {
     id : string!
     name : string!
   }
-  trait PostTrait -> Post { state idle { INIT -> idle (ref Post) } }
+  trait PostTrait -> Post { state idle { INIT -> idle (fetch Post) } }
   page "/posts" -> PostTrait
 }
 "#;
@@ -61,7 +61,7 @@ orbital TaxonomyOrbital {
     id : string!
     name : string!
   }
-  trait TopicTrait -> Topic { state idle { INIT -> idle (ref Topic) } }
+  trait TopicTrait -> Topic { state idle { INIT -> idle (fetch Topic) } }
   page "/topics" -> TopicTrait
 }
 
@@ -72,7 +72,7 @@ orbital ArticleOrbital {
     labelIds : [Label]
     primaryLabel : Label
   }
-  trait ArticleTrait -> Article { state idle { INIT -> idle (ref Article) } }
+  trait ArticleTrait -> Article { state idle { INIT -> idle (fetch Article) } }
   page "/articles" -> ArticleTrait
 }
 "#;
@@ -101,7 +101,7 @@ orbital PostOrbital {
     id : string!
     kind : Bogus
   }
-  trait PostTrait -> Post { state idle { INIT -> idle (ref Post) } }
+  trait PostTrait -> Post { state idle { INIT -> idle (fetch Post) } }
   page "/posts" -> PostTrait
 }
 "#;
@@ -123,7 +123,7 @@ orbital PostOrbital {
     name : string!
   }
   trait PostTrait -> Post {
-    state idle { INIT -> idle (ref Post) }
+    state idle { INIT -> idle (fetch Post) }
     emits {
       TAG_PICKED { tag : Tag }
     }
@@ -155,7 +155,7 @@ orbital PickOrbital {
         (set @sel ?value)
     }
   }
-  trait PostTrait -> Post { state idle { INIT -> idle (ref Post) } }
+  trait PostTrait -> Post { state idle { INIT -> idle (fetch Post) } }
   page "/posts" -> PostTrait
 }
 "#;

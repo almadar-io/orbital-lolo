@@ -774,12 +774,14 @@ impl Parser {
     }
 
     /// A bracket is a data list (G-ORB-407, "Brackets mean data"): when its first element is a
-    /// head the kernel would dispatch, it carries the `["list", …]` marker so it never runs as a
-    /// call. Template bodies (`quote`/`quasiquote`) stay literal JSON.
+    /// head the kernel would dispatch, or the basename of a namespaced operator with a nested call
+    /// after it (which the validator reads as a call with its namespace dropped), it carries the
+    /// `["list", …]` marker so it never reads as a call. Template bodies (`quote`/`quasiquote`)
+    /// stay literal JSON.
     pub(crate) fn parse_array_literal(&mut self) -> Result<SExpression, ParseError> {
         let parsed = self.parse_array_items()?;
         if self.template_depth > 0
-            || orbital_core_eval::lower::recognized_call_head(&parsed).is_none()
+            || (orbital_core_eval::lower::recognized_call_head(&parsed).is_none() && !reads_as_dropped_namespace(&parsed))
         {
             return Ok(parsed);
         }
@@ -908,4 +910,21 @@ fn declares_key_position(head: &str, index: usize) -> bool {
     try_get_operator(head)
         .and_then(|operator| orbital_core_base::signature::Signature::of(operator).formal(index))
         .is_some_and(names_key)
+}
+
+/// A list headed by an operator's bare basename with a nested call among its items.
+fn reads_as_dropped_namespace(list: &SExpression) -> bool {
+    let SExpression::Array(items) = list else {
+        return false;
+    };
+    let Some(SExpression::String(head)) = items.first() else {
+        return false;
+    };
+    orbital_core_base::language::registry::names_operator_basename(head)
+        && items[1..].iter().any(|item| {
+            matches!(item, SExpression::Array(inner) if matches!(
+                inner.first(),
+                Some(SExpression::String(h)) if orbital_core_base::language::registry::is_known_operator(h) || h.contains('/')
+            ))
+        })
 }

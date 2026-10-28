@@ -2665,6 +2665,15 @@ mod tests {
     }
 
     #[test]
+    fn a_bracket_headed_by_an_operator_basename_with_a_nested_call_is_marked_data() {
+        let src = "orbital O {\n  entity E [runtime] {\n    id : string!\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      GO -> idle\n        (set @entity.id (json/stringify [\"delete\" \"X\" (object/get @payload \"id\")]))\n        (set @entity.id (json/stringify [\"date\" \"datetime\"]))\n        (set @entity.id (json/stringify [\"email\" \"sms\" \"push\"]))\n    }\n    emits { }\n    listens { GO { id : string! } }\n  }\n}\n";
+        let json = serde_json::to_string(&crate::parse_and_lower_str(src).expect("lowers")).unwrap();
+        assert!(json.contains(r#"["list","delete","X",["object/get""#), "a dropped-namespace look-alike holding a call is marked: {json}");
+        assert!(json.contains(r#"["date","datetime"]"#), "control: constants headed by a basename stay as written");
+        assert!(json.contains(r#"["email","sms","push"]"#), "control: a plain enum list stays as written");
+    }
+
+    #[test]
     fn a_question_mark_after_a_type_makes_it_nullable() {
         let src = "type Seen = { lastSeen : number?, tags : [string]? , name : string }\norbital O {\n  entity E { id : string!\n    due : number? }\n}";
         let prog = p(src);

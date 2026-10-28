@@ -14,7 +14,7 @@ orbital ItemOrbital {
   trait ItemBrowse -> Item {
     state browsing {
       INIT -> browsing
-        (ref Item)
+        (fetch Item)
         (render-ui main { type: "data-grid", entity: "Item" })
     }
   }

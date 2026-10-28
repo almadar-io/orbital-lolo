@@ -11,7 +11,7 @@ orbital InventoryItemOrbital {
 
   trait InventoryItemBrowse = Browse.traits.BrowseItemBrowse -> InventoryItem {
     on INIT {
-      (ref InventoryItem)
+      (fetch InventoryItem)
       (render-ui main { type: "data-grid", entity: "InventoryItem" })
     }
   }

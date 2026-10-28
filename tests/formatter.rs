@@ -4,10 +4,13 @@
 //! `.orb` JSON of the re-parsed output must match the lowered JSON of the
 //! original, proving the formatter is semantics-preserving.
 
-use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
+use orbital_lolo::{
+    format_program, parse_and_lower_str, parse_and_lower_str_with, parse_str, schema_to_lolo,
+    LowerOptions,
+};
 use serde_json::Value;
 use std::fs;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 fn fixtures_dir() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("tests/fixtures")
@@ -97,6 +100,17 @@ fn assert_round_trip(name: &str) {
 // version quoting) on production-sized inputs. NOTE: these verify *semantic*
 // preservation (lowered .orb equality); `;;` comments are dropped at the lexer and
 // are out of scope for the round-trip.
+#[test]
+fn an_optional_field_prints_one_question_mark_and_parses_back() {
+    let source = "orbital O {\n  entity E [runtime] {\n    id : string!\n    low : float? = null\n    count : number = 0\n  }\n}\n";
+    let formatted = format_program(&parse_str(source).expect("parse"));
+    assert!(formatted.contains("low : float? = null"), "{formatted}");
+    assert!(!formatted.contains("??"), "{formatted}");
+    let again = format_program(&parse_str(&formatted).expect("the printed text parses"));
+    assert_eq!(again, formatted, "idempotent");
+    assert!(formatted.contains("count : number = 0"), "control: a plain field prints no question mark");
+}
+
 #[test]
 fn large_01_modal_atom() {
     assert_round_trip("large-01-modal-atom");
@@ -674,7 +688,9 @@ orbital ProductOrbital {
     }
     // Layout: expects group after the uses group, one blank line between.
     let uses_pos = formatted.find("uses AppShell").expect("uses printed");
-    let expects_pos = formatted.find("expects entity Customer").expect("expects printed");
+    let expects_pos = formatted
+        .find("expects entity Customer")
+        .expect("expects printed");
     assert!(uses_pos < expects_pos, "expects must print after uses");
     assert!(
         formatted[uses_pos..expects_pos].contains("\n\n"),
@@ -763,7 +779,7 @@ orbital OrbG {
     bag : Map string (string | number)
     list : [(string | number)]
   }
-  trait RecTrait -> Rec { state idle { INIT -> idle (ref Rec) } }
+  trait RecTrait -> Rec { state idle { INIT -> idle (fetch Rec) } }
   page "/recs" -> RecTrait
 }
 "#;
@@ -967,7 +983,8 @@ mod xml_parse_list_paths {
         let schema = parse_and_lower_str(&program("Feed")).expect("lowers");
         let lolo = orbital_lolo::schema_to_lolo(&schema).expect("unlowers");
         assert!(lolo.contains("(xml/parse \"<a/>\" Feed)"), "{lolo}");
-        let relowered = serde_json::to_value(parse_and_lower_str(&lolo).expect("relowers")).unwrap();
+        let relowered =
+            serde_json::to_value(parse_and_lower_str(&lolo).expect("relowers")).unwrap();
         assert_eq!(relowered, serde_json::to_value(&schema).unwrap());
     }
 
@@ -984,7 +1001,10 @@ mod xml_parse_list_paths {
 fn an_expects_trait_payload_survives_reformat() {
     let source = "app s [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects trait Checkout { emits { PLACED { orderId : string!, note : string } } }\n}\n";
     let formatted = format_program(&parse_str(source).expect("parse"));
-    assert!(formatted.contains("expects trait Checkout { emits { PLACED {"), "{formatted}");
+    assert!(
+        formatted.contains("expects trait Checkout { emits { PLACED {"),
+        "{formatted}"
+    );
     assert!(formatted.contains("orderId : string!"), "{formatted}");
     let again = format_program(&parse_str(&formatted).expect("reparse the formatted source"));
     assert_eq!(formatted, again);
@@ -1001,7 +1021,10 @@ fn a_spec_with_storage_access_pages_and_edges_survives_reformat() {
         "expects trait Checkout { state idle { PAY -> paid } }",
         "expects trait Checkout { state refunded }",
     ] {
-        assert!(formatted.contains(needle), "formatter dropped `{needle}`; got:\n{formatted}");
+        assert!(
+            formatted.contains(needle),
+            "formatter dropped `{needle}`; got:\n{formatted}"
+        );
     }
     let again = format_program(&parse_str(&formatted).expect("reparse"));
     assert_eq!(formatted, again);
@@ -1033,13 +1056,19 @@ orbital ListOrbital {
 "#;
     let ast = parse_str(source).expect("parse original");
     let formatted = format_program(&ast);
-    assert!(!formatted.contains("(idle walk)") && !formatted.contains("(array/len"), "a data list printed as a call:\n{formatted}");
+    assert!(
+        !formatted.contains("(idle walk)") && !formatted.contains("(array/len"),
+        "a data list printed as a call:\n{formatted}"
+    );
     let schema1 = parse_and_lower_str(source).expect("lower original");
     let schema2 = parse_and_lower_str(&formatted).expect("lower formatted");
     let v1 = canonicalize(strip_nulls(serde_json::to_value(&schema1).unwrap()));
     let v2 = canonicalize(strip_nulls(serde_json::to_value(&schema2).unwrap()));
     assert_eq!(v1, v2, "a data list changed meaning across a reformat");
-    assert_eq!(formatted, format_program(&parse_str(&formatted).expect("reparse")));
+    assert_eq!(
+        formatted,
+        format_program(&parse_str(&formatted).expect("reparse"))
+    );
 }
 
 /// `@index` survives a reformat: printed back, repeated and in order, with the same IR.
@@ -1059,11 +1088,22 @@ orbital EdgeOrbital {
 "#;
     let ast = parse_str(source).expect("parse original");
     let formatted = format_program(&ast);
-    assert_eq!(formatted.matches("@index").count(), 2, "formatter dropped or merged `@index`; got:\n{formatted}");
-    assert!(formatted.contains("weight:desc"), "formatter dropped orderBy; got:\n{formatted}");
+    assert_eq!(
+        formatted.matches("@index").count(),
+        2,
+        "formatter dropped or merged `@index`; got:\n{formatted}"
+    );
+    assert!(
+        formatted.contains("weight:desc"),
+        "formatter dropped orderBy; got:\n{formatted}"
+    );
 
-    let v1 = canonicalize(strip_nulls(serde_json::to_value(parse_and_lower_str(source).unwrap()).unwrap()));
-    let v2 = canonicalize(strip_nulls(serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap()));
+    let v1 = canonicalize(strip_nulls(
+        serde_json::to_value(parse_and_lower_str(source).unwrap()).unwrap(),
+    ));
+    let v2 = canonicalize(strip_nulls(
+        serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap(),
+    ));
     assert_eq!(v1, v2, "@index changed semantics across a reformat");
     assert!(
         v1.to_string().contains("\"indexes\""),
@@ -1096,10 +1136,169 @@ orbital PersonOrbital {
 }
 "#;
     let formatted = format_program(&parse_str(source).expect("parse original"));
-    assert!(formatted.contains("@derived"), "formatter dropped `@derived`; got:\n{formatted}");
-    assert!(!formatted.contains("= derived"), "the retired spelling must not be printed:\n{formatted}");
-    let v1 = canonicalize(strip_nulls(serde_json::to_value(parse_and_lower_str(source).unwrap()).unwrap()));
-    let v2 = canonicalize(strip_nulls(serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap()));
+    assert!(
+        formatted.contains("@derived"),
+        "formatter dropped `@derived`; got:\n{formatted}"
+    );
+    assert!(
+        !formatted.contains("= derived"),
+        "the retired spelling must not be printed:\n{formatted}"
+    );
+    let v1 = canonicalize(strip_nulls(
+        serde_json::to_value(parse_and_lower_str(source).unwrap()).unwrap(),
+    ));
+    let v2 = canonicalize(strip_nulls(
+        serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap(),
+    ));
     assert_eq!(v1, v2, "@derived changed semantics across a reformat");
-    assert!(v1.to_string().contains("\"derived\""), "control: the IR carries the expression this test round-trips");
+    assert!(
+        v1.to_string().contains("\"derived\""),
+        "control: the IR carries the expression this test round-trips"
+    );
+}
+
+fn corpus_collect(dir: &Path, out: &mut Vec<PathBuf>) {
+    let Ok(rd) = fs::read_dir(dir) else { return };
+    let mut entries: Vec<_> = rd.flatten().map(|e| e.path()).collect();
+    entries.sort();
+    for p in entries {
+        if p.is_dir() {
+            corpus_collect(&p, out);
+        } else if p.extension().is_some_and(|e| e == "lolo") {
+            out.push(p);
+        }
+    }
+}
+
+fn corpus_monorepo_root() -> Option<PathBuf> {
+    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
+    root.join("packages/almadar-std/behaviors/lolo")
+        .is_dir()
+        .then_some(root)
+}
+
+fn corpus_sample(base: &Path) -> Vec<PathBuf> {
+    let per_dir: usize = std::env::var("FORMAT_PER_DIR")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(3);
+    let cap: usize = std::env::var("FORMAT_CAP")
+        .ok()
+        .and_then(|v| v.parse().ok())
+        .unwrap_or(40);
+    let mut all = Vec::new();
+    corpus_collect(base, &mut all);
+    let mut by_dir: std::collections::BTreeMap<PathBuf, Vec<PathBuf>> = Default::default();
+    for f in all {
+        by_dir
+            .entry(f.parent().unwrap().to_path_buf())
+            .or_default()
+            .push(f);
+    }
+    by_dir
+        .into_values()
+        .flat_map(|v| v.into_iter().take(per_dir))
+        .take(cap)
+        .collect()
+}
+
+fn first_diff_line(a: &str, b: &str) -> String {
+    let (la, lb): (Vec<&str>, Vec<&str>) = (a.lines().collect(), b.lines().collect());
+    for i in 0..la.len().max(lb.len()) {
+        let (x, y) = (la.get(i), lb.get(i));
+        if x != y {
+            return format!("line {}: before={x:?} after={y:?}", i + 1);
+        }
+    }
+    "texts differ only in trailing newline".to_string()
+}
+
+fn ir_value(source: &str, options: &LowerOptions) -> Result<Value, String> {
+    let schema = parse_and_lower_str_with(source, options).map_err(|e| format!("lower: {e}"))?;
+    Ok(canonicalize(strip_nulls(
+        serde_json::to_value(&schema).unwrap(),
+    )))
+}
+
+fn format_text(source: &str) -> Result<String, String> {
+    Ok(format_program(
+        &parse_str(source).map_err(|e| format!("parse: {e}"))?,
+    ))
+}
+
+fn corpus_properties(source: &str, options: &LowerOptions) -> Vec<String> {
+    let mut found = Vec::new();
+
+    match format_text(source).and_then(|f1| format_text(&f1).map(|f2| (f1, f2))) {
+        Err(e) => found.push(format!("idempotent: {e}")),
+        Ok((f1, f2)) => {
+            if f1 != f2 {
+                found.push(format!("idempotent: {}", first_diff_line(&f1, &f2)));
+            }
+            match (ir_value(source, options), ir_value(&f1, options)) {
+                (Ok(a), Ok(b)) => {
+                    if a != b {
+                        let (pa, pb) = (
+                            serde_json::to_string_pretty(&a).unwrap(),
+                            serde_json::to_string_pretty(&b).unwrap(),
+                        );
+                        found.push(format!("meaning: IR {}", first_diff_line(&pa, &pb)));
+                    }
+                }
+                (Err(e), _) => found.push(format!("meaning: original {e}")),
+                (_, Err(e)) => found.push(format!("meaning: formatted {e}")),
+            }
+        }
+    }
+
+    let unlowered_twice = || -> Result<(String, String), String> {
+        let first = parse_and_lower_str_with(source, options).map_err(|e| format!("lower: {e}"))?;
+        let p1 = schema_to_lolo(&first).map_err(|e| format!("unlower: {e}"))?;
+        let second =
+            parse_and_lower_str_with(&p1, options).map_err(|e| format!("lower printed: {e}"))?;
+        let p2 = schema_to_lolo(&second).map_err(|e| format!("unlower again: {e}"))?;
+        Ok((p1, p2))
+    };
+    match unlowered_twice() {
+        Err(e) => found.push(format!("unlower-stable: {e}")),
+        Ok((p1, p2)) => {
+            if p1 != p2 {
+                found.push(format!("unlower-stable: {}", first_diff_line(&p1, &p2)));
+            }
+        }
+    }
+    found
+}
+
+#[test]
+fn corpus_format_properties() {
+    let Some(root) = corpus_monorepo_root() else {
+        eprintln!("corpus_format_properties: skipped, no monorepo packages/ checkout");
+        return;
+    };
+    let files = corpus_sample(&root.join("packages/almadar-std/behaviors/lolo"));
+    let packages =
+        orbital_core_base::behavior_packages::discover(&root, &root).expect("discover packages");
+    let options = LowerOptions {
+        packages,
+        ..Default::default()
+    };
+    let mut failures = Vec::new();
+    for f in &files {
+        let src = fs::read_to_string(f).unwrap();
+        for found in corpus_properties(&src, &options) {
+            failures.push(format!("{}: {found}", f.display()));
+        }
+    }
+    eprintln!(
+        "format properties: {} files, {} failures",
+        files.len(),
+        failures.len()
+    );
+    assert!(
+        failures.is_empty(),
+        "{} failures:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
 }

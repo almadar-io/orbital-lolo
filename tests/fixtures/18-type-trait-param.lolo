@@ -14,7 +14,7 @@ orbital MyOrbital {
 
   trait MyItemBrowse :: Browsable MyItem = Browse.traits.BrowseItemBrowse -> MyItem {
     on INIT {
-      (ref MyItem)
+      (fetch MyItem)
       (render-ui main { type: "data-list", entity: "MyItem", fields: [{ name: "name", label: "Name" }] })
     }
   }

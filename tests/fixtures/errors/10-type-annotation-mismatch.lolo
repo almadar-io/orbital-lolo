@@ -15,7 +15,7 @@ orbital BadBody {
   trait ContactTrait -> Contact {
     state idle {
       INIT -> idle
-        (ref Contact)
+        (fetch Contact)
     }
   }
   page "/contacts" -> ContactTrait

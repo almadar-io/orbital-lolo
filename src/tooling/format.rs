@@ -1131,7 +1131,8 @@ impl Formatter {
         if field.required {
             self.output.push('!');
         }
-        if field.nullable {
+        // An optional type already printed its `?`; the parser derives `nullable` from it.
+        if field.nullable && !matches!(field.type_expr, TypeExpr::Optional(_)) {
             self.output.push('?');
         }
         if field.is_key {

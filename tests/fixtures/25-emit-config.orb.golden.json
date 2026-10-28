@@ -47,7 +47,7 @@
           "linkedEntity": "Patient",
           "name": "PatientLoader",
           "sourceDeclaration": {
-            "fingerprint": "9da071ed78dcf082b69884867fb5cc049ba6fa5e6a032ca29908f94350a20306"
+            "fingerprint": "fb1d0087f969acdfa51eeebee51fd950b14b5a383b4426ff035ada29389da468"
           },
           "stateMachine": {
             "events": [
@@ -161,11 +161,11 @@
               {
                 "effects": [
                   [
-                    "ref",
+                    "fetch",
                     "Patient",
                     {
                       "emit": {
-                        "on_change": "PATIENT_UPDATED"
+                        "success": "PATIENT_LOADED"
                       }
                     }
                   ]

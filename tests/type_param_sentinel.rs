@@ -23,7 +23,7 @@ orbital RecurrenceOrbital {
 
   trait RecurrenceSave -> Recurrence {
     state idle {
-      INIT -> idle (ref Recurrence)
+      INIT -> idle (fetch Recurrence)
     }
     emits
       RecurrenceSaved

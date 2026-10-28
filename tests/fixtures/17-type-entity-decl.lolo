@@ -19,7 +19,7 @@ orbital AuditableOrbital {
   trait RecordBrowse -> Record {
     state idle {
       INIT -> idle
-        (ref Record)
+        (fetch Record)
     }
   }
   page "/records" -> RecordBrowse

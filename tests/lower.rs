@@ -313,7 +313,7 @@ fn fixture_33_emit_entity_nested_struct_field() {
 #[test]
 fn fixture_25_emit_config() {
     // Positive fixture for `emit:` config on all six operator shapes:
-    //   fetch, persist, set, call-service, ref, os/watch-http.
+    //   fetch, persist, set, call-service, os/watch-http.
     // Ensures the lolo surface parses + lowers emit options intact.
     assert_lowering_matches("25-emit-config");
 }
@@ -479,7 +479,7 @@ orbital OrbE {
     customer : Customer
     watchers : [Customer]
   }
-  trait OrderTrait -> Order { state idle { INIT -> idle (ref Order) } }
+  trait OrderTrait -> Order { state idle { INIT -> idle (fetch Order) } }
   page "/orders" -> OrderTrait
 }
 "#;
@@ -1775,7 +1775,7 @@ orbital AuditOrbital {
   trait RecBrowse -> Rec {
     state idle {
       INIT -> idle
-        (ref Rec)
+        (fetch Rec)
     }
   }
   page "/recs" -> RecBrowse

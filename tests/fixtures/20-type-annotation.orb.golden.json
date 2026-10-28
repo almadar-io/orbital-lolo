@@ -39,10 +39,16 @@
       ],
       "traits": [
         {
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "Patient"
+            }
+          ],
           "linkedEntity": "Patient",
           "name": "PatientView",
           "sourceDeclaration": {
-            "fingerprint": "339d2eb762339060a3d91c5e0c51d5fa5668153fa6e8d15d76ec7c8ffe55eab0"
+            "fingerprint": "e6919838ec2c5b196e89fefdbcfeec7f70c0e14acd00da1580d12fa07d218491"
           },
           "stateMachine": {
             "events": [
@@ -61,7 +67,7 @@
               {
                 "effects": [
                   [
-                    "ref",
+                    "fetch",
                     "Patient"
                   ]
                 ],

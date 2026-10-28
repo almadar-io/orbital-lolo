@@ -26,7 +26,7 @@ orbital PatientOrbital :: PatientModule {
   trait PatientView :: PatientViewTrait -> Patient {
     state idle {
       INIT -> idle
-        (ref Patient)
+        (fetch Patient)
     }
   }
   page "/patients" :: PatientListPage -> PatientView

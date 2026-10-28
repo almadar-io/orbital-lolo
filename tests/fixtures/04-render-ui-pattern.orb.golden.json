@@ -25,6 +25,10 @@
         {
           "effectRow": [
             {
+              "kind": "fetch",
+              "resource": "Task"
+            },
+            {
               "kind": "render-ui",
               "resource": "main"
             }
@@ -32,7 +36,7 @@
           "linkedEntity": "Task",
           "name": "TaskList",
           "sourceDeclaration": {
-            "fingerprint": "ae20be1064621545af8e0b45fad9ee5103cc28170b78fc1a065e715408619815"
+            "fingerprint": "08654ad1419e9d53d58ce1ac9206d9f2b14f513ddc6799baa34854e3e03936d7"
           },
           "stateMachine": {
             "events": [
@@ -51,7 +55,7 @@
               {
                 "effects": [
                   [
-                    "ref",
+                    "fetch",
                     "Task"
                   ],
                   [

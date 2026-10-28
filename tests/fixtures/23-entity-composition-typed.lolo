@@ -39,7 +39,7 @@ orbital PatientOrbital {
   trait PatientManage -> Patient {
     state idle {
       INIT -> idle
-        (ref Patient)
+        (fetch Patient)
         (render-ui main { type: "data-list", entity: "Patient", fields: [{ name: "name", label: "Name" }] })
     }
   }

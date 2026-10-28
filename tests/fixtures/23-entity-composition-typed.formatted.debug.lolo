@@ -36,7 +36,7 @@ orbital PatientOrbital {
   trait PatientManage -> Patient [interaction] {
     state idle {
       INIT -> idle
-        (ref Patient)
+        (fetch Patient)
         (render-ui main <DataList entity={Patient} fields={[{ label: Name, name: name }]} />)
     }
   }

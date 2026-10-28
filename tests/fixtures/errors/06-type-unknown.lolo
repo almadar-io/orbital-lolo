@@ -15,7 +15,7 @@ orbital BadOrbital {
   trait RecordTrait -> Record {
     state idle {
       INIT -> idle
-        (ref Record)
+        (fetch Record)
     }
   }
   page "/records" -> RecordTrait

@@ -32,9 +32,9 @@ orbital PatientOrbital {
           emit: { success: "EMAIL_SENT", failure: "EMAIL_FAILED" }
         })
       SUBSCRIBE -> loading
-        (ref Patient {
+        (fetch Patient {
           id: "@entity.id",
-          emit: { on_change: "PATIENT_UPDATED" }
+          emit: { success: "PATIENT_LOADED" }
         })
       WATCH_PUSH -> loading
         (os/watch-http "wss://push" {

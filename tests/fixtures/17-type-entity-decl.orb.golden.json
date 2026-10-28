@@ -44,10 +44,16 @@
       ],
       "traits": [
         {
+          "effectRow": [
+            {
+              "kind": "fetch",
+              "resource": "Record"
+            }
+          ],
           "linkedEntity": "Record",
           "name": "RecordBrowse",
           "sourceDeclaration": {
-            "fingerprint": "4c020d7dc580b9003b4524ad08de35928846f9b1279687bac1de7c245a73b95f"
+            "fingerprint": "5b98b80691003e8ed670df0d5e9ad90b4201970ce5ae35b26988c151975f0d9f"
           },
           "stateMachine": {
             "events": [
@@ -66,7 +72,7 @@
               {
                 "effects": [
                   [
-                    "ref",
+                    "fetch",
                     "Record"
                   ]
                 ],

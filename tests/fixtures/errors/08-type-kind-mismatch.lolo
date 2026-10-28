@@ -16,7 +16,7 @@ orbital Broken {
   trait RecTrait -> Rec {
     state idle {
       INIT -> idle
-        (ref Rec)
+        (fetch Rec)
     }
   }
   page "/recs" -> RecTrait

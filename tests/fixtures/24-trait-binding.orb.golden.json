@@ -69,6 +69,10 @@
         {
           "effectRow": [
             {
+              "kind": "fetch",
+              "resource": "Item"
+            },
+            {
               "kind": "render-ui",
               "resource": "main"
             }
@@ -76,7 +80,7 @@
           "linkedEntity": "Item",
           "name": "ItemBrowse",
           "sourceDeclaration": {
-            "fingerprint": "897eb8137dba345371f7b5ca81e28d2e08d48afbf87b35a08d8755697c94b903"
+            "fingerprint": "a7e97e8f543b0699076f5558ad599619c62947335a31fddf0a207e13eff3f9a4"
           },
           "stateMachine": {
             "events": [
@@ -95,7 +99,7 @@
               {
                 "effects": [
                   [
-                    "ref",
+                    "fetch",
                     "Item"
                   ],
                   [
