@@ -118,7 +118,7 @@ fn multi_body_fn_is_too_many_args() {
 #[test]
 fn multi_body_lambda_is_too_many_args() {
     let err = parse_err(
-        "(set @entity.total (array/len (array/filter @entity.total (lambda it (set @entity.total 1) (set @entity.total 2)))))",
+        "(set @entity.total (array/len (array/filter @entity.total (fn it (set @entity.total 1) (set @entity.total 2)))))",
     );
     assert!(matches!(err, ParseError::TooManyArgs { .. }));
 }

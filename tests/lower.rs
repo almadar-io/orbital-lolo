@@ -1548,7 +1548,7 @@ orbital Probe {{
       config {
        viaEntity : entity = Item
        via : (field @entity (@entity @config.viaEntity))?
-       shown : (field (@entity @config.viaEntity) string)?
+       shown : (field (@entity @config.viaEntity) string)
       }
      }
      page boot as ProbeStart -> Run

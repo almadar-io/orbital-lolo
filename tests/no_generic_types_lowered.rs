@@ -39,7 +39,9 @@ fn generic_types(value: &Value, path: &str, out: &mut Vec<String>) {
                     && !has(map, "description")
                     && !has(map, "synonyms")
                     && !has(map, "tier");
-                if GENERIC.contains(&ty.as_str()) && !wiring {
+                // An object literal inside an effect or guard is data (`{ type: "json" }` names a CouchDB index kind), not a declared type.
+                let literal = path.contains("/effects[") || path.contains("/guard");
+                if GENERIC.contains(&ty.as_str()) && !wiring && !literal {
                     out.push(format!("{path}: {ty}"));
                 }
                 let shaped = has(map, "properties") || has(map, "items") || has(map, "values");
