@@ -319,7 +319,9 @@ pub(crate) fn lower_emit(
             });
         } else if let TypeExpr::Array(inner) = ty {
             if let TypeExpr::Named(type_name) = inner.as_ref() {
-                if entities_by_name.contains_key(type_name) {
+                if entities_by_name.contains_key(type_name)
+                    && struct_payload_properties(inner, aliases, trait_type_params).is_none()
+                {
                     // Array-of-entity (`rows : [Note]`) — same flatten as the
                     // scalar arm, tagged `[object]`; the marker names the
                     // ELEMENT entity, not an array type of its own.
@@ -940,32 +942,8 @@ pub(crate) fn named_entity_fields(
     let fields = entities_by_name.get(name)?;
     Some((
         name.to_string(),
-        fields
-            .iter()
-            .map(|(n, t, req)| {
-                let container = union_container(t, aliases, &[]);
-                PayloadField {
-                    nullable: Some(false),
-                    additional_properties: None,
-                    values: if container.is_some() {
-                        None
-                    } else {
-                        payload_literal_values(t, aliases)
-                    },
-                    name: n.clone(),
-                    field_type: container
-                        .as_ref()
-                        .map_or_else(|| type_expr_to_string(t), |(tag, _)| tag.clone()),
-                    required: if *req { Some(true) } else { None },
-                    description: None,
-                    properties: None,
-                    type_when: None,
-                    entity: None,
-                    projected_from: None,
-                    items: container.map(|(_, items)| items),
-                }
-            })
-            .collect(),
+        struct_payload_properties(&TypeExpr::Object(fields.clone()), aliases, &[])
+            .unwrap_or_default(),
         is_array,
     ))
 }
@@ -1259,6 +1237,8 @@ pub(crate) fn struct_payload_properties(
             ("[object]".to_string(), Some(elem))
         } else if let Some(nested) = struct_payload_properties(ty, aliases, type_params) {
             ("object".to_string(), Some(nested))
+        } else if let Some(name) = self_referential_union_alias(ty, aliases) {
+            (name.to_string(), Some(Vec::new()))
         } else if let Some(variants) = union_payload_variants(ty, aliases, type_params) {
             ("union".to_string(), Some(variants))
         } else if let Some(enum_ty) = enum_alias_payload_type(ty, aliases) {
@@ -1296,6 +1276,70 @@ pub(crate) fn struct_payload_properties(
         });
     }
     Some(props)
+}
+
+/// The alias `ty` names when it is a tagged-union alias whose own variants reach it again (`Pred = Leaf | Not`,
+/// `Not = { of : Pred }`): a field typed by it keeps the by-name reference, because expanding it would inline
+/// the union one level and stop at an arbitrary depth.
+fn self_referential_union_alias<'a>(
+    ty: &'a TypeExpr,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+) -> Option<&'a str> {
+    let TypeExpr::Named(name) = ty.peel() else {
+        return None;
+    };
+    let Some(TypeAliasResolved::Type(TypeExpr::Union(parts), _)) = aliases.get(name) else {
+        return None;
+    };
+    if !crate::lower::entity::is_type_union(parts, aliases) {
+        return None;
+    }
+    let mut seen = HashSet::new();
+    parts
+        .iter()
+        .any(|part| reaches_alias(part, name, aliases, &mut seen))
+        .then_some(name.as_str())
+}
+
+fn reaches_alias(
+    ty: &TypeExpr,
+    target: &str,
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    seen: &mut HashSet<String>,
+) -> bool {
+    match ty.peel() {
+        TypeExpr::Named(n) if n == target => true,
+        TypeExpr::Named(n) => {
+            if !seen.insert(n.clone()) {
+                return false;
+            }
+            match aliases.get(n) {
+                Some(TypeAliasResolved::Type(body, _)) => {
+                    reaches_alias(body, target, aliases, seen)
+                }
+                _ => false,
+            }
+        }
+        TypeExpr::Array(inner) | TypeExpr::Optional(inner) => {
+            reaches_alias(inner, target, aliases, seen)
+        }
+        TypeExpr::Map(key, value) => {
+            reaches_alias(key, target, aliases, seen) || reaches_alias(value, target, aliases, seen)
+        }
+        TypeExpr::Tuple(parts) | TypeExpr::Union(parts) => parts
+            .iter()
+            .any(|p| reaches_alias(p, target, aliases, seen)),
+        TypeExpr::Object(fields) => fields
+            .iter()
+            .any(|(_, t, _)| reaches_alias(t, target, aliases, seen)),
+        TypeExpr::OpenObject { fields, additional } => {
+            fields
+                .iter()
+                .any(|(_, t, _)| reaches_alias(t, target, aliases, seen))
+                || reaches_alias(additional, target, aliases, seen)
+        }
+        _ => false,
+    }
 }
 
 /// A payload field's closed value set: a literal union (inline or via an alias), a single

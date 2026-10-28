@@ -41,7 +41,7 @@ pub(crate) fn check_orbital_config_knobs_read(orbital: &Orbital) -> Result<(), L
             let mut rest = orbital.clone();
             if let TraitReference::Inline(own) = &mut rest.traits[index] {
                 if let Some(own_config) = own.config.as_mut() {
-                    own_config.remove(knob);
+                    own_config.shift_remove(knob);
                 }
             }
             let text = serde_json::to_string(&rest).unwrap_or_default();
@@ -50,6 +50,7 @@ pub(crate) fn check_orbital_config_knobs_read(orbital: &Orbital) -> Result<(), L
             }
         }
     }
+    unread.sort();
     if unread.is_empty() {
         Ok(())
     } else {

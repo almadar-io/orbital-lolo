@@ -104,3 +104,14 @@ fn edge_a_knob_read_only_by_a_type_level_match_is_fine() {
 "#;
     lower(src).expect("inputType types the PICKED payload");
 }
+
+#[test]
+fn unread_knobs_are_listed_in_sorted_order_on_every_run() {
+    let knobs = "      zeta : string = \"z\"\n      alpha : string = \"a\"\n      mid : string = \"m\"\n      beta : string = \"b\"\n      omega : string = \"o\"";
+    let src = program(knobs, "(render-ui main { type: typography, content: \"x\" })", "");
+    let expected = "ProbeView.alpha, ProbeView.beta, ProbeView.mid, ProbeView.omega, ProbeView.zeta";
+    for _ in 0..20 {
+        let err = lower(&src).expect_err("nothing reads the knobs");
+        assert!(err.contains(expected), "{err}");
+    }
+}

@@ -93,7 +93,10 @@ fn collect(dir: &Path, out: &mut Vec<PathBuf>, accept: &dyn Fn(&Path) -> bool) {
 fn run_corpus(root: &Path, files: &[PathBuf]) {
     let packages =
         orbital_core_base::behavior_packages::discover(root, root).expect("discover packages");
-    let options = LowerOptions { packages, ..Default::default() };
+    let options = LowerOptions {
+        packages,
+        ..Default::default()
+    };
     let mut failures = Vec::new();
     for f in files {
         let src = fs::read_to_string(f).unwrap();
@@ -115,8 +118,19 @@ fn run_corpus(root: &Path, files: &[PathBuf]) {
 }
 
 fn monorepo_root() -> Option<PathBuf> {
-    let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../..");
-    root.join("packages/almadar-std/behaviors/lolo").is_dir().then_some(root)
+    let root = std::env::var_os("ALMADAR_MONOREPO_ROOT")
+        .map(PathBuf::from)
+        .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../.."));
+    root.join("packages/almadar-std/behaviors/lolo")
+        .is_dir()
+        .then_some(root)
+}
+
+fn matching(mut files: Vec<PathBuf>) -> Vec<PathBuf> {
+    if let Ok(m) = std::env::var("UNLOWER_MATCH") {
+        files.retain(|f| m.split(',').any(|m| f.to_string_lossy().contains(m)));
+    }
+    files
 }
 
 fn sample_per_dir(base: &Path) -> Vec<PathBuf> {
@@ -142,20 +156,21 @@ fn sample_per_dir(base: &Path) -> Vec<PathBuf> {
 #[test]
 fn corpus_std_behaviors_sample() {
     let Some(root) = monorepo_root() else { return };
-    let files = sample_per_dir(&root.join("packages/almadar-std/behaviors/lolo"));
+    let files = matching(sample_per_dir(
+        &root.join("packages/almadar-std/behaviors/lolo"),
+    ));
     eprintln!("std sample: {} files", files.len());
     run_corpus(&root, &files);
 }
 
 #[test]
-#[ignore = "known gaps: struct-member order lost in entity field maps; alias-path vs inline-path entity payloads"]
 fn corpus_io_behaviors_sample() {
     let Some(root) = monorepo_root() else { return };
     let base = root.join("packages/almadar-behaviors/behaviors/lolo");
     if !base.is_dir() {
         return;
     }
-    let files = sample_per_dir(&base);
+    let files = matching(sample_per_dir(&base));
     eprintln!("io sample: {} files", files.len());
     run_corpus(&root, &files);
 }
@@ -168,7 +183,10 @@ fn dump_printed() {
     };
     let root = monorepo_root().expect("monorepo checkout");
     let packages = orbital_core_base::behavior_packages::discover(&root, &root).expect("discover");
-    let options = LowerOptions { packages, ..Default::default() };
+    let options = LowerOptions {
+        packages,
+        ..Default::default()
+    };
     let src = fs::read_to_string(file).unwrap();
     let schema = parse_and_lower_str_with(&src, &options).unwrap();
     println!("{}", schema_to_lolo(&schema).unwrap());
@@ -177,7 +195,10 @@ fn dump_printed() {
 fn monorepo_options() -> Option<LowerOptions> {
     let root = monorepo_root()?;
     let packages = orbital_core_base::behavior_packages::discover(&root, &root).ok()?;
-    Some(LowerOptions { packages, ..Default::default() })
+    Some(LowerOptions {
+        packages,
+        ..Default::default()
+    })
 }
 
 const IMPORT_HEAD: &str = "uses Notes from \"almadar-behaviors/std-notes\"\n\n";
@@ -210,12 +231,16 @@ fn import_body_retype_round_trips() {
         return;
     };
     round_trip(
-        &import("  retype {\n    title : string = \"untitled\"\n    pinned : boolean = true\n  }\n"),
+        &import(
+            "  retype {\n    title : string = \"untitled\"\n    pinned : boolean = true\n  }\n",
+        ),
         &options,
     )
     .unwrap();
     round_trip(
-        &import("  extend {\n    dueDate : date = null\n  }\n  retype {\n    title : string\n  }\n"),
+        &import(
+            "  extend {\n    dueDate : date = null\n  }\n  retype {\n    title : string\n  }\n",
+        ),
         &options,
     )
     .unwrap();
@@ -331,7 +356,9 @@ fn recursive_primitive_union_alias_round_trips_as_declared() {
     let schema = parse_and_lower_str_with(&source, &options).unwrap();
     let printed = schema_to_lolo(&schema).unwrap();
     assert!(
-        printed.contains("type JsonValue = string | number | boolean | [JsonValue] | Map string JsonValue"),
+        printed.contains(
+            "type JsonValue = string | number | boolean | [JsonValue] | Map string JsonValue"
+        ),
         "{printed}"
     );
 }
@@ -447,7 +474,10 @@ fn bytes_entity_field_lowers_to_bytes_and_round_trips() {
     };
     let schema = parse_and_lower_str_with(&bytes_program("bytes"), &options).unwrap();
     let json = serde_json::to_string(&schema).unwrap();
-    assert!(json.contains(r#""type":"bytes""#), "bytes field must keep its tag: {json}");
+    assert!(
+        json.contains(r#""type":"bytes""#),
+        "bytes field must keep its tag: {json}"
+    );
     round_trip(&bytes_program("bytes"), &options).unwrap();
 }
 
@@ -457,7 +487,9 @@ fn control_string_entity_field_does_not_lower_to_bytes() {
         return;
     };
     let schema = parse_and_lower_str_with(&bytes_program("string"), &options).unwrap();
-    assert!(!serde_json::to_string(&schema).unwrap().contains(r#""type":"bytes""#));
+    assert!(!serde_json::to_string(&schema)
+        .unwrap()
+        .contains(r#""type":"bytes""#));
 }
 
 #[test]
@@ -467,7 +499,10 @@ fn a_program_type_field_prints_by_name_and_round_trips() {
     };
     let source = bytes_program("Viewer!");
     let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
-    assert!(printed.contains("payload : Viewer!"), "Viewer must print by name:\n{printed}");
+    assert!(
+        printed.contains("payload : Viewer!"),
+        "Viewer must print by name:\n{printed}"
+    );
     round_trip(&source, &options).unwrap();
 }
 
@@ -478,7 +513,10 @@ fn control_an_inline_record_stays_inline() {
     };
     let source = bytes_program("{ name : string!, value : number }");
     let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
-    assert!(printed.contains("payload : { name : string!, value : number }"), "got:\n{printed}");
+    assert!(
+        printed.contains("payload : { name : string!, value : number }"),
+        "got:\n{printed}"
+    );
     round_trip(&source, &options).unwrap();
 }
 
@@ -490,7 +528,8 @@ fn a_spec_orbital_round_trips_without_growing_an_entity() {
         return;
     };
     round_trip(SPEC_PROGRAM, &options).unwrap();
-    let printed = schema_to_lolo(&parse_and_lower_str_with(SPEC_PROGRAM, &options).unwrap()).unwrap();
+    let printed =
+        schema_to_lolo(&parse_and_lower_str_with(SPEC_PROGRAM, &options).unwrap()).unwrap();
     assert!(!printed.contains("entity ShopSpec"), "{printed}");
     assert!(printed.contains("expects entity Order"), "{printed}");
 }
@@ -526,10 +565,19 @@ fn a_spec_protocol_page_expectation_round_trips() {
     let json = serde_json::to_value(&schema).unwrap();
     let expects = json["orbitals"][0]["expects"].as_array().unwrap();
     assert_eq!(expects[0]["protocol"], "boot", "{expects:?}");
-    assert!(expects[1].get("protocol").is_none(), "control: a route carries no protocol {expects:?}");
+    assert!(
+        expects[1].get("protocol").is_none(),
+        "control: a route carries no protocol {expects:?}"
+    );
     let printed = schema_to_lolo(&schema).unwrap();
-    assert!(printed.contains("expects page boot -> Seed, Tick"), "{printed}");
-    assert!(printed.contains("expects page \"/orders\" -> Checkout"), "{printed}");
+    assert!(
+        printed.contains("expects page boot -> Seed, Tick"),
+        "{printed}"
+    );
+    assert!(
+        printed.contains("expects page \"/orders\" -> Checkout"),
+        "{printed}"
+    );
 }
 
 const PROPOSITION_SPEC: &str = "app shop-spec [version: \"1.0.0\"]\n\norbital ShopSpec {\n  expects entity Order [persistent] {\n    total : number\n    paid : number\n    @invariant (>= @entity.total 0)\n    @invariant (<= @entity.paid @entity.total)\n  }\n  expects trait Checkout { state paid @holds (= @entity.status \"paid\") }\n}\n";
@@ -542,13 +590,34 @@ fn spec_invariants_and_holds_lower_into_the_ir_and_round_trip() {
     let schema = parse_and_lower_str_with(PROPOSITION_SPEC, &options).unwrap();
     let json = serde_json::to_value(&schema).unwrap();
     let expects = &json["orbitals"][0]["expects"];
-    let order = expects.as_array().unwrap().iter().find(|e| e["kind"] == "entity").unwrap();
-    assert_eq!(order["invariants"].as_array().map(Vec::len), Some(2), "{order}");
-    let paid = expects.as_array().unwrap().iter().find(|e| e["kind"] == "state").unwrap();
-    assert_eq!(paid["holds"], serde_json::json!(["=", "@entity.status", "paid"]), "{paid}");
+    let order = expects
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["kind"] == "entity")
+        .unwrap();
+    assert_eq!(
+        order["invariants"].as_array().map(Vec::len),
+        Some(2),
+        "{order}"
+    );
+    let paid = expects
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|e| e["kind"] == "state")
+        .unwrap();
+    assert_eq!(
+        paid["holds"],
+        serde_json::json!(["=", "@entity.status", "paid"]),
+        "{paid}"
+    );
     round_trip(PROPOSITION_SPEC, &options).unwrap();
     let printed = schema_to_lolo(&schema).unwrap();
-    assert!(printed.contains("@invariant (<= @entity.paid @entity.total)"), "{printed}");
+    assert!(
+        printed.contains("@invariant (<= @entity.paid @entity.total)"),
+        "{printed}"
+    );
     assert!(printed.contains("state paid @holds"), "{printed}");
 }
 
@@ -557,8 +626,12 @@ fn a_spec_without_propositions_carries_no_invariant_fields() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let json = serde_json::to_string(&parse_and_lower_str_with(SPEC_PROGRAM, &options).unwrap()).unwrap();
-    assert!(!json.contains("invariants") && !json.contains("holds"), "{json}");
+    let json =
+        serde_json::to_string(&parse_and_lower_str_with(SPEC_PROGRAM, &options).unwrap()).unwrap();
+    assert!(
+        !json.contains("invariants") && !json.contains("holds"),
+        "{json}"
+    );
 }
 
 const WALLET: &str = "app wallet [version: \"1.0.0\"]\n\norbital Wallet {\n  entity Account [persistent: accounts] {\n    balance : number\n    @invariant (>= @entity.balance 0)\n  }\n  trait Wallet -> Account {\n    state active {\n      @holds (>= @entity.balance 0)\n      INIT -> active\n        (set @entity.balance 100)\n      SPEND -> active when (<= @payload.amount @entity.balance)\n        @ensures (= @entity.balance (- @fromEntity.balance @payload.amount))\n        (persist update Account @entity.id { balance: (- @entity.balance @payload.amount) })\n    }\n  }\n  page \"/wallet\" -> Wallet\n}\n";
@@ -571,18 +644,59 @@ fn propositions_on_real_declarations_lower_into_the_ir_and_round_trip() {
     let schema = parse_and_lower_str_with(WALLET, &options).unwrap();
     let json = serde_json::to_value(&schema).unwrap();
     let orbital = &json["orbitals"][0];
-    assert_eq!(orbital["entity"]["invariants"], serde_json::json!([[">=", "@entity.balance", 0.0]]), "{}", orbital["entity"]);
+    assert_eq!(
+        orbital["entity"]["invariants"],
+        serde_json::json!([[">=", "@entity.balance", 0.0]]),
+        "{}",
+        orbital["entity"]
+    );
     let sm = &orbital["traits"][0]["stateMachine"];
-    let active = sm["states"].as_array().unwrap().iter().find(|s| s["name"] == "active").unwrap();
-    assert_eq!(active["holds"], serde_json::json!([">=", "@entity.balance", 0.0]), "{active}");
-    let spend = sm["transitions"].as_array().unwrap().iter().find(|t| t["event"] == "SPEND").unwrap();
-    assert_eq!(spend["ensures"], serde_json::json!([["=", "@entity.balance", ["-", "@fromEntity.balance", "@payload.amount"]]]), "{spend}");
-    let init = sm["transitions"].as_array().unwrap().iter().find(|t| t["event"] == "INIT").unwrap();
-    assert!(init.get("ensures").is_none(), "control: a transition without @ensures carries none: {init}");
+    let active = sm["states"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|s| s["name"] == "active")
+        .unwrap();
+    assert_eq!(
+        active["holds"],
+        serde_json::json!([">=", "@entity.balance", 0.0]),
+        "{active}"
+    );
+    let spend = sm["transitions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["event"] == "SPEND")
+        .unwrap();
+    assert_eq!(
+        spend["ensures"],
+        serde_json::json!([[
+            "=",
+            "@entity.balance",
+            ["-", "@fromEntity.balance", "@payload.amount"]
+        ]]),
+        "{spend}"
+    );
+    let init = sm["transitions"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["event"] == "INIT")
+        .unwrap();
+    assert!(
+        init.get("ensures").is_none(),
+        "control: a transition without @ensures carries none: {init}"
+    );
     round_trip(WALLET, &options).unwrap();
     let printed = schema_to_lolo(&schema).unwrap();
-    assert!(printed.contains("@holds (>= @entity.balance 0)"), "{printed}");
-    assert!(printed.contains("@ensures (= @entity.balance (- @fromEntity.balance ?amount))"), "{printed}");
+    assert!(
+        printed.contains("@holds (>= @entity.balance 0)"),
+        "{printed}"
+    );
+    assert!(
+        printed.contains("@ensures (= @entity.balance (- @fromEntity.balance ?amount))"),
+        "{printed}"
+    );
 }
 
 #[test]
@@ -593,9 +707,18 @@ fn propositions_on_a_spec_transition_round_trip() {
     let spec = "app wallet-spec [version: \"1.0.0\"]\n\norbital WalletSpec {\n  expects trait Wallet { state active { SPEND -> active @ensures (= @entity.balance (- @fromEntity.balance @payload.amount)) } }\n  expects trait Wallet { state idle { GO -> active } }\n}\n";
     let schema = parse_and_lower_str_with(spec, &options).unwrap();
     let json = serde_json::to_value(&schema).unwrap();
-    let edges: Vec<&serde_json::Value> = json["orbitals"][0]["expects"].as_array().unwrap().iter().filter(|e| e["kind"] == "transition").collect();
+    let edges: Vec<&serde_json::Value> = json["orbitals"][0]["expects"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .filter(|e| e["kind"] == "transition")
+        .collect();
     let spend = edges.iter().find(|e| e["event"] == "SPEND").unwrap();
-    assert_eq!(spend["ensures"].as_array().map(Vec::len), Some(1), "{spend}");
+    assert_eq!(
+        spend["ensures"].as_array().map(Vec::len),
+        Some(1),
+        "{spend}"
+    );
     let go = edges.iter().find(|e| e["event"] == "GO").unwrap();
     assert!(go.get("ensures").is_none(), "control: {go}");
     round_trip(spec, &options).unwrap();
@@ -610,7 +733,10 @@ fn propositions_in_an_ordinary_orbital_are_accepted() {
     let schema = parse_and_lower_str_with(in_body, &options).unwrap();
     let json = serde_json::to_string(&schema).unwrap();
     assert!(json.contains("invariants"), "{json}");
-    assert!(!json.contains("\"strict\":true"), "an in-body expects stays lenient: {json}");
+    assert!(
+        !json.contains("\"strict\":true"),
+        "an in-body expects stays lenient: {json}"
+    );
     round_trip(in_body, &options).unwrap();
 }
 
@@ -620,7 +746,9 @@ fn propositions_ensures_outside_a_transition_is_refused() {
         return;
     };
     let on_state = "app w [version: \"1.0.0\"]\n\norbital W {\n  entity A [runtime] { n : number }\n  trait T -> A {\n    state s {\n      @ensures (>= @entity.n 0)\n      INIT -> s\n    }\n  }\n  page \"/w\" -> T\n}\n";
-    let err = parse_and_lower_str_with(on_state, &options).unwrap_err().to_string();
+    let err = parse_and_lower_str_with(on_state, &options)
+        .unwrap_err()
+        .to_string();
     assert!(err.contains("@ensures"), "{err}");
 }
 
@@ -678,15 +806,27 @@ fn a_field_ref_knob_type_round_trips() {
     let config = knob_config(&entity, &options);
     assert_eq!(config["titleFields"]["type"], "[field]", "{config}");
     assert_eq!(config["titleFields"]["items"]["type"], "field", "{config}");
-    assert_eq!(config["titleFields"]["items"]["record"], "@entity", "{config}");
-    assert_eq!(config["titleFields"]["items"]["items"]["type"], "string", "{config}");
+    assert_eq!(
+        config["titleFields"]["items"]["record"], "@entity",
+        "{config}"
+    );
+    assert_eq!(
+        config["titleFields"]["items"]["items"]["type"], "string",
+        "{config}"
+    );
     assert_eq!(config["groupByField"]["type"], "field", "{config}");
     assert_eq!(config["groupByField"]["record"], "@entity", "{config}");
-    assert!(config["groupByField"].get("items").is_none(), "any field has no value type: {config}");
+    assert!(
+        config["groupByField"].get("items").is_none(),
+        "any field has no value type: {config}"
+    );
     assert_eq!(config["ratingField"]["items"]["nullable"], true, "{config}");
     let printed = schema_to_lolo(&parse_and_lower_str_with(&entity, &options).unwrap()).unwrap();
     assert!(printed.contains("[field @entity string]"), "{printed}");
-    assert!(printed.contains("groupByField : field @entity"), "{printed}");
+    assert!(
+        printed.contains("groupByField : field @entity"),
+        "{printed}"
+    );
 
     let alias = field_knob_program(
         "type Point = { x : number, label : string }",
@@ -698,7 +838,10 @@ fn a_field_ref_knob_type_round_trips() {
     let config = knob_config(&alias, &options);
     assert_eq!(config["column"]["record"], "Contact", "{config}");
     assert_eq!(config["axis"]["record"], "Point", "{config}");
-    assert_eq!(config["axis"]["properties"]["x"]["type"], "number", "{config}");
+    assert_eq!(
+        config["axis"]["properties"]["x"]["type"], "number",
+        "{config}"
+    );
 
     let payload = field_knob_program(
         "",
@@ -708,9 +851,15 @@ fn a_field_ref_knob_type_round_trips() {
     );
     round_trip(&payload, &options).unwrap();
     let config = knob_config(&payload, &options);
-    assert_eq!(config["coalesceKey"]["record"], "@payload(event)", "{config}");
+    assert_eq!(
+        config["coalesceKey"]["record"], "@payload(event)",
+        "{config}"
+    );
     let printed = schema_to_lolo(&parse_and_lower_str_with(&payload, &options).unwrap()).unwrap();
-    assert!(printed.contains("field (@payload @config.event)"), "{printed}");
+    assert!(
+        printed.contains("field (@payload @config.event)"),
+        "{printed}"
+    );
 
     let variable = field_knob_program("", "(r : Entity)", "      column : field r number", "");
     round_trip(&variable, &options).unwrap();
@@ -795,10 +944,7 @@ fn a_list_of_nullable_items_round_trips() {
     round_trip(&source, &options).unwrap();
     let schema = parse_and_lower_str_with(&source, &options).unwrap();
     let printed = schema_to_lolo(&schema).unwrap();
-    assert!(
-        printed.contains("[Tree?] | Map string Tree?"),
-        "{printed}"
-    );
+    assert!(printed.contains("[Tree?] | Map string Tree?"), "{printed}");
 }
 
 #[test]
@@ -853,7 +999,10 @@ fn a_typed_let_binding_prints_as_an_annotation() {
     round_trip(&source, &options).unwrap();
     let schema = parse_and_lower_str_with(&source, &options).unwrap();
     let printed = schema_to_lolo(&schema).unwrap();
-    assert!(printed.contains("(empty : Map string Entry {})"), "{printed}");
+    assert!(
+        printed.contains("(empty : Map string Entry {})"),
+        "{printed}"
+    );
 }
 
 #[test]
@@ -935,7 +1084,10 @@ fn single_orbital_file_types_print_once_at_file_scope() {
     let printed = schema_to_lolo(&schema).unwrap();
     assert_eq!(printed.matches("type Spec =").count(), 1, "{printed}");
     let orbital_at = printed.find("orbital ProbeOrbital").unwrap();
-    assert!(printed.find("type Spec =").unwrap() < orbital_at, "{printed}");
+    assert!(
+        printed.find("type Spec =").unwrap() < orbital_at,
+        "{printed}"
+    );
     round_trip(file_and_local_types_program(), &options).unwrap();
 }
 
@@ -948,7 +1100,10 @@ fn control_single_orbital_local_types_stay_inside_the_orbital() {
     let printed = schema_to_lolo(&schema).unwrap();
     assert_eq!(printed.matches("type Local =").count(), 1, "{printed}");
     let orbital_at = printed.find("orbital ProbeOrbital").unwrap();
-    assert!(printed.find("type Local =").unwrap() > orbital_at, "{printed}");
+    assert!(
+        printed.find("type Local =").unwrap() > orbital_at,
+        "{printed}"
+    );
 }
 
 fn field_ref_program(value: &str) -> String {
@@ -985,7 +1140,11 @@ fn a_field_ref_to_a_knob_named_entity_round_trips() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    round_trip(&field_ref_program("(@entity @config.relatedEntity)"), &options).unwrap();
+    round_trip(
+        &field_ref_program("(@entity @config.relatedEntity)"),
+        &options,
+    )
+    .unwrap();
 }
 
 #[test]
@@ -1025,7 +1184,11 @@ fn control_an_entity_without_indexes_unlowers_without_index_directives() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let source = INDEX_PROGRAM.lines().filter(|l| !l.contains("@index")).collect::<Vec<_>>().join("\n");
+    let source = INDEX_PROGRAM
+        .lines()
+        .filter(|l| !l.contains("@index"))
+        .collect::<Vec<_>>()
+        .join("\n");
     let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
     assert!(!printed.contains("@index"), "{printed}");
     round_trip(&source, &options).unwrap();
@@ -1057,8 +1220,265 @@ fn control_an_entity_without_a_derived_field_unlowers_without_the_annotation() {
     let Some(options) = monorepo_options() else {
         return;
     };
-    let source = DERIVED_PROGRAM.lines().filter(|l| !l.contains("@derived")).collect::<Vec<_>>().join("\n");
+    let source = DERIVED_PROGRAM
+        .lines()
+        .filter(|l| !l.contains("@derived"))
+        .collect::<Vec<_>>()
+        .join("\n");
     let printed = schema_to_lolo(&parse_and_lower_str_with(&source, &options).unwrap()).unwrap();
     assert!(!printed.contains("@derived"), "{printed}");
     round_trip(&source, &options).unwrap();
+}
+
+fn event_alias_entity_payload_program(event: &str) -> String {
+    format!(
+        r#"app Probe
+orbital ItemOrbital {{
+  type Action = {{ id : string!, name : string! }}
+  {event}
+  entity Item [persistent: items] {{
+    id : string!
+    actions : [Action] = []
+  }}
+  trait ItemList -> Item {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+    }}
+    emits {{
+      ItemLoaded
+        @tier "internal"
+    }}
+  }}
+  page "/" -> ItemList [initial]
+}}"#
+    )
+}
+
+#[test]
+fn an_event_alias_payload_holding_an_entity_with_alias_array_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(
+        &event_alias_entity_payload_program(
+            "type ItemLoaded = Event { data : [Item], totalCount : number! }",
+        ),
+        &options,
+    )
+    .unwrap();
+}
+
+#[test]
+fn control_an_inline_payload_holding_an_entity_with_alias_array_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(
+        &event_alias_entity_payload_program("")
+            .replace("ItemLoaded\n", "ItemLoaded -> internal {\n        data : [Item]\n        totalCount : number!\n      }\n"),
+        &options,
+    )
+    .unwrap();
+}
+
+fn probe_program(types: &str, fields: &str, trait_body: &str) -> String {
+    format!(
+        r#"app Probe
+orbital ItemOrbital {{
+  {types}
+  entity Item [persistent: items] {{
+    id : string!
+    {fields}
+  }}
+  trait ItemFlow -> Item {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+      {trait_body}
+    }}
+  }}
+  page "/" -> ItemFlow [initial]
+}}"#
+    )
+}
+
+fn assert_round_trips(source: &str) {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(source, &options).unwrap();
+}
+
+#[test]
+fn a_struct_alias_keeps_its_authored_member_order() {
+    assert_round_trips(&probe_program(
+        "type Nav = { zlabel : string!, abadge : string, mhref : string! }",
+        "nav : [Nav] = []",
+        "",
+    ));
+}
+
+#[test]
+fn a_struct_alias_with_sorted_members_round_trips_too() {
+    assert_round_trips(&probe_program(
+        "type Nav = { abadge : string, mhref : string!, zlabel : string! }",
+        "nav : [Nav] = []",
+        "",
+    ));
+}
+
+#[test]
+fn an_alias_only_event_does_not_become_a_listened_event() {
+    assert_round_trips(&probe_program(
+        "type Saved = Event { id : string! }",
+        "",
+        "Saved -> idle",
+    ));
+}
+
+#[test]
+fn an_alias_only_event_with_an_empty_payload_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Saved = Event { }",
+        "",
+        "Saved -> idle",
+    ));
+}
+
+#[test]
+fn control_a_declared_listen_with_a_payload_round_trips() {
+    assert_round_trips(
+        r#"app Probe
+orbital ItemOrbital {
+  entity Item [persistent: items] {
+    id : string!
+  }
+  trait ItemFlow -> Item {
+    initial: idle
+    state idle {
+      Saved -> idle
+    }
+    listens {
+      Saved {
+        id : string!
+      }
+    }
+  }
+  page "/" -> ItemFlow [initial]
+}"#,
+    );
+}
+
+#[test]
+fn control_a_file_scoped_type_shared_by_two_orbitals_round_trips() {
+    assert_round_trips(
+        r#"app Probe
+type Shared = { name : string! }
+orbital OneOrbital {
+  entity One [persistent: ones] {
+    id : string!
+    shared : Shared
+  }
+  trait OneFlow -> One {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+  page "/" -> OneFlow [initial]
+}
+orbital TwoOrbital {
+  entity Two [persistent: twos] {
+    id : string!
+    shared : Shared
+  }
+  trait TwoFlow -> Two {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+  page "/two" -> TwoFlow [initial]
+}"#,
+    );
+}
+
+#[test]
+fn a_single_object_children_slot_stays_a_single_object() {
+    assert_round_trips(&probe_program(
+        "",
+        "",
+        "SHOW -> idle\n        (render-ui main { type: card, children: { type: typography, content: \"hi\" } })",
+    ));
+}
+
+#[test]
+fn control_an_array_children_slot_round_trips() {
+    assert_round_trips(&probe_program(
+        "",
+        "",
+        "SHOW -> idle\n        (render-ui main { type: card, children: [{ type: typography, content: \"hi\" }] })",
+    ));
+}
+
+#[test]
+fn a_list_call_around_an_object_keeps_its_list_head() {
+    assert_round_trips(&probe_program(
+        "",
+        "rows : [string] = []",
+        "ADD -> idle\n        (set @entity.rows (array/concat @entity.rows (list { id: \"a\" })))",
+    ));
+}
+
+#[test]
+fn control_a_bare_bracket_around_an_object_round_trips() {
+    assert_round_trips(&probe_program(
+        "",
+        "rows : [string] = []",
+        "ADD -> idle\n        (set @entity.rows (array/concat @entity.rows [{ id: \"a\" }]))",
+    ));
+}
+
+#[test]
+fn object_keys_named_like_literals_print_quoted() {
+    assert_round_trips(&probe_program(
+        "",
+        "",
+        "SHOW -> idle\n        (render-ui main { type: badge, labels: { \"true\": \"Done\", \"false\": \"Open\", \"null\": \"None\" } })",
+    ));
+}
+
+#[test]
+fn an_orbital_local_type_is_not_hoisted_to_file_scope() {
+    let source = r#"app Probe
+orbital OneOrbital {
+  type Local = { name : string! }
+  entity One [persistent: ones] {
+    id : string!
+    local : Local
+  }
+  trait OneFlow -> One {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+  page "/" -> OneFlow [initial]
+}
+orbital TwoOrbital {
+  type Local = { name : string! }
+  entity Two [persistent: twos] {
+    id : string!
+    local : Local
+  }
+  trait TwoFlow -> Two {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+  page "/two" -> TwoFlow [initial]
+}"#;
+    assert_round_trips(source);
 }

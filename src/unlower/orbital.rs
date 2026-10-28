@@ -15,9 +15,9 @@ use orbital_core_base::schema::{
     EntityDefinition, EntityRef, ExpectDeclaration, FieldDefinition, Orbital as CoreOrbital,
     PageRef, Persistence as CorePersistence, TraitReference, UseDeclaration,
 };
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
-fn sorted_pairs(map: &HashMap<String, String>) -> Vec<(String, String, Span)> {
+fn sorted_pairs(map: &orbital_core_base::collections::IndexMap<String, String>) -> Vec<(String, String, Span)> {
     let mut v: Vec<_> = map
         .iter()
         .map(|(k, v)| (k.clone(), v.clone(), Span::dummy()))
@@ -26,7 +26,7 @@ fn sorted_pairs(map: &HashMap<String, String>) -> Vec<(String, String, Span)> {
     v
 }
 
-fn sorted_str_pairs(map: &HashMap<String, String>) -> Vec<(String, String)> {
+fn sorted_str_pairs(map: &orbital_core_base::collections::IndexMap<String, String>) -> Vec<(String, String)> {
     let mut v: Vec<_> = map.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     v.sort();
     v
@@ -404,7 +404,7 @@ pub(super) fn alias_shapes(
             }
         }
     }
-    let mut knobs: Vec<&HashMap<String, orbital_core_base::schema::ConfigField>> = Vec::new();
+    let mut knobs: Vec<&orbital_core_base::collections::IndexMap<String, orbital_core_base::schema::ConfigField>> = Vec::new();
     knobs.extend(o.config.iter());
     for t in &o.traits {
         if let TraitReference::Inline(td) = t {

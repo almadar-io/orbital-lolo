@@ -79,3 +79,106 @@ fn a_union_alias_survives_print_and_lower_again() {
     let second = parse_and_lower_str(&printed).expect("the printed source lowers");
     assert_eq!(first.orbitals[0].types, second.orbitals[0].types);
 }
+
+const PRED: &str = r#"orbital PredOrbital {
+  type Leaf = { kind : "leaf"!, label : string! }
+  type Not = { kind : "not"!, of : Pred! }
+  type All = { kind : "all"!, of : [Pred]! }
+  type Pred = Leaf | Not | All
+
+  entity PredState [runtime] { id : string! }
+
+  trait PredDispatch -> PredState {
+    listens { EVAL { pred : Pred! } }
+    state idle { EVAL -> idle }
+  }
+
+  page "/pred" -> PredDispatch
+}
+"#;
+
+fn field<'a>(
+    fields: &'a [orbital_core_base::schema::PayloadField],
+    name: &str,
+) -> &'a orbital_core_base::schema::PayloadField {
+    fields.iter().find(|f| f.name == name).unwrap_or_else(|| panic!("no field {name}"))
+}
+
+#[test]
+fn a_recursive_union_alias_in_field_position_keeps_its_by_name_reference() {
+    let types = types_of(PRED);
+    let of = field(&types["Not"], "of");
+    assert_eq!(of.field_type, "Pred");
+    assert_eq!(of.properties.as_deref(), Some(&[][..]), "the by-name marker, not an expansion");
+    assert_eq!(field(&types["All"], "of").items.as_ref().unwrap().field_type, "Pred");
+    let pred = &types["Pred"][0];
+    assert_eq!(pred.field_type, "union", "the alias itself still defines its variants");
+    let not = pred.properties.as_ref().unwrap().iter().find(|v| v.name == "Not").unwrap();
+    assert_eq!(field(not.properties.as_ref().unwrap(), "of").field_type, "Pred");
+}
+
+#[test]
+fn a_non_recursive_union_alias_in_field_position_is_still_expanded() {
+    let source = TAGGED.replace(
+        "type DrawItem = DrawShape | DrawText",
+        "type DrawItem = DrawShape | DrawText\n  type Holder = { item : DrawItem }",
+    );
+    let types = types_of(&source);
+    let item = field(&types["Holder"], "item");
+    assert_eq!(item.field_type, "union", "control: no back-reference, nothing to keep by name");
+    assert!(item.properties.as_ref().is_some_and(|p| p.len() == 2));
+}
+
+#[test]
+fn a_recursive_union_alias_round_trips_through_print_and_lower() {
+    let first = parse_and_lower_str(PRED).expect("lowers");
+    let printed = orbital_lolo::schema_to_lolo(&first).expect("prints");
+    assert!(printed.contains("of : Pred!"), "{printed}");
+    let second = parse_and_lower_str(&printed).expect("the printed source lowers");
+    assert_eq!(first.orbitals[0].types, second.orbitals[0].types);
+}
+
+fn map_alias_program(details_type: &str) -> String {
+    format!(
+        r#"orbital DeployOrbital {{
+  type DeploymentDetails = Map string (string | number)
+
+  entity Deploy [runtime] {{ id : string! }}
+
+  trait DeployFlow -> Deploy {{
+    emits {{ DEPLOYED -> external {{ details : {details_type} }} }}
+    listens {{ REPORT {{ details : {details_type} }} }}
+    state idle {{ REPORT -> idle }}
+  }}
+
+  page "/deploy" -> DeployFlow
+}}
+"#
+    )
+}
+
+#[test]
+fn a_map_alias_payload_field_lowers_like_the_inline_map() {
+    for spelled in ["DeploymentDetails", "Map string (string | number)"] {
+        parse_and_lower_str(&map_alias_program(spelled)).unwrap_or_else(|e| panic!("{spelled}: {e}"));
+    }
+}
+
+#[test]
+fn a_map_alias_payload_field_names_the_alias_and_the_alias_is_defined() {
+    let schema = parse_and_lower_str(&map_alias_program("DeploymentDetails")).expect("lowers");
+    let types = schema.orbitals[0].types.clone().unwrap_or_default();
+    assert!(types.contains_key("DeploymentDetails"));
+    let json = serde_json::to_string(&schema).unwrap();
+    assert!(json.contains("\"name\":\"details\",\"type\":\"object\",\"projectedFrom\":{\"type\":\"DeploymentDetails\"}"), "{json}");
+}
+
+#[test]
+fn a_vocabulary_alias_is_still_refused_as_a_payload_field_type() {
+    let source = map_alias_program("Mood").replace(
+        "type DeploymentDetails = Map string (string | number)",
+        "type Mood = happy | sad",
+    );
+    let err = parse_and_lower_str(&source).map(|_| ()).expect_err("a vocabulary keeps its enum reading");
+    assert!(err.to_string().contains("type kind mismatch"), "{err}");
+}

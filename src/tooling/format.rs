@@ -15,7 +15,8 @@ use crate::ast::{
     AppHeader, Comment, ConfigField, Emit, Entity, EntityField, EventField, EventScopeAst,
     ExpectedAccess, ExpectsDecl, ExpectsKind, Listen, MatchPattern, Orbital, Page, PayloadOfTarget,
     Persistence, Program, State, TermMatch, ThemeDecl, ThemeTokenMaps, Tick, TickInterval, Trait,
-    TraitDispatch, TraitRefData, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr, UseDecl,
+    TraitDispatch, TraitRefData, Transition, TypeAlias, TypeAnnotation, TypeBody, TypeExpr,
+    UseDecl,
 };
 
 /// Format a `Program` AST into canonical `.lolo` source text.
@@ -165,7 +166,8 @@ impl Formatter {
                     SExpression::Array(items.into_iter().map(|i| restore(i, holes)).collect())
                 }
                 SExpression::Object(map) => SExpression::object(
-                    (*map).into_iter()
+                    (*map)
+                        .into_iter()
                         .map(|(k, v)| (k, restore(v, holes)))
                         .collect(),
                 ),
@@ -555,7 +557,8 @@ impl Formatter {
                             f.output.push_str(", ");
                         }
                         f.write_quoted_string(&grant.target);
-                        f.output.push_str(&format!(": [{}]", names(&grant.kinds, DevKind::name)));
+                        f.output
+                            .push_str(&format!(": [{}]", names(&grant.kinds, DevKind::name)));
                     }
                     f.output.push_str(" }");
                 }),
@@ -894,7 +897,10 @@ impl Formatter {
 
     /// A type in a position that takes one atom: a union is parenthesized.
     fn fmt_grouped_type_expr(&mut self, ty: &TypeExpr) {
-        if matches!(ty, TypeExpr::Union(_) | TypeExpr::FieldRef { value: Some(_), .. }) {
+        if matches!(
+            ty,
+            TypeExpr::Union(_) | TypeExpr::FieldRef { value: Some(_), .. }
+        ) {
             self.output.push('(');
             self.fmt_type_expr(ty);
             self.output.push(')');
@@ -916,7 +922,10 @@ impl Formatter {
             }
             TypeExpr::FieldRef { record, value } => {
                 self.output.push_str("field ");
-                if matches!(**record, TypeExpr::NamedEntityRow(_) | TypeExpr::EventPayloadOf(_)) {
+                if matches!(
+                    **record,
+                    TypeExpr::NamedEntityRow(_) | TypeExpr::EventPayloadOf(_)
+                ) {
                     self.output.push('(');
                     self.fmt_type_expr(record);
                     self.output.push(')');
@@ -3107,12 +3116,10 @@ impl Formatter {
                 if !static_type {
                     return false;
                 }
-                // `children` may be an array, a single object (normalized to a
-                // one-element array by the emitter), or absent.
                 match map.get("children") {
                     None => true,
                     Some(SExpression::Array(arr)) => arr.iter().all(|c| self.is_jsx_child(c)),
-                    Some(single) => self.is_jsx_child(single),
+                    Some(_) => false,
                 }
             }
             SExpression::String(s) if s.starts_with("@trait.") => {
@@ -3136,7 +3143,7 @@ impl Formatter {
                             Some(SExpression::Array(arr)) => {
                                 arr.iter().all(|c| self.is_jsx_child(c))
                             }
-                            Some(single) => self.is_jsx_child(single),
+                            Some(_) => false,
                         }
                     }
                 } else {
@@ -3451,8 +3458,7 @@ impl Formatter {
         // Lambda: parameters print bare, the body sees them as bound. Handles
         // both the grouped `["fn", ["a", "b"], body]` and flat
         // `["fn", "a", "b", body]` shapes.
-        let is_lambda = matches!(&arr[0], SExpression::String(s) if s == "fn")
-            && arr.len() >= 3;
+        let is_lambda = matches!(&arr[0], SExpression::String(s) if s == "fn") && arr.len() >= 3;
         if is_lambda {
             let (params, body) = arr.split_at(arr.len() - 1);
             let names: Vec<String> = match &params[1] {
@@ -3499,7 +3505,7 @@ impl Formatter {
             return;
         }
 
-        let is_call = force_paren || is_call_array(arr);
+        let is_call = force_paren || is_call_array(arr) || is_unrestorable_list_marker(arr);
 
         if is_call {
             self.output.push('(');
@@ -3531,10 +3537,10 @@ impl Formatter {
     /// An object key prints bare when it re-lexes as a key, quoted otherwise
     /// (a route like `"/dash"`), so every object round-trips.
     fn write_object_key(&mut self, k: &str) {
-        let bare = k
-            .chars()
-            .next()
-            .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+        let bare = !matches!(k, "true" | "false" | "null")
+            && k.chars()
+                .next()
+                .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
             && k.chars()
                 .all(|c| c.is_ascii_alphanumeric() || c == '_' || c == '-');
         if bare {
@@ -3718,6 +3724,20 @@ fn is_call_array(arr: &[SExpression]) -> bool {
             SExpression::String(head.clone()),
         ]))
         .is_some()
+}
+
+/// A `["list", …]` array prints as the bracket `[…]` only when parsing that bracket puts the
+/// marker back; any other `list` head came from a `(list …)` call and must print as one.
+fn is_unrestorable_list_marker(arr: &[SExpression]) -> bool {
+    let [SExpression::String(head), rest @ ..] = arr else {
+        return false;
+    };
+    if head != "list" {
+        return false;
+    }
+    let rest = SExpression::Array(rest.to_vec());
+    orbital_core_eval::lower::recognized_call_head(&rest).is_none()
+        && !crate::parser::expression::reads_as_dropped_namespace(&rest)
 }
 
 /// True if `s` is a symbolic operator head (the `OP_SYMBOL` set from the
@@ -3944,13 +3964,23 @@ pub fn format_path(program: &Program, path: &str) -> Result<Vec<String>, String>
         ConfigField(&'a ConfigField),
         Page(&'a Page),
     }
-    fn pick<'a, T>(items: &'a [T], index: Option<usize>, segment: &str, wrap: impl Fn(&'a T) -> NodeRef<'a>) -> Result<Vec<At<'a>>, String> {
+    fn pick<'a, T>(
+        items: &'a [T],
+        index: Option<usize>,
+        segment: &str,
+        wrap: impl Fn(&'a T) -> NodeRef<'a>,
+    ) -> Result<Vec<At<'a>>, String> {
         match index {
             None => Ok(items.iter().map(|item| At::Node(wrap(item))).collect()),
             Some(i) => items
                 .get(i)
                 .map(|item| vec![At::Node(wrap(item))])
-                .ok_or_else(|| format!("`{segment}`: index {i} is out of range ({} present)", items.len())),
+                .ok_or_else(|| {
+                    format!(
+                        "`{segment}`: index {i} is out of range ({} present)",
+                        items.len()
+                    )
+                }),
         }
     }
     let segments: Vec<&str> = path.split('.').filter(|s| !s.is_empty()).collect();
@@ -3966,7 +3996,10 @@ pub fn format_path(program: &Program, path: &str) -> Result<Vec<String>, String>
                     .ok_or_else(|| format!("`{segment}`: expected `field[index]`"))?;
                 let index = match inner {
                     "*" => None,
-                    n => Some(n.parse::<usize>().map_err(|_| format!("`{segment}`: `{n}` is not an index or `*`"))?),
+                    n => Some(
+                        n.parse::<usize>()
+                            .map_err(|_| format!("`{segment}`: `{n}` is not an index or `*`"))?,
+                    ),
                 };
                 (field, Some(index))
             }
@@ -3976,26 +4009,56 @@ pub fn format_path(program: &Program, path: &str) -> Result<Vec<String>, String>
         for at in cursor {
             let unknown = || format!("`{segment}` does not name a field here");
             let found = match (at, field, index) {
-                (At::Program(p), "orbitals", Some(i)) => pick(&p.orbitals, i, segment, NodeRef::Orbital)?,
+                (At::Program(p), "orbitals", Some(i)) => {
+                    pick(&p.orbitals, i, segment, NodeRef::Orbital)?
+                }
                 (At::Program(p), "uses", Some(i)) => pick(&p.uses, i, segment, NodeRef::UseDecl)?,
-                (At::Program(p), "typeAliases", Some(i)) => pick(&p.type_aliases, i, segment, NodeRef::TypeAlias)?,
-                (At::Node(NodeRef::Orbital(o)), "uses", Some(i)) => pick(&o.uses, i, segment, NodeRef::UseDecl)?,
-                (At::Node(NodeRef::Orbital(o)), "expects", Some(i)) => pick(&o.expects, i, segment, NodeRef::ExpectsDecl)?,
-                (At::Node(NodeRef::Orbital(o)), "typeAliases", Some(i)) => pick(&o.type_aliases, i, segment, NodeRef::TypeAlias)?,
+                (At::Program(p), "typeAliases", Some(i)) => {
+                    pick(&p.type_aliases, i, segment, NodeRef::TypeAlias)?
+                }
+                (At::Node(NodeRef::Orbital(o)), "uses", Some(i)) => {
+                    pick(&o.uses, i, segment, NodeRef::UseDecl)?
+                }
+                (At::Node(NodeRef::Orbital(o)), "expects", Some(i)) => {
+                    pick(&o.expects, i, segment, NodeRef::ExpectsDecl)?
+                }
+                (At::Node(NodeRef::Orbital(o)), "typeAliases", Some(i)) => {
+                    pick(&o.type_aliases, i, segment, NodeRef::TypeAlias)?
+                }
                 (At::Node(NodeRef::Orbital(o)), "entity", None) => match &o.entity {
                     Some(entity) => vec![At::Node(NodeRef::Entity(entity))],
                     None => return Err(format!("orbital `{}` declares no entity", o.name)),
                 },
-                (At::Node(NodeRef::Orbital(o)), "entities", Some(i)) => pick(&o.extra_entities, i, segment, NodeRef::Entity)?,
-                (At::Node(NodeRef::Orbital(o)), "traits", Some(i)) => pick(&o.traits, i, segment, NodeRef::Trait)?,
-                (At::Node(NodeRef::Orbital(o)), "pages", Some(i)) => pick(&o.pages, i, segment, NodeRef::Page)?,
-                (At::Node(NodeRef::Entity(e)), "fields", Some(i)) => pick(&e.fields, i, segment, NodeRef::EntityField)?,
-                (At::Node(NodeRef::Trait(t)), "states", Some(i)) => pick(&t.states, i, segment, NodeRef::State)?,
-                (At::Node(NodeRef::Trait(t)), "emits", Some(i)) => pick(&t.emits, i, segment, NodeRef::Emit)?,
-                (At::Node(NodeRef::Trait(t)), "listens", Some(i)) => pick(&t.listens, i, segment, NodeRef::Listen)?,
-                (At::Node(NodeRef::Trait(t)), "ticks", Some(i)) => pick(&t.ticks, i, segment, NodeRef::Tick)?,
-                (At::Node(NodeRef::Trait(t)), "config", Some(i)) => pick(&t.config, i, segment, NodeRef::ConfigField)?,
-                (At::Node(NodeRef::State(s)), "transitions", Some(i)) => pick(&s.transitions, i, segment, NodeRef::Transition)?,
+                (At::Node(NodeRef::Orbital(o)), "entities", Some(i)) => {
+                    pick(&o.extra_entities, i, segment, NodeRef::Entity)?
+                }
+                (At::Node(NodeRef::Orbital(o)), "traits", Some(i)) => {
+                    pick(&o.traits, i, segment, NodeRef::Trait)?
+                }
+                (At::Node(NodeRef::Orbital(o)), "pages", Some(i)) => {
+                    pick(&o.pages, i, segment, NodeRef::Page)?
+                }
+                (At::Node(NodeRef::Entity(e)), "fields", Some(i)) => {
+                    pick(&e.fields, i, segment, NodeRef::EntityField)?
+                }
+                (At::Node(NodeRef::Trait(t)), "states", Some(i)) => {
+                    pick(&t.states, i, segment, NodeRef::State)?
+                }
+                (At::Node(NodeRef::Trait(t)), "emits", Some(i)) => {
+                    pick(&t.emits, i, segment, NodeRef::Emit)?
+                }
+                (At::Node(NodeRef::Trait(t)), "listens", Some(i)) => {
+                    pick(&t.listens, i, segment, NodeRef::Listen)?
+                }
+                (At::Node(NodeRef::Trait(t)), "ticks", Some(i)) => {
+                    pick(&t.ticks, i, segment, NodeRef::Tick)?
+                }
+                (At::Node(NodeRef::Trait(t)), "config", Some(i)) => {
+                    pick(&t.config, i, segment, NodeRef::ConfigField)?
+                }
+                (At::Node(NodeRef::State(s)), "transitions", Some(i)) => {
+                    pick(&s.transitions, i, segment, NodeRef::Transition)?
+                }
                 _ => return Err(unknown()),
             };
             next.extend(found);
@@ -4074,7 +4137,8 @@ orbital PathsOrbital {
 
     #[test]
     fn a_wildcard_formats_every_match_in_order() {
-        let printed = format_path(&program(), "orbitals[*].traits[*].states[*].transitions[*]").expect("prints");
+        let printed = format_path(&program(), "orbitals[*].traits[*].states[*].transitions[*]")
+            .expect("prints");
         assert_eq!(printed.len(), 3, "{printed:?}");
         assert!(printed[2].contains("CLOSE"), "{printed:?}");
     }
@@ -4095,7 +4159,10 @@ orbital PathsOrbital {
     #[test]
     fn a_field_the_construct_lacks_is_refused() {
         assert!(format_path(&program(), "orbitals[0].states[0]").is_err());
-        assert!(format_path(&program(), "orbitals[0].traits").is_err(), "a list field needs an index");
+        assert!(
+            format_path(&program(), "orbitals[0].traits").is_err(),
+            "a list field needs an index"
+        );
         assert!(format_path(&program(), "").is_err());
     }
 

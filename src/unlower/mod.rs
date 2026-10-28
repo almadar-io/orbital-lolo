@@ -260,7 +260,8 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
         .collect::<Result<Vec<_>, _>>()?;
     let mut orbitals = orbitals;
     let uses = hoist_common_uses(&mut orbitals, &schema.orbitals)?;
-    let mut type_aliases = hoist_common_aliases(&mut orbitals, &app, &global)?;
+    let mut type_aliases =
+        hoist_common_aliases(&mut orbitals, &app, &global, schema.types.as_ref())?;
     let root_aliases = orbital::declared_type_aliases_from(
         schema.types.as_ref(),
         &global,
@@ -278,12 +279,13 @@ pub fn unlower(schema: &OrbitalSchema) -> Result<Program, UnlowerError> {
     if let Some(root) = &schema.types {
         for (ast, core) in orbitals.iter_mut().zip(&schema.orbitals) {
             let Some(local) = &core.types else { continue };
-            ast.type_aliases.retain(|a| {
-                match (root.get(&a.name), local.get(&a.name)) {
-                    (Some(r), Some(l)) => serde_json::to_value(r).ok() != serde_json::to_value(l).ok(),
+            ast.type_aliases
+                .retain(|a| match (root.get(&a.name), local.get(&a.name)) {
+                    (Some(r), Some(l)) => {
+                        serde_json::to_value(r).ok() != serde_json::to_value(l).ok()
+                    }
                     _ => true,
-                }
-            });
+                });
         }
     }
     let program = Program {
@@ -362,14 +364,19 @@ fn hoist_common_aliases(
     orbitals: &mut [crate::ast::Orbital],
     app: &AppHeader,
     global: &types::AliasShapes,
+    file_types: Option<
+        &std::collections::BTreeMap<String, Vec<orbital_core_base::schema::PayloadField>>,
+    >,
 ) -> Result<Vec<crate::ast::TypeAlias>, UnlowerError> {
     let mut hoisted: Vec<crate::ast::TypeAlias> = Vec::new();
     if orbitals.len() > 1 || !app.config.is_empty() {
         if let Some(first) = orbitals.iter().find(|o| o.reference.is_none()) {
             for a in &first.type_aliases {
-                let everywhere = orbitals.iter().all(|o| {
-                    o.reference.is_some() || o.type_aliases.iter().any(|b| b.name == a.name)
-                });
+                let file_scoped = file_types.is_some_and(|t| t.contains_key(&a.name));
+                let everywhere = file_scoped
+                    && orbitals.iter().all(|o| {
+                        o.reference.is_some() || o.type_aliases.iter().any(|b| b.name == a.name)
+                    });
                 if everywhere {
                     hoisted.push(a.clone());
                 }

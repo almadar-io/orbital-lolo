@@ -442,7 +442,7 @@ fn js_to_lolo(t: &str) -> String {
 /// `@almadar/core`'s `inferConfigType`: the knob's declared type, else its
 /// default's runtime type; then [`js_to_lolo`].
 fn config_types(
-    config: Option<&HashMap<String, orbital_core_base::schema::ConfigField>>,
+    config: Option<&orbital_core_base::collections::IndexMap<String, orbital_core_base::schema::ConfigField>>,
 ) -> HashMap<String, String> {
     use orbital_core_base::schema::SExpression;
     config
@@ -470,9 +470,9 @@ fn config_types(
 /// `unknown` — it declares no type) takes the type of the orbital's or app's
 /// own declared knob `X`; an unresolved wiring stays `unknown` (unchecked).
 fn wired_config_types(
-    config: Option<&HashMap<String, orbital_core_base::schema::ConfigField>>,
-    orbital: Option<&HashMap<String, orbital_core_base::schema::ConfigField>>,
-    app: Option<&HashMap<String, orbital_core_base::schema::ConfigField>>,
+    config: Option<&orbital_core_base::collections::IndexMap<String, orbital_core_base::schema::ConfigField>>,
+    orbital: Option<&orbital_core_base::collections::IndexMap<String, orbital_core_base::schema::ConfigField>>,
+    app: Option<&orbital_core_base::collections::IndexMap<String, orbital_core_base::schema::ConfigField>>,
 ) -> HashMap<String, String> {
     use orbital_core_base::schema::SExpression;
     let mut types = config_types(config);

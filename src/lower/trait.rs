@@ -1,4 +1,5 @@
 use super::*;
+use orbital_core_base::collections::IndexMap;
 
 /// Expand a transition's term-match sugar (Phase 2, pattern-matching doc
 /// §1(a)) into ordered guarded `Transition`s, or return it unchanged
@@ -226,11 +227,11 @@ pub(crate) fn lower_trait_decl(
 /// listens emitsScope`) — shared by `trait X = A.traits.Y { … }` and an orbital import's
 /// `traits { Y { … } }` entries.
 pub(crate) struct CallSiteOverrides {
-    pub events: Option<HashMap<String, String>>,
+    pub events: Option<IndexMap<String, String>>,
     pub listens: Option<Vec<ListenDefinition>>,
     pub emits_scope: Option<EventScope>,
-    pub config: Option<HashMap<String, SchemaConfigField>>,
-    pub fields: Option<HashMap<String, String>>,
+    pub config: Option<IndexMap<String, SchemaConfigField>>,
+    pub fields: Option<IndexMap<String, String>>,
 }
 
 pub(crate) fn lower_call_site_overrides(
@@ -247,7 +248,7 @@ pub(crate) fn lower_call_site_overrides(
                 .events
                 .iter()
                 .cloned()
-                .collect::<HashMap<String, String>>(),
+                .collect::<IndexMap<String, String>>(),
         )
     };
 
@@ -283,7 +284,7 @@ pub(crate) fn lower_call_site_overrides(
     let config = if ref_data.config.is_empty() {
         None
     } else {
-        let mut map: HashMap<String, SchemaConfigField> = HashMap::new();
+        let mut map: IndexMap<String, SchemaConfigField> = IndexMap::new();
         for cf in &ref_data.config {
             // NOTE: unlike the atom-level declared-config guard below (a knob
             // defaulting to its own value IS self-referential), a call-site
@@ -370,7 +371,7 @@ pub(crate) fn lower_call_site_overrides(
                 .fields
                 .iter()
                 .cloned()
-                .collect::<HashMap<String, String>>(),
+                .collect::<IndexMap<String, String>>(),
         )
     };
 
@@ -438,7 +439,7 @@ pub(crate) fn lower_trait_reference(
                     args: flat,
                 });
             }
-            let mut map: HashMap<String, String> = HashMap::new();
+            let mut map: IndexMap<String, String> = IndexMap::new();
             for pair in flat.chunks(2) {
                 map.insert(pair[0].clone(), pair[1].clone());
             }
@@ -997,7 +998,7 @@ pub(crate) fn lower_trait(
     };
 
     // Lower the trait's declared `config { ... }` block into the schema's
-    // `Option<HashMap<String, ConfigField>>` shape. The resolve phase
+    // `Option<orbital_core_base::collections::IndexMap<String, ConfigField>>` shape. The resolve phase
     // (`orbital-compiler::phases::resolve::resolve_trait`) reads this map
     // to populate `OirTrait.declared_config_schema`, which the TypeScript
     // backend uses to emit a strongly-typed `<TraitName>Config` interface

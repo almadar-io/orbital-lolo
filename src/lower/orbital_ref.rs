@@ -12,14 +12,15 @@
 //! those are locally owned, never prefixed, and lower now.
 
 use super::*;
+use orbital_core_base::collections::IndexMap;
 use crate::error::Located;
 
-/// `Vec<(String, String, Span)>` → `Option<HashMap<String, String>>`, `None`
+/// `Vec<(String, String, Span)>` → `Option<IndexMap<String, String>>`, `None`
 /// when empty — the same "absent beats empty" convention every other
 /// optional map on the schema follows. The span is dropped here; callers
 /// that need it record it into the source map separately (spans are a
 /// side-channel, never part of the emitted `.orb`).
-fn pairs_to_map(pairs: &[(String, String, Span)]) -> Option<HashMap<String, String>> {
+fn pairs_to_map(pairs: &[(String, String, Span)]) -> Option<IndexMap<String, String>> {
     if pairs.is_empty() {
         None
     } else {
@@ -56,7 +57,7 @@ fn spanned_names_to_option(names: &[(String, Span)]) -> Option<Vec<String>> {
 /// `pairs_to_map` (roles, mounts).
 fn list_pairs_to_map(
     pairs: &[(String, Vec<String>, Span)],
-) -> Option<HashMap<String, Vec<String>>> {
+) -> Option<IndexMap<String, Vec<String>>> {
     if pairs.is_empty() {
         None
     } else {
@@ -202,11 +203,11 @@ pub(crate) fn lower_orbital_reference(
         Some(fields)
     };
 
-    let traits: Option<HashMap<String, orbital_core_base::schema::OrbitalRefTraitOverride>> =
+    let traits: Option<IndexMap<String, orbital_core_base::schema::OrbitalRefTraitOverride>> =
         if orb.trait_overrides.is_empty() {
             None
         } else {
-            let mut map = std::collections::HashMap::new();
+            let mut map = IndexMap::new();
             for t in &orb.trait_overrides {
                 if let Some(word) = t.retired_words.first() {
                     return Err(crate::error::trait_header_word_error(&word.word)

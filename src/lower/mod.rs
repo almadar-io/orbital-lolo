@@ -861,7 +861,7 @@ pub(crate) fn lower_expects_decl(
                 entity_names,
             )?
             .unwrap_or_default();
-            let knob = lowered.remove(&field.name).ok_or_else(|| {
+            let knob = lowered.shift_remove(&field.name).ok_or_else(|| {
                 LowerError::Internal(format!(
                     "expects config `{}` lowered to no knob",
                     field.name

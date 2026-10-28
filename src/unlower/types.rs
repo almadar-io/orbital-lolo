@@ -55,7 +55,9 @@ fn primitive(name: &str) -> TypeExpr {
     TypeExpr::Primitive(name.to_string())
 }
 
-fn sorted<'a, V: 'a>(map: impl IntoIterator<Item = (&'a String, &'a V)>) -> Vec<(&'a String, &'a V)> {
+fn sorted<'a, V: 'a>(
+    map: impl IntoIterator<Item = (&'a String, &'a V)>,
+) -> Vec<(&'a String, &'a V)> {
     let mut entries: Vec<_> = map.into_iter().collect();
     entries.sort_by(|a, b| a.0.cmp(b.0));
     entries
@@ -209,8 +211,8 @@ fn field_def_type_inner(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> 
 pub(super) fn object_members(
     props: &orbital_core_base::collections::IndexMap<String, FieldDefinition>,
 ) -> Result<Vec<(String, TypeExpr, bool)>, UnlowerError> {
-    sorted(props)
-        .into_iter()
+    props
+        .iter()
         .map(|(k, v)| Ok((k.clone(), field_def_type(v)?, v.required == Some(true))))
         .collect()
 }
@@ -560,7 +562,7 @@ pub(super) fn config_field(
 }
 
 pub(super) fn config_fields(
-    map: &Option<HashMap<String, SchemaConfigField>>,
+    map: &Option<orbital_core_base::collections::IndexMap<String, SchemaConfigField>>,
 ) -> Result<Vec<ConfigField>, UnlowerError> {
     match map {
         None => Ok(Vec::new()),

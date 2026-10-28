@@ -918,6 +918,9 @@ fn check_named_payload_ref(
     let resolved = resolve_named(name, &[], ctx, span)?;
     match resolved {
         TypeBody::Entity { .. } | TypeBody::Struct(_) => Ok(()),
+        // A named dictionary (`type Details = Map string (string | number)`) is the same shape the inline
+        // `Map` spelling carries in payload position.
+        TypeBody::Alias(TypeExpr::Map(..)) => Ok(()),
         // A named TYPE union (`type DecisionMatch = string | [float]`) is
         // legal in payload position: the same union authored inline lowers
         // there already (`union_payload_variants`), and an alias must stay

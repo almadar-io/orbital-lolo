@@ -342,7 +342,7 @@ pub(crate) fn canonicalize_unbound_trait_default(
 }
 
 /// Lower a `Vec<ConfigField>` (the AST's `config { ... }` grammar) into the
-/// schema's `Option<HashMap<String, ConfigField>>` shape. Shared by every
+/// schema's `Option<orbital_core_base::collections::IndexMap<String, ConfigField>>` shape. Shared by every
 /// site that carries this grammar: a trait's own declared `config {}`, the
 /// app-level `config {}` (`OrbitalSchema.config`), an orbital's own
 /// `config {}` (`Orbital.config`), and the two override sites (`uses { config
@@ -364,11 +364,11 @@ pub(crate) fn lower_config_fields_to_map(
     type_params: &[&str],
     aliases: &BTreeMap<String, TypeAliasResolved>,
     entity_names: &HashSet<String>,
-) -> Result<Option<HashMap<String, SchemaConfigField>>, LowerError> {
+) -> Result<Option<orbital_core_base::collections::IndexMap<String, SchemaConfigField>>, LowerError> {
     if fields.is_empty() {
         return Ok(None);
     }
-    let mut map: HashMap<String, SchemaConfigField> = HashMap::new();
+    let mut map: orbital_core_base::collections::IndexMap<String, SchemaConfigField> = orbital_core_base::collections::IndexMap::new();
     for cf in fields {
         if check_self_reference {
             if let Some(SExpression::String(s)) = &cf.default {

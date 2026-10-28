@@ -2046,3 +2046,26 @@ fn a_field_named_derived_is_an_ordinary_field_again() {
     let schema = parse_and_lower_str(&derived_program("derived : string")).expect("the word is free");
     assert!(field_json(&schema, "Person", "derived").get("derived").is_none());
 }
+
+fn lowered_text(source: &str, path: &str) -> String {
+    let schema = orbital_lolo::parse_and_lower_str_at(source, path).expect("lowers");
+    let value: Value = serde_json::to_value(&schema).expect("to_value");
+    serde_json::to_string(&strip_identity_keys(value)).expect("to_string")
+}
+
+#[test]
+fn lowering_the_same_source_twice_is_byte_identical() {
+    let source = fs::read_to_string(fixtures_dir().join("large-04-generic-app-organism.lolo")).expect("read");
+    let first = lowered_text(&source, "<input>");
+    for _ in 0..4 {
+        assert_eq!(lowered_text(&source, "<input>"), first);
+    }
+}
+
+#[test]
+fn lowering_the_same_source_from_two_paths_is_byte_identical() {
+    let source = fs::read_to_string(fixtures_dir().join("large-04-generic-app-organism.lolo")).expect("read");
+    let a = lowered_text(&source, "a/one.lolo");
+    let b = lowered_text(&source, "b/deeper/two.lolo");
+    assert_eq!(a, b);
+}

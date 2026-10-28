@@ -43,7 +43,7 @@ fn empty_trait(name: &str) -> Trait {
     }
 }
 
-fn sorted_pairs(map: &HashMap<String, String>) -> Vec<(String, String)> {
+fn sorted_pairs(map: &orbital_core_base::collections::IndexMap<String, String>) -> Vec<(String, String)> {
     let mut v: Vec<_> = map.iter().map(|(k, v)| (k.clone(), v.clone())).collect();
     v.sort();
     v
@@ -377,13 +377,43 @@ pub(super) fn trait_definition(
         };
         let annotations_differ = match emit {
             Some(e) => {
-                (ev.description.is_some() || ev.synonyms.is_some() || ev.tier.is_some())
-                    && (ev.description != e.description
-                        || ev.synonyms != e.synonyms
-                        || ev.tier != e.tier)
+                (ev.description.is_some() && ev.description != e.description)
+                    || (ev.synonyms.is_some() && ev.synonyms != e.synonyms)
+                    || (ev.tier.is_some() && ev.tier != e.tier)
             }
             None => ev.description.is_some() || ev.synonyms.is_some() || ev.tier.is_some(),
         };
+        let alias_only = emit.is_none()
+            && in_transitions
+            && ev.listened != Some(true)
+            && ev.input != Some(true)
+            && ev.inbound.is_none()
+            && ev.synonyms.is_none()
+            && ev.tier.is_none();
+        if let (true, Some(fields)) = (alias_only, &ev.payload_schema) {
+            let payload = match &ev.payload_entity {
+                Some(entity) => TypeExpr::Named(entity.clone()),
+                None => TypeExpr::Object(
+                    event_fields(fields)?
+                        .into_iter()
+                        .map(|f| (f.name, f.type_expr, f.required))
+                        .collect(),
+                ),
+            };
+            aliases.push(EventAlias {
+                event: ev.key.clone(),
+                payload,
+                description: ev.description.clone(),
+            });
+            continue;
+        }
+        if emit.is_none() && ev.payload_schema.as_ref().is_some_and(Vec::is_empty) {
+            aliases.push(EventAlias {
+                event: ev.key.clone(),
+                payload: TypeExpr::Object(Vec::new()),
+                description: None,
+            });
+        }
         let sole_source = emit.is_none() && !in_transitions;
         let aliased = emit.is_some_and(|e| e.payload_entity.is_some())
             && ev.payload_entity == emit.and_then(|e| e.payload_entity.clone());

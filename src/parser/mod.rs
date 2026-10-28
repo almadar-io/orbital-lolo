@@ -78,7 +78,7 @@ pub(crate) const REMAP_PAGE_MODIFIERS: &[&str] = &[
 ];
 
 mod entity;
-mod expression;
+pub(crate) mod expression;
 mod grants;
 pub(crate) mod jsx;
 mod orbital;

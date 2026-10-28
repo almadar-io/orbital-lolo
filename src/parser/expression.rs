@@ -64,8 +64,7 @@ impl Parser {
         // Special case: `(let ((x v) (y w)) body)` — the second arg is a list of bindings.
         let is_let = matches!(items.first(), Some(SExpression::String(s)) if s == "let");
         let has_let_bindings = is_let && matches!(self.peek(), TokenKind::LParen);
-        let is_lambda =
-            matches!(items.first(), Some(SExpression::String(s)) if s == "fn");
+        let is_lambda = matches!(items.first(), Some(SExpression::String(s)) if s == "fn");
         // Both forms open a lexical scope that stays live for the body args
         // parsed by the loop below.
         let mut opened_scope = false;
@@ -94,9 +93,7 @@ impl Parser {
             // `(fn (a b) body)` — parenthesized params aren't consumed by
             // `parse_lambda_params`, so they reach the loop as its first arg;
             // the budget then covers params + body.
-            Some("fn") if opened_scope => {
-                Some(if items.len() == 1 { 2 } else { 1 })
-            }
+            Some("fn") if opened_scope => Some(if items.len() == 1 { 2 } else { 1 }),
             _ => None,
         };
         let in_quasiquote = head.as_deref() == Some("quasiquote");
@@ -327,7 +324,11 @@ impl Parser {
         let mut count = 0usize;
         loop {
             match &self.tokens.get(at)?.kind {
-                TokenKind::Identifier(name) if name != "<" && self.lang.canon_literal(name).is_none() => count += 1,
+                TokenKind::Identifier(name)
+                    if name != "<" && self.lang.canon_literal(name).is_none() =>
+                {
+                    count += 1
+                }
                 TokenKind::RParen => break,
                 _ => return None,
             }
@@ -356,7 +357,9 @@ impl Parser {
                 self.advance();
             }
             self.advance();
-            emitted.push(SExpression::Array(names.iter().cloned().map(SExpression::string).collect()));
+            emitted.push(SExpression::Array(
+                names.iter().cloned().map(SExpression::string).collect(),
+            ));
             self.binding_scopes.push(names);
             return Ok(emitted);
         }
@@ -441,6 +444,7 @@ impl Parser {
                 });
             }
             self.expect_kind(&TokenKind::LParen, "(")?;
+            self.skip_newlines();
             // name
             let name = match self.peek().clone() {
                 TokenKind::Identifier(n) => {
@@ -454,14 +458,17 @@ impl Parser {
                     })
                 }
             };
+            self.skip_newlines();
             let annotation = if matches!(self.peek(), TokenKind::Colon) {
                 self.advance();
                 Some(self.parse_type_expr()?)
             } else {
                 None
             };
+            self.skip_newlines();
             let value_trail = format!("[1][{pair_index}][1]");
             let value = self.with_trail_seg(value_trail, |p| p.parse_sexpr_or_value())?;
+            self.skip_newlines();
             self.expect_kind(&TokenKind::RParen, ")")?;
             // `let` is sequential: a binding's value may read earlier bindings,
             // so the name only enters scope after its own value is parsed.
@@ -769,7 +776,8 @@ impl Parser {
     pub(crate) fn parse_array_literal(&mut self) -> Result<SExpression, ParseError> {
         let parsed = self.parse_array_items()?;
         if self.template_depth > 0
-            || (orbital_core_eval::lower::recognized_call_head(&parsed).is_none() && !reads_as_dropped_namespace(&parsed))
+            || (orbital_core_eval::lower::recognized_call_head(&parsed).is_none()
+                && !reads_as_dropped_namespace(&parsed))
         {
             return Ok(parsed);
         }
@@ -856,7 +864,10 @@ fn is_pure_match_scrutinee(expr: &SExpression, bound: impl Fn(&str) -> bool) -> 
     match expr {
         SExpression::String(s) if s.starts_with('@') => {
             let root = s[1..].split('.').next().unwrap_or_default();
-            s.starts_with("@entity.") || s.starts_with("@payload.") || s.starts_with("@config.") || bound(root)
+            s.starts_with("@entity.")
+                || s.starts_with("@payload.")
+                || s.starts_with("@config.")
+                || bound(root)
         }
         SExpression::String(_) => true,
         SExpression::Number(_) | SExpression::Bool(_) | SExpression::Null => true,
@@ -901,7 +912,7 @@ fn declares_key_position(head: &str, index: usize) -> bool {
 }
 
 /// A list headed by an operator's bare basename with a nested call among its items.
-fn reads_as_dropped_namespace(list: &SExpression) -> bool {
+pub(crate) fn reads_as_dropped_namespace(list: &SExpression) -> bool {
     let SExpression::Array(items) = list else {
         return false;
     };
