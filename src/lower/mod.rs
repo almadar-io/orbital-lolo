@@ -5,6 +5,7 @@
 //! "Lowering to .orb" table for the rules.
 
 use crate::ast::*;
+use std::sync::Arc;
 use crate::error::{Located, LowerError};
 use crate::patterns_meta::event_prop_names;
 use crate::registry::LoloContracts;
@@ -202,7 +203,7 @@ fn lower_impl(
     for orbital in &mut schema.orbitals {
         for reference in &mut orbital.traits {
             if let orbital_core_base::schema::TraitReference::Inline(definition) = reference {
-                orbital_core_base::schema::capture_trait_source_declaration(definition)
+                orbital_core_base::schema::capture_trait_source_declaration(Arc::make_mut(definition))
                     .expect("a lowered trait serializes to JSON");
             }
         }
@@ -1367,7 +1368,7 @@ fn lower_orbital(
             type_params: None,
             type_args: None,
         };
-        traits.push(TraitReference::Inline(synth));
+        traits.push(TraitReference::Inline(Arc::new(synth)));
     }
 
     let pages = if orb.pages.is_empty() {

@@ -12,7 +12,7 @@ use orbital_lolo::parse_and_lower_str;
 fn lower_one(src: &str) -> TraitDefinition {
     let schema = parse_and_lower_str(src).expect("fixture must lower");
     match &schema.orbitals[0].traits[0] {
-        TraitReference::Inline(td) => td.clone(),
+        TraitReference::Inline(td) => TraitDefinition::clone(td),
         _ => panic!("expected an inline trait"),
     }
 }

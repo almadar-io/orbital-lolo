@@ -73,7 +73,7 @@ fn note_view(schema: &OrbitalSchema) -> TraitDefinition {
         .traits
         .iter()
         .find_map(|t| match t {
-            TraitReference::Inline(def) if def.name == "NoteView" => Some(def.clone()),
+            TraitReference::Inline(def) if def.name == "NoteView" => Some(TraitDefinition::clone(def)),
             _ => None,
         })
         .expect("NoteView")

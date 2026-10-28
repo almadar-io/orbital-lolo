@@ -5,6 +5,7 @@
 //! changes. Judged on the lowered orbital, before inline substitutes `@config.X`.
 
 use orbital_core_base::schema::{Orbital, TraitReference};
+use std::sync::Arc;
 
 use crate::error::LowerError;
 
@@ -40,7 +41,7 @@ pub(crate) fn check_orbital_config_knobs_read(orbital: &Orbital) -> Result<(), L
             // The orbital with this one declaration removed: whatever reads the knob.
             let mut rest = orbital.clone();
             if let TraitReference::Inline(own) = &mut rest.traits[index] {
-                if let Some(own_config) = own.config.as_mut() {
+                if let Some(own_config) = Arc::make_mut(own).config.as_mut() {
                     own_config.shift_remove(knob);
                 }
             }

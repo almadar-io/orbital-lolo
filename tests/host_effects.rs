@@ -253,7 +253,7 @@ mod supervisor {
         let TraitReference::Inline(td) = &mut schema.orbitals[0].traits[0] else {
             panic!("the supervisor trait is inline");
         };
-        let knobs = td.config.as_mut().expect("the trait declares config knobs");
+        let knobs = std::sync::Arc::make_mut(td).config.as_mut().expect("the trait declares config knobs");
         for (knob, value) in [
             ("strategy", json!(strategy)),
             ("children", children),

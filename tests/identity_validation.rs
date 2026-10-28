@@ -60,7 +60,7 @@ fn corrupting_a_dual_carry_edge_is_no_longer_a_compiler_diagnostic() {
             _ => None,
         })
         .expect("Deposit trait");
-    td.linked_entity_id = Some("ent_GHOST00000000000000000000".to_string());
+    std::sync::Arc::make_mut(td).linked_entity_id = Some("ent_GHOST00000000000000000000".to_string());
 
     let diags = id_diagnostics(&schema);
     assert!(
