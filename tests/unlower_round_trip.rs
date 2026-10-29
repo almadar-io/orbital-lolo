@@ -621,6 +621,19 @@ fn app_config_alias_knobs_round_trip() {
 }
 
 #[test]
+fn a_file_alias_used_by_the_app_config_and_an_inline_orbital_prints_once_and_round_trips() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = app_config_program("home : NavLink").replace("    id : string!\n", "    id : string!\n    shortcut : NavLink\n");
+    assert!(source.contains("shortcut : NavLink"), "{source}");
+    round_trip(&source, &options).unwrap();
+    let schema = parse_and_lower_str_with(&source, &options).unwrap();
+    let printed = schema_to_lolo(&schema).unwrap();
+    assert_eq!(printed.matches("type NavLink").count(), 1, "{printed}");
+}
+
+#[test]
 fn control_app_config_primitive_knob_round_trips() {
     let Some(options) = monorepo_options() else {
         return;
