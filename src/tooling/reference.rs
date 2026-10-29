@@ -178,11 +178,11 @@ mod tests {
 mod language_data_export {
     use std::path::PathBuf;
 
-    #[derive(serde::Serialize)]
+    #[derive(serde::Serialize, Clone, PartialEq, Debug)]
     struct ValidationCode {
-        code: &'static str,
-        category: &'static str,
-        description: &'static str,
+        code: String,
+        category: String,
+        description: String,
     }
 
     fn pretty<T: serde::Serialize + ?Sized>(value: &T) -> String {
@@ -199,15 +199,127 @@ mod language_data_export {
         value
     }
 
-    fn validation_codes() -> Vec<ValidationCode> {
+    const STD_ATOMS: &str = "packages/almadar-std/behaviors/lolo/cli/atoms";
+
+    /// The std atoms directory of the installed language packages: `ALMADAR_ROOT` when set, else the nearest
+    /// ancestor of this checkout that carries the monorepo `packages/`.
+    fn std_atoms_dir() -> Option<PathBuf> {
+        if let Ok(root) = std::env::var("ALMADAR_ROOT") {
+            let dir = PathBuf::from(root).join(STD_ATOMS);
+            return dir.is_dir().then_some(dir);
+        }
+        PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .ancestors()
+            .map(|a| a.join(STD_ATOMS))
+            .find(|p| p.is_dir())
+    }
+
+    /// Every code declaration in a lowered program: the `default` of a trait's `codes` knob, one
+    /// `{ code, category, description }` per entry.
+    fn declared_codes(program: &serde_json::Value) -> Vec<ValidationCode> {
+        let mut out = Vec::new();
+        for orbital in program["orbitals"].as_array().into_iter().flatten() {
+            for t in orbital["traits"].as_array().into_iter().flatten() {
+                let Some(entries) = t["config"]["codes"]["default"].as_object() else {
+                    continue;
+                };
+                for decl in entries.values() {
+                    out.push(ValidationCode {
+                        code: decl["code"].as_str().unwrap_or_default().to_string(),
+                        category: decl["category"].as_str().unwrap_or_default().to_string(),
+                        description: decl["description"].as_str().unwrap_or_default().to_string(),
+                    });
+                }
+            }
+        }
+        out
+    }
+
+    /// `(atom file name, lowered program)` for every std cli atom, in name order.
+    fn std_programs(dir: &std::path::Path) -> Vec<(String, serde_json::Value)> {
+        let mut files: Vec<PathBuf> = std::fs::read_dir(dir)
+            .unwrap()
+            .map(|e| e.unwrap().path())
+            .filter(|p| p.extension().is_some_and(|e| e == "lolo"))
+            .collect();
+        files.sort();
+        files
+            .into_iter()
+            .map(|p| {
+                let schema = crate::parse_and_lower(&p)
+                    .unwrap_or_else(|e| panic!("{} does not lower: {e:?}", p.display()));
+                (
+                    p.file_name().unwrap().to_string_lossy().to_string(),
+                    serde_json::to_value(&schema).expect("serializes"),
+                )
+            })
+            .collect()
+    }
+
+    /// The registry: the codes Rust phases raise that no std atom declares, then every std-declared
+    /// code sorted by code. Two atoms may declare one code only with an identical declaration.
+    fn registry(
+        rust: Vec<ValidationCode>,
+        std_decls: Vec<(String, ValidationCode)>,
+    ) -> Result<Vec<ValidationCode>, String> {
+        let mut declared: std::collections::BTreeMap<String, (String, ValidationCode)> =
+            std::collections::BTreeMap::new();
+        for (atom, decl) in std_decls {
+            if decl.code.is_empty()
+                || decl.category.is_empty()
+                || decl.description.trim().is_empty()
+            {
+                return Err(format!(
+                    "{atom}: an incomplete declaration of {:?}",
+                    decl.code
+                ));
+            }
+            match declared.get(&decl.code) {
+                Some((first, seen)) if seen != &decl => {
+                    return Err(format!(
+                        "{} is declared differently by {first} and {atom}",
+                        decl.code
+                    ))
+                }
+                Some(_) => {}
+                None => {
+                    declared.insert(decl.code.clone(), (atom, decl));
+                }
+            }
+        }
+        let mut out: Vec<ValidationCode> = rust
+            .into_iter()
+            .filter(|c| !declared.contains_key(&c.code))
+            .collect();
+        out.extend(declared.into_values().map(|(_, d)| d));
+        Ok(out)
+    }
+
+    fn rust_codes() -> Vec<ValidationCode> {
         orbital_compiler::phases::validation::ErrorCode::ALL
             .iter()
             .map(|c| ValidationCode {
-                code: c.as_str(),
-                category: c.category(),
-                description: c.description(),
+                code: c.as_str().to_string(),
+                category: c.category().to_string(),
+                description: c.description().to_string(),
             })
             .collect()
+    }
+
+    fn validation_codes() -> Vec<ValidationCode> {
+        let std_decls = std_atoms_dir()
+            .map(|dir| {
+                std_programs(&dir)
+                    .iter()
+                    .flat_map(|(name, program)| {
+                        declared_codes(program)
+                            .into_iter()
+                            .map(|d| (name.clone(), d))
+                    })
+                    .collect()
+            })
+            .unwrap_or_default();
+        registry(rust_codes(), std_decls).unwrap_or_else(|e| panic!("{e}"))
     }
 
     /// The codes as a TS `as const` module, so a key read like
@@ -258,6 +370,162 @@ mod language_data_export {
         assert_ne!(ts_keys(&dropped), json);
     }
 
+    fn code_shaped(s: &str) -> bool {
+        s.contains('_')
+            && s.starts_with(|c: char| c.is_ascii_uppercase())
+            && s.chars()
+                .all(|c| c.is_ascii_uppercase() || c.is_ascii_digit() || c == '_')
+    }
+
+    fn code_literals(value: &serde_json::Value, out: &mut Vec<String>) {
+        match value {
+            serde_json::Value::String(s) if code_shaped(s) => out.push(s.clone()),
+            serde_json::Value::Array(a) => a.iter().for_each(|v| code_literals(v, out)),
+            serde_json::Value::Object(o) => o.values().for_each(|v| code_literals(v, out)),
+            _ => {}
+        }
+    }
+
+    fn finding_code_problems(
+        value: &serde_json::Value,
+        declared: &[String],
+        out: &mut Vec<String>,
+    ) {
+        match value {
+            serde_json::Value::String(s) => {
+                if let Some(key) = s
+                    .strip_prefix("@config.codes.")
+                    .and_then(|c| c.strip_suffix(".code"))
+                {
+                    if !declared.iter().any(|d| d == key) {
+                        out.push(format!("{s} (not declared)"));
+                    }
+                }
+            }
+            serde_json::Value::Object(o) => {
+                if let Some(code) = o.get("code") {
+                    let mut literals = Vec::new();
+                    code_literals(code, &mut literals);
+                    out.extend(literals.into_iter().map(|l| format!("{l} (literal)")));
+                }
+                o.values()
+                    .for_each(|v| finding_code_problems(v, declared, out));
+            }
+            serde_json::Value::Array(a) => a
+                .iter()
+                .for_each(|v| finding_code_problems(v, declared, out)),
+            _ => {}
+        }
+    }
+
+    fn trait_problems(t: &serde_json::Value) -> Vec<String> {
+        let declared: Vec<String> = t["config"]["codes"]["default"]
+            .as_object()
+            .map(|m| m.keys().cloned().collect())
+            .unwrap_or_default();
+        let mut out = Vec::new();
+        let mut walked = t.clone();
+        walked["config"] = serde_json::Value::Null;
+        finding_code_problems(&walked, &declared, &mut out);
+        out
+    }
+
+    #[test]
+    fn a_finding_reads_its_code_from_its_atoms_declared_codes_knob() {
+        let Some(dir) = std_atoms_dir() else { return };
+        let mut bad = Vec::new();
+        for (name, program) in std_programs(&dir) {
+            for orbital in program["orbitals"].as_array().into_iter().flatten() {
+                for t in orbital["traits"].as_array().into_iter().flatten() {
+                    for p in trait_problems(t) {
+                        bad.push(format!("{name}: {p}"));
+                    }
+                }
+            }
+        }
+        assert!(
+            bad.is_empty(),
+            "findings whose code is not a declared codes-knob entry: {bad:?}"
+        );
+    }
+
+    #[test]
+    fn control_a_literal_or_undeclared_finding_code_is_refused() {
+        let finding = |code: &str| {
+            serde_json::json!({ "config": { "codes": { "default": { "known": {} } } },
+                "fx": [{ "code": code, "path": "p", "message": "m", "severity": "error" }] })
+        };
+        assert!(trait_problems(&finding("@config.codes.known.code")).is_empty());
+        assert_eq!(trait_problems(&finding("ORB_LITERAL")).len(), 1);
+        let branched = serde_json::json!({ "config": { "codes": { "default": {} } },
+            "fx": { "code": ["if", ["=", "@k", "name"], "ORB_ONE_X", "ORB_TWO_Y"] } });
+        assert_eq!(trait_problems(&branched).len(), 2);
+        let row = serde_json::json!({ "config": { "codes": { "default": {} } }, "fx": { "code": ["object/get", "@h", "code"] } });
+        assert!(trait_problems(&row).is_empty());
+        assert_eq!(
+            trait_problems(&finding("@config.codes.other.code")).len(),
+            1
+        );
+    }
+
+    #[test]
+    fn every_std_declared_code_is_in_the_registry_exactly_once() {
+        let Some(dir) = std_atoms_dir() else { return };
+        let codes = validation_codes();
+        let mut seen = std::collections::BTreeSet::new();
+        for c in &codes {
+            assert!(seen.insert(c.code.clone()), "{} appears twice", c.code);
+        }
+        let mut declared = 0;
+        for (name, program) in std_programs(&dir) {
+            for d in declared_codes(&program) {
+                declared += 1;
+                let entry = codes.iter().find(|c| c.code == d.code);
+                assert_eq!(
+                    entry,
+                    Some(&d),
+                    "{name}: {} is not in the registry as declared",
+                    d.code
+                );
+            }
+        }
+        assert!(declared > 0, "no std atom declares a code");
+    }
+
+    #[test]
+    fn registry_has_one_declaration_per_code() {
+        let v = |code: &str, description: &str| ValidationCode {
+            code: code.into(),
+            category: "c".into(),
+            description: description.into(),
+        };
+        let rust = vec![v("ORB_RUST_ONLY", "r"), v("ORB_BOTH", "rust copy")];
+        let merged = registry(
+            rust.clone(),
+            vec![
+                ("a".into(), v("ORB_BOTH", "d")),
+                ("b".into(), v("ORB_BOTH", "d")),
+            ],
+        )
+        .unwrap();
+        assert_eq!(
+            merged.iter().map(|c| c.code.as_str()).collect::<Vec<_>>(),
+            ["ORB_RUST_ONLY", "ORB_BOTH"]
+        );
+        assert_eq!(merged[1].description, "d");
+        let conflict = registry(
+            rust.clone(),
+            vec![
+                ("a".into(), v("ORB_X", "one")),
+                ("b".into(), v("ORB_X", "two")),
+            ],
+        );
+        assert!(conflict
+            .unwrap_err()
+            .contains("ORB_X is declared differently"));
+        assert!(registry(rust, vec![("a".into(), v("ORB_Y", " "))]).is_err());
+    }
+
     fn core_dir() -> PathBuf {
         PathBuf::from(concat!(
             env!("CARGO_MANIFEST_DIR"),
@@ -297,8 +565,8 @@ mod language_data_export {
             }
             return;
         }
-        // A standalone orbital-rust clone has no @almadar/core to check against.
-        if !core_dir().join("package.json").exists() {
+        // A standalone orbital-rust clone has no @almadar/core or std to check against.
+        if !core_dir().join("package.json").exists() || std_atoms_dir().is_none() {
             return;
         }
         let problems = drift(&files, &dir);
