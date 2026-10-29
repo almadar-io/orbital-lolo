@@ -3,7 +3,9 @@
 //! The monorepo corpus sample is skipped when the checkout has no `tools/` or
 //! `packages/` siblings (standalone CI).
 
-use orbital_lolo::{parse_and_lower_str_with, schema_to_lolo, LowerOptions};
+use orbital_lolo::{
+    format_program, parse_and_lower_str_with, parse_str, schema_to_lolo, LowerOptions,
+};
 use serde_json::Value;
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -151,6 +153,214 @@ fn sample_per_dir(base: &Path) -> Vec<PathBuf> {
         .into_values()
         .flat_map(|v| v.into_iter().take(per_dir))
         .collect()
+}
+
+fn first_diff_line(a: &str, b: &str) -> String {
+    let (la, lb): (Vec<&str>, Vec<&str>) = (a.lines().collect(), b.lines().collect());
+    for i in 0..la.len().max(lb.len()) {
+        let (x, y) = (la.get(i), lb.get(i));
+        if x != y {
+            return format!("line {}: source={x:?} printed={y:?}", i + 1);
+        }
+    }
+    "texts differ only in trailing newline".to_string()
+}
+
+fn print_of_parse_is_source(source: &str) -> Result<(), String> {
+    let printed = format_program(&parse_str(source).map_err(|e| format!("parse: {e}"))?);
+    if printed == source {
+        Ok(())
+    } else {
+        Err(first_diff_line(source, &printed))
+    }
+}
+
+fn print_divergence_cause(source: &str, printed: &str) -> &'static str {
+    let squeeze = |t: &str, commas: bool| -> String {
+        t.chars()
+            .filter(|c| !c.is_whitespace() && (commas || *c != ','))
+            .collect()
+    };
+    let comments = |t: &str| -> Vec<String> {
+        let mut c: Vec<String> = t
+            .lines()
+            .map(str::trim)
+            .filter(|l| l.starts_with(";;") || l.starts_with('#'))
+            .map(str::to_string)
+            .collect();
+        c.sort();
+        c
+    };
+    if squeeze(source, true) == squeeze(printed, true) {
+        "layout: same tokens, different whitespace, blank lines or wrapping"
+    } else if squeeze(source, false) == squeeze(printed, false) {
+        "commas: same tokens, different separators"
+    } else if comments(source) != comments(printed) {
+        "comments: the printer moves or drops a comment"
+    } else {
+        let sorted = |t: &str| {
+            let mut w: Vec<&str> = t.split_whitespace().collect();
+            w.sort_unstable();
+            w.join(" ")
+        };
+        if sorted(source) == sorted(printed) {
+            "order: same tokens in a different order"
+        } else {
+            "tokens: the printed program carries different tokens"
+        }
+    }
+}
+
+fn print_parse_divergences(
+    files: &[PathBuf],
+) -> std::collections::BTreeMap<&'static str, Vec<String>> {
+    let mut by_cause: std::collections::BTreeMap<&'static str, Vec<String>> = Default::default();
+    for f in files {
+        let src = fs::read_to_string(f).unwrap();
+        let Ok(program) = parse_str(&src) else {
+            by_cause
+                .entry("parse: the source does not parse")
+                .or_default()
+                .push(f.display().to_string());
+            continue;
+        };
+        let printed = format_program(&program);
+        if printed != src {
+            by_cause
+                .entry(print_divergence_cause(&src, &printed))
+                .or_default()
+                .push(format!(
+                    "{}: {}",
+                    f.display(),
+                    first_diff_line(&src, &printed)
+                ));
+        }
+    }
+    by_cause
+}
+
+fn run_unlower_equivalence(root: &Path, files: &[PathBuf]) {
+    let packages =
+        orbital_core_base::behavior_packages::discover(root, root).expect("discover packages");
+    let options = LowerOptions {
+        packages,
+        ..Default::default()
+    };
+    let failures: Vec<String> = files
+        .iter()
+        .filter_map(|f| {
+            round_trip(&fs::read_to_string(f).unwrap(), &options)
+                .err()
+                .map(|e| format!("{}: unlower(lower(s)): {e}", f.display()))
+        })
+        .collect();
+    eprintln!(
+        "unlower(lower(s)): {} files, {} failures",
+        files.len(),
+        failures.len()
+    );
+    assert!(
+        failures.is_empty(),
+        "{} failures:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
+fn corpus_files() -> Option<(PathBuf, Vec<PathBuf>)> {
+    let root = monorepo_root()?;
+    let mut files = Vec::new();
+    for base in [
+        "packages/almadar-std/behaviors/lolo",
+        "packages/almadar-behaviors/behaviors/lolo",
+    ] {
+        files.extend(sample_per_dir(&root.join(base)));
+    }
+    Some((root.clone(), matching(files)))
+}
+
+/// Samples `UNLOWER_PER_DIR` (default 3) files per directory; `UNLOWER_PER_DIR=100000` walks the whole corpus.
+#[test]
+fn corpus_unlower_of_lower_is_equivalent_over_every_file() {
+    let Some((root, files)) = corpus_files() else {
+        return;
+    };
+    run_unlower_equivalence(&root, &files);
+}
+
+#[test]
+fn corpus_print_of_parse_is_a_fixed_point_over_every_file() {
+    let Some((_, files)) = corpus_files() else {
+        return;
+    };
+    let print = |src: &str| -> Result<String, String> {
+        Ok(format_program(
+            &parse_str(src).map_err(|e| format!("parse: {e}"))?,
+        ))
+    };
+    let failures: Vec<String> = files
+        .iter()
+        .filter_map(|f| {
+            let src = fs::read_to_string(f).unwrap();
+            let outcome = print(&src).and_then(|once| {
+                let twice = print(&once)?;
+                if twice == once {
+                    Ok(())
+                } else {
+                    Err(first_diff_line(&once, &twice))
+                }
+            });
+            outcome.err().map(|e| {
+                format!(
+                    "{}: print(parse(print(parse(s)))) != print(parse(s)): {e}",
+                    f.display()
+                )
+            })
+        })
+        .collect();
+    eprintln!(
+        "print fixed point: {} files, {} failures",
+        files.len(),
+        failures.len()
+    );
+    assert!(
+        failures.is_empty(),
+        "{} failures:\n{}",
+        failures.len(),
+        failures.join("\n")
+    );
+}
+
+#[test]
+#[ignore = "A1 measurement: UNLOWER_MATCH narrows it; lists every corpus file whose print(parse(s)) differs from s, by cause"]
+fn corpus_print_of_parse_divergence_by_cause() {
+    let Some((_, files)) = corpus_files() else {
+        return;
+    };
+    let by_cause = print_parse_divergences(&files);
+    let total: usize = by_cause.values().map(Vec::len).sum();
+    for (cause, rows) in &by_cause {
+        eprintln!("== {cause}: {} files", rows.len());
+        for row in rows {
+            eprintln!("{row}");
+        }
+    }
+    eprintln!("print(parse(s)) != s: {total} of {} files", files.len());
+    assert_eq!(total, 0, "print(parse(s)) must be s over the corpus");
+}
+
+#[test]
+fn print_of_parse_flags_a_source_the_printer_would_change() {
+    let canonical = "app control [\n  version: \"1.0.0\",\n  description: \"probe\"\n]\n";
+    let program = parse_str(canonical).expect("parses");
+    let printed = format_program(&program);
+    assert!(
+        print_of_parse_is_source(&printed).is_ok(),
+        "printer output is a fixed point"
+    );
+    let messy = printed.replace("\n  description", "\n\n\n  description");
+    assert_ne!(messy, printed, "control: the source differs from its print");
+    assert!(print_of_parse_is_source(&messy).is_err());
 }
 
 #[test]
@@ -1677,13 +1887,25 @@ fn a_quoted_string_with_an_empty_sigil_segment_round_trips() {
 }
 
 #[test]
-fn a_bare_relation_entity_field_agrees_with_the_payload_it_feeds() {
+fn a_relation_entity_field_agrees_with_the_payload_it_feeds() {
     assert_round_trips(
         r#"app Probe
+orbital CategoryOrbital {
+  entity Category [persistent: categories] {
+    id : string!
+  }
+  trait CategoryFlow -> Category {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+  }
+  page "/categories" -> CategoryFlow
+}
 orbital ItemOrbital {
   entity Item [persistent: items] {
     id : string!
-    categoryId : relation = ""
+    categoryId : Category
   }
   trait ItemFlow -> Item {
     initial: idle
@@ -2001,4 +2223,13 @@ fn control_a_plain_member_of_an_alias_nested_in_a_config_alias_round_trips() {
         "type Where = { field : string!, op : string }\n  type Spec = { label : string, where : [Where] }",
         "specs : [Spec] = []",
     ).replace("@config.wheres", "@config.specs"));
+}
+
+#[test]
+fn a_not_found_page_and_a_declared_relation_display_round_trip() {
+    let source = probe_program("", "owner : Item @display id", "").replace(
+        "  page \"/\" -> ItemFlow [initial]",
+        "  page \"/\" -> ItemFlow [initial]\n  page \"/missing\" as Missing -> ItemFlow [notFound]",
+    );
+    assert_round_trips(&source);
 }

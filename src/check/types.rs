@@ -1134,7 +1134,7 @@ pub(crate) fn expected_entity_names(orb: &Orbital) -> Vec<&str> {
 fn reject_generic_types(te: &TypeExpr, position: &str, span: Span) -> Result<(), TypeError> {
     match te.peel() {
         TypeExpr::Primitive(n) | TypeExpr::Named(n)
-            if n == "json" || n == "any" || n == "object" || n == "array" || n == "scalar" =>
+            if n == "json" || n == "any" || n == "object" || n == "array" || n == "scalar" || n == "relation" =>
         {
             Err(TypeError::GenericTypeForbidden {
                 name: n.clone(),
@@ -1745,6 +1745,46 @@ orbital OrbG {{
                 "{label}: got {err:?}"
             );
         }
+    }
+
+    /// R7: a bare `relation` names no target, so it is refused like `json` in every position, with the fix hint;
+    /// the control spells the relation by its entity.
+    #[test]
+    fn err_bare_relation_rejected_in_every_position_and_the_entity_name_is_the_control() {
+        let positions = [
+            ("entity field", "entity Order [persistent: orders] {\n    id : string!\n    v : relation\n  }"),
+            ("list element", "entity Order [persistent: orders] {\n    id : string!\n    v : [relation]\n  }"),
+            ("map value", "entity Order [persistent: orders] {\n    id : string!\n    v : Map string relation\n  }"),
+            ("alias member", "entity Order [persistent: orders] { id : string! }\n  type Pair = { key : relation!, n : number }"),
+        ];
+        for (label, body) in positions {
+            let src = format!(
+                r#"
+orbital OrbG {{
+  {body}
+  trait OrderTrait -> Order {{ state idle {{ INIT -> idle (fetch Order) }} }}
+  page "/orders" -> OrderTrait
+}}
+"#
+            );
+            let err = check(&src).unwrap_err();
+            assert!(
+                matches!(&err, TypeError::GenericTypeForbidden { name, .. } if name == "relation"),
+                "{label}: got {err:?}"
+            );
+            assert!(err.to_string().contains("related entity's name"), "{label}: {err}");
+        }
+        let control = r#"
+orbital OrbG {
+  entity Order [persistent: orders] {
+    id : string!
+    peer : Order
+  }
+  trait OrderTrait -> Order { state idle { INIT -> idle (fetch Order) } }
+  page "/orders" -> OrderTrait
+}
+"#;
+        assert!(check(control).is_ok(), "control: an entity-named relation is accepted");
     }
 
     /// `scalar` (a primitive of unspecified kind) is a catch-all like `json`

@@ -735,6 +735,8 @@ pub struct EntityField {
     pub default: Option<SExpression>,
     /// `derived` field flag with the derivation expression.
     pub derived: Option<SExpression>,
+    /// Trailing `@display <field>` annotation on a relation field: the target field a related record is shown by.
+    pub display: Option<String>,
     pub span: Span,
 }
 
@@ -1437,6 +1439,8 @@ pub struct Page {
     pub view: Option<String>,
     pub primary_entity: Option<String>,
     pub is_initial: bool,
+    /// `notFound` — the page shown for a path no page matches.
+    pub is_not_found: bool,
     pub span: Span,
     /// When `Some`, this page is a reference to an imported page. The string
     /// is the dotted path (`Alias.pages.PageName`). When set, `traits` and

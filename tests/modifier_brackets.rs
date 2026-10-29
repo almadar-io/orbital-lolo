@@ -269,6 +269,28 @@ fn legacy_page_options_still_parse_alongside_new_ones() {
 }
 
 #[test]
+fn not_found_lowers_onto_the_page_and_survives_format() {
+    let source = with_page("[notFound]");
+    let page = inline_page(&source);
+    assert_eq!(page.is_not_found, Some(true));
+    assert_eq!(page.is_initial, None);
+    let formatted = format_program(&parse_str(&source).expect("parse"));
+    assert!(formatted.contains("[notFound]"), "{formatted}");
+    assert_eq!(inline_page(&formatted).is_not_found, Some(true));
+    let control = inline_page(&program(BRACKET_HEADER));
+    assert_eq!(control.is_not_found, None);
+    assert!(!serde_json::to_string(&control).unwrap().contains("isNotFound"));
+}
+
+#[test]
+fn not_found_lowers_beside_initial_in_either_order() {
+    for options in ["[initial, notFound]", "[notFound, initial]"] {
+        let page = inline_page(&with_page(options));
+        assert_eq!((page.is_initial, page.is_not_found), (Some(true), Some(true)));
+    }
+}
+
+#[test]
 fn an_unknown_page_modifier_is_rejected_not_dropped() {
     let err = parse_and_lower_str(&with_page("[layout: wide]")).unwrap_err();
     assert!(err.to_string().contains("ORB_L_OPTION_UNKNOWN"), "{err}");

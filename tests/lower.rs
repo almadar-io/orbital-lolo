@@ -1538,6 +1538,28 @@ orbital Probe {{
     }
 
     #[test]
+    fn a_relation_field_declares_the_field_a_related_record_is_shown_by() {
+        let source = "orbital O {\n  entity Owner [runtime] {\n    id : string!\n    callsign : string!\n  }\n  entity Item [runtime] {\n    id : string!\n    owner : Owner @display callsign\n    peers : [Owner]\n  }\n}";
+        let relation_of = |source: &str, field: &str| {
+            let schema = parse_and_lower_str(source).expect("lowers");
+            let item = schema.orbitals[0].auxiliary_entities.iter().flatten().chain(std::iter::once(&schema.orbitals[0].entity)).filter_map(|e| e.as_inline()).find(|e| e.name == "Item").expect("Item").clone();
+            item.fields.iter().find(|f| f.name.as_deref() == Some(field)).and_then(|f| f.relation.clone())
+        };
+        assert_eq!(relation_of(source, "owner").and_then(|r| r.display).as_deref(), Some("callsign"));
+        assert_eq!(relation_of(source, "peers").and_then(|r| r.display), None, "control: an undeclared relation shows the id");
+        let formatted = orbital_lolo::format_program(&orbital_lolo::parse_str(source).expect("parses"));
+        assert!(formatted.contains("owner : Owner @display callsign"), "{formatted}");
+        assert_eq!(relation_of(&formatted, "owner").and_then(|r| r.display).as_deref(), Some("callsign"));
+    }
+
+    #[test]
+    fn display_on_a_field_that_is_not_a_relation_is_refused() {
+        let source = "orbital O {\n  entity Item [runtime] {\n    id : string!\n    note : string @display callsign\n  }\n}";
+        let err = parse_and_lower_str(source).expect_err("a scalar has nothing to show by");
+        assert!(err.to_string().contains("ORB_L_DISPLAY_NOT_A_RELATION"), "{err}");
+    }
+
+    #[test]
     fn a_field_whose_value_is_a_knob_named_entity_reads_the_related_row() {
         let source = r#"app keyed [version: "1.0.0"]
     orbital Probe {

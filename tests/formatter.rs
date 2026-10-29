@@ -1373,3 +1373,48 @@ fn control_a_short_expression_stays_on_one_line_and_a_long_string_is_never_split
     );
     assert_eq!(lowered(&formatted), lowered(&wrap_probe(&effect)));
 }
+
+fn binding_annotation_program(header_words: &str, annotations: &str) -> String {
+    format!(
+        "orbital Probe {{\n  entity Item [runtime] {{\n    id : string!\n  }}\n\n  trait Show -> @rebindable Item{header_words} {{\n{annotations}    initial: idle\n\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n\n  page boot as ProbeStart -> Show\n}}\n"
+    )
+}
+
+#[test]
+fn a_trait_binding_annotation_prints_where_the_parser_reads_it() {
+    for words in ["", " [client]", " [optimistic]"] {
+        let source = binding_annotation_program(
+            words,
+            "    @description \"the tracked record\"\n    @synonyms \"track X / audit X\"\n",
+        );
+        let printed = format_text(&source).unwrap_or_else(|e| panic!("{words}: {e}"));
+        let reparsed = parse_str(&printed).unwrap_or_else(|e| {
+            panic!("{words}: the printed program does not parse: {e}\n{printed}")
+        });
+        let trait_ = &reparsed.orbitals[0].traits[0];
+        assert_eq!(
+            trait_.entity_binding_description.as_deref(),
+            Some("the tracked record"),
+            "{words}"
+        );
+        assert_eq!(
+            trait_.entity_binding_synonyms.as_deref(),
+            Some("track X / audit X"),
+            "{words}"
+        );
+        assert_eq!(
+            format_text(&printed).unwrap(),
+            printed,
+            "{words}: idempotent"
+        );
+    }
+}
+
+#[test]
+fn control_a_trait_without_binding_annotations_prints_none() {
+    let source = binding_annotation_program(" [client]", "");
+    let printed = format_text(&source).unwrap();
+    assert!(!printed.contains("@description") && !printed.contains("@synonyms"));
+    let trait_ = &parse_str(&printed).unwrap().orbitals[0].traits[0];
+    assert!(trait_.entity_binding_description.is_none());
+}

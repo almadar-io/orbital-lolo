@@ -33,6 +33,10 @@ fn field_definition(
     super::entity::lower_source_field(ty, aliases, entity_names, params)
 }
 
+fn no_shape(error: orbital_core_base::ir::types::ShapeError) -> LowerError {
+    LowerError::Coded { code: "ORB_T_GENERIC_TYPE_DEPRECATED", message: error.to_string() }
+}
+
 fn source_type(
     ty: &TypeExpr,
     aliases: &BTreeMap<String, TypeAliasResolved>,
@@ -77,7 +81,7 @@ fn source_type(
                 .collect::<Result<_, LowerError>>()?,
         },
         TypeExpr::Named(name) if params.contains(&name.as_str()) => {
-            OirType::Var { name: name.clone() }
+            OirType::Var { name: name.clone().into() }
         }
         TypeExpr::Named(name) if entity_names.contains(name) => OirType::reference(name),
         TypeExpr::Named(name) if aliases.contains_key(name) => {
@@ -120,10 +124,10 @@ fn source_type(
                 if def.field_type == orbital_core_base::schema::FieldType::String {
                     OirType::Enum { name: values }
                 } else {
-                    field_shape(&def)
+                    field_shape(&def).map_err(no_shape)?
                 }
             } else {
-                field_shape(&def)
+                field_shape(&def).map_err(no_shape)?
             }
         }
     })
@@ -152,7 +156,7 @@ fn alias_type(
                     .and_then(orbital_core_base::type_compat::literal_union_text)
                 {
                     Some(values) => OirType::Enum { name: values },
-                    None => field_shape(&def),
+                    None => field_shape(&def).map_err(no_shape)?,
                 },
             ))
         }
@@ -178,20 +182,21 @@ pub(crate) fn declared_source_shape(
         None => source_type(ty, aliases, entity_names, params)?,
     };
     let error = std::cell::RefCell::new(None);
-    let mut shape = DeclaredShape::with_resolver(name, root, |name| {
+    let shape = DeclaredShape::with_resolver(name, root, |name| {
         match alias_type(name, aliases, entity_names, params) {
-            Ok(shape) => shape,
+            Ok(shape) => Ok(shape),
             Err(found) => {
                 error.borrow_mut().get_or_insert(found);
-                None
+                Ok(None)
             }
         }
     });
-    shape.version = Some(1);
-    match error.into_inner() {
-        Some(error) => Err(error),
-        None => Ok(shape),
+    if let Some(error) = error.into_inner() {
+        return Err(error);
     }
+    let mut shape = shape.map_err(no_shape)?;
+    shape.version = Some(1);
+    Ok(shape)
 }
 
 fn alias_identity(
@@ -613,7 +618,7 @@ orbital O {
         v: orbital_core_base::value::Value,
     ) -> Result<orbital_core_base::value::Value, String> {
         let mut payload = orbital_core_base::value::ValueMap::new();
-        payload.insert("v".to_string(), v);
+        payload.insert("v".into(), v);
         let ctx = orbital_core_eval::evaluator::BindingContextBuilder::new()
             .payload(orbital_core_base::value::Value::Object(payload.into()))
             .build();

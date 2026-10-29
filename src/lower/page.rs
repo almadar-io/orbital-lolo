@@ -139,6 +139,7 @@ pub(crate) fn lower_page(p: &Page) -> Result<PageRef, LowerError> {
         view_type: p.view.clone(),
         primary_entity: p.primary_entity.clone(),
         is_initial: if p.is_initial { Some(true) } else { None },
+        is_not_found: if p.is_not_found { Some(true) } else { None },
         traits: Some(
             p.traits
                 .iter()

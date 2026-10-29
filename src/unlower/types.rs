@@ -238,6 +238,7 @@ pub(super) fn entity_field(fd: &FieldDefinition) -> Result<EntityField, UnlowerE
         mock: fd.mock.clone(),
         default: fd.default.clone(),
         derived: fd.derived.clone(),
+        display: fd.relation.as_ref().and_then(|r| r.display.clone()),
         span: Span::dummy(),
     })
 }
@@ -854,10 +855,9 @@ fn oir_type_expr(ty: &OirType) -> Result<TypeExpr, UnlowerError> {
                 None => None,
             },
         },
-        OirType::Reference { entity: name } | OirType::TypeRef { name } | OirType::Var { name } => {
-            TypeExpr::Named(name.clone())
-        }
-        OirType::Json | OirType::Row { .. } => {
+        OirType::Reference { entity: name } | OirType::TypeRef { name } => TypeExpr::Named(name.clone()),
+        OirType::Var { name } => TypeExpr::Named(name.to_string()),
+        OirType::Row { .. } => {
             return Err(UnlowerError::new(format!(
                 "a local annotation of type {ty:?} has no source spelling"
             )))

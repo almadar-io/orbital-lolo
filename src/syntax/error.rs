@@ -1247,8 +1247,8 @@ pub enum TypeError {
 
     #[error(
         "ELOLO_T_GENERIC_TYPE: {position} declares the generic type `{name}` — `json`, bare \
-         `object`, bare `array`, `any`, and `scalar` are not allowed in a declaration position. Replace \
-         it: renderable content → `node`; structured data → an inline `{{ k: T }}` shape, a \
+         `object`, bare `array`, `any`, `scalar` and bare `relation` are not allowed in a declaration position. Replace \
+         it: a bare `relation` → the related entity's name (`Order`) or `[Order]`; renderable content → `node`; structured data → an inline `{{ k: T }}` shape, a \
          named `type` alias, or `Map K V`; a list → its element type, `[T]` (e.g. `[string]`); \
          a value of several kinds → a named tagged-union `type` alias, or the concrete \
          primitive (`string`, `number`, `boolean`, `date`); the row of an entity → \

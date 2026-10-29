@@ -1177,6 +1177,10 @@ impl Formatter {
             self.output.push_str(" @derived ");
             self.fmt_sexpr(derived);
         }
+        if let Some(display) = &field.display {
+            self.output.push_str(" @display ");
+            self.output.push_str(display);
+        }
         if let Some(def) = &field.default {
             self.output.push_str(" = ");
             self.fmt_sexpr(def);
@@ -2144,31 +2148,6 @@ impl Formatter {
         } else if tr.entity_rebindable {
             self.output.push_str(" -> @rebindable");
         }
-        if let Some(desc) = &tr.entity_binding_description {
-            self.write_newline();
-            self.indent();
-            self.write_indent();
-            self.output.push_str("@description ");
-            self.write_quoted_string(desc);
-            self.dedent();
-        }
-        if let Some(syn) = &tr.entity_binding_synonyms {
-            if tr.entity_binding_description.is_none() {
-                self.write_newline();
-                self.indent();
-            } else {
-                self.write_newline();
-            }
-            self.write_indent();
-            self.output.push_str("@synonyms ");
-            self.write_quoted_string(syn);
-            if tr.entity_binding_description.is_none() {
-                self.dedent();
-            } else {
-                self.dedent();
-            }
-        }
-
         let parts = trait_header_words(tr);
         if !parts.is_empty() {
             self.output.push_str(" [");
@@ -2179,6 +2158,18 @@ impl Formatter {
         self.output.push_str(" {");
         self.write_newline();
         self.indent();
+
+        for (annotation, text) in [
+            ("@description ", &tr.entity_binding_description),
+            ("@synonyms ", &tr.entity_binding_synonyms),
+        ] {
+            if let Some(text) = text {
+                self.write_indent();
+                self.output.push_str(annotation);
+                self.write_quoted_string(text);
+                self.write_newline();
+            }
+        }
 
         if let Some(init) = &tr.initial_state {
             self.write_indent();
@@ -2751,6 +2742,9 @@ impl Formatter {
         }
         if page.is_initial {
             opts.push("initial".to_string());
+        }
+        if page.is_not_found {
+            opts.push("notFound".to_string());
         }
         opts.extend(head_modifier_sources(
             &orbital_core_base::schema::PageModifiers {

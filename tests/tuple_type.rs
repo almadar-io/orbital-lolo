@@ -87,6 +87,7 @@ fn captured_tuple_shape(declarations: &str) -> orbital_core_base::ir::types::Dec
         schema.orbitals[0].types.as_ref().unwrap(),
     )
     .unwrap()
+    .unwrap()
 }
 
 fn parse_with_shape(
@@ -207,7 +208,7 @@ orbital Probe {
         .as_ref()
         .unwrap()[0];
     let orbital_core_base::ir::types::OirType::Tuple { items } =
-        orbital_core_base::ir::types::payload_field_shape(field)
+        orbital_core_base::ir::types::payload_field_shape(field).unwrap()
     else {
         panic!("tuple field")
     };

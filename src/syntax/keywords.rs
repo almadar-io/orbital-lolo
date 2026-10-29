@@ -29,7 +29,7 @@ pub struct Vocabulary {
 /// capabilities match external internal on name fields events event
 /// emitsScope identity pages omit only roles entities extend lazy locales public input http boot
 /// access indexing title description origin icon siteName signIn authenticated
-/// index noindex version translationOf` (app/page modifier-bracket keys and values) — every
+/// index noindex version translationOf notFound` (app/page modifier-bracket keys and values) — every
 /// `expect_keyword`/`check_ident` literal in `parser/*.rs` (`parser/mod.rs`,
 /// `parser/entity.rs`, `parser/trait.rs`, `parser/type.rs`, `parser/page.rs`,
 /// `parser/orbital.rs`) that is not itself a shape/tag/category/capability/
@@ -113,6 +113,7 @@ const KEYWORDS: &[&str] = &[
     "noindex",
     "version",
     "translationOf",
+    "notFound",
     "label",
     "input",
     "http",
@@ -191,6 +192,7 @@ const ANNOTATIONS: &[&str] = &[
     "ensures",
     "index",
     "derived",
+    "display",
 ];
 
 /// `entity payload state now config user trait event prevEvents prevStates

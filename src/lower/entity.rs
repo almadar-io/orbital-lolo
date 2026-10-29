@@ -227,7 +227,21 @@ pub(crate) fn lower_field(
     // Resolve the type expression. Named types may be enum aliases (lower to
     // string + values list), entity references (lower to a Relation field with
     // cardinality), or struct aliases (lower to inline object schema).
-    let shape = lower_source_field(&f.type_expr, aliases, entity_names, &[])?;
+    let mut shape = lower_source_field(&f.type_expr, aliases, entity_names, &[])?;
+    if let Some(display) = &f.display {
+        match shape.relation.as_mut() {
+            Some(relation) => relation.display = Some(display.clone()),
+            None => {
+                return Err(LowerError::Coded {
+                    code: "ORB_L_DISPLAY_NOT_A_RELATION",
+                    message: format!(
+                        "field '{}' declares `@display {display}` but is not a relation: `@display` names the target field a related record is shown by",
+                        f.name
+                    ),
+                })
+            }
+        }
+    }
     let field = FieldDefinition {
         merged_from: None,
         name: Some(f.name.clone()),
@@ -319,6 +333,7 @@ fn field_ref_value(
             entity_id: None,
             cardinality: None,
             on_delete: None,
+            display: None,
         });
     }
     Ok(field)
@@ -447,6 +462,7 @@ pub(crate) fn lower_type_expr(
                         cardinality: Some(Cardinality::One),
                         entity_id: None,
                         on_delete: None,
+                        display: None,
                     }),
                 )
             } else if let Some(ft) = primitive_field_type(name) {
@@ -497,6 +513,7 @@ pub(crate) fn lower_type_expr(
                             cardinality: Some(Cardinality::Many),
                             entity_id: None,
                             on_delete: None,
+                            display: None,
                         }),
                     ));
                 }

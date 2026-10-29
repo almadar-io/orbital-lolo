@@ -102,11 +102,16 @@ impl Parser {
         let mut view = None;
         let mut primary_entity = None;
         let mut is_initial = false;
+        let mut is_not_found = false;
         let mut head = orbital_core_base::schema::PageModifiers::default();
         if matches!(self.peek(), TokenKind::LBracket) {
             self.parse_modifier_bracket("page", PAGE_MODIFIERS, |p, key| {
                 if key == "initial" {
                     is_initial = true;
+                    return Ok(());
+                }
+                if key == "notFound" {
+                    is_not_found = true;
                     return Ok(());
                 }
                 p.expect_kind(&TokenKind::Colon, "':' after a page modifier")?;
@@ -191,6 +196,7 @@ impl Parser {
             view,
             primary_entity,
             is_initial,
+            is_not_found,
             span,
             reference,
             name,

@@ -26,7 +26,6 @@
       "traits": [
         {
           "name": "StreamChunkStream",
-          "category": "interaction",
           "linkedEntity": "StreamChunk",
           "emits": [
             {

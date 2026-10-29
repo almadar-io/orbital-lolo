@@ -183,9 +183,9 @@ pub(crate) fn literal_record_type(value: &SExpression) -> orbital_core_base::ir:
         SExpression::Number(_) => OirType::Number,
         SExpression::Bool(_) => OirType::Boolean,
         SExpression::Array(items) if items.is_empty() => OirType::Array {
-            inner: Box::new(OirType::Json),
+            inner: Box::new(OirType::erased()),
         },
-        _ => OirType::Json,
+        _ => OirType::erased(),
     }
 }
 

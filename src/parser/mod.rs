@@ -57,6 +57,7 @@ pub(crate) const PAGE_MODIFIERS: &[&str] = &[
     "view",
     "entity",
     "initial",
+    "notFound",
     "access",
     "indexing",
     "title",
@@ -64,7 +65,7 @@ pub(crate) const PAGE_MODIFIERS: &[&str] = &[
     "translationOf",
 ];
 
-/// Keys a `pages {}` remap entry's bracket takes — the page head modifiers plus
+/// Keys a `pages {} remap entry's bracket takes — the page head modifiers plus
 /// the page's nav entry (an inline page declares it with `@label`/`@icon`/`@roles`).
 pub(crate) const REMAP_PAGE_MODIFIERS: &[&str] = &[
     "access",

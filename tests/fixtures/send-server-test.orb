@@ -35,7 +35,6 @@
       "traits": [
         {
           "name": "ChatMessageChat",
-          "category": "interaction",
           "linkedEntity": "ChatMessage",
           "emits": [
             {
@@ -515,8 +514,7 @@
                 ]
               }
             ]
-          },
-          "scope": "collection"
+          }
         }
       ],
       "pages": [

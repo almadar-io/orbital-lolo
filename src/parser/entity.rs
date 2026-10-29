@@ -468,6 +468,7 @@ impl Parser {
         let mut synonyms = None;
         let mut mock = None;
         let mut derived = None;
+        let mut display = None;
         while let TokenKind::Sigil(raw) = self.peek().clone() {
             let name = self.canon_annotation_sigil(&raw);
             match name.as_str() {
@@ -486,6 +487,10 @@ impl Parser {
                 "derived" => {
                     self.advance();
                     derived = Some(self.parse_sexpr_or_value()?);
+                }
+                "display" => {
+                    self.advance();
+                    display = Some(self.expect_ident()?);
                 }
                 "description" | "synonyms" | "mock" => {
                     self.advance();
@@ -544,6 +549,7 @@ impl Parser {
             mock,
             default,
             derived,
+            display,
             span,
         })
     }
