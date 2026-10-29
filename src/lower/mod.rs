@@ -1353,7 +1353,8 @@ fn lower_orbital(
                     effects: Some(orb.body.clone()),
                     ensures: None,
                 }],
-            },
+            }
+            .into(),
             ticks: None,
             config: None,
             data_entities: None,

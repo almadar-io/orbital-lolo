@@ -249,7 +249,6 @@ pub(crate) fn emit_primitive_compatible(
         "email" | "url" | "phone" | "uuid" | "image" => actual == "string",
         // Money is numeric at rest; file is the canonical struct value.
         "money" => actual == "number",
-        "number" => actual == "instant",
         "file" => actual == "object",
         "bytes" => actual == "string",
         // A call key reads as a string; a string never reads as a call key.

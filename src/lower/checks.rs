@@ -1951,7 +1951,7 @@ pub(crate) fn check_emit_payload_literals(
             // Build event -> payload schema lookup once per trait.
             let emit_schemas: HashMap<&str, &[PayloadField]> = td
                 .emits
-                .as_deref()
+                .as_deref().map(Vec::as_slice)
                 .unwrap_or(&[])
                 .iter()
                 .map(|e| (e.event.as_str(), e.payload_schema.as_deref().unwrap_or(&[])))
@@ -2889,6 +2889,16 @@ mod emit_program_type_literal_tests {
                 other => panic!("{tag} refuses {literal}: got {other:?}"),
             }
         }
+    }
+
+    #[test]
+    fn a_number_slot_takes_no_point_in_time() {
+        let none = std::collections::HashSet::new();
+        for actual in ["instant", "date", "datetime", "timestamp"] {
+            assert!(!crate::lower::emit_primitive_compatible("number", actual, &none), "number refuses {actual}");
+        }
+        assert!(crate::lower::emit_primitive_compatible("number", "number", &none), "control");
+        assert!(!crate::lower::emit_primitive_compatible("number", "string", &none), "control");
     }
 
     #[test]

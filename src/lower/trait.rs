@@ -964,7 +964,7 @@ pub(crate) fn lower_trait(
     // in trait-reference lowering since references don't declare inputs).
     let cross_orbital_listens: Vec<&Listen> =
         t.listens.iter().filter(|l| l.event.contains('.')).collect();
-    let listens = if cross_orbital_listens.is_empty() {
+    let listens: Option<Vec<orbital_core_base::schema::ListenDefinition>> = if cross_orbital_listens.is_empty() {
         None
     } else {
         Some(
@@ -1072,13 +1072,14 @@ pub(crate) fn lower_trait(
         effect_row: infer_effect_row(t)?,
         description: None,
         linked_entity: t.linked_entity.clone(),
-        emits,
-        listens,
+        emits: emits.map(Into::into),
+        listens: listens.map(Into::into),
         state_machine: StateMachine {
             states,
             events,
             transitions,
-        },
+        }
+        .into(),
         ticks,
         config,
         data_entities: None,

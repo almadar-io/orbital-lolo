@@ -347,7 +347,7 @@ pub(super) fn trait_definition(
         });
     }
 
-    let emits: &[EmitDefinition] = td.emits.as_deref().unwrap_or(&[]);
+    let emits: &[EmitDefinition] = td.emits.as_deref().map(Vec::as_slice).unwrap_or(&[]);
     let mut aliases = Vec::new();
     for e in emits {
         let own = sm

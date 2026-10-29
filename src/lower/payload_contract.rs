@@ -87,7 +87,7 @@ fn is_unresolved_sentinel(field_type: &str) -> bool {
 fn declared_payloads(trait_def: &TraitDefinition) -> BTreeMap<&str, Vec<&str>> {
     trait_def
         .emits
-        .as_deref()
+        .as_deref().map(Vec::as_slice)
         .unwrap_or(&[])
         .iter()
         .filter_map(|e| {
