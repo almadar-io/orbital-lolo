@@ -41,6 +41,7 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "desktop",
     "kv",
     "dev",
+    "credentials",
     "deployment",
     "public",
     "origin",

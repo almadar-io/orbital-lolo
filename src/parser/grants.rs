@@ -3,12 +3,12 @@
 
 use super::*;
 use orbital_core_base::os_grants::{
-    AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, DesktopKind, DevGrant, DevKind, FsGrant, FsMode, GrantAnchor,
+    AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, CredentialKind, DesktopKind, DevGrant, DevKind, FsGrant, FsMode, GrantAnchor,
     KvMode, NetGrant, NetKind, NetPart, OsGrants, StdioKind, SysKind,
 };
 
 pub(crate) const GRANT_KEYS: &[&str] =
-    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv", "dev"];
+    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv", "dev", "credentials"];
 
 const ENTRY_INVALID: &str = "ORB_OS_GRANT_ENTRY_INVALID";
 
@@ -35,6 +35,9 @@ impl Parser {
             "sys" => grants.sys = self.parse_grant_words(key, SysKind::ALL, |k| k.name())?,
             "desktop" => {
                 grants.desktop = self.parse_grant_words(key, DesktopKind::ALL, |k| k.name())?
+            }
+            "credentials" => {
+                grants.credentials = self.parse_grant_words(key, CredentialKind::ALL, |k| k.name())?
             }
             "kv" => self.parse_kv_grants(grants)?,
             "dev" => self.parse_dev_grants(grants)?,
@@ -457,5 +460,25 @@ mod tests {
             parse_str(&unknown).is_err(),
             "control: only the declared anchor words"
         );
+    }
+
+    #[test]
+    fn a_credentials_grant_parses_formats_and_stays_closed_when_undeclared() {
+        use orbital_core_base::os_grants::CredentialKind;
+        let declared = "app a [\n  version: \"1.0.0\",\n  credentials: [admin]\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
+        let program = parse_str(declared).unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(program.app.os_grants.credentials, [CredentialKind::Admin]);
+        assert!(program.app.os_grants.credentials_allow(CredentialKind::Admin));
+        let text = format_program(&program);
+        assert!(text.contains("credentials: [admin]"), "{text}");
+        let again = parse_str(&text).unwrap_or_else(|e| panic!("{e}\n{text}"));
+        assert_eq!(again.app.os_grants, program.app.os_grants);
+
+        let control = parse_str(&declared.replace("credentials: [admin]", "stdio: [out]").replace(",\n  stdio", ",\n  stdio"))
+            .unwrap_or_else(|e| panic!("{e}"));
+        assert!(control.app.os_grants.credentials.is_empty(), "control: no declaration grants nothing");
+        assert!(!control.app.os_grants.credentials_allow(CredentialKind::Admin));
+        let unknown = parse_str(&declared.replace("[admin]", "[superuser]"));
+        assert!(unknown.is_err(), "an unknown credential kind is refused");
     }
 }

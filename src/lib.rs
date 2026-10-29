@@ -29,6 +29,7 @@ pub mod lexer;
 pub mod lower;
 pub mod parser;
 pub mod unlower;
+pub mod program;
 
 // check — alias and type resolution against the installed language
 #[path = "check/patterns_meta.rs"]
@@ -41,6 +42,8 @@ pub mod types;
 // spans — side channels from IR back to source
 #[path = "spans/embeds.rs"]
 pub mod embeds;
+#[path = "spans/orb_json.rs"]
+pub mod orb_json;
 #[path = "spans/source_map.rs"]
 pub mod source_map;
 

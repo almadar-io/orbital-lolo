@@ -80,6 +80,7 @@ const KEYWORDS: &[&str] = &[
     "desktop",
     "kv",
     "dev",
+    "credentials",
     "on",
     "name",
     "fields",

@@ -6,7 +6,7 @@
 //! line before the node that follows them (re-indented to the output).
 
 use orbital_core_base::os_grants::{
-    DesktopKind, DevKind, FsMode, KvMode, NetKind, NetPart, OsGrants, StdioKind, SysKind,
+    CredentialKind, DesktopKind, DevKind, FsMode, KvMode, NetKind, NetPart, OsGrants, StdioKind, SysKind,
 };
 use orbital_core_base::schema::SExpression;
 use std::collections::HashMap;
@@ -552,6 +552,15 @@ impl Formatter {
                 Box::new(move |f: &mut Self| {
                     f.output
                         .push_str(&format!("[{}]", names(&grants.desktop, DesktopKind::name)))
+                }),
+            ));
+        }
+        if !grants.credentials.is_empty() {
+            entries.push((
+                "credentials",
+                Box::new(move |f: &mut Self| {
+                    f.output
+                        .push_str(&format!("[{}]", names(&grants.credentials, CredentialKind::name)))
                 }),
             ));
         }
