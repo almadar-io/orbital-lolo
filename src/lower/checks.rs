@@ -1699,7 +1699,7 @@ fn collect_button_actions_recursive(expr: &SExpression, actions: &mut HashSet<St
         SExpression::Object(obj) => {
             let event_keys = event_prop_names();
             for (key, value) in obj.iter() {
-                if event_keys.contains(key) {
+                if event_keys.contains(key.as_str()) {
                     match value {
                         SExpression::String(s) => {
                             actions.insert(s.clone().into_inner());
@@ -2106,7 +2106,7 @@ fn check_one_emit_literal(
                     orbital: orbital_name.to_string(),
                     trait_name: trait_name.to_string(),
                     event: event.to_string(),
-                    field: key.clone(),
+                    field: key.to_string(),
                 });
             }
             Some(expected) => {
@@ -2126,17 +2126,21 @@ fn check_one_emit_literal(
                     } else if actual != "object" && !members(key).is_empty() {
                         members(key).into_iter().any(|member| {
                             member == actual
-                                || emit_primitive_compatible(member, actual, entity_names)
+                                || point_in_time_literal_fits(member, value).unwrap_or_else(|| {
+                                    emit_primitive_compatible(member, actual, entity_names)
+                                })
                         })
                     } else {
-                        emit_primitive_compatible(expected, actual, entity_names)
+                        point_in_time_literal_fits(expected, value).unwrap_or_else(|| {
+                            emit_primitive_compatible(expected, actual, entity_names)
+                        })
                     };
                     if !compatible {
                         return Err(LowerError::EmitPayloadFieldTypeMismatch {
                             orbital: orbital_name.to_string(),
                             trait_name: trait_name.to_string(),
                             event: event.to_string(),
-                            field: key.clone(),
+                            field: key.to_string(),
                             declared: expected.to_string(),
                             actual: actual.to_string(),
                         });
@@ -2820,6 +2824,76 @@ mod emit_program_type_literal_tests {
             }
             other => panic!("expected EmitPayloadFieldTypeMismatch, got {other:?}"),
         }
+    }
+
+    fn lower_point_in_time(tag: &str, value: &str) -> Result<(), crate::error::LowerError> {
+        let src = format!(
+            r#"
+            orbital TicketOrbital {{
+                entity Ticket {{ id : string! }}
+                trait TicketMint -> Ticket {{
+                    initial: idle
+                    state idle {{
+                        MINT -> idle
+                            (emit MINT_REQUESTED {{ at: {value} }})
+                    }}
+                    emits {{
+                        MINT_REQUESTED {{ at : {tag}! }}
+                    }}
+                }}
+            }}
+        "#
+        );
+        let ast = parse_str(&src).expect("parse");
+        lower_to_orb(&ast).map(|_| ()).map_err(|e| e.innermost().clone())
+    }
+
+    #[test]
+    fn a_point_in_time_slot_takes_an_iso_literal_of_its_shape() {
+        for (tag, literal) in [
+            ("date", r#""2026-10-28""#),
+            ("datetime", r#""2026-10-28T09:30:00Z""#),
+            ("instant", r#""2026-10-28T09:30:00.000+02:00""#),
+            ("timestamp", r#""2026-10-28T09:30:00Z""#),
+        ] {
+            lower_point_in_time(tag, literal)
+                .unwrap_or_else(|e| panic!("{tag} takes {literal}: {e:?}"));
+        }
+    }
+
+    #[test]
+    fn a_point_in_time_slot_never_takes_a_number() {
+        for tag in ["date", "datetime", "instant", "timestamp"] {
+            match lower_point_in_time(tag, "1730000000000") {
+                Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { actual, .. }) => {
+                    assert_eq!(actual, "number", "{tag}")
+                }
+                other => panic!("{tag}: expected EmitPayloadFieldTypeMismatch, got {other:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn a_point_in_time_slot_refuses_a_literal_of_the_wrong_shape() {
+        for (tag, literal) in [
+            ("date", r#""2026-10-28T09:30:00Z""#),
+            ("date", r#""tomorrow""#),
+            ("datetime", r#""2026-10-28""#),
+            ("instant", r#""2026-10-28T09:30:00""#),
+            ("instant", r#""2026-10-28""#),
+            ("timestamp", r#""2026-10-28""#),
+            ("timestamp", r#""soon""#),
+        ] {
+            match lower_point_in_time(tag, literal) {
+                Err(crate::error::LowerError::EmitPayloadFieldTypeMismatch { .. }) => {}
+                other => panic!("{tag} refuses {literal}: got {other:?}"),
+            }
+        }
+    }
+
+    #[test]
+    fn a_string_slot_still_takes_any_string_literal() {
+        lower_point_in_time("string", r#""tomorrow""#).expect("a string is a string");
     }
 }
 

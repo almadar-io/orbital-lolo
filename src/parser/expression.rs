@@ -11,7 +11,7 @@ impl Parser {
         self.record_expr_span();
         if matches!(self.peek(), TokenKind::RParen) {
             self.advance();
-            return Ok(SExpression::Array(Vec::new()));
+            return Ok(SExpression::array(Vec::new()));
         }
         // First element is the operator. Accept any identifier plus the
         // single-char comparison token `=` (tokenized as `Equals`; used in
@@ -203,7 +203,7 @@ impl Parser {
             return Ok(SExpression::Array(vec![
                 SExpression::string("quote"),
                 SExpression::string(body),
-            ]));
+            ].into()));
         }
         // `(quasiquote x)`: `x` becomes one encoded body with each `(unquote e)`
         // replaced by a numbered marker; the `e`s stay live as trailing args.
@@ -242,7 +242,7 @@ impl Parser {
                 }
             }
         }
-        Ok(SExpression::Array(items))
+        Ok(SExpression::Array(items.into()))
     }
 
     /// Parse the body of an expression-level `match` (Phase 3b, pattern-
@@ -301,7 +301,7 @@ impl Parser {
             }
             let value = self.parse_sexpr_or_value()?;
             self.expect_kind(&TokenKind::RParen, ")")?;
-            items.push(SExpression::Array(vec![pattern.literal_sexpr(), value]));
+            items.push(SExpression::Array(vec![pattern.literal_sexpr(), value].into()));
         }
         if non_wildcard == 0 {
             return Err(ParseError::InvalidSExpr {
@@ -311,7 +311,7 @@ impl Parser {
                 span: open_span,
             });
         }
-        Ok(SExpression::Array(items))
+        Ok(SExpression::Array(items.into()))
     }
 
     /// The parameter count of a parenthesized parameter list `(fn (a b) body)`: only identifiers inside the parens,
@@ -486,10 +486,10 @@ impl Parser {
                     .expect("a serialized type expression is an s-expression"),
                 );
             }
-            pairs.push(SExpression::Array(binding));
+            pairs.push(SExpression::Array(binding.into()));
             pair_index += 1;
         }
-        Ok(SExpression::Array(pairs))
+        Ok(SExpression::Array(pairs.into()))
     }
 
     /// Parse one s-expression argument: an atom, a paren list, an object literal, or an array literal.
@@ -728,7 +728,7 @@ impl Parser {
             self.pattern_type_value = key == "type";
             let value = self.with_trail_seg(format!(".{key}"), |p| p.parse_sexpr_or_value())?;
             self.pattern_type_value = false;
-            map.insert(key, value);
+            map.insert(key.into(), value);
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
             }
@@ -787,7 +787,7 @@ impl Parser {
         let mut marked = Vec::with_capacity(items.len() + 1);
         marked.push(SExpression::string("list"));
         marked.extend(items);
-        Ok(SExpression::Array(marked))
+        Ok(SExpression::Array(marked.into()))
     }
 
     fn parse_array_items(&mut self) -> Result<SExpression, ParseError> {
@@ -816,7 +816,7 @@ impl Parser {
             }
             self.skip_newlines();
         }
-        Ok(SExpression::Array(items))
+        Ok(SExpression::Array(items.into()))
     }
 
     pub(crate) fn parse_duration_ms(&mut self) -> Result<u64, ParseError> {

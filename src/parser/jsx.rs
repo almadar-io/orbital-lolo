@@ -378,7 +378,7 @@ impl Parser {
             config.push(ConfigField {
                 name: "children".to_string(),
                 type_expr: TypeExpr::Primitive("unknown".to_string()),
-                default: Some(SExpression::Array(children)),
+                default: Some(SExpression::Array(children.into())),
                 label: None,
                 description: None,
                 synonyms: None,
@@ -464,19 +464,19 @@ fn desugar_pattern(
         .find(|(k, _)| k == "type")
         .map(|(_, v)| v.clone())
         .unwrap_or_else(|| SExpression::string(kebab_case(name)));
-    map.insert("type".to_string(), type_value);
+    map.insert("type".into(), type_value);
     for (key, value) in attrs {
         if key == "type" {
             continue;
         }
-        map.insert(key, value);
+        map.insert(key.into(), value);
     }
     // `children: []` (explicit `<Tag></Tag>` body) is a deliberate "render
     // nothing here" the pattern layer distinguishes from "no children slot
     // set" (`<Tag />`, self-closing) — only insert the key for the former,
     // or the round trip `{"children":[]}` -> `<Tag />` -> `{}` is lossy.
     if !children.is_empty() || explicit_closing {
-        map.insert("children".to_string(), SExpression::Array(children));
+        map.insert("children".into(), SExpression::Array(children.into()));
     }
     SExpression::object(map)
 }
@@ -498,7 +498,7 @@ fn listens_from_object(value: &SExpression, span: Span) -> Result<Vec<Listen>, P
     // `SExpression::Object` is HashMap-backed, so iteration order is
     // nondeterministic per process — sort by event name so re-emits are
     // byte-stable (the authored attribute order is already lost at parse).
-    let mut entries: Vec<(&String, &SExpression)> = map.iter().collect();
+    let mut entries: Vec<(&orbital_core_base::value::Shared<String>, &SExpression)> = map.iter().collect();
     entries.sort_by(|a, b| a.0.cmp(b.0));
     let mut out = Vec::new();
     for (event, trigger) in entries {
@@ -514,7 +514,7 @@ fn listens_from_object(value: &SExpression, span: Span) -> Result<Vec<Listen>, P
             }
         };
         out.push(Listen {
-            event: event.clone(),
+            event: event.to_string(),
             triggers: Some(triggers.into_inner()),
             guard: None,
             payload_mapping: Vec::new(),

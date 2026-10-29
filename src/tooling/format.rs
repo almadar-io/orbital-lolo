@@ -122,7 +122,14 @@ struct Formatter {
     /// spelling, and re-reading our own output has to succeed. Quoting is
     /// always value-preserving — `x` and `"x"` both evaluate to `"x"`.
     binding_scopes: Vec<Vec<String>>,
+    /// Set while an expression is printed to be measured: every nested form prints on one line.
+    measuring: bool,
+    /// Closing delimiters that follow the form being printed on its last line.
+    trailing: usize,
 }
+
+/// An expression whose one-line form would end past this column is printed one operand per line.
+const EXPRESSION_WIDTH: usize = 100;
 
 impl Formatter {
     fn new(comments: Vec<Comment>) -> Self {
@@ -134,6 +141,8 @@ impl Formatter {
             inline_traits: HashMap::new(),
             transition_ranges: Vec::new(),
             binding_scopes: Vec::new(),
+            measuring: false,
+            trailing: 0,
         }
     }
 
@@ -147,7 +156,7 @@ impl Formatter {
     /// The authored template of a `(quasiquote x)` IR call: the decoded body
     /// with each marker `["unquote", i]` put back as `(unquote <hole i>)`.
     fn quasiquote_template(arr: &[SExpression]) -> Option<SExpression> {
-        let call = SExpression::Array(arr.to_vec());
+        let call = SExpression::Array(arr.to_vec().into());
         let (body, holes) = orbital_core_base::schema::quote::quasiquote_of(&call)?;
         let template = orbital_core_base::schema::quote::decode_quote_body(body)?;
         fn restore(e: SExpression, holes: &[SExpression]) -> SExpression {
@@ -156,17 +165,16 @@ impl Formatter {
                     if let [SExpression::String(h), SExpression::Number(n)] = items.as_slice() {
                         if h == orbital_core_base::schema::quote::UNQUOTE_HEAD && n.fract() == 0.0 {
                             if let Some(hole) = holes.get(*n as usize) {
-                                return SExpression::Array(vec![
-                                    SExpression::String(h.clone()),
-                                    hole.clone(),
-                                ]);
+                                return SExpression::Array(
+                                    vec![SExpression::String(h.clone()), hole.clone()].into(),
+                                );
                             }
                         }
                     }
                     SExpression::Array(items.into_iter().map(|i| restore(i, holes)).collect())
                 }
                 SExpression::Object(map) => SExpression::object(
-                    (*map)
+                    map.into_inner()
                         .into_iter()
                         .map(|(k, v)| (k, restore(v, holes)))
                         .collect(),
@@ -2883,7 +2891,10 @@ impl Formatter {
             self.output.push('?');
             return;
         }
-        if let Some(rest) = s.strip_prefix("@payload.") {
+        if let Some(rest) = s
+            .strip_prefix("@payload.")
+            .filter(|rest| is_bare_sigil(&format!("@{rest}")))
+        {
             self.output.push('?');
             self.output.push_str(rest);
             return;
@@ -3193,12 +3204,12 @@ impl Formatter {
         // -> `<Tag />` -> `{}`, dropping the explicit empty).
         let children_present = map.contains_key("children");
         let children_owned: Vec<SExpression> = match map.get("children") {
-            Some(SExpression::Array(arr)) => arr.clone(),
+            Some(SExpression::Array(arr)) => arr.to_vec(),
             Some(single) => vec![single.clone()],
             None => Vec::new(),
         };
 
-        let mut attr_keys: Vec<&String> = map
+        let mut attr_keys: Vec<&orbital_core_base::value::Shared<String>> = map
             .keys()
             .filter(|k| *k != "type" && *k != "children")
             .collect();
@@ -3250,7 +3261,7 @@ impl Formatter {
         let children_present = children_config.is_some();
         let children_owned: Vec<SExpression> = match children_config {
             Some(cf) => match &cf.default {
-                Some(SExpression::Array(arr)) => arr.clone(),
+                Some(SExpression::Array(arr)) => arr.to_vec(),
                 Some(single) => vec![single.clone()],
                 None => Vec::new(),
             },
@@ -3349,7 +3360,231 @@ impl Formatter {
         }
     }
 
+    /// Prints one array form on one line when it ends within [`EXPRESSION_WIDTH`], else breaks it by its kind:
+    /// a call puts each operand on its own line under the head, a `fn` its body, a `let` each binding and its
+    /// body, a `match` each arm, a list each item. A form holding a line break already (an object with more than
+    /// two keys, JSX) keeps the layout it has.
     fn fmt_sexpr_array(&mut self, arr: &[SExpression], force_paren: bool) {
+        if self.measuring {
+            self.fmt_sexpr_array_flat(arr, force_paren);
+            return;
+        }
+        let start = self.output.len();
+        let column = self.output[..start]
+            .rsplit('\n')
+            .next()
+            .map_or(0, |line| line.chars().count());
+        self.measuring = true;
+        self.fmt_sexpr_array_flat(arr, force_paren);
+        self.measuring = false;
+        let multiline = self.output[start..].contains('\n');
+        let width = self.output[start..].chars().count();
+        if !multiline && column + width + self.trailing <= EXPRESSION_WIDTH {
+            return;
+        }
+        self.output.truncate(start);
+        if multiline {
+            self.fmt_sexpr_array_flat(arr, force_paren);
+            return;
+        }
+        if !self.fmt_sexpr_array_broken(arr, force_paren) {
+            self.fmt_sexpr_array_flat(arr, force_paren);
+        }
+    }
+
+    /// `(pattern value)` on one line up to the value, which prints itself: the parser takes no line break between
+    /// an arm's pattern and its value.
+    fn fmt_match_arm(&mut self, arm: &SExpression) {
+        let SExpression::Array(parts) = arm else {
+            self.fmt_sexpr_inner(arm, false);
+            return;
+        };
+        self.output.push('(');
+        for (i, item) in parts.iter().enumerate() {
+            if i > 0 {
+                self.output.push(' ');
+            }
+            match item {
+                SExpression::String(op) if i == 0 && is_operator_symbol(op) => {
+                    self.output.push_str(op)
+                }
+                _ => self.fmt_sexpr_inner(item, false),
+            }
+        }
+        self.output.push(')');
+    }
+
+    /// Prints a child of a broken form: the last one is followed by the form's closing paren.
+    fn fmt_child(&mut self, last: bool, print: impl FnOnce(&mut Self)) {
+        let held = self.trailing;
+        self.trailing = if last { held + 1 } else { 0 };
+        print(self);
+        self.trailing = held;
+    }
+
+    /// The broken layout of `arr`, or `false` when its kind has none (it then prints flat).
+    fn fmt_sexpr_array_broken(&mut self, arr: &[SExpression], force_paren: bool) -> bool {
+        let Some(SExpression::String(head)) = arr.first() else {
+            return self.fmt_list_broken(arr, force_paren);
+        };
+        match head.as_str() {
+            "render-ui" | "quote" | "quasiquote" => false,
+            "let" if arr.len() == 3 => self.fmt_let_broken(arr),
+            "fn" if arr.len() >= 3 => self.fmt_lambda_broken(arr),
+            "match" if arr.len() >= 3 => {
+                self.output.push_str("(match ");
+                self.fmt_sexpr_inner(&arr[1], false);
+                self.indent();
+                for (i, arm) in arr[2..].iter().enumerate() {
+                    self.write_newline();
+                    self.write_indent();
+                    let last = i + 3 == arr.len();
+                    self.fmt_child(last, |f| f.fmt_match_arm(arm));
+                }
+                self.dedent();
+                self.output.push(')');
+                true
+            }
+            _ if force_paren || is_call_array(arr) || is_unrestorable_list_marker(arr) => {
+                self.output.push('(');
+                if is_operator_symbol(head) {
+                    self.output.push_str(head);
+                } else {
+                    self.fmt_sexpr_inner(&arr[0], false);
+                }
+                self.indent();
+                for (i, item) in arr[1..].iter().enumerate() {
+                    self.write_newline();
+                    self.write_indent();
+                    self.fmt_child(i + 2 == arr.len(), |f| f.fmt_sexpr_inner(item, false));
+                }
+                self.dedent();
+                self.output.push(')');
+                true
+            }
+            _ => self.fmt_list_broken(arr, force_paren),
+        }
+    }
+
+    fn fmt_list_broken(&mut self, arr: &[SExpression], force_paren: bool) -> bool {
+        if force_paren || is_call_array(arr) || is_unrestorable_list_marker(arr) {
+            return false;
+        }
+        let items = orbital_core_eval::lower::strip_literal_list_marker(arr);
+        self.output.push('[');
+        self.indent();
+        for item in items.iter() {
+            self.write_newline();
+            self.write_indent();
+            self.fmt_child(false, |f| f.fmt_sexpr_inner(item, false));
+        }
+        self.dedent();
+        self.write_newline();
+        self.write_indent();
+        self.output.push(']');
+        true
+    }
+
+    fn fmt_let_broken(&mut self, arr: &[SExpression]) -> bool {
+        let SExpression::Array(pairs) = &arr[1] else {
+            return false;
+        };
+        let plain = pairs.iter().all(|pair| match pair {
+            SExpression::Array(parts) => {
+                parts.first().and_then(SExpression::as_str).is_some()
+                    && (parts.len() == 2 || crate::ast::binding_annotation_type(pair).is_some())
+            }
+            _ => false,
+        });
+        if !plain {
+            return false;
+        }
+        self.output.push_str("(let (");
+        self.binding_scopes.push(Vec::new());
+        self.indent();
+        self.indent();
+        for pair in pairs.iter() {
+            let SExpression::Array(parts) = pair else {
+                continue;
+            };
+            let name = parts[0].as_str().unwrap_or_default();
+            self.write_newline();
+            self.write_indent();
+            self.output.push('(');
+            self.output.push_str(name);
+            if let Some(ty) = crate::ast::binding_annotation_type(pair) {
+                self.output.push_str(" : ");
+                self.fmt_type_expr(&ty);
+            }
+            self.output.push(' ');
+            let last = std::ptr::eq(pair, &pairs[pairs.len() - 1]);
+            self.fmt_child(false, |f| {
+                f.trailing = if last { 2 } else { 1 };
+                f.fmt_sexpr_inner(&parts[1], false)
+            });
+            self.output.push(')');
+            if let Some(frame) = self.binding_scopes.last_mut() {
+                frame.push(name.to_string());
+            }
+        }
+        self.dedent();
+        self.output.push(')');
+        self.write_newline();
+        self.write_indent();
+        self.fmt_child(true, |f| f.fmt_sexpr_inner(&arr[2], false));
+        self.dedent();
+        self.binding_scopes.pop();
+        self.output.push(')');
+        true
+    }
+
+    fn fmt_lambda_broken(&mut self, arr: &[SExpression]) -> bool {
+        let (params, body) = arr.split_at(arr.len() - 1);
+        if matches!(body[0], SExpression::String(_)) {
+            return false;
+        }
+        let names: Vec<String> = match &params[1] {
+            SExpression::Array(grouped) if params.len() == 2 => grouped
+                .iter()
+                .filter_map(|p| p.as_str().map(str::to_string))
+                .collect(),
+            _ => params[1..]
+                .iter()
+                .filter_map(|p| p.as_str().map(str::to_string))
+                .collect(),
+        };
+        self.output.push('(');
+        for (i, item) in params.iter().enumerate() {
+            if i > 0 {
+                self.output.push(' ');
+            }
+            match item {
+                SExpression::Array(grouped) if i == 1 && params.len() == 2 => {
+                    self.output.push('(');
+                    for (j, param) in grouped.iter().enumerate() {
+                        if j > 0 {
+                            self.output.push(' ');
+                        }
+                        self.fmt_binder(param);
+                    }
+                    self.output.push(')');
+                }
+                _ if i == 0 => self.fmt_sexpr_inner(item, false),
+                _ => self.fmt_binder(item),
+            }
+        }
+        self.indent();
+        self.write_newline();
+        self.write_indent();
+        self.binding_scopes.push(names);
+        self.fmt_child(true, |f| f.fmt_sexpr_inner(&body[0], false));
+        self.binding_scopes.pop();
+        self.dedent();
+        self.output.push(')');
+        true
+    }
+
+    fn fmt_sexpr_array_flat(&mut self, arr: &[SExpression], force_paren: bool) {
         if arr.is_empty() {
             if force_paren {
                 self.output.push_str("()");
@@ -3379,9 +3614,10 @@ impl Formatter {
             return;
         }
 
-        if let Some(quoted) =
-            orbital_core_base::schema::quote::quote_body_of(&SExpression::Array(arr.to_vec()))
-                .and_then(orbital_core_base::schema::quote::decode_quote_body)
+        if let Some(quoted) = orbital_core_base::schema::quote::quote_body_of(&SExpression::Array(
+            arr.to_vec().into(),
+        ))
+        .and_then(orbital_core_base::schema::quote::decode_quote_body)
         {
             self.output.push_str("(quote ");
             self.fmt_sexpr_inner(&quoted, false);
@@ -3402,10 +3638,7 @@ impl Formatter {
             self.fmt_sexpr_inner(&arr[1], false);
             for arm in &arr[2..] {
                 self.output.push(' ');
-                match arm {
-                    SExpression::Array(arm) => self.fmt_sexpr_array(arm, true),
-                    other => self.fmt_sexpr_inner(other, false),
-                }
+                self.fmt_match_arm(arm);
             }
             self.output.push(')');
             return;
@@ -3560,7 +3793,7 @@ impl Formatter {
             return;
         }
         // Sort keys for deterministic output
-        let mut keys: Vec<&String> = map.keys().collect();
+        let mut keys: Vec<&orbital_core_base::value::Shared<String>> = map.keys().collect();
         keys.sort();
 
         // Check if all values are simple scalars
@@ -3686,10 +3919,12 @@ fn is_bare_sigil(s: &str) -> bool {
     let Some(rest) = s.strip_prefix('@') else {
         return false;
     };
-    !rest.is_empty()
-        && rest
-            .chars()
-            .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '.' | '-'))
+    rest.split('.').all(|segment| {
+        !segment.is_empty()
+            && segment
+                .chars()
+                .all(|c| c.is_ascii_alphanumeric() || matches!(c, '_' | '-'))
+    })
 }
 
 fn is_bare_atom(s: &str) -> bool {
@@ -3724,9 +3959,9 @@ fn is_call_array(arr: &[SExpression]) -> bool {
         head.as_str(),
         "let" | "fn" | "match" | "quote" | "quasiquote" | "unquote" | "render-ui"
     ) || is_operator_symbol(head)
-        || orbital_core_eval::lower::recognized_call_head(&SExpression::Array(vec![
-            SExpression::String(head.clone()),
-        ]))
+        || orbital_core_eval::lower::recognized_call_head(&SExpression::Array(
+            vec![SExpression::String(head.clone())].into(),
+        ))
         .is_some()
 }
 
@@ -3739,7 +3974,7 @@ fn is_unrestorable_list_marker(arr: &[SExpression]) -> bool {
     if head != "list" {
         return false;
     }
-    let rest = SExpression::Array(rest.to_vec());
+    let rest = SExpression::Array(rest.to_vec().into());
     orbital_core_eval::lower::recognized_call_head(&rest).is_none()
         && !crate::parser::expression::reads_as_dropped_namespace(&rest)
 }

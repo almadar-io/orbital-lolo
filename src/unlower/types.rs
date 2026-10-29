@@ -447,16 +447,27 @@ fn payload_type_without_items(pf: &PayloadField) -> Result<TypeExpr, UnlowerErro
         ("union", Some(variants), _) => TypeExpr::Union(
             variants
                 .iter()
-                .map(
-                    |v| match (v.name.as_str(), v.field_type.as_str(), &v.properties) {
-                        ("array", "[object]", Some(props)) => Ok(TypeExpr::Array(Box::new(
-                            TypeExpr::Object(payload_members(props)?),
-                        ))),
+                .map(|v| {
+                    let variant = match (v.name.as_str(), v.field_type.as_str(), &v.properties) {
+                        ("array", "[object]", Some(props)) => {
+                            Ok(TypeExpr::Array(Box::new(match v.items.as_deref() {
+                                Some(item) if item.projected_from.is_some() => payload_type(item)?,
+                                _ => TypeExpr::Object(payload_members(props)?),
+                            })))
+                        }
                         ("array", other, _) => variant_container(other, v),
+                        ("object", "object", Some(props)) => {
+                            Ok(TypeExpr::Object(payload_members(props)?))
+                        }
                         (name, "object", Some(_)) => Ok(TypeExpr::Named(name.to_string())),
                         (_, other, _) => variant_container(other, v),
-                    },
-                )
+                    }?;
+                    Ok(if v.nullable == Some(true) {
+                        TypeExpr::Optional(Box::new(variant))
+                    } else {
+                        variant
+                    })
+                })
                 .collect::<Result<_, UnlowerError>>()?,
         ),
         (other, None, _) if pf.values.is_some() => {
@@ -475,7 +486,15 @@ fn payload_type_without_items(pf: &PayloadField) -> Result<TypeExpr, UnlowerErro
                 set
             }
         }
-        (other, _, _) => parse_type_string(other)?,
+        (other, slots, _) => match (parse_type_string(other)?, slots) {
+            (TypeExpr::Tuple(parts), Some(slots)) if parts.len() == slots.len() => TypeExpr::Tuple(
+                slots
+                    .iter()
+                    .map(payload_type)
+                    .collect::<Result<_, UnlowerError>>()?,
+            ),
+            (parsed, _) => parsed,
+        },
     })
 }
 
@@ -610,6 +629,12 @@ fn sorted_keys<'a, V: 'a>(m: impl IntoIterator<Item = (&'a String, &'a V)>) -> V
 }
 
 fn walk_field(fd: &FieldDefinition, out: &mut AliasShapes) -> Result<(), UnlowerError> {
+    if let (Some(origin), Some(props)) = (&fd.projected_from, &fd.properties) {
+        if origin.field.is_none() && !out.structs.contains_key(&origin.type_name) {
+            out.structs
+                .insert(origin.type_name.clone(), object_members(props)?);
+        }
+    }
     if fd.field_type == FieldType::Union {
         for (name, variant) in fd.properties.iter().flatten() {
             if let Some(props) = &variant.properties {

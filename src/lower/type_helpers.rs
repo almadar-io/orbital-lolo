@@ -1,4 +1,5 @@
 use super::*;
+use orbital_core_eval::evaluator::{parse_iso, IsoShape};
 
 /// The `_` arm's type of a `match`, or `None` when malformed (no wildcard —
 /// `check_match_types` is the source of truth on well-formedness; these
@@ -207,9 +208,11 @@ pub(crate) fn record_literal_fits(
 
 /// Lenient primitive compatibility check for emit payload literals.
 /// Mirrors the L2 validator's `primitive_types_compatible` so the two
-/// detection layers agree. `any` matches anything; `date`/`datetime`/
-/// `timestamp` accept string or number literals; `entity`/`relation`
-/// accept object or string literals.
+/// detection layers agree. `any` matches anything; a point in time
+/// (`date`/`datetime`/`instant`/`timestamp`) is ISO text only and is decided
+/// for a string literal by `point_in_time_literal_fits`, so no literal kind
+/// and no non-literal value fits here; `entity`/`relation` accept object or
+/// string literals.
 pub(crate) fn emit_primitive_compatible(
     declared: &str,
     actual: &str,
@@ -240,15 +243,13 @@ pub(crate) fn emit_primitive_compatible(
     }
     match declared_core {
         "any" => true,
-        "date" | "datetime" | "timestamp" => actual == "string" || actual == "number",
+        "date" | "datetime" | "instant" | "timestamp" => false,
         // A semantic domain accepts a string literal/expression. Without this,
         // `SUBMIT_FORM { email: email }` payloads fail the emit check.
         "email" | "url" | "phone" | "uuid" | "image" => actual == "string",
         // Money is numeric at rest; file is the canonical struct value.
         "money" => actual == "number",
         "number" => actual == "instant",
-        // A literal moment (epoch milliseconds written in the program) is a valid instant.
-        "instant" => actual == "number",
         "file" => actual == "object",
         "bytes" => actual == "string",
         // A call key reads as a string; a string never reads as a call key.
@@ -260,6 +261,25 @@ pub(crate) fn emit_primitive_compatible(
         named if entity_names.contains(named) => actual == "object" || actual == "string",
         _ => false,
     }
+}
+
+/// The ISO shape a point-in-time tag names (`timestamp` is a datetime), or `None` for every other tag.
+fn point_in_time_shape(declared: &str) -> Option<IsoShape> {
+    match declared.trim_end_matches('!') {
+        "date" => Some(IsoShape::Date),
+        "datetime" | "instant" | "timestamp" => Some(IsoShape::DateTime),
+        _ => None,
+    }
+}
+
+/// Whether a string literal is ISO text of the shape a point-in-time tag names; `None` when `declared`
+/// is not a point-in-time tag or `value` is not a string literal.
+pub(crate) fn point_in_time_literal_fits(declared: &str, value: &SExpression) -> Option<bool> {
+    let shape = point_in_time_shape(declared)?;
+    let SExpression::String(text) = value else {
+        return None;
+    };
+    Some(parse_iso(text).is_some_and(|(_, found)| found == shape))
 }
 
 pub(crate) fn type_expr_to_string(ty: &TypeExpr) -> String {

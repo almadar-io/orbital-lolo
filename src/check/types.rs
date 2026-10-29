@@ -1328,7 +1328,7 @@ fn check_payload_sibling_literals(
             continue;
         };
         for key in payload_value.keys() {
-            if !declared_fields.contains(key) {
+            if !declared_fields.contains(key.as_str()) {
                 return Err(TypeError::PayloadSiblingUnresolved {
                     member: member.to_string(),
                     sibling: sibling.to_string(),

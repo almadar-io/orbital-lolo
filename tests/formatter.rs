@@ -108,7 +108,10 @@ fn an_optional_field_prints_one_question_mark_and_parses_back() {
     assert!(!formatted.contains("??"), "{formatted}");
     let again = format_program(&parse_str(&formatted).expect("the printed text parses"));
     assert_eq!(again, formatted, "idempotent");
-    assert!(formatted.contains("count : number = 0"), "control: a plain field prints no question mark");
+    assert!(
+        formatted.contains("count : number = 0"),
+        "control: a plain field prints no question mark"
+    );
 }
 
 #[test]
@@ -1301,4 +1304,72 @@ fn corpus_format_properties() {
         failures.len(),
         failures.join("\n")
     );
+}
+
+fn wrap_probe(effect: &str) -> String {
+    format!(
+        "app wrap-probe [\n  version: \"1.0.0\",\n  description: \"probe\"\n]\norbital WrapOrbital {{\n  entity WrapItem [runtime] {{\n    id : string!\n    n : number = 0\n    label : string = \"\"\n    out : [number] = []\n  }}\n\n  trait Wrap -> WrapItem [client] {{\n    initial: running\n\n    state running {{\n      INIT -> running\n        {effect}\n    }}\n  }}\n\n  page boot as WrapOrbitalStart -> Wrap\n}}\n"
+    )
+}
+
+fn lowered(source: &str) -> Value {
+    canonicalize(strip_nulls(
+        serde_json::to_value(parse_and_lower_str(source).expect("lowers")).unwrap(),
+    ))
+}
+
+fn assert_wraps_and_round_trips(effect: &str) -> String {
+    let source = wrap_probe(effect);
+    let formatted = format_program(&parse_str(&source).expect("parse"));
+    let too_long: Vec<&str> = formatted
+        .lines()
+        .filter(|l| l.chars().count() > 100)
+        .collect();
+    assert!(
+        too_long.is_empty(),
+        "lines past the width: {too_long:?}\n{formatted}"
+    );
+    assert_eq!(
+        lowered(&formatted),
+        lowered(&source),
+        "the wrapped text lowers to the same program\n{formatted}"
+    );
+    let again = format_program(&parse_str(&formatted).expect("the wrapped text parses"));
+    assert_eq!(again, formatted, "idempotent");
+    formatted
+}
+
+#[test]
+fn a_long_call_prints_one_operand_per_line_and_round_trips() {
+    let formatted = assert_wraps_and_round_trips(
+        "(set @entity.label (str/concat \"first operand of the call\" \"second operand of the call\" \"third operand of the call\" \"fourth operand\"))",
+    );
+    assert!(formatted.contains("(str/concat\n"), "{formatted}");
+}
+
+#[test]
+fn a_long_let_fn_and_list_wrap_and_round_trip() {
+    let formatted = assert_wraps_and_round_trips(
+        "(set @entity.out (let ((base (array/range 0 100)) (doubled (array/map (array/range 0 100) (fn i (* @i 2))))) (array/reduce @base [] (fn acc i (array/append @acc (+ @i (array/len @doubled) (array/len @base) 1000000))))))",
+    );
+    assert!(formatted.contains("(let (\n"), "{formatted}");
+    let listed = assert_wraps_and_round_trips(
+        "(set @entity.out [1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 1000001, 2000002])",
+    );
+    assert!(listed.contains("[\n"), "{listed}");
+}
+
+#[test]
+fn control_a_short_expression_stays_on_one_line_and_a_long_string_is_never_split() {
+    let short = "(set @entity.n (+ @entity.n 1))";
+    let formatted = format_program(&parse_str(&wrap_probe(short)).expect("parse"));
+    assert!(formatted.contains(short), "{formatted}");
+    let text = "x".repeat(140);
+    let effect = format!("(set @entity.label \"{text}\")");
+    let formatted = format_program(&parse_str(&wrap_probe(&effect)).expect("parse"));
+    assert!(
+        formatted.contains(&text),
+        "the string stays whole: {formatted}"
+    );
+    assert_eq!(lowered(&formatted), lowered(&wrap_probe(&effect)));
 }

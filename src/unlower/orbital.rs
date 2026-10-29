@@ -593,6 +593,41 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
                 .push(type_alias(&name, TypeBody::Alias(body)));
         }
     }
+    let referenced = field_record_names(o);
+    for emit in out.traits.iter_mut().flat_map(|t| t.emits.iter_mut()) {
+        if referenced.contains(&emit.event)
+            && !emit.payload.is_empty()
+            && !event_aliases.iter().any(|a| a.event == emit.event)
+        {
+            event_aliases.push(EventAlias {
+                event: emit.event.clone(),
+                payload: TypeExpr::Object(
+                    std::mem::take(&mut emit.payload)
+                        .into_iter()
+                        .map(|f| (f.name, f.type_expr, f.required))
+                        .collect(),
+                ),
+                description: None,
+            });
+        }
+    }
+    for listen in out.traits.iter_mut().flat_map(|t| t.listens.iter_mut()) {
+        if referenced.contains(&listen.event)
+            && !listen.payload.is_empty()
+            && !event_aliases.iter().any(|a| a.event == listen.event)
+        {
+            event_aliases.push(EventAlias {
+                event: listen.event.clone(),
+                payload: TypeExpr::Object(
+                    std::mem::take(&mut listen.payload)
+                        .into_iter()
+                        .map(|f| (f.name, f.type_expr, f.required))
+                        .collect(),
+                ),
+                description: listen.description.take(),
+            });
+        }
+    }
     for a in event_aliases {
         if out.type_aliases.iter().any(|t| t.name == a.event) {
             continue;
@@ -607,6 +642,40 @@ pub(super) fn orbital(o: &CoreOrbital, global: &AliasShapes) -> Result<Orbital, 
         ));
     }
     Ok(out)
+}
+
+fn definition_record_names(field: &FieldDefinition, out: &mut BTreeSet<String>) {
+    out.extend(field.record.iter().cloned());
+    field
+        .properties
+        .iter()
+        .flat_map(|m| m.values())
+        .chain(field.items.as_deref())
+        .for_each(|f| definition_record_names(f, out));
+}
+
+/// The names `field R T` types in this orbital's entities and trait configs: an event alias among them is
+/// the only spelling that keeps that reference.
+fn field_record_names(o: &CoreOrbital) -> BTreeSet<String> {
+    let mut out = BTreeSet::new();
+    if let EntityRef::Inline(def) = &o.entity {
+        def.fields
+            .iter()
+            .for_each(|f| definition_record_names(f, &mut out));
+    }
+    for t in &o.traits {
+        if let TraitReference::Inline(td) = t {
+            for cf in td.config.iter().flat_map(|m| m.values()) {
+                out.extend(cf.record.iter().cloned());
+                cf.properties
+                    .iter()
+                    .flat_map(|m| m.values())
+                    .chain(cf.items.as_deref())
+                    .for_each(|f| definition_record_names(f, &mut out));
+            }
+        }
+    }
+    out
 }
 
 /// The orbital's recorded `types` as source aliases; member types the payload
@@ -701,6 +770,7 @@ fn merge_member(
                 .collect(),
         ),
         (TypeExpr::Object(_) | TypeExpr::Union(_), r @ TypeExpr::Named(_)) => r.clone(),
+        (_, r @ TypeExpr::FieldRef { .. }) => r.clone(),
         (p, _) => p,
     }
 }

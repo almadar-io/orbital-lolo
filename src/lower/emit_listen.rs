@@ -1239,7 +1239,9 @@ pub(crate) fn struct_payload_properties(
             ("object".to_string(), Some(nested))
         } else if let Some(name) = self_referential_union_alias(ty, aliases) {
             (name.to_string(), Some(Vec::new()))
-        } else if let Some(variants) = union_payload_variants(ty, aliases, type_params) {
+        } else if let Some(variants) =
+            union_payload_variants(strip_optional(ty), aliases, type_params)
+        {
             ("union".to_string(), Some(variants))
         } else if let Some(enum_ty) = enum_alias_payload_type(ty, aliases) {
             (enum_ty, None)
@@ -1250,7 +1252,7 @@ pub(crate) fn struct_payload_properties(
             // from an unresolved identifier and emit `OirType::TypeRef`.
             (type_expr_to_string(ty), Some(Vec::new()))
         } else {
-            (type_expr_to_string(ty), None)
+            (string_primitive_alias_as_string(ty), None)
         };
         props.push(PayloadField {
             nullable: Some(false),
@@ -1276,6 +1278,27 @@ pub(crate) fn struct_payload_properties(
         });
     }
     Some(props)
+}
+
+fn strip_optional(ty: &TypeExpr) -> &TypeExpr {
+    match ty {
+        TypeExpr::Optional(inner) => strip_optional(inner),
+        other => other,
+    }
+}
+
+/// An entity field typed by a string-lowering alias (`relation`, `json`, `any`, …) is a `string` in the entity
+/// definition; the payload that copies the field carries the same tag.
+fn string_primitive_alias_as_string(ty: &TypeExpr) -> String {
+    match ty {
+        TypeExpr::Primitive(name)
+            if orbital_core_base::schema::FieldType::from_primitive_name(name)
+                == Some(orbital_core_base::schema::FieldType::String) =>
+        {
+            "string".to_string()
+        }
+        _ => type_expr_to_string(ty),
+    }
 }
 
 /// The alias `ty` names when it is a tagged-union alias whose own variants reach it again (`Pred = Leaf | Not`,
@@ -1454,7 +1477,7 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
         Some(
             l.payload_mapping
                 .iter()
-                .map(|(k, v)| (k.clone(), desugar_expr_match(v)))
+                .map(|(k, v)| (k.as_str().into(), desugar_expr_match(v)))
                 .collect::<orbital_core_base::schema::SObject>(),
         )
     };

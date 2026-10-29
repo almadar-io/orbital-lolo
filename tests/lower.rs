@@ -1336,7 +1336,7 @@ orbital Probe {{
 
     #[test]
     fn an_empty_config_list_keeps_its_declared_element_type() {
-        let source = |default: &str| {
+        let source = |default: &str, value: &str| {
             format!(
                 r#"app emptylist [version: "1.0.0"]
 orbital Probe {{
@@ -1349,7 +1349,7 @@ orbital Probe {{
     initial: idle
     state idle {{
       INIT -> idle
-        (set @entity.byKey (object/fromEntries (array/map @config.keys (fn k [@k {{ key: @k, name: @k }}]))))
+        (set @entity.byKey {value})
     }}
     config {{
       keys : [string] = {default}
@@ -1360,12 +1360,22 @@ orbital Probe {{
 "#
             )
         };
-        for default in ["[\"a\"]", "[]"] {
-            let mut schema = parse_and_lower_str(&source(default)).unwrap();
+        let entries = "(object/fromEntries (array/map @config.keys (fn k [@k { key: @k, name: @k }])))";
+        let errors = |default: &str, value: &str| {
+            let mut schema = parse_and_lower_str(&source(default, value)).unwrap();
             inline_schema(&mut schema, &InlineConfig::default(), None).unwrap();
-            let errors = validate_comprehensive_without_services(&schema).errors;
-            assert!(errors.is_empty(), "{default}: {errors:?}");
+            validate_comprehensive_without_services(&schema).errors
+        };
+        let settled = format!("(default {entries} {{}})");
+        for default in ["[\"a\"]", "[]"] {
+            let found = errors(default, &settled);
+            assert!(found.is_empty(), "{default}: {found:?}");
         }
+        let failable = errors("[\"a\"]", entries);
+        assert!(
+            failable.iter().any(|e| matches!(e.code, ErrorCode::SetReturnTypeMismatch)),
+            "control: object/fromEntries is failable, so its bare answer never fills a required map: {failable:?}"
+        );
     }
 
     #[test]
@@ -1814,7 +1824,7 @@ orbital AuditOrbital {
 }
 
 #[test]
-fn an_object_literal_fills_a_map_payload_field_and_a_number_literal_an_instant() {
+fn an_object_literal_fills_a_map_payload_field_and_only_iso_text_an_instant() {
     let source = |value: &str, ty: &str| {
         format!(
             r#"app probemap [version: "1.0.0"]
@@ -1839,7 +1849,9 @@ orbital Probe {{
     let lowers = |value: &str, ty: &str| parse_and_lower_str(&source(value, ty)).is_ok();
     assert!(lowers("{}", "Map string string"), "an empty map literal");
     assert!(lowers(r#"{ a: "x" }"#, "Map string string"), "a map literal with members");
-    assert!(lowers("0", "instant"), "a literal moment");
+    assert!(lowers(r#""2026-10-28T09:30:00Z""#, "instant"), "an ISO moment with a zone");
+    assert!(!lowers("0", "instant"), "control: a number is not a point in time");
+    assert!(!lowers(r#""2026-10-28""#, "instant"), "control: a date is not an instant");
     assert!(!lowers(r#""x""#, "Map string string"), "control: a string is not a map");
     assert!(!lowers(r#""x""#, "instant"), "control: a string is not an instant");
 }

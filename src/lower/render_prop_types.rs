@@ -120,7 +120,7 @@ fn walk_pattern(
                 return Err(LowerError::RenderPropNotARecord {
                     trait_name: trait_def.name.clone(),
                     pattern: pattern_type.clone().into_inner(),
-                    prop: prop.clone(),
+                    prop: prop.to_string(),
                     binding: binding.clone().into_inner(),
                     expected: expected_label,
                     actual,

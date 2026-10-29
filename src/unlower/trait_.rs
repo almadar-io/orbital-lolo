@@ -54,7 +54,7 @@ pub(super) fn cross_listen(l: &ListenDefinition) -> Listen {
         .payload_mapping
         .iter()
         .flatten()
-        .map(|(k, v)| (k.clone(), v.clone()))
+        .map(|(k, v)| (k.to_string(), v.clone()))
         .collect();
     mapping.sort_by(|a, b| a.0.cmp(&b.0));
     Listen {

@@ -92,7 +92,8 @@
           "config": {
             "size": {
               "default": "sm",
-              "type": "unknown"
+              "type": "unknown",
+              "wired": true
             }
           },
           "linkedEntity": "Widget",
@@ -103,11 +104,13 @@
           "config": {
             "label": {
               "default": "Click",
-              "type": "unknown"
+              "type": "unknown",
+              "wired": true
             },
             "variant": {
               "default": "primary",
-              "type": "unknown"
+              "type": "unknown",
+              "wired": true
             }
           },
           "linkedEntity": "Widget",

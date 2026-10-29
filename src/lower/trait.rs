@@ -29,7 +29,7 @@ pub(crate) fn expand_term_match(tr: &Transition) -> Vec<Transition> {
                     SExpression::string("=="),
                     SExpression::string(scrutinee_sigil.clone()),
                     other.literal_sexpr(),
-                ])),
+                ].into())),
             };
             Transition {
                 event: tr.event.clone(),
@@ -139,15 +139,15 @@ pub(crate) fn desugar_notify(expr: &SExpression) -> Result<SExpression, LowerErr
                 }
             }
             let mut props = orbital_core_base::schema::SObject::new();
-            props.insert("type".to_string(), SExpression::string("alert"));
-            props.insert("variant".to_string(), level);
-            props.insert("message".to_string(), message);
-            props.insert("dismissible".to_string(), SExpression::Bool(true));
+            props.insert("type".into(), SExpression::string("alert"));
+            props.insert("variant".into(), level);
+            props.insert("message".into(), message);
+            props.insert("dismissible".into(), SExpression::Bool(true));
             Ok(SExpression::Array(vec![
                 SExpression::string("render-ui"),
                 SExpression::string("toast"),
                 SExpression::object(props),
-            ]))
+            ].into()))
         },
     )
 }
@@ -170,14 +170,14 @@ fn build_nested_if(scrutinee: &SExpression, arms: &[(SExpression, SExpression)])
         SExpression::string("=="),
         scrutinee.clone(),
         pattern.clone(),
-    ]);
+    ].into());
     let else_branch = build_nested_if(scrutinee, rest);
     SExpression::Array(vec![
         SExpression::string("if"),
         cond,
         value.clone(),
         else_branch,
-    ])
+    ].into())
 }
 
 /// Dispatch a `Trait` AST node to either an inline definition or a reference,

@@ -2850,7 +2850,7 @@ mod tests {
         let Some(SExpression::Object(address)) = &page.address else {
             panic!("expected a record address, got {:?}", page.address);
         };
-        let keys: Vec<&str> = address.keys().map(String::as_str).collect();
+        let keys: Vec<&str> = address.keys().map(|k| k.as_str()).collect();
         assert_eq!(keys, ["host", "port", "path"]);
         assert_eq!(address["host"], SExpression::String(("@config.host".to_string()).into()));
     }
@@ -3020,10 +3020,10 @@ mod tests {
                     SExpression::string("="),
                     SExpression::string("@user.role"),
                     SExpression::string("reader"),
-                ]),
+                ].into()),
                 SExpression::Bool(false),
                 SExpression::Bool(true),
-            ])
+            ].into())
         );
     }
 
@@ -3403,16 +3403,16 @@ fn behavior_value_object(raw: &str) -> Option<SExpression> {
     if let Some(t) = TraitValueRef::parse(raw) {
         return Some(SExpression::object(
             orbital_core_base::schema::SObject::from([
-                ("behavior".to_string(), SExpression::string(t.behavior)),
-                ("trait".to_string(), SExpression::string(t.trait_name)),
+                ("behavior".into(), SExpression::string(t.behavior)),
+                ("trait".into(), SExpression::string(t.trait_name)),
             ]),
         ));
     }
     let o = OrbitalValueRef::parse(raw)?;
     Some(SExpression::object(
         orbital_core_base::schema::SObject::from([
-            ("behavior".to_string(), SExpression::string(o.behavior)),
-            ("orbital".to_string(), SExpression::string(o.orbital)),
+            ("behavior".into(), SExpression::string(o.behavior)),
+            ("orbital".into(), SExpression::string(o.orbital)),
         ]),
     ))
 }

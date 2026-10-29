@@ -1584,3 +1584,421 @@ fn the_self_mark_is_refused_where_it_means_nothing() {
         assert!(parse_str(source).is_err(), "{source}");
     }
 }
+
+// --- A1: lossless lowering residuals (G-ORB-410, -284, -406, -513, -389) ---
+
+#[test]
+fn a_tuple_slot_holding_an_inline_struct_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Base = { version : number!, entries : [[string, { repo : string!, body : string! }]]! }",
+        "base : Base",
+        "",
+    ));
+}
+
+#[test]
+fn control_a_tuple_of_primitives_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Base = { version : number!, entries : [[string, number]]! }",
+        "base : Base",
+        "",
+    ));
+}
+
+#[test]
+fn a_union_variant_listing_a_struct_alias_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Col = { key : string }\n  type Knob = { default : string | [Col] }",
+        "knob : Knob",
+        "",
+    ));
+}
+
+#[test]
+fn control_a_union_variant_listing_an_inline_struct_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Knob = { default : string | [{ key : string }] }",
+        "knob : Knob",
+        "",
+    ));
+}
+
+#[test]
+fn a_union_alias_with_an_inline_struct_variant_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Ret = string | { kind : string }\n  type Entry = { returns : Ret }",
+        "entry : Entry",
+        "",
+    ));
+}
+
+#[test]
+fn control_a_union_alias_with_a_struct_alias_variant_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Kind = { kind : string }\n  type Ret = string | Kind\n  type Entry = { returns : Ret }",
+        "entry : Entry",
+        "",
+    ));
+}
+
+fn quoted_sigil_program(literal: &str) -> String {
+    format!(
+        r#"app Probe
+orbital ItemOrbital {{
+  entity Item [persistent: items] {{
+    id : string!
+    name : string = ""
+  }}
+  trait ItemFlow -> Item {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (set @entity.name (json/stringify (quote {literal})))
+    }}
+  }}
+  page "/" -> ItemFlow [initial]
+}}"#
+    )
+}
+
+#[test]
+fn a_quoted_string_ending_in_a_dot_after_a_sigil_round_trips() {
+    assert_round_trips(&quoted_sigil_program("\"@payload.\""));
+}
+
+#[test]
+fn control_a_quoted_clean_sigil_path_round_trips() {
+    assert_round_trips(&quoted_sigil_program("\"@payload.x\""));
+}
+
+#[test]
+fn a_quoted_string_with_an_empty_sigil_segment_round_trips() {
+    assert_round_trips(&quoted_sigil_program("\"@payload..x\""));
+}
+
+#[test]
+fn a_bare_relation_entity_field_agrees_with_the_payload_it_feeds() {
+    assert_round_trips(
+        r#"app Probe
+orbital ItemOrbital {
+  entity Item [persistent: items] {
+    id : string!
+    categoryId : relation = ""
+  }
+  trait ItemFlow -> Item {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+    emits {
+      ItemLoaded -> internal {
+        data : [Item]!
+      }
+    }
+  }
+  page "/" -> ItemFlow [initial]
+}"#,
+    );
+}
+
+#[test]
+fn control_a_string_entity_field_feeds_a_string_payload() {
+    assert_round_trips(
+        &"app Probe
+orbital ItemOrbital {
+  entity Item [persistent: items] {
+    id : string!
+    categoryId : string = \"\"
+  }
+  trait ItemFlow -> Item {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+    emits {
+      ItemLoaded -> internal {
+        data : [Item]!
+      }
+    }
+  }
+  page \"/\" -> ItemFlow [initial]
+}"
+        .to_string(),
+    );
+}
+
+fn config_alias_program(types: &str, config: &str) -> String {
+    format!(
+        r#"app Probe
+orbital ItemOrbital {{
+  {types}
+  entity Item [persistent: items] {{
+    id : string!
+  }}
+  trait ItemFlow -> Item {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (set @entity.id (json/stringify @config.wheres))
+    }}
+    config {{
+      {config}
+    }}
+  }}
+  page "/" -> ItemFlow [initial]
+}}"#
+    )
+}
+
+#[test]
+fn a_field_reference_member_of_a_config_alias_round_trips() {
+    assert_round_trips(&config_alias_program(
+        "type Where = { field : field (@entity @config.rowEntity) (string | number)!, op : string }",
+        "wheres : [Where] = []\n      rowEntity : entity = Item",
+    ));
+}
+
+#[test]
+fn control_a_plain_member_of_a_config_alias_round_trips() {
+    assert_round_trips(&config_alias_program(
+        "type Where = { field : string!, op : string }",
+        "wheres : [Where] = []",
+    ));
+}
+
+#[test]
+fn a_program_type_united_with_a_map_in_a_struct_alias_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Req = { viewer : (Viewer | (Map string string))? }",
+        "queue : [Req] = []",
+        "",
+    ));
+}
+
+#[test]
+fn control_a_program_type_member_of_a_struct_alias_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Req = { viewer : Viewer? }",
+        "queue : [Req] = []",
+        "",
+    ));
+}
+
+#[test]
+fn an_event_alias_named_by_a_field_type_round_trips() {
+    assert_round_trips(
+        r#"app Probe
+orbital ItemOrbital {
+  type Occurred = Event { data : string, id : string }
+  entity Item [persistent: items] {
+    id : string!
+  }
+  trait ItemFlow -> Item {
+    initial: idle
+    state idle {
+      Occurred -> idle
+        (set @entity.id (json/stringify @config.key))
+    }
+    emits {
+      Occurred -> internal {
+        data : string
+        id : string
+      }
+    }
+    config {
+      key : field Occurred = id
+    }
+  }
+  page "/" -> ItemFlow [initial]
+}"#,
+    );
+}
+
+#[test]
+fn a_struct_alias_with_an_event_member_in_a_config_knob_round_trips() {
+    assert_round_trips(&config_alias_program(
+        "type Step = { event : event, label : string }",
+        "wheres : [Step] = []",
+    ));
+}
+
+#[test]
+fn an_event_member_reached_by_an_entity_field_is_refused_at_lowering() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    let source = probe_program(
+        "type Step = { event : event, label : string }",
+        "steps : [Step] = []",
+        "",
+    );
+    let error = parse_and_lower_str_with(&source, &options).unwrap_err();
+    assert!(
+        error
+            .to_string()
+            .contains("ELOLO_CONFIG_TYPE_FORBIDDEN_IN_ENTITY"),
+        "{error}"
+    );
+}
+
+const TAGGED_UNION_TYPES: &str = r#"type Leaf = { kind : "leaf", name : string }
+  type Not = { kind : "not", of : Pred! }
+  type Pred = Leaf | Not"#;
+
+#[test]
+fn a_tagged_union_back_reference_in_an_entity_field_round_trips() {
+    assert_round_trips(&probe_program(TAGGED_UNION_TYPES, "pred : Pred", ""));
+}
+
+#[test]
+fn a_tagged_union_back_reference_in_a_config_knob_round_trips() {
+    assert_round_trips(&config_alias_program(
+        &format!("{TAGGED_UNION_TYPES}\n  type Holder = {{ pred : Pred }}"),
+        "wheres : [Holder] = []",
+    ));
+}
+
+#[test]
+fn a_tagged_union_back_reference_in_an_emit_payload_round_trips() {
+    assert_round_trips(&format!(
+        r#"app Probe
+orbital ItemOrbital {{
+  {TAGGED_UNION_TYPES}
+  entity Item [persistent: items] {{
+    id : string!
+  }}
+  trait ItemFlow -> Item {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+    }}
+    emits {{
+      Judged -> internal {{
+        pred : Pred
+        not : Not
+      }}
+    }}
+  }}
+  page "/" -> ItemFlow [initial]
+}}"#
+    ));
+}
+
+#[test]
+fn control_a_union_without_a_back_reference_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Leaf = { kind : \"leaf\", name : string }\n  type Other = { kind : \"other\", n : number }\n  type Pred = Leaf | Other",
+        "pred : Pred",
+        "",
+    ));
+}
+
+fn map_alias_payload_program(payload: &str) -> String {
+    format!(
+        r#"app Probe
+orbital ItemOrbital {{
+  type Details = Map string (string | number)
+  entity Item [persistent: items] {{
+    id : string!
+    details : Details
+  }}
+  trait ItemFlow -> Item {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+    }}
+    emits {{
+      Deployed -> internal {{
+        {payload}
+      }}
+    }}
+  }}
+  page "/" -> ItemFlow [initial]
+}}"#
+    )
+}
+
+#[test]
+fn a_named_map_alias_payload_field_round_trips() {
+    assert_round_trips(&map_alias_payload_program("details : Details"));
+}
+
+#[test]
+fn control_an_inline_map_payload_field_round_trips() {
+    assert_round_trips(&map_alias_payload_program(
+        "details : Map string (string | number)",
+    ));
+}
+
+const MODAL_SELF_REFERENCE: &str = r#"app Probe
+orbital ItemOrbital {
+  type ModalRecord = { id : string!, seedRow : ModalRecord }
+  entity Item [persistent: items] {
+    id : string!
+  }
+  trait ItemFlow -> Item {
+    initial: idle
+    state idle {
+      INIT -> idle
+    }
+    emits {
+      Opened -> internal {
+        seedRow : ModalRecord
+      }
+      Closed -> internal {
+        record : ModalRecord
+      }
+    }
+  }
+  page "/" -> ItemFlow [initial]
+}"#;
+
+#[test]
+fn an_inline_emit_payload_and_an_event_alias_carry_the_same_projection() {
+    assert_round_trips(MODAL_SELF_REFERENCE);
+    assert_round_trips(
+        &MODAL_SELF_REFERENCE
+            .replace(
+                "      Opened -> internal {\n        seedRow : ModalRecord\n      }\n",
+                "      Opened -> internal\n",
+            )
+            .replace(
+                "  entity Item",
+                "  type Opened = Event { seedRow : ModalRecord }\n  entity Item",
+            ),
+    );
+}
+
+#[test]
+fn a_nullable_union_variant_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Node = { value : string | number | boolean? }",
+        "node : Node",
+        "",
+    ));
+}
+
+#[test]
+fn control_a_union_without_a_nullable_variant_round_trips() {
+    assert_round_trips(&probe_program(
+        "type Node = { value : string | number | boolean }",
+        "node : Node",
+        "",
+    ));
+}
+
+#[test]
+fn a_field_reference_member_of_an_alias_nested_in_a_config_alias_round_trips() {
+    assert_round_trips(&config_alias_program(
+        "type Where = { field : field (@entity @config.rowEntity) (string | number)!, op : string }\n  type Spec = { label : string, where : [Where] }",
+        "specs : [Spec] = []\n      rowEntity : entity = Item",
+    ).replace("@config.wheres", "[@config.specs, @config.rowEntity]"));
+}
+
+#[test]
+fn control_a_plain_member_of_an_alias_nested_in_a_config_alias_round_trips() {
+    assert_round_trips(&config_alias_program(
+        "type Where = { field : string!, op : string }\n  type Spec = { label : string, where : [Where] }",
+        "specs : [Spec] = []",
+    ).replace("@config.wheres", "@config.specs"));
+}
