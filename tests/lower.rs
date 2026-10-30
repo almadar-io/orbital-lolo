@@ -1679,6 +1679,71 @@ orbital Probe {{
             assert!(!fields.iter().any(|f| f.name == "finalOnly"));
         }
     }
+
+    fn composed_set_mismatches(value_alias: &str, field_type: &str) -> Vec<String> {
+        let base_source = format!(
+            r#"app origin [version: "1.0.0"]
+{value_alias}
+type Fld = {{ name : string, def : Val? }}
+type Doc = {{ title : string, fields : [Fld]! }}
+type BadFld = {{ name : number, def : Val? }}
+type BadDoc = {{ title : string, fields : [BadFld]! }}
+orbital Origin {{
+  entity OriginRun [runtime] {{
+    id : string!
+    pending : Doc?
+  }}
+  trait Reader -> OriginRun [optimistic] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+      GO -> idle
+        (set @entity.pending (object/get @payload.result "program"))
+      BAD -> idle
+        (set @entity.pending (object/get @payload.bad "program"))
+    }}
+    listens {{
+      GO {{ result : {{ program : Doc! }}! }}
+      BAD {{ bad : {{ program : {field_type}! }}! }}
+    }}
+  }}
+}}
+"#
+        );
+        let dir = tempfile::TempDir::new().unwrap();
+        let mut base = parse_and_lower_str(&base_source).unwrap();
+        inline_schema(&mut base, &InlineConfig::default(), None).unwrap();
+        std::fs::write(dir.path().join("origin.orb"), serde_json::to_vec(&base).unwrap()).unwrap();
+        let consumer = r#"app consumer [version: "1.0.0"]
+uses Base from "./origin.orb"
+orbital Consumer {
+  entity ConsumerRun [runtime] {
+    id : string!
+  }
+  trait Reader = Base.traits.Reader -> ConsumerRun { }
+}
+"#;
+        let mut schema = parse_and_lower_str(consumer).unwrap();
+        inline_schema(&mut schema, &InlineConfig::default(), Some(&dir.path().join("consumer.orb"))).unwrap();
+        validate_comprehensive_without_services(&schema)
+            .errors
+            .into_iter()
+            .filter(|e| matches!(e.code, ErrorCode::SetReturnTypeMismatch))
+            .map(|e| format!("{}: {}", e.path, e.message))
+            .collect()
+    }
+
+    #[test]
+    fn a_composed_entity_field_of_a_recursive_union_alias_takes_its_own_named_value() {
+        let recursive = "type Val = string | number | boolean | [Val?] | Map string Val?";
+        let flat = "type Val = string | number | boolean";
+        let found = composed_set_mismatches(recursive, "Doc");
+        assert!(found.is_empty(), "recursive: the field and the value name the same Doc: {found:#?}");
+        let found = composed_set_mismatches(flat, "Doc");
+        assert!(found.is_empty(), "control: a non-recursive alias composes: {found:#?}");
+        assert_eq!(composed_set_mismatches(recursive, "BadDoc").len(), 1, "control: a structurally different record is still refused");
+        assert_eq!(composed_set_mismatches(flat, "BadDoc").len(), 1, "control: a non-recursive different record is still refused");
+    }
 }
 
 mod native_record_contracts {
