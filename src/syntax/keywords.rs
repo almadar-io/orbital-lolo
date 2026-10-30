@@ -241,6 +241,7 @@ const EFFECTS: &[&str] = &[
     "random-bytes",
     "credential-status",
     "credential-forget",
+    "credential-connect",
     "credential-list",
     "credential-set",
     "credential-remove",

@@ -82,6 +82,20 @@ fn the_formatter_keeps_the_three_heads() {
     }
 }
 
+const CONNECT: &str = r#"(credential-connect { credential: @config.token, tokenEndpoint: "https://auth.example/token", grant: "authorization_code", code: @payload.code, redirectUri: "https://app.example/cb", clientId: @config.token, clientAuth: basic } { emit: { success: DONE } })"#;
+
+#[test]
+fn credential_connect_lowers_its_request_object_and_options() {
+    let src = program(CONNECT);
+    let effects = effects_of(&src);
+    let connect = &effects[0];
+    assert_eq!(connect[0], json!("credential-connect"));
+    assert_eq!(connect[1]["credential"], json!("@config.token"));
+    assert_eq!(connect[1]["clientAuth"], json!("basic"));
+    assert_eq!(connect[1]["code"], json!("@payload.code"));
+    assert_eq!(connect[2], json!({ "emit": { "success": "DONE" } }));
+}
+
 const OAUTH_CLIENT: &str = r#"{ tag: google, mode: real, issuer: "https://accounts.google.com", clientId: @config.token, clientSecret: @config.token, clientAuth: post }"#;
 
 fn oauth_client_json() -> Value {
