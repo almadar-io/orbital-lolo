@@ -287,7 +287,7 @@ mod supervisor {
                 Arc::new(move |request: &IoRequest| match request {
                     IoRequest::Os { .. } => {
                         let on_event = |_: Option<&CallSite>, _: Value| {};
-                        answer_os(Some(&OsHost { grants: &grants, handles: &handles, on_event: &on_event }), request)
+                        answer_os(Some(&OsHost { grants: &grants, handles: &handles, on_event: &on_event, secrets: None }), request)
                     }
                     other => BlockingHost { source: store.as_ref(), service: None, substrate: None }.answer(other),
                 })

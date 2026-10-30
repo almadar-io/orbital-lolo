@@ -34,7 +34,7 @@ fn field_definition(
 }
 
 fn no_shape(error: orbital_core_base::ir::types::ShapeError) -> LowerError {
-    LowerError::Coded { code: "ORB_T_GENERIC_TYPE_DEPRECATED", message: error.to_string() }
+    LowerError::Coded { code: "ELOLO_T_GENERIC_TYPE", message: error.to_string() }
 }
 
 fn source_type(

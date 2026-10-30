@@ -331,7 +331,7 @@ mod language_data_export {
              export const VALIDATION_CODES = {\n",
         );
         for c in validation_codes() {
-            out.push_str(&format!("  {0}: {0:?},\n", c.code));
+            out.push_str(&format!("  {0:?}: {0:?},\n", c.code));
         }
         out.push_str(
             "} as const;\n\nexport type ValidationCode = keyof typeof VALIDATION_CODES;\n",
@@ -352,7 +352,7 @@ mod language_data_export {
     fn ts_keys(ts: &str) -> Vec<String> {
         ts.lines()
             .filter_map(|l| l.strip_prefix("  ")?.split_once(':'))
-            .map(|(k, _)| k.to_string())
+            .map(|(k, _)| k.trim_matches('"').to_string())
             .collect()
     }
 
@@ -364,9 +364,9 @@ mod language_data_export {
             .collect();
         let ts = validation_codes_ts();
         assert_eq!(ts_keys(&ts), json);
-        assert!(ts.contains("  ORB_T_TYPE_UNKNOWN: \"ORB_T_TYPE_UNKNOWN\",\n"));
+        assert!(ts.contains("  \"ORB_T_TYPE_UNKNOWN\": \"ORB_T_TYPE_UNKNOWN\",\n"));
 
-        let dropped = ts.replace("  ORB_T_TYPE_UNKNOWN: \"ORB_T_TYPE_UNKNOWN\",\n", "");
+        let dropped = ts.replace("  \"ORB_T_TYPE_UNKNOWN\": \"ORB_T_TYPE_UNKNOWN\",\n", "");
         assert_ne!(ts_keys(&dropped), json);
     }
 
@@ -490,6 +490,88 @@ mod language_data_export {
             }
         }
         assert!(declared > 0, "no std atom declares a code");
+    }
+
+    /// Every code a Rust phase once raised and a std lint atom now owns. Retiring a producer adds its codes here, so
+    /// the finding cannot silently vanish: the generated registry must list each one, declared by a std atom.
+    const RETIRED_RUST_CODES: &[&str] = &[
+        "ORB_CALL_KEY_UNUSED",
+        "ORB_CALL_SERVICE_CANCELLED_WITHOUT_KEY",
+        "ORB_CALL_SERVICE_KEY_TYPE",
+        "ORB_CONFIG_DANGLING_REF",
+        "ORB_EFF_FETCH_INVALID_ENTITY",
+        "ORB_EFF_NAVIGATE_MISSING_PAYLOAD",
+        "ORB_EFF_SET_PAYLOAD_NOT_ALLOWED",
+        "ORB_E_INVALID_RELATION",
+        "ORB_GEN_INVALID_VALUE",
+        "ORB_INBOUND_ANSWER_FOREIGN",
+        "ORB_O_CONFIG_UNKNOWN_KEY",
+        "ORB_O_ENTITY_EXPECT_AMBIGUOUS",
+        "ORB_O_ENTITY_PERSISTENCE_LOCKED",
+        "ORB_O_ENTITY_TARGET_UNKNOWN",
+        "ORB_O_ENTITY_UNKNOWN_KEY",
+        "ORB_O_ENTITY_UNMAPPED",
+        "ORB_O_FIELD_RENAME_UNAPPLIED",
+        "ORB_O_MOCK_UNKNOWN_FIELD",
+        "ORB_O_OMIT_EMBEDDED_TRAIT",
+        "ORB_O_PAGE_UNKNOWN_PATH",
+        "ORB_O_RETYPE_FIELD_CONFLICT",
+        "ORB_O_RETYPE_UNKNOWN_FIELD",
+        "ORB_O_ROLE_TARGET_NOT_MEMBER",
+        "ORB_O_ROLE_UNKNOWN_UPSTREAM",
+        "ORB_O_TRAITS_OMITTED_TRAIT",
+        "ORB_O_TRAITS_UNKNOWN_TRAIT",
+        "ORB_P_MISSING_PATH",
+        "ORB_RUI_CHILD_NOT_DRAWABLE",
+        "ORB_RUI_FORM_FIELD_INTRINSIC",
+        "ORB_RUI_INVALID_ITEM_ACTION",
+        "ORB_RUI_INVALID_SLOT",
+        "ORB_SLOT_MAIN_NOT_COVERED",
+        "ORB_S_EXPECTATION_UNSATISFIED",
+        "ORB_S_EXPECTED_FIELD_TYPE_MISMATCH",
+        "ORB_S_OWNER_FIELD_NOT_IDENTITY_TYPED",
+        "ORB_S_ROLE_LITERAL_NOT_MEMBER",
+        "ORB_S_UNKNOWN_IDENTITY_FIELD",
+        "ORB_TAB_REQUEST_INVALID",
+        "ORB_THEME_UNDECLARED",
+        "ORB_T_EVT_INVALID_NAME",
+        "ORB_T_GENERIC_TYPE_DEPRECATED",
+        "ORB_T_INVALID_EVENT_DEFAULT",
+        "ORB_T_NO_INITIAL_STATE",
+        "ORB_UI_ICON_EMPTY",
+        "ORB_UI_ICON_INVALID_FORMAT",
+        "ORB_U_CONFIG_UNKNOWN_KEY",
+        "ORB_X_CROSS_EMITTER_DECLARED_PAYLOAD_MISMATCH",
+        "ORB_X_ENUM_VALUE_NOT_MEMBER",
+        "ORB_X_MIXED_RESIDENCE",
+        "ORB_X_UNRESOLVED_RELATION_TARGET",
+        "ORB_X_UNTYPED_ARRAY",
+    ];
+
+    fn retired_without_owner(retired: &[&str], codes: &[ValidationCode]) -> Vec<String> {
+        retired
+            .iter()
+            .filter(|r| !codes.iter().any(|c| c.code == **r))
+            .map(|r| r.to_string())
+            .collect()
+    }
+
+    #[test]
+    fn every_code_retired_from_the_rust_enum_has_a_std_owner() {
+        let Some(_) = std_atoms_dir() else { return };
+        let still_in_rust: Vec<&str> = RETIRED_RUST_CODES
+            .iter()
+            .copied()
+            .filter(|r| orbital_compiler::phases::validation::ErrorCode::ALL.iter().any(|c| c.as_str() == *r))
+            .collect();
+        assert!(still_in_rust.is_empty(), "listed as retired but still in the Rust enum: {still_in_rust:?}");
+        assert_eq!(retired_without_owner(RETIRED_RUST_CODES, &validation_codes()), Vec::<String>::new());
+    }
+
+    #[test]
+    fn control_a_retired_code_no_std_atom_declares_is_reported() {
+        let codes = vec![ValidationCode { code: "ORB_KEPT".into(), category: "c".into(), description: "d".into() }];
+        assert_eq!(retired_without_owner(&["ORB_KEPT", "ORB_DROPPED"], &codes), vec!["ORB_DROPPED".to_string()]);
     }
 
     #[test]
