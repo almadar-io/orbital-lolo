@@ -206,6 +206,7 @@ pub(crate) fn lower_emit(
                 entity: None,
                 projected_from: projected.clone(),
                 items: None,
+                relation: None,
             });
             continue;
         }
@@ -237,6 +238,7 @@ pub(crate) fn lower_emit(
                 entity: None,
                 projected_from: projected.clone(),
                 items: Some(items),
+                relation: None,
             });
         } else if let Some(props) = struct_payload_properties(ty, aliases, trait_type_params) {
             if !seen.insert(f.name.clone()) {
@@ -258,6 +260,7 @@ pub(crate) fn lower_emit(
                 entity: None,
                 projected_from: projected.clone(),
                 items: None,
+                relation: None,
             });
         } else if let Some(variants) = union_payload_variants(ty, aliases, trait_type_params) {
             // A TYPE union — inline (`a | [b]`) or via a named alias — lowers
@@ -282,6 +285,7 @@ pub(crate) fn lower_emit(
                 entity: None,
                 projected_from: projected.clone(),
                 items: None,
+                relation: None,
             });
         } else if let Some(type_name) = match ty {
             TypeExpr::Named(n)
@@ -316,6 +320,7 @@ pub(crate) fn lower_emit(
                 entity: Some(type_name.clone()),
                 projected_from: projected.clone(),
                 items: None,
+                relation: None,
             });
         } else if let TypeExpr::Array(inner) = ty {
             if let TypeExpr::Named(type_name) = inner.as_ref() {
@@ -345,6 +350,7 @@ pub(crate) fn lower_emit(
                         entity: Some(type_name.clone()),
                         projected_from: projected.clone(),
                         items: None,
+                        relation: None,
                     });
                     continue;
                 }
@@ -370,6 +376,7 @@ pub(crate) fn lower_emit(
                     entity: None,
                     projected_from: projected.clone(),
                     items: None,
+                    relation: None,
                 });
                 continue;
             }
@@ -387,6 +394,7 @@ pub(crate) fn lower_emit(
                 entity: None,
                 projected_from: projected.clone(),
                 items: None,
+                relation: None,
             });
         } else {
             if !seen.insert(f.name.clone()) {
@@ -409,6 +417,7 @@ pub(crate) fn lower_emit(
                 entity: None,
                 projected_from: projected.clone(),
                 items: None,
+                relation: None,
             });
         }
     }
@@ -559,6 +568,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                     entity: None,
                     projected_from: None,
                     items: None,
+                    relation: None,
                 })
                 .collect()
         })
@@ -593,6 +603,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                         entity: None,
                         projected_from: None,
                         items: None,
+                        relation: None,
                     },
                     Some(base.to_string()),
                 );
@@ -699,6 +710,7 @@ pub(crate) fn source_payload_field(
                 entity: None,
                 projected_from: ty.projection(),
                 items: None,
+                relation: None,
             };
         }
     }
@@ -780,6 +792,7 @@ pub(crate) fn type_expr_to_payload_fields(
             entity: None,
             projected_from: None,
             items: None,
+            relation: None,
         }]);
     }
     match payload {
@@ -881,6 +894,7 @@ pub(crate) fn type_expr_to_payload_fields(
                     entity,
                     projected_from: None,
                     items: union_items.map(|(_, items)| items),
+                    relation: None,
                 });
             }
             for (field, (_, ty, _)) in flat.iter_mut().zip(fields) {
@@ -909,6 +923,7 @@ pub(crate) fn type_expr_to_payload_fields(
                 entity: None,
                 projected_from: None,
                 items: None,
+                relation: None,
             }])
         }
     }
@@ -1058,6 +1073,7 @@ pub(crate) fn union_payload_variants(
             entity: None,
             projected_from: None,
             items: None,
+            relation: None,
         });
     }
     for (field, ty) in out.iter_mut().zip(parts) {
@@ -1106,6 +1122,7 @@ pub(crate) fn union_container(
             entity: None,
             projected_from: None,
             items: None,
+            relation: None,
         }),
     ))
 }
@@ -1173,6 +1190,7 @@ pub(crate) fn tuple_payload_field(
         entity: None,
         projected_from: None,
         items,
+        relation: None,
     })
 }
 
@@ -1267,6 +1285,7 @@ pub(crate) fn struct_payload_properties(
             entity: None,
             projected_from: projected,
             items: union_items.map(|(_, items)| items),
+            relation: None,
         });
     }
     for (field, (_, ty, _)) in props.iter_mut().zip(items) {
@@ -1677,6 +1696,7 @@ mod recursive_struct_payload_tests {
             entity: None,
             projected_from: None,
             items: None,
+            relation: None,
         }];
 
         // Terminating at all is the assertion; agreeing is the consequence.
@@ -1819,6 +1839,7 @@ mod recursive_struct_payload_tests {
                     entity: None,
                     projected_from: None,
                     items: None,
+                    relation: None,
                 },
                 PayloadField {
                     nullable: Some(false),
@@ -1833,10 +1854,12 @@ mod recursive_struct_payload_tests {
                     entity: None,
                     projected_from: None,
                     items: None,
+                    relation: None,
                 },
             ]),
             type_when: None,
             entity: None,
+            relation: None,
             projected_from: None,
             items: None,
         }];

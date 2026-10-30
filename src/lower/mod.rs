@@ -958,6 +958,7 @@ fn vocabulary_entry(values: Vec<String>) -> PayloadField {
         entity: None,
         projected_from: None,
         items: None,
+        relation: None,
     }
 }
 
@@ -1027,6 +1028,7 @@ fn orbital_types(
                         entity: None,
                         projected_from: None,
                         items: None,
+                        relation: None,
                     }],
                 );
             }
@@ -1072,6 +1074,7 @@ fn orbital_types(
                             entity: None,
                             projected_from: None,
                             items: None,
+                            relation: None,
                         }],
                     );
                 } else if let Some(values) = vocabulary_values(te) {
@@ -1352,6 +1355,7 @@ fn lower_orbital(
                     guard: None,
                     effects: Some(orb.body.clone()),
                     ensures: None,
+                    await_render: None,
                 }],
             }
             .into(),

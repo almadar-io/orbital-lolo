@@ -573,6 +573,7 @@ pub(crate) fn lower_trait(
                     },
                     ensures: (!tr.ensures.is_empty())
                         .then(|| tr.ensures.iter().map(desugar_expr_match).collect()),
+                        await_render: None,
                 });
             }
         }
@@ -603,6 +604,7 @@ pub(crate) fn lower_trait(
                     guard: None,
                     effects: None,
                     ensures: None,
+                    await_render: None,
                 });
             }
         }
@@ -731,6 +733,7 @@ pub(crate) fn lower_trait(
                         entity,
                         projected_from: projected,
                         items: union_items.map(|(_, items)| items),
+                        relation: None,
                     };
                     emit_listen::decorate_source_payload(
                         &mut field,

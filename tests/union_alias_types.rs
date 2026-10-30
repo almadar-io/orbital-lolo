@@ -182,3 +182,71 @@ fn a_vocabulary_alias_is_still_refused_as_a_payload_field_type() {
     let err = parse_and_lower_str(&source).map(|_| ()).expect_err("a vocabulary keeps its enum reading");
     assert!(err.to_string().contains("type kind mismatch"), "{err}");
 }
+
+fn knob_default_program(union: &str, default: &str) -> String {
+    format!(
+        r#"app mini
+orbital Mini5Orbital {{
+  type WA = {{ op : "a"!, field : string!, n : number }}
+  type WB = {{ op : "b"!, field : string!, days : number }}
+  type W = {union}
+  type Spec = {{ label : string!, where : [W] }}
+  entity MiniRow [runtime] {{
+    id : string!
+    hit : number
+  }}
+  trait MiniT -> MiniRow [client] {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+        (set @entity.hit (array/len (array/map @config.specs (fn m (array/len (object/get @m where []))))))
+        (render-ui main {{ type: "typography", content: "x" }})
+    }}
+    config {{
+      specs : [Spec] = [{default}]
+    }}
+  }}
+  page "/m" -> MiniT
+}}
+"#
+    )
+}
+
+fn knob_default_messages(union: &str, default: &str) -> Vec<String> {
+    let mut schema = parse_and_lower_str(&knob_default_program(union, default)).expect("lowers");
+    orbital_compiler::phases::inline::inline_schema(
+        &mut schema,
+        &orbital_compiler::phases::inline::InlineConfig::default(),
+        None,
+    )
+    .expect("inlines");
+    orbital_compiler::validate_comprehensive_without_services(&schema)
+        .all_issues()
+        .map(|i| format!("{:?}: {}", i.code, i.message))
+        .collect()
+}
+
+#[test]
+fn a_knob_default_proves_a_tagged_variant_inside_a_struct_list() {
+    let found = knob_default_messages("WA | WB", r#"{ label: "x", where: [{ op: "a", field: "f", n: 1 }] }"#);
+    assert!(found.is_empty(), "{found:?}");
+}
+
+#[test]
+fn control_a_single_variant_alias_stays_clean() {
+    let found = knob_default_messages("WA", r#"{ label: "x", where: [{ op: "a", field: "f", n: 1 }] }"#);
+    assert!(found.is_empty(), "{found:?}");
+}
+
+#[test]
+fn a_knob_default_with_an_unknown_tag_is_refused_without_a_debug_dump() {
+    let found = knob_default_messages("WA | WB", r#"{ label: "x", where: [{ op: "c", field: "f", n: 1 }] }"#);
+    assert!(found.iter().any(|m| m.contains("not proved")), "{found:?}");
+    assert!(found.iter().all(|m| !m.contains("OirField {")), "{found:?}");
+}
+
+#[test]
+fn a_knob_default_missing_a_required_field_of_its_variant_is_refused() {
+    let found = knob_default_messages("WA | WB", r#"{ label: "x", where: [{ op: "a", n: 1 }] }"#);
+    assert!(found.iter().any(|m| m.contains("not proved")), "{found:?}");
+}
