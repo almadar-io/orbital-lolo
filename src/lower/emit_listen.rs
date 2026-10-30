@@ -1501,6 +1501,7 @@ pub(crate) fn lower_listen(l: &Listen) -> ListenDefinition {
         tier: l.tier.clone(),
         payload_mapping,
         guard: l.guard.as_ref().map(desugar_expr_match),
+        key: l.key.as_ref().map(desugar_expr_match),
         source,
         event_id: None,
         triggers_id: None,

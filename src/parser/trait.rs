@@ -1257,6 +1257,7 @@ impl Parser {
                     event: self.canon_event_name(first),
                     triggers: None,
                     guard: None,
+                    key: None,
                     payload_mapping: Vec::new(),
                     payload,
                     description,
@@ -1364,6 +1365,7 @@ impl Parser {
                     event: self.canon_event_name(first),
                     triggers: None,
                     guard: None,
+                    key: None,
                     payload_mapping: Vec::new(),
                     payload,
                     description,
@@ -1389,6 +1391,7 @@ impl Parser {
                     event: self.canon_event_name(first),
                     triggers: None,
                     guard: None,
+                    key: None,
                     payload_mapping: Vec::new(),
                     payload: Vec::new(),
                     description,
@@ -1446,11 +1449,25 @@ impl Parser {
                     self.advance();
                 }
                 let mut guard = None;
+                let mut key = None;
                 let mut payload_mapping = Vec::new();
-                // Optional indented `when (...)` and `with { ... }` lines.
+                // Optional `per <expr>`, then indented `when (...)` and `with { ... }` lines.
                 loop {
                     self.skip_newlines();
-                    if self.check_ident("when") {
+                    if self.check_ident("per") {
+                        if key.is_some() {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: "one `per` clause on a listen".to_string(),
+                                got: "a second `per`".to_string(),
+                                span: self.peek_span(),
+                            });
+                        }
+                        self.advance();
+                        key = Some(self.parse_sexpr_or_value()?);
+                        if matches!(self.peek(), TokenKind::Newline) {
+                            self.advance();
+                        }
+                    } else if self.check_ident("when") {
                         self.advance();
                         guard = Some(self.parse_boolean_slot("guard")?);
                         if matches!(self.peek(), TokenKind::Newline) {
@@ -1494,6 +1511,7 @@ impl Parser {
                     event: combined,
                     triggers: Some(triggers),
                     guard,
+                    key,
                     payload_mapping,
                     payload: Vec::new(),
                     description: None,

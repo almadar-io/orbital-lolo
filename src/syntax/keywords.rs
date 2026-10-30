@@ -57,6 +57,7 @@ const KEYWORDS: &[&str] = &[
     "config",
     "when",
     "with",
+    "per",
     "from",
     "to",
     "every",

@@ -1304,6 +1304,8 @@ pub struct Listen {
     pub event: String,
     pub triggers: Option<String>,
     pub guard: Option<SExpression>,
+    /// `per <expr>`: the row of the listening entity the delivery steps (EXEC-STEP-1a).
+    pub key: Option<SExpression>,
     pub payload_mapping: Vec<(String, SExpression)>,
     /// Inline payload field list for the local shape:
     /// `REQUEST { id : string!, foo : string }`. Empty for cross-orbital or

@@ -2517,6 +2517,10 @@ impl Formatter {
             }
             self.output.push_str(triggers);
         }
+        if let Some(key) = &listen.key {
+            self.output.push_str(" per ");
+            self.fmt_sexpr(key);
+        }
         if let Some(guard) = &listen.guard {
             self.output.push_str(" when ");
             self.fmt_sexpr(guard);

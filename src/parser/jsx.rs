@@ -517,6 +517,7 @@ fn listens_from_object(value: &SExpression, span: Span) -> Result<Vec<Listen>, P
             event: event.to_string(),
             triggers: Some(triggers.into_inner()),
             guard: None,
+            key: None,
             payload_mapping: Vec::new(),
             payload: Vec::new(),
             description: None,

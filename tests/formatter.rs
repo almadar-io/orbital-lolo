@@ -1418,3 +1418,75 @@ fn control_a_trait_without_binding_annotations_prints_none() {
     let trait_ = &parse_str(&printed).unwrap().orbitals[0].traits[0];
     assert!(trait_.entity_binding_description.is_none());
 }
+
+const PER_SOURCE: &str = r#"orbital SlotOrbital {
+  entity Slot [runtime] {
+    id : string!
+    val : number
+  }
+  trait Caller -> Slot {
+    state idle {
+      GO -> idle
+        (emit SEND { key: @payload.key })
+        (emit REPLY { key: @payload.key, ok: true, n: 1 })
+        (emit OTHER { key: @payload.key })
+    }
+    emits {
+      SEND -> external { key: string }
+      REPLY -> external { key: string, ok: boolean, n: number }
+      OTHER -> external { key: string }
+    }
+  }
+  trait PerKey -> Slot {
+    state idle {
+      SEND -> idle
+    }
+    listens {
+      Caller.SEND -> SEND per @payload.key
+      Caller.REPLY -> SEND per @payload.key when (== @payload.ok true) with { n: @payload.n }
+      Caller.OTHER -> SEND
+    }
+  }
+}
+"#;
+
+fn listens_of(schema: &orbital_core_base::schema::OrbitalSchema) -> Vec<Value> {
+    let v = serde_json::to_value(schema).unwrap();
+    v["orbitals"][0]["traits"][1]["listens"].as_array().unwrap().clone()
+}
+
+#[test]
+fn a_per_clause_lowers_to_the_listen_key_and_round_trips_through_the_formatter() {
+    let schema = parse_and_lower_str(PER_SOURCE).expect("lower");
+    let listens = listens_of(&schema);
+    assert_eq!(listens[0]["key"], serde_json::json!("@payload.key"));
+    assert_eq!(listens[1]["key"], serde_json::json!("@payload.key"));
+    assert!(listens[1].get("guard").is_some() && listens[1].get("payloadMapping").is_some());
+    let ast = parse_str(PER_SOURCE).expect("parse");
+    let formatted = format_program(&ast);
+    assert!(formatted.contains(" per ?key"), "{formatted}");
+    let again = parse_and_lower_str(&formatted).expect("lower formatted");
+    assert_eq!(listens_of(&again).iter().map(|l| l.get("key").cloned()).collect::<Vec<_>>(), listens.iter().map(|l| l.get("key").cloned()).collect::<Vec<_>>());
+}
+
+#[test]
+fn control_a_listen_without_per_carries_no_key() {
+    let schema = parse_and_lower_str(PER_SOURCE).expect("lower");
+    assert!(listens_of(&schema)[2].get("key").is_none());
+}
+
+#[test]
+fn a_second_per_on_one_listen_is_a_parse_error() {
+    let source = PER_SOURCE.replace("Caller.OTHER -> SEND", "Caller.OTHER -> SEND per @payload.a per @payload.b");
+    assert!(parse_str(&source).is_err());
+}
+
+#[test]
+fn a_schema_with_a_listen_key_prints_per_and_lowers_back_to_the_same_key() {
+    let schema = parse_and_lower_str(PER_SOURCE).expect("lower");
+    let printed = schema_to_lolo(&schema).expect("print");
+    assert!(printed.contains(" per "), "{printed}");
+    let again = parse_and_lower_str(&printed).expect("lower printed");
+    let keys = |s: &orbital_core_base::schema::OrbitalSchema| listens_of(s).iter().map(|l| l.get("key").cloned()).collect::<Vec<_>>();
+    assert_eq!(keys(&again), keys(&schema));
+}
