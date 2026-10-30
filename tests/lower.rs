@@ -876,14 +876,14 @@ mod checked_local_annotations {
         let binding = &effect.as_array().unwrap()[1].as_array().unwrap()[0];
         let encoded = binding.as_array().unwrap()[2].as_str().unwrap();
         let shape = DeclaredShape::parse(encoded).expect("canonical declaration survives import");
-        assert_eq!(shape.name.as_deref(), Some("ValueMap"));
+        assert_eq!(shape.name.as_deref(), Some("origin::ValueMap"));
         assert!(matches!(shape.ty, OirType::Map { .. }), "{shape:?}");
-        assert!(shape.named.contains_key("TreeValue"), "{shape:?}");
+        assert!(shape.named.contains_key("origin::TreeValue"), "{shape:?}");
         assert!(trait_def.state_machine.transitions.iter().any(|t| t.event == "FinalSaved"));
         let body = &effect.as_array().unwrap()[2];
         assert_eq!(body.as_array().unwrap()[1].as_str(), Some("@entity.finalOnly"));
-        let recursive = serde_json::to_value(shape.named.get("TreeValue").unwrap()).unwrap();
-        assert!(recursive.to_string().contains("TreeValue"), "{recursive}");
+        let recursive = serde_json::to_value(shape.named.get("origin::TreeValue").unwrap()).unwrap();
+        assert!(recursive.to_string().contains("origin::TreeValue"), "{recursive}");
         let verdict = orbital_compiler::phases::validation::validate_comprehensive_without_services(&schema);
         assert!(verdict.errors.is_empty(), "{:?}", verdict.errors);
         assert!(verdict.warnings.is_empty(), "{:?}", verdict.warnings);

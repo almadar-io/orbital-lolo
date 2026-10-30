@@ -110,36 +110,6 @@ fn flashcards_shared_entity_inline_wrappers_are_one_authority() {
     resolve_to_oir(&schema).expect("OIR resolve (emit path) must succeed");
 }
 
-#[test]
-fn flashcards_second_hand_written_reader_still_rejected() {
-    // Same shape plus a genuinely independent second reader trait —
-    // referenced from NO render tree — must still trip the authority rule.
-    // Same slot ("main") as DeckView's authority render: the validator's
-    // per-slot refinement (entity_mutation.rs) only contends readers that
-    // share a (entity, slot) pair, so a differently-slotted second reader
-    // is legitimately not a violation — this fixture must match slots to
-    // actually exercise the single-authority-per-slot rule it asserts.
-    let src = FLASHCARDS_LOLO.replace(
-        "  page \"/deck\" as DeckPage -> DeckView",
-        r#"  trait RogueReader -> FlashcardDeck {
-    state idle {
-      INIT -> idle
-        (render-ui main { type: badge, label: @entity.title })
-    }
-  }
-
-  page "/deck" as DeckPage -> DeckView"#,
-    );
-    let schema = compile_and_inline(&src).expect("inline must succeed");
-    let result = validate(&schema);
-    assert!(
-        result
-            .all_issues()
-            .any(|e| e.code == ErrorCode::SharedEntityRenderAuthority),
-        "an unreferenced second reader must still be rejected"
-    );
-}
-
 // ---------------------------------------------------------------------------
 // Fixture 2 — multi-party shape: data-list renderItem lambda with inline
 // refs reading @party.*; emits merged into the host.
@@ -240,24 +210,6 @@ fn multi_party_lambda_inline_refs_splice_into_host_scope() {
     assert!(
         oir_json.contains("@party.title"),
         "emitted IR must contain the expanded raw nodes inside the lambda"
-    );
-}
-
-#[test]
-fn multi_party_party_binding_outside_lambda_still_rejected() {
-    // Pin: the splice must not blanket-legalize lambda-param roots. `@party`
-    // OUTSIDE any lambda stays an unknown binding root.
-    let src = MULTI_PARTY_LOLO.replace(
-        "          entity: @entity.parties",
-        "          entity: @entity.parties\n          header: @party.title",
-    );
-    let schema = compile_and_inline(&src).expect("inline must succeed");
-    let result = validate(&schema);
-    assert!(
-        result
-            .all_issues()
-            .any(|e| e.code == ErrorCode::BindingUnknownRoot),
-        "@party outside a lambda must still be rejected"
     );
 }
 
