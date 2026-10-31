@@ -603,21 +603,21 @@ fn the_credential_administration_effects_lower_with_their_request_object_and_sur
 
 #[test]
 fn access_check_lowers_its_request_with_bare_words_as_strings_and_survives_the_formatter() {
-    let call = "(access-check { entity: Demo, action: create, row: { id: @payload.id }, viewer: @payload.viewer } { emit: { success: CHECKED, failure: CHECK_FAILED } })";
+    let call = "(access-check { entity: Demo, action: create, row: { id: @payload.id }, identity: @payload.identity } { emit: { success: CHECKED, failure: CHECK_FAILED } })";
     let src = plain_program(call);
     assert_eq!(
         effects_of(&src),
         vec![json!(["access-check",
-            { "entity": "Demo", "action": "create", "row": { "id": "@payload.id" }, "viewer": "@payload.viewer" },
+            { "entity": "Demo", "action": "create", "row": { "id": "@payload.id" }, "identity": "@payload.identity" },
             { "emit": { "success": "CHECKED", "failure": "CHECK_FAILED" } }])]
     );
     let formatted = format_program(&parse_str(&src).expect("parse"));
     assert!(formatted.contains("access-check"), "{formatted}");
     assert_eq!(effects_of(&formatted), effects_of(&src));
-    let bare = plain_program("(access-check { entity: Demo, action: read, row: {}, viewer: null })");
+    let bare = plain_program("(access-check { entity: Demo, action: read, row: {}, identity: null })");
     assert_eq!(
         effects_of(&bare),
-        vec![json!(["access-check", { "entity": "Demo", "action": "read", "row": {}, "viewer": null }])],
+        vec![json!(["access-check", { "entity": "Demo", "action": "read", "row": {}, "identity": null }])],
         "control: the options are optional"
     );
 }
