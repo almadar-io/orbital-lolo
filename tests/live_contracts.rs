@@ -127,3 +127,75 @@ fn edge_a_live_traits_config_types_are_checked() {
     assert!(err.to_string().contains("title"), "{err}");
 }
 
+
+fn base_atom(trait_name: &str) -> String {
+    chrome(trait_name, "").replace("zz-chrome", "zz-base").replace("ChromeOrbital", "BaseOrbital").replace("ChromeView", "BaseView").replace("ChromePage", "BasePage").replace("/chrome", "/base")
+}
+
+fn chrome_over_base() -> String {
+    r#"app zz-chrome [version: "1.0.0", description: "chrome"]
+orbital ChromeOrbital {
+  uses Base from "zz/zz-base"
+
+  entity ChromeView [runtime] {
+    id : string!
+  }
+
+  trait NewBar = Base.traits.BaseBar -> ChromeView {
+  }
+
+  page "/chrome" as ChromePage -> NewBar
+}
+"#
+    .to_string()
+}
+
+fn reads_of_a_lower(opts: &LowerOptions) -> orbital_core_base::read_set::ReadSet {
+    orbital_core_base::read_set::begin();
+    let lowered = parse_and_lower_str_with(&consumer("NewBar"), opts);
+    let reads = orbital_core_base::read_set::end();
+    lowered.expect("the live trait resolves");
+    reads
+}
+
+#[test]
+fn a_cached_live_contract_still_records_its_nested_imports_and_goes_stale_with_them() {
+    let tmp = tempfile::tempdir().unwrap();
+    let opts = options(package(tmp.path(), true, &chrome_over_base()));
+    let atoms = tmp.path().join("zz/behaviors/lolo/atoms");
+    fs::write(atoms.join("zz-base.lolo"), base_atom("BaseBar")).unwrap();
+    let nested = atoms.join("zz-base.lolo");
+    let first = reads_of_a_lower(&opts);
+    assert!(first.paths().any(|p| p == &nested), "control: the lowering that read it records it");
+    let cached = reads_of_a_lower(&opts);
+    assert!(cached.paths().any(|p| p == &nested), "the cached hit records the nested import too");
+    assert!(cached.is_current());
+    fs::write(&nested, base_atom("OtherBar")).unwrap();
+    assert!(!cached.is_current(), "editing the nested import changes the recorded state");
+    let after = reads_of_a_lower(&opts);
+    assert!(after.is_current());
+}
+
+fn consumer_reads(opts: &LowerOptions) -> orbital_core_base::read_set::ReadSet {
+    orbital_core_base::read_set::begin();
+    let lowered = parse_and_lower_str_with(&consumer("NewBar"), opts);
+    let reads = orbital_core_base::read_set::end();
+    lowered.expect("the live trait resolves");
+    reads
+}
+
+#[test]
+fn a_lower_through_a_package_goes_stale_when_a_package_file_changes_or_one_is_added() {
+    let tmp = tempfile::tempdir().unwrap();
+    let opts = options(package(tmp.path(), true, &chrome("NewBar", "")));
+    let atoms = tmp.path().join("zz/behaviors/lolo/atoms");
+    let unchanged = consumer_reads(&opts);
+    assert!(unchanged.is_current(), "control: nothing changed");
+    assert!(consumer_reads(&opts).is_current(), "control: a cached read is still current");
+    fs::write(atoms.join("zz-extra.lolo"), base_atom("ExtraBar")).unwrap();
+    assert!(!unchanged.is_current(), "a file added to a package directory");
+    let after_add = consumer_reads(&opts);
+    assert!(after_add.is_current());
+    fs::write(atoms.join("zz-chrome.lolo"), chrome("RenamedBar", "")).unwrap();
+    assert!(!after_add.is_current(), "a package file edited");
+}

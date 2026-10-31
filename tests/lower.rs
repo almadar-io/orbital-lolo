@@ -1371,11 +1371,10 @@ orbital Probe {{
             let found = errors(default, &settled);
             assert!(found.is_empty(), "{default}: {found:?}");
         }
-        let failable = errors("[\"a\"]", entries);
-        assert!(
-            failable.iter().any(|e| matches!(e.code, ErrorCode::SetReturnTypeMismatch)),
-            "control: object/fromEntries is failable, so its bare answer never fills a required map: {failable:?}"
-        );
+        for default in ["[\"a\"]", "[]"] {
+            let bare = errors(default, entries);
+            assert!(bare.is_empty(), "object/fromEntries never answers null, so its bare answer fills the map ({default}): {bare:?}");
+        }
     }
 
     #[test]

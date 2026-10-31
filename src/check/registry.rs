@@ -144,6 +144,13 @@ struct LiveIndex {
 }
 
 impl LiveIndex {
+    /// The directories this index answers from count as read by whoever asks, cached or not.
+    fn note_read(&self) {
+        for (dir, _) in &self.dirs {
+            orbital_core_base::read_set::note(dir);
+        }
+    }
+
     /// A directory changed since the scan, or was modified too close to it for its time to tell (a filesystem with
     /// coarse timestamps can stamp a later addition with the same time).
     fn stale(&self) -> bool {
@@ -189,6 +196,7 @@ impl LiveSlice {
     fn file(&self, key: &str) -> Option<PathBuf> {
         let mut index = self.index.lock().expect("live contract index poisoned");
         let current = index.get_or_insert_with(|| self.scan());
+        current.note_read();
         if let Some(path) = current.files.get(key) {
             return Some(path.clone());
         }
@@ -196,17 +204,15 @@ impl LiveSlice {
             return None;
         }
         let rescanned = index.insert(self.scan());
+        rescanned.note_read();
         rescanned.files.get(key).cloned()
     }
 
     fn keys(&self) -> Vec<String> {
         let mut index = self.index.lock().expect("live contract index poisoned");
-        index
-            .get_or_insert_with(|| self.scan())
-            .files
-            .keys()
-            .cloned()
-            .collect()
+        let current = index.get_or_insert_with(|| self.scan());
+        current.note_read();
+        current.files.keys().cloned().collect()
     }
 }
 
@@ -225,20 +231,21 @@ pub struct LoloContracts {
 /// The contract a live behavior file publishes, keyed by path and content
 /// hash: an edited file is lowered again, an unchanged one never.
 fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavior>> {
-    type Cache = HashMap<PathBuf, ([u8; 32], Arc<Behavior>)>;
+    type Cache = HashMap<PathBuf, ([u8; 32], Arc<Behavior>, orbital_core_base::read_set::ReadSet)>;
     static CACHE: OnceLock<Mutex<Cache>> = OnceLock::new();
     thread_local! {
         static LOWERING: std::cell::RefCell<std::collections::HashSet<PathBuf>> = Default::default();
     }
-    let source = std::fs::read_to_string(path).ok()?;
+    let source = orbital_core_base::read_set::read_to_string(path).ok()?;
     let hash: [u8; 32] = Sha256::digest(source.as_bytes()).into();
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Some((h, hit)) = cache
+    if let Some((h, hit, reads)) = cache
         .lock()
         .expect("live contract cache poisoned")
         .get(path)
     {
-        if *h == hash {
+        if *h == hash && reads.is_current() {
+            reads.replay();
             return Some(Arc::clone(hit));
         }
     }
@@ -247,6 +254,7 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
     if !LOWERING.with(|l| l.borrow_mut().insert(path.to_path_buf())) {
         return None;
     }
+    orbital_core_base::read_set::begin();
     let lowered = crate::parse_str(&source)
         .map_err(|e| e.to_string())
         .and_then(|ast| {
@@ -259,6 +267,7 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
             )
             .map_err(|e| e.to_string())
         });
+    let reads = orbital_core_base::read_set::end();
     LOWERING.with(|l| l.borrow_mut().remove(path));
     let schema = match lowered {
         Ok(schema) => schema,
@@ -271,7 +280,7 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
     cache
         .lock()
         .expect("live contract cache poisoned")
-        .insert(path.to_path_buf(), (hash, Arc::clone(&behavior)));
+        .insert(path.to_path_buf(), (hash, Arc::clone(&behavior), reads));
     Some(behavior)
 }
 
