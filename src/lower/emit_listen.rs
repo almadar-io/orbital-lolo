@@ -2268,6 +2268,18 @@ mod entity_payload_marker_tests {
     }
 
     #[test]
+    fn a_sealed_type_names_an_emit_payload_field_by_name() {
+        let entities_by_name = note_entities();
+        let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
+        let event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
+        let def = lower_emit(&emit_with("credential", TypeExpr::Named("Verified".to_string())), &aliases, &entities_by_name, &event_aliases, &[])
+            .expect("a sealed type is a known payload type");
+        let field = &def.payload_schema.expect("payload present")[0];
+        assert_eq!(field.field_type, "Verified");
+        assert_eq!(field.entity, None, "a sealed type is not an entity");
+    }
+
+    #[test]
     fn language_program_type_names_an_emit_payload_field() {
         let entities_by_name = note_entities();
         let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();

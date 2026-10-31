@@ -725,9 +725,11 @@ fn visit_expr_refs(te: &TypeExpr, out: &mut BTreeSet<String>) {
     }
 }
 
-/// A language program value type (`Viewer`, `BehaviorRef`, …); a file-local definition of the name is looked up first.
+/// A language program value type (`Viewer`, `BehaviorRef`, …) or a sealed type (`Verified`, EXEC-IDENTITY-2); a
+/// file-local definition of the name is looked up first.
 pub(crate) fn is_program_type(name: &str) -> bool {
     orbital_core_base::language::program_types::program_type(name).is_some()
+        || orbital_core_base::sealed::is_sealed_type(name)
 }
 
 fn is_primitive(name: &str) -> bool {
@@ -2540,6 +2542,13 @@ orbital OrbU {{
             matches!(err, TypeError::UnknownType { ref name, .. } if name == "Viewr"),
             "control: a name neither local nor a program type stays unknown, got {err:?}"
         );
+    }
+
+    #[test]
+    fn ok_a_sealed_type_names_an_event_payload_field_and_a_misspelling_stays_unknown() {
+        check(&undefined_type_src("", "", "credential : Verified!", "credential : Verified!")).unwrap();
+        let err = check(&undefined_type_src("", "", "credential : Verifed!", "")).unwrap_err();
+        assert!(matches!(err, TypeError::UnknownType { ref name, .. } if name == "Verifed"), "got {err:?}");
     }
 
     #[test]
