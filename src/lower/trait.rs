@@ -935,6 +935,11 @@ pub(crate) fn lower_trait(
                     } else {
                         None
                     };
+                    let payload = if is_input {
+                        payload.map(require_unmarked_input_fields)
+                    } else {
+                        payload
+                    };
                     Ok(EventDefinition {
                         key: k,
                         id: None,
@@ -1222,4 +1227,14 @@ pub(crate) fn infer_entity_contract(
     provides.sort();
     provides.dedup();
     EntityFieldContract { requires, provides }
+}
+
+/// A declared input's unmarked field is required; `T?` marks it optional (owner ruling 2026-11-01, G-ORB-618).
+fn require_unmarked_input_fields(mut fields: Vec<PayloadField>) -> Vec<PayloadField> {
+    for field in &mut fields {
+        if field.required.is_none() && field.nullable != Some(true) {
+            field.required = Some(true);
+        }
+    }
+    fields
 }

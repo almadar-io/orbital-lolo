@@ -197,3 +197,36 @@ fn a_declared_input_round_trips_through_format_and_unlower() {
     let back = parse_and_lower_str(&text).expect("unlowered text lowers");
     assert_eq!(event(&back, "DO_CREATE")["input"], Value::Bool(true));
 }
+
+fn payload_field(src: &str, key: &str, name: &str) -> Value {
+    let schema = parse_and_lower_str(src).expect("lowers");
+    event(&schema, key)["payloadSchema"]
+        .as_array()
+        .expect("payload schema")
+        .iter()
+        .find(|f| f["name"] == name)
+        .unwrap_or_else(|| panic!("field {name} missing"))
+        .clone()
+}
+
+#[test]
+fn an_unmarked_input_field_is_required_and_a_question_mark_field_is_optional() {
+    let src = program("      DO_CREATE -> input { title : string, note : string?, tag : string! }");
+    assert_eq!(payload_field(&src, "DO_CREATE", "title")["required"], Value::Bool(true));
+    assert_eq!(payload_field(&src, "DO_CREATE", "tag")["required"], Value::Bool(true), "control: an explicit mark stays required");
+    let note = payload_field(&src, "DO_CREATE", "note");
+    assert!(note.get("required").is_none(), "{note}");
+    assert_eq!(note["nullable"], Value::Bool(true));
+}
+
+#[test]
+fn an_unmarked_closed_literal_input_field_is_required() {
+    let src = program("      DO_CREATE -> input { project : \"rows\" | \"ids\" }");
+    assert_eq!(payload_field(&src, "DO_CREATE", "project")["required"], Value::Bool(true));
+}
+
+#[test]
+fn control_an_unmarked_field_of_a_local_listen_stays_optional() {
+    let src = program("      DO_CREATE { title : string }");
+    assert!(payload_field(&src, "DO_CREATE", "title").get("required").is_none());
+}

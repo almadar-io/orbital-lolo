@@ -12,7 +12,7 @@ pub(crate) const GRANT_KEYS: &[&str] =
 
 const ENTRY_INVALID: &str = "ORB_OS_GRANT_ENTRY_INVALID";
 
-const ANCHOR_WORDS: &[&str] = &["exe-dir", "cwd", "env"];
+const ANCHOR_WORDS: &[&str] = &["exe", "exe-dir", "cwd", "env"];
 
 fn words<T: Copy>(table: &[T], name: impl Fn(T) -> &'static str) -> Vec<&'static str> {
     table.iter().map(|k| name(*k)).collect()
@@ -46,7 +46,7 @@ impl Parser {
         Ok(())
     }
 
-    /// Whether the next token is an anchor word (`exe-dir`, `cwd`, `env`), in any installed language.
+    /// Whether the next token is an anchor word (`exe`, `exe-dir`, `cwd`, `env`), in any installed language.
     fn at_anchor(&self) -> bool {
         match self.peek() {
             TokenKind::Identifier(raw) => {
@@ -57,10 +57,11 @@ impl Parser {
         }
     }
 
-    /// `exe-dir`, `cwd` or `env NAME`.
+    /// `exe`, `exe-dir`, `cwd` or `env NAME`.
     fn parse_anchor(&mut self, key: &str) -> Result<GrantAnchor, ParseError> {
         Ok(
             match self.parse_option_word(key, ENTRY_INVALID, ANCHOR_WORDS)? {
+                "exe" => GrantAnchor::Exe,
                 "exe-dir" => GrantAnchor::ExeDir,
                 "cwd" => GrantAnchor::Cwd,
                 _ => GrantAnchor::Env(self.expect_ident()?),
@@ -432,6 +433,18 @@ mod tests {
             ]
         );
         assert!(g.entry_problems().is_empty(), "{:?}", g.entry_problems());
+    }
+
+    #[test]
+    fn the_exe_anchor_parses_as_a_command_and_formats_back() {
+        let source = ANCHORED.replace("exec: [env ORB_BUN_PATH,", "exec: [exe, env ORB_BUN_PATH,");
+        let program = parse_str(&source).unwrap_or_else(|e| panic!("{e}"));
+        assert!(program.app.os_grants.anchored.exec.contains(&AnchoredExec { anchor: GrantAnchor::Exe, path: None }));
+        let text = format_program(&program);
+        assert!(text.contains("exec: [") && text.contains("exe,"), "{text}");
+        let again = parse_str(&text).unwrap_or_else(|e| panic!("{e}\n{text}"));
+        assert_eq!(again.app.os_grants, program.app.os_grants);
+        assert!(parse_str(ANCHORED).unwrap().app.os_grants.anchored.exec.iter().all(|e| e.anchor != GrantAnchor::Exe), "control");
     }
 
     #[test]
