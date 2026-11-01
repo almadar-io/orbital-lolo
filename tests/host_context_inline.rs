@@ -269,3 +269,140 @@ fn stateful_wrapper_in_lambda_is_rejected_with_clear_error() {
         other => panic!("expected LambdaStatefulTrait, got {other:?}"),
     }
 }
+
+const LET_RENDER_LOLO: &str = r#"orbital LetRender {
+  uses UIBadge from "std/behaviors/ui-badge"
+  entity Row [runtime] {
+    id : string!
+    n : number = 0
+  }
+  trait Show -> Row [client] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      CALC -> idle
+        (let ((total (+ 1 2)))
+          (render-ui main <Stack direction={vertical}><UIBadge.traits.BadgeRender linkedEntity="Row" amount={@total} label="Total" /></Stack>))
+    }
+  }
+  page "/" as LetRenderPage -> Show
+}"#;
+
+#[test]
+fn render_prop_reading_a_let_binding_resolves_in_the_let_scope() {
+    let schema = compile_and_inline(LET_RENDER_LOLO).expect("inline must succeed");
+    let json = serde_json::to_string(&schema).unwrap();
+    assert!(!json.contains("@trait."), "wrapper must be spliced away: {json}");
+    assert!(json.contains(r#""amount":"@total""#), "the prop must sit inside the let body: {json}");
+    assert_eq!(
+        schema.orbitals[0].traits.len(),
+        1,
+        "the consumed wrapper must be removed"
+    );
+}
+
+#[test]
+fn control_a_prop_reading_no_binding_keeps_the_reference() {
+    let src = LET_RENDER_LOLO.replace("amount={@total}", "amount={@nothing}");
+    let schema = compile_and_inline(&src).expect("inline must succeed");
+    let json = serde_json::to_string(&schema).unwrap();
+    assert!(json.contains("@trait."), "an unbound name must not be captured by the let: {json}");
+    assert_eq!(schema.orbitals[0].traits.len(), 2, "the wrapper is kept");
+}
+
+const LET_STAT_LOLO: &str = r#"orbital LetStat {
+  uses Stat from "std/behaviors/ui-stat-display"
+  entity Row [runtime] {
+    id : string!
+    n : number = 0
+  }
+  trait Show -> Row [client] {
+    initial: idle
+    state idle {
+      INIT -> idle
+      CALC -> idle
+        (let ((total 3))
+          (render-ui main <Stat.traits.StatDisplayRender linkedEntity={Row} format={number} label={"Total"} value={@total} ariaLabel={"Sum"} />))
+    }
+  }
+  page "/" as LetStatPage -> Show
+}"#;
+
+fn show_trait_json(schema: &OrbitalSchema) -> String {
+    let show = schema.orbitals[0]
+        .traits
+        .iter()
+        .find_map(|tr| match tr {
+            TraitReference::Inline(td) if td.name == "Show" => Some(td),
+            _ => None,
+        })
+        .expect("Show trait");
+    serde_json::to_string(&show.state_machine).unwrap()
+}
+
+#[test]
+fn spliced_let_wrapper_resolves_its_own_config_forwards() {
+    let schema = compile_and_inline(LET_STAT_LOLO).expect("inline must succeed");
+    let json = show_trait_json(&schema);
+    assert!(json.contains("@total"), "the prop must sit inside the let body: {json}");
+    assert!(!json.contains("@config."), "no wrapper config forward may survive the splice: {json}");
+    assert!(json.contains(r#""aria-label":"Sum""#), "the call-site prop wins: {json}");
+}
+
+#[test]
+fn control_an_unspliced_wrapper_keeps_its_own_config_forwards() {
+    let src = LET_STAT_LOLO.replace("value={@total}", "value={@nothing}");
+    let schema = compile_and_inline(&src).expect("inline must succeed");
+    let wrapper = schema.orbitals[0]
+        .traits
+        .iter()
+        .find_map(|tr| match tr {
+            TraitReference::Inline(td) if td.name != "Show" => Some(td),
+            _ => None,
+        })
+        .expect("wrapper kept");
+    assert!(wrapper.config.is_some(), "the kept wrapper keeps its config");
+}
+
+fn trait_ids_and_ledger_trait_rows(schema: &OrbitalSchema) -> (Vec<String>, Vec<String>) {
+    let live = schema
+        .orbitals
+        .iter()
+        .flat_map(|o| o.traits.iter())
+        .filter_map(|tr| match tr {
+            TraitReference::Inline(td) => td.id.clone(),
+            _ => None,
+        })
+        .collect();
+    let rows = schema
+        .ledger
+        .as_ref()
+        .map(|l| {
+            l.entries
+                .values()
+                .filter(|row| row.kind == orbital_core_base::identity::IdKind::Trait)
+                .map(|row| row.id.clone())
+                .collect()
+        })
+        .unwrap_or_default();
+    (live, rows)
+}
+
+#[test]
+fn let_splice_leaves_no_ledger_row_for_the_removed_wrapper() {
+    let schema = compile_and_inline(LET_STAT_LOLO).expect("inline must succeed");
+    assert_eq!(schema.orbitals[0].traits.len(), 1, "the wrapper must be removed");
+    let (live, rows) = trait_ids_and_ledger_trait_rows(&schema);
+    let stale: Vec<&String> = rows.iter().filter(|r| !live.contains(r)).collect();
+    assert!(stale.is_empty(), "ledger rows carried by no trait: {stale:?}");
+}
+
+#[test]
+fn control_an_unspliced_wrapper_keeps_its_ledger_row() {
+    let src = LET_STAT_LOLO.replace("value={@total}", "value={@nothing}");
+    let schema = compile_and_inline(&src).expect("inline must succeed");
+    assert_eq!(schema.orbitals[0].traits.len(), 2, "the wrapper is kept");
+    let (live, rows) = trait_ids_and_ledger_trait_rows(&schema);
+    assert_eq!(live.len(), 2);
+    assert!(live.iter().all(|id| rows.contains(id)), "every live trait keeps its row: {live:?} vs {rows:?}");
+}
