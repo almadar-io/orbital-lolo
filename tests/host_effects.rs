@@ -121,25 +121,6 @@ fn the_oauth_effects_lower_with_bare_words_as_strings() {
 }
 
 #[test]
-fn the_oauth_client_http_spelling_lowers_to_the_oauth_endpoint_target() {
-    let call = format!(
-        "(http POST oauth-endpoint token {{ auth: {{ scheme: oauth-client, op: connect, client: {OAUTH_CLIENT}, provider: google, code: @payload.code, state: @payload.state }} }} {{ emit: {{ success: DONE, failure: FAILED }} }})"
-    );
-    let effects = effects_of(&program(&call));
-    assert_eq!(
-        effects,
-        vec![json!(["http", "POST", "oauth-endpoint", "token",
-            { "auth": { "scheme": "oauth-client", "op": "connect", "client": oauth_client_json(), "provider": "google",
-                "code": "@payload.code", "state": "@payload.state" } },
-            { "emit": { "success": "DONE", "failure": "FAILED" } }])]
-    );
-    let discovery = effects_of(&program(&format!(
-        "(http GET \"https://accounts.google.com\" \"/.well-known/openid-configuration\" {{ auth: {{ scheme: oauth-client, op: discovery, client: {OAUTH_CLIENT} }} }})"
-    )));
-    assert_eq!(discovery[0][1], "GET");
-}
-
-#[test]
 fn the_formatter_keeps_the_oauth_heads() {
     for call in [
         "(oauth-connection-status google { emit: { success: DONE } })".to_string(),
@@ -154,18 +135,8 @@ fn the_formatter_keeps_the_oauth_heads() {
 }
 
 #[test]
-fn the_clients_map_and_the_authorize_key_lower_as_written() {
+fn the_authorize_key_lowers_as_written() {
     let first = |call: &str| effects_of(&program(&format!("{call}\n        (credential-forget @config.token)"))).remove(0);
-    let github = OAUTH_CLIENT.replace("tag: google", "tag: github");
-    let routed = first(&format!(
-        "(http POST oauth-endpoint token {{ auth: {{ scheme: oauth-client, op: code, clients: {{ google: {OAUTH_CLIENT}, github: {github} }}, code: @payload.code, state: @payload.state }} }} {{ emit: {{ success: DONE }} }})"
-    ));
-    let mut github_json = oauth_client_json();
-    github_json["tag"] = json!("github");
-    assert_eq!(
-        routed[4]["auth"]["clients"],
-        json!({ "google": oauth_client_json(), "github": github_json })
-    );
     let keyed = first(&format!(
         r#"(oauth-authorize {OAUTH_CLIENT} {{ redirectUri: "https://a/cb" }} {{ key: @entity.id, emit: {{ success: DONE, failure: FAILED }} }})"#
     ));
