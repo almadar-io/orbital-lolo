@@ -332,7 +332,7 @@ fn corpus_print_of_parse_is_a_fixed_point_over_every_file() {
 }
 
 #[test]
-#[ignore = "A1 measurement: UNLOWER_MATCH narrows it; lists every corpus file whose print(parse(s)) differs from s, by cause"]
+#[ignore = "tool: A1 measurement: UNLOWER_MATCH narrows it; lists every corpus file whose print(parse(s)) differs from s, by cause"]
 fn corpus_print_of_parse_divergence_by_cause() {
     let Some((_, files)) = corpus_files() else {
         return;
@@ -386,7 +386,7 @@ fn corpus_io_behaviors_sample() {
 }
 
 #[test]
-#[ignore = "debug helper: UNLOWER_FILE=<path> prints the unlowered source"]
+#[ignore = "tool: debug helper: UNLOWER_FILE=<path> prints the unlowered source"]
 fn dump_printed() {
     let Ok(file) = std::env::var("UNLOWER_FILE") else {
         return;

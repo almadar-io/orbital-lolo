@@ -235,20 +235,8 @@ fn fixture_15_agent_invocation() {
 }
 
 #[test]
-#[ignore = "fixture uses `on EVENT { ... }` trait-ref effects-override syntax, removed in Phase 9.5.H. Parser errors as designed."]
-fn fixture_16_use_imports() {
-    assert_lowering_matches("16-use-imports");
-}
-
-#[test]
 fn fixture_17_type_entity_decl() {
     assert_lowering_matches("17-type-entity-decl");
-}
-
-#[test]
-#[ignore = "fixture uses `on EVENT { ... }` trait-ref effects-override syntax, removed in Phase 9.5.H. Parser errors as designed."]
-fn fixture_18_type_trait_param() {
-    assert_lowering_matches("18-type-trait-param");
 }
 
 #[test]
@@ -259,18 +247,6 @@ fn fixture_19_type_composition() {
 #[test]
 fn fixture_20_type_annotation() {
     assert_lowering_matches("20-type-annotation");
-}
-
-#[test]
-#[ignore = "fixture uses `on EVENT { ... }` trait-ref effects-override syntax, removed in Phase 9.5.H. Parser errors as designed."]
-fn fixture_21_type_orbital_shape() {
-    assert_lowering_matches("21-type-orbital-shape");
-}
-
-#[test]
-#[ignore = "fixture uses `on EVENT { ... }` trait-ref effects-override syntax, removed in Phase 9.5.H. Parser errors as designed."]
-fn fixture_22_crud_orbital_typed() {
-    assert_lowering_matches("22-crud-orbital-typed");
 }
 
 #[test]
