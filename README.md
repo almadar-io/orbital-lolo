@@ -8,7 +8,7 @@
 
 </div>
 
-<p align="center"><sub>Part of <a href="https://github.com/almadar-io/orb"><b>Orb</b></a>: the language where the rule is the program. <a href="https://orb.almadar.io">orb.almadar.io</a></sub></p>
+<p align="center"><sub>Part of <a href="https://github.com/almadar-io/orb"><b>Orb</b></a>: a programming language of composable state machines. <a href="https://orb.almadar.io">orb.almadar.io</a></sub></p>
 
 `.lolo` is the Lisp-flavoured surface notation people and LLMs write; `.orb` JSON is the IR the rest of the toolchain reads. This crate lexes and parses `.lolo` into an AST and lowers it to an `OrbitalSchema` from `orbital-core`, with author-time errors, source maps back to the text, a formatter and completion. The result feeds the compiler pipeline unchanged.
 
