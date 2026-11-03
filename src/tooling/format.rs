@@ -6,7 +6,7 @@
 //! line before the node that follows them (re-indented to the output).
 
 use orbital_core_base::os_grants::{
-    CredentialKind, DesktopKind, DevKind, FsMode, KvMode, NetKind, NetPart, OsGrants, StdioKind, SysKind,
+    CredentialKind, DesktopKind, DevKind, FsMode, KernelKind, KvMode, MemKind, NetKind, NetPart, OsGrants, StdioKind, SysKind,
 };
 use orbital_core_base::schema::SExpression;
 use std::collections::HashMap;
@@ -576,6 +576,71 @@ impl Formatter {
                         f.write_quoted_string(&grant.target);
                         f.output
                             .push_str(&format!(": [{}]", names(&grant.kinds, DevKind::name)));
+                    }
+                    f.output.push_str(" }");
+                }),
+            ));
+        }
+        if !grants.mem.is_empty() {
+            entries.push((
+                "mem",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str("{ ");
+                    for (i, grant) in grants.mem.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(&grant.target);
+                        f.output
+                            .push_str(&format!(": [{}]", names(&grant.kinds, MemKind::name)));
+                    }
+                    f.output.push_str(" }");
+                }),
+            ));
+        }
+        if !grants.kernel.is_empty() {
+            entries.push((
+                "kernel",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str("{ ");
+                    for (i, grant) in grants.kernel.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(&grant.target);
+                        f.output
+                            .push_str(&format!(": [{}]", names(&grant.kinds, KernelKind::name)));
+                    }
+                    f.output.push_str(" }");
+                }),
+            ));
+        }
+        if !grants.ffi.is_empty() {
+            entries.push((
+                "ffi",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str("{ ");
+                    let mut libraries: Vec<&str> = Vec::new();
+                    for grant in &grants.ffi {
+                        if !libraries.contains(&grant.library.as_str()) {
+                            libraries.push(&grant.library);
+                        }
+                    }
+                    for (i, library) in libraries.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(library);
+                        f.output.push_str(": { ");
+                        for (j, grant) in grants.ffi.iter().filter(|g| g.library == *library).enumerate() {
+                            if j > 0 {
+                                f.output.push_str(", ");
+                            }
+                            f.write_quoted_string(&grant.symbol);
+                            f.output.push_str(": ");
+                            f.write_quoted_string(&grant.signature);
+                        }
+                        f.output.push_str(" }");
                     }
                     f.output.push_str(" }");
                 }),

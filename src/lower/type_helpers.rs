@@ -107,6 +107,7 @@ pub(crate) fn type_expr_to_compat_str(t: &TypeExpr) -> String {
     match t {
         TypeExpr::Primitive(p) => match p.as_str() {
             "int" | "float" | "double" | "long" => "number".to_string(),
+            width if orbital_core_base::num_width::NumWidth::from_name(width).is_some() => "number".to_string(),
             "bool" => "boolean".to_string(),
             other => other.to_string(),
         },

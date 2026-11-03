@@ -187,10 +187,7 @@ mod supervisor {
     }
 
     fn number(payload: &Value, field: &str) -> Option<f64> {
-        match payload.get_path(field) {
-            Some(Value::Number(n)) => Some(*n),
-            _ => None,
-        }
+        payload.get_path(field).and_then(Value::as_number)
     }
 
     fn count(events: &[(String, Value)], name: &str) -> usize {

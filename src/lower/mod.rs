@@ -1612,6 +1612,38 @@ mod tests {
         );
     }
 
+    const SEALED_FIELDS: &str = "orbital Foo { entity Bar [KIND] { id : string!\n arena : Arena?\n v : Verified\n } }";
+
+    fn lower_err(src: &str) -> String {
+        let ast = parse_str(src).expect("parse");
+        lower_to_orb(&ast).expect_err("lowering is refused").to_string()
+    }
+
+    #[test]
+    fn a_sealed_type_names_a_runtime_entity_field() {
+        let ent = lowered_entity(&SEALED_FIELDS.replace("KIND", "runtime"));
+        let field = |name: &str| ent.fields.iter().find(|f| f.name.as_deref() == Some(name)).unwrap();
+        assert_eq!(field("arena").by_name_reference(), Some("Arena"));
+        assert_eq!(field("v").by_name_reference(), Some("Verified"));
+        assert_eq!(
+            orbital_core_base::ir::types::field_shape(field("v")).unwrap(),
+            orbital_core_base::sealed::sealed_type_ref("Verified")
+        );
+    }
+
+    #[test]
+    fn a_sealed_type_on_a_persistent_entity_is_refused() {
+        let err = lower_err(&SEALED_FIELDS.replace("KIND", "persistent"));
+        assert!(err.contains("ORB_L_SEALED_FIELD_NOT_RUNTIME") && err.contains("'arena'"), "got {err}");
+    }
+
+    #[test]
+    fn control_a_misspelt_sealed_type_is_an_unknown_type() {
+        let err = lower_err("orbital Foo { entity Bar [runtime] { id : string!\n arena : Arenaa?\n } }");
+        assert!(err.contains("Arenaa"), "got {err}");
+        assert!(!err.contains("SEALED"), "got {err}");
+    }
+
     #[test]
     fn lower_shared_with_runtime() {
         let ent = lowered_entity("orbital Foo { entity Bar [runtime, shared] { id : string! } }");
@@ -2502,6 +2534,62 @@ mod tests {
             }
             other => panic!("expected SetValueTypeMismatch, got {:?}", other),
         }
+    }
+
+    #[test]
+    fn a_let_annotated_by_a_union_alias_naming_a_sealed_type_carries_a_union() {
+        let src = |body: &str| {
+            format!(
+                r#"
+            type A2 = {body}
+            orbital O {{
+                entity E [runtime] {{
+                    id : string!
+                }}
+                trait T -> E {{
+                    initial: idle
+                    state idle {{
+                        INIT -> idle
+                            (let ((xs : [A2] [1 2])) (log "x" (array/len @xs)))
+                    }}
+                }}
+                page boot as P -> T
+            }}
+        "#
+            )
+        };
+        for body in ["int | number | Borrow", "int | number"] {
+            let schema = lower_to_orb(&parse_str(&src(body)).expect("parse")).expect("lowers");
+            let text = serde_json::to_string(&schema).expect("serializes");
+            assert!(text.contains(r#"\"A2\":{\"kind\":\"union\""#), "{body}: {text}");
+            assert!(!text.contains(r#"\"A2\":{\"kind\":\"enum\""#), "{body}");
+        }
+    }
+
+    #[test]
+    fn a_width_field_lowers_to_its_width_and_unlowers_to_the_same_name() {
+        let src = r#"
+            orbital O {
+                entity Pixel [runtime] {
+                    id : string!
+                    r : u8
+                    total : i64
+                }
+                trait T -> Pixel {
+                    initial: idle
+                    state idle {
+                        INIT -> idle
+                    }
+                }
+                page boot as P -> T
+            }
+        "#;
+        let schema = lower_to_orb(&parse_str(src).expect("parse")).expect("lowers");
+        let text = serde_json::to_string(&schema).expect("serializes");
+        assert!(text.contains(r#""type":"u8""#), "{text}");
+        assert!(text.contains(r#""type":"int""#), "control: i64 is int: {text}");
+        let printed = crate::format_program(&crate::unlower::unlower(&schema).expect("unlowers"));
+        assert!(printed.contains("r : u8"), "{printed}");
     }
 
     #[test]

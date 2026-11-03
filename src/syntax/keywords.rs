@@ -81,6 +81,9 @@ const KEYWORDS: &[&str] = &[
     "desktop",
     "kv",
     "dev",
+    "mem",
+    "kernel",
+    "ffi",
     "credentials",
     "on",
     "name",
@@ -273,6 +276,16 @@ const TYPES: &[&str] = &[
     "number",
     "int",
     "float",
+    "i8",
+    "i16",
+    "i32",
+    "i64",
+    "u8",
+    "u16",
+    "u32",
+    "u64",
+    "f32",
+    "f64",
     "bool",
     "boolean",
     "timestamp",
@@ -464,6 +477,13 @@ pub fn non_english_coverage_problems() -> Vec<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn every_number_width_is_a_type_keyword() {
+        for width in orbital_core_base::num_width::NumWidth::ALL {
+            assert!(TYPES.contains(&width.name()), "{width} is missing from TYPES");
+        }
+    }
 
     #[test]
     fn keywords_match_tables() {

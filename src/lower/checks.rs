@@ -2450,6 +2450,7 @@ pub(crate) fn type_config_wiring(
 /// declared types so the check never false-positives on a knob it can't reason
 /// about.
 fn config_type_compatible(got: &str, expected: &str) -> bool {
+    let expected = if orbital_core_base::num_width::NumWidth::from_name(expected).is_some() { "number" } else { expected };
     match got {
         "number" => !matches!(
             expected,

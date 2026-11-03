@@ -727,10 +727,7 @@ orbital O {
                     );
                 }
                 let out = run_fold(&count, nested);
-                out.map(|v| match v {
-                    Value::Number(n) => Some(n),
-                    _ => None,
-                })
+                out.map(|v| v.as_number())
             })
             .unwrap();
         assert_eq!(

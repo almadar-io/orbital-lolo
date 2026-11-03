@@ -4,11 +4,12 @@
 use super::*;
 use orbital_core_base::os_grants::{
     AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, CredentialKind, DesktopKind, DevGrant, DevKind, FsGrant, FsMode, GrantAnchor,
-    KvMode, NetGrant, NetKind, NetPart, OsGrants, StdioKind, SysKind,
+    FfiGrant, KernelGrant, KernelKind, KvMode, MemGrant, MemKind, NetGrant, NetKind, NetPart, OsGrants, StdioKind, SysKind,
+    parse_ffi_signature,
 };
 
 pub(crate) const GRANT_KEYS: &[&str] =
-    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv", "dev", "credentials"];
+    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv", "dev", "mem", "kernel", "ffi", "credentials"];
 
 const ENTRY_INVALID: &str = "ORB_OS_GRANT_ENTRY_INVALID";
 
@@ -41,6 +42,9 @@ impl Parser {
             }
             "kv" => self.parse_kv_grants(grants)?,
             "dev" => self.parse_dev_grants(grants)?,
+            "mem" => self.parse_mem_grants(grants)?,
+            "kernel" => self.parse_kernel_grants(grants)?,
+            "ffi" => self.parse_ffi_grants(grants)?,
             _ => unreachable!("GRANT_KEYS covers every key"),
         }
         Ok(())
@@ -142,6 +146,134 @@ impl Parser {
             self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
             let kinds = self.parse_grant_words("dev", DevKind::ALL, |k| k.name())?;
             grants.dev.push(DevGrant { target, kinds });
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+    }
+
+    /// `kernel: { "apply:<operator or ns/*>": [call], "queue": [reorder], "introspect": [read], "guest": [spawn] }`.
+    fn parse_kernel_grants(&mut self, grants: &mut OsGrants) -> Result<(), ParseError> {
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                return Ok(());
+            }
+            let span = self.peek_span();
+            let TokenKind::String(target) = self.peek().clone() else {
+                return Err(ParseError::InvalidOptionValue {
+                    code: ENTRY_INVALID,
+                    key: "kernel".to_string(),
+                    message: "a kernel target is a string: `\"apply:math/*\"`, `\"queue\"`, `\"introspect\"` or `\"guest\"`".to_string(),
+                    span,
+                });
+            };
+            self.advance();
+            if grants.kernel.iter().any(|g| g.target == target) {
+                return Err(ParseError::DuplicateOption { key: target, context: "kernel", span });
+            }
+            self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
+            let kinds = self.parse_grant_words("kernel", KernelKind::ALL, |k| k.name())?;
+            grants.kernel.push(KernelGrant { target, kinds });
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+    }
+
+    /// `ffi: { "<library>": { <symbol>: "<signature>", … } }`; a symbol is a bare identifier or a string, a signature is
+    /// checked against the closed C-signature grammar here.
+    fn parse_ffi_grants(&mut self, grants: &mut OsGrants) -> Result<(), ParseError> {
+        let invalid = |message: String, span| ParseError::InvalidOptionValue { code: ENTRY_INVALID, key: "ffi".to_string(), message, span };
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        let mut libraries: Vec<String> = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                return Ok(());
+            }
+            let span = self.peek_span();
+            let TokenKind::String(library) = self.peek().clone() else {
+                return Err(invalid("a foreign library is a string, passed to the loader verbatim: `\"/usr/lib/libm.so\": { cos: \"(f64) -> f64\" }`".to_string(), span));
+            };
+            self.advance();
+            if libraries.contains(&library) {
+                return Err(ParseError::DuplicateOption { key: library, context: "ffi", span });
+            }
+            libraries.push(library.clone());
+            self.expect_kind(&TokenKind::Colon, "':' after a library")?;
+            self.expect_kind(&TokenKind::LBrace, "{")?;
+            let mut symbols: Vec<String> = Vec::new();
+            loop {
+                self.skip_newlines();
+                if matches!(self.peek(), TokenKind::RBrace) {
+                    self.advance();
+                    break;
+                }
+                let span = self.peek_span();
+                let symbol = match self.peek().clone() {
+                    TokenKind::String(s) => {
+                        self.advance();
+                        s
+                    }
+                    _ => self.expect_ident()?,
+                };
+                if symbols.contains(&symbol) {
+                    return Err(ParseError::DuplicateOption { key: symbol, context: "ffi", span });
+                }
+                self.expect_kind(&TokenKind::Colon, "':' after a symbol")?;
+                let sig_span = self.peek_span();
+                let TokenKind::String(signature) = self.peek().clone() else {
+                    return Err(invalid(format!("the signature of `{symbol}` is a string: `\"(f64) -> f64\"`"), sig_span));
+                };
+                self.advance();
+                if let Err(reason) = parse_ffi_signature(&signature) {
+                    return Err(invalid(format!("`{symbol}`: {reason}"), sig_span));
+                }
+                symbols.push(symbol.clone());
+                grants.ffi.push(FfiGrant { library: library.clone(), symbol, signature });
+                self.skip_newlines();
+                if matches!(self.peek(), TokenKind::Comma) {
+                    self.advance();
+                }
+            }
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+    }
+
+    /// `mem: { "arena:<maxBytes>": [create, free], "shared:<maxBytes>": [create, atomic] }`.
+    fn parse_mem_grants(&mut self, grants: &mut OsGrants) -> Result<(), ParseError> {
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                return Ok(());
+            }
+            let span = self.peek_span();
+            let TokenKind::String(target) = self.peek().clone() else {
+                return Err(ParseError::InvalidOptionValue {
+                    code: ENTRY_INVALID,
+                    key: "mem".to_string(),
+                    message: "a memory target is a string: `\"arena:1048576\"`".to_string(),
+                    span,
+                });
+            };
+            self.advance();
+            if grants.mem.iter().any(|g| g.target == target) {
+                return Err(ParseError::DuplicateOption { key: target, context: "mem", span });
+            }
+            self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
+            let kinds = self.parse_grant_words("mem", MemKind::ALL, |k| k.name())?;
+            grants.mem.push(MemGrant { target, kinds });
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -367,6 +499,82 @@ mod tests {
         AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, FsGrant, FsMode, GrantAnchor, NetKind,
         NetPart,
     };
+
+    #[test]
+    fn a_mem_grant_lowers_into_the_typed_record_and_round_trips() {
+        use orbital_core_base::os_grants::{MemGrant, MemKind};
+        let source = "app x [\n  version: \"1.0.0\",\n  mem: { \"arena:4096\": [create, free] }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
+        let program = parse_str(source).unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(
+            program.app.os_grants.mem,
+            [MemGrant { target: "arena:4096".into(), kinds: vec![MemKind::Create, MemKind::Free] }]
+        );
+        assert!(program.app.os_grants.dev.is_empty(), "control: no dev grant");
+        let formatted = format_program(&program);
+        assert!(formatted.contains(r#"mem: { "arena:4096": [create, free] }"#), "{formatted}");
+        assert_eq!(parse_str(&formatted).unwrap().app.os_grants.mem, program.app.os_grants.mem);
+        assert!(parse_str(&source.replace("[create, free]", "[create, grow]")).is_err(), "edge: an unknown kind");
+        assert!(parse_str(&source.replace("\"arena:4096\": [create, free]", "\"arena:4096\": [create], \"arena:4096\": [free]")).is_err(), "edge: a target named twice");
+    }
+
+    #[test]
+    fn a_kernel_grant_lowers_into_the_typed_record_and_round_trips() {
+        use orbital_core_base::os_grants::{KernelGrant, KernelKind};
+        let source = "app x [\n  version: \"1.0.0\",\n  kernel: { \"apply:math/*\": [call], \"queue\": [reorder] }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
+        let program = parse_str(source).unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(
+            program.app.os_grants.kernel,
+            [
+                KernelGrant { target: "apply:math/*".into(), kinds: vec![KernelKind::Call] },
+                KernelGrant { target: "queue".into(), kinds: vec![KernelKind::Reorder] },
+            ]
+        );
+        let json = serde_json::to_value(&program.app.os_grants).expect("grants");
+        assert_eq!(json["kernel"][0]["target"], "apply:math/*");
+        assert!(program.app.os_grants.mem.is_empty(), "control: no mem grant");
+        let formatted = format_program(&program);
+        assert!(formatted.contains(r#"kernel: { "apply:math/*": [call], "queue": [reorder] }"#), "{formatted}");
+        assert_eq!(parse_str(&formatted).unwrap().app.os_grants.kernel, program.app.os_grants.kernel);
+        assert!(parse_str(&source.replace("[reorder]", "[shuffle]")).is_err(), "edge: an unknown kind");
+        assert!(parse_str(&source.replace("\"queue\": [reorder]", "\"queue\": [reorder], \"queue\": [reorder]")).is_err(), "edge: a target named twice");
+        assert!(parse_str(&source.replace("\"queue\"", "queue")).is_err(), "edge: an unquoted target");
+    }
+
+    #[test]
+    fn an_ffi_grant_lowers_into_typed_entries_and_round_trips() {
+        use orbital_core_base::os_grants::FfiGrant;
+        let source = "app x [\n  version: \"1.0.0\",\n  ffi: { \"/usr/lib/libSystem.B.dylib\": { cos: \"(f64) -> f64\", \"bzero\": \"(mutptr, u64) -> void\" } }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
+        let program = parse_str(source).unwrap_or_else(|e| panic!("{e}"));
+        let entry = |symbol: &str, signature: &str| FfiGrant {
+            library: "/usr/lib/libSystem.B.dylib".into(),
+            symbol: symbol.into(),
+            signature: signature.into(),
+        };
+        assert_eq!(program.app.os_grants.ffi, [entry("cos", "(f64) -> f64"), entry("bzero", "(mutptr, u64) -> void")]);
+        let json = serde_json::to_value(&program.app.os_grants).expect("grants");
+        assert_eq!(json["ffi"][1]["symbol"], "bzero");
+        assert!(program.app.os_grants.kernel.is_empty(), "control: no kernel grant");
+        let formatted = format_program(&program);
+        assert!(
+            formatted.contains(r#"ffi: { "/usr/lib/libSystem.B.dylib": { "cos": "(f64) -> f64", "bzero": "(mutptr, u64) -> void" } }"#),
+            "{formatted}"
+        );
+        assert_eq!(parse_str(&formatted).unwrap().app.os_grants.ffi, program.app.os_grants.ffi);
+    }
+
+    #[test]
+    fn a_malformed_ffi_grant_is_an_author_time_error() {
+        let source = "app x [\n  version: \"1.0.0\",\n  ffi: { \"/lib/libm.so\": { cos: \"(f64) -> f64\" } }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
+        assert!(parse_str(source).is_ok(), "control");
+        let bad = parse_str(&source.replace("(f64) -> f64", "(f64) -> ptr")).expect_err("a pointer return");
+        let message = bad.to_string();
+        assert!(message.contains("cos") && message.contains("ptr"), "{message}");
+        assert!(parse_str(&source.replace("(f64) -> f64", "(f65) -> f64")).is_err(), "edge: an unknown type");
+        assert!(parse_str(&source.replace("\"(f64) -> f64\"", "42")).is_err(), "edge: a signature that is not a string");
+        assert!(parse_str(&source.replace("cos: \"(f64) -> f64\"", "cos: \"(f64) -> f64\", cos: \"(f64) -> f64\"")).is_err(), "edge: a symbol named twice");
+        assert!(parse_str(&source.replace("{ cos: \"(f64) -> f64\" } }", "{ cos: \"(f64) -> f64\" }, \"/lib/libm.so\": { sin: \"(f64) -> f64\" } }")).is_err(), "edge: a library named twice");
+        assert!(parse_str(&source.replace("\"/lib/libm.so\"", "libm")).is_err(), "edge: an unquoted library");
+    }
 
     const ANCHORED: &str = "app a [\n  version: \"1.0.0\",\n  exec: [env ORB_BUN_PATH, exe-dir \"bun\", \"bun\"],\n  fs: { \"/data/**\": [read], exe-dir: \"agent/**\": [read], env ORB_AGENT_DIR: \"**\": [read], cwd: \"docs/**\": [read, meta] },\n  net: { \"db:5432\": [tcp], env HOST, env PORT: listen, \"0.0.0.0\", env PORT: [listen] }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
 

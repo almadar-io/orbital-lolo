@@ -32,6 +32,7 @@ pub(crate) fn lower_entity(
     for f in &entity.fields {
         fields.push(lower_field(f, aliases, entity_names, allow)?);
     }
+    check_sealed_fields_are_runtime(entity, &fields)?;
     let persistence = match &entity.persistence {
         Some(Persistence::Persistent) => Some(CorePersistence::Persistent),
         Some(Persistence::Runtime) => Some(CorePersistence::Runtime),
@@ -63,6 +64,39 @@ pub(crate) fn lower_entity(
         invariants: (!entity.invariants.is_empty()).then(|| entity.invariants.clone()),
         indexes: (!entity.indexes.is_empty()).then(|| entity.indexes.clone()),
     })
+}
+
+/// The sealed type a field's type names, looking through arrays and records.
+fn sealed_in_field(field: &FieldDefinition) -> Option<&str> {
+    if let Some(name) = field.by_name_reference() {
+        return orbital_core_base::sealed::is_sealed_type(name).then_some(name);
+    }
+    field
+        .items
+        .as_deref()
+        .and_then(sealed_in_field)
+        .or_else(|| field.properties.iter().flatten().find_map(|(_, member)| sealed_in_field(member)))
+}
+
+/// EXEC-METAL-3: a sealed value never comes from a wire payload or storage, so only an in-memory `[runtime]` entity
+/// (not browser-stored) may hold one.
+fn check_sealed_fields_are_runtime(entity: &Entity, fields: &[FieldDefinition]) -> Result<(), LowerError> {
+    if matches!(entity.persistence, Some(Persistence::Runtime)) && !entity.browser {
+        return Ok(());
+    }
+    for field in fields {
+        if let Some(sealed) = sealed_in_field(field) {
+            return Err(LowerError::Coded {
+                code: "ORB_L_SEALED_FIELD_NOT_RUNTIME",
+                message: format!(
+                    "field '{}' of entity '{}' is typed by the sealed type `{sealed}`: a sealed value is never stored or read from the wire (EXEC-METAL-3), so declare the entity `[runtime]`",
+                    field.name.as_deref().unwrap_or_default(),
+                    entity.name
+                ),
+            });
+        }
+    }
+    Ok(())
 }
 
 /// The `@<op> none "<reason>"` declarations as the IR's waiver record; `None` when there are none.
@@ -482,6 +516,9 @@ pub(crate) fn lower_type_expr(
                     def.properties.clone(),
                     def.relation.clone(),
                 )
+            } else if orbital_core_base::sealed::is_sealed_type(name) {
+                // Nominal and kernel-made: carried by name (the by-name union form `field_shape` reads as a `TypeRef`).
+                (FieldType::Union, Some(vec![name.clone()]), None, None, None)
             } else if params.contains(&name.as_str()) {
                 (FieldType::type_var(name), None, None, None, None)
             } else {
@@ -748,6 +785,16 @@ pub(crate) fn primitive_to_field_type(name: &str) -> FieldType {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn a_union_naming_a_sealed_type_is_a_type_union_and_control_bare_words_stay_an_enum() {
+        let none = BTreeMap::new();
+        let named = |n: &str| TypeExpr::Named(n.to_string());
+        assert!(is_type_union(&[TypeExpr::Primitive("int".into()), TypeExpr::Primitive("number".into()), named("Borrow")], &none));
+        assert!(is_type_union(&[named("Arena"), named("Block")], &none));
+        assert!(!is_type_union(&[named("fast"), named("slow")], &none));
+        assert!(!is_type_union(&[TypeExpr::Primitive("number".into()), named("Borrows")], &none), "control: a near name is a word");
+    }
     use crate::ast::TypeExpr;
     use std::collections::{BTreeMap, HashSet};
 
@@ -1565,6 +1612,7 @@ pub(crate) fn is_type_union_with(
             TypeExpr::Named(name) => named(name).unwrap_or_else(|| {
                 primitive_field_type(name).is_some()
                     || orbital_core_base::language::program_types::program_type_field(name).is_some()
+                    || orbital_core_base::sealed::is_sealed_type(name)
             }),
             TypeExpr::Primitive(name) => primitive_field_type(name).is_some(),
             TypeExpr::Array(_)
@@ -1616,7 +1664,9 @@ fn struct_union_variants(
                 None if primitive_field_type(name).is_some() => {
                     (name.clone(), TypeExpr::Primitive(name.clone()), Vec::new())
                 }
-                None if orbital_core_base::language::program_types::program_type_field(name).is_some() => {
+                None if orbital_core_base::language::program_types::program_type_field(name).is_some()
+                    || orbital_core_base::sealed::is_sealed_type(name) =>
+                {
                     (name.clone(), candidate.clone(), Vec::new())
                 }
                 _ => return Ok(None),
