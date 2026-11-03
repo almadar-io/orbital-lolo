@@ -55,7 +55,7 @@ fn package(
         "orb": {
             "prefix": prefix,
             "registry": "behaviors/registry",
-            "compiler": ">=0.0.0",
+            "language": ">=0.0.0",
         },
     });
     fs::write(
@@ -74,7 +74,7 @@ fn package(
         lolo_source: with_source.then_some(source),
         vectors: None,
         sidecars: Vec::new(),
-        compiler_range: ">=0.0.0".to_string(),
+        language_range: ">=0.0.0".to_string(),
         std_peer_range: None,
         core_range: None,
         is_link: false,

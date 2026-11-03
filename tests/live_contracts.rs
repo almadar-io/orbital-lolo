@@ -71,7 +71,7 @@ fn package(tmp: &Path, live: bool, lolo: &str) -> BehaviorPackage {
         lolo_source: Some(root.join("behaviors/lolo")),
         vectors: None,
         sidecars: Vec::new(),
-        compiler_range: ">=0.0.0".into(),
+        language_range: ">=0.0.0".into(),
         std_peer_range: None,
         core_range: None,
         is_link: false,

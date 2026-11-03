@@ -14,7 +14,7 @@ fn a_prop_only_in_the_installed_json_is_visible_to_l1_and_l2() {
     fs::create_dir_all(&data).unwrap();
     fs::write(
         core.join("package.json"),
-        r#"{"name":"@almadar/core","version":"0.0.1","orbLanguage":{"compiler":">=0.0.0",
+        r#"{"name":"@almadar/core","version":"0.0.1","orbLanguage":{"version":"1.0.0",
             "patterns":"dist/patterns/patterns-registry.json",
             "componentMapping":"dist/patterns/component-mapping.json",
             "eventContracts":"dist/patterns/event-contracts.json",
