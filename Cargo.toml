@@ -6,8 +6,8 @@ license.workspace = true
 description = "Lexer, parser, and lowering for the .lolo surface language to OrbitalSchema (.orb JSON)"
 
 [dependencies]
-orbital-core-base = { path = "../orbital-core/crates/base" }
-orbital-core-eval = { path = "../orbital-core/crates/eval" }
+orbital-core-base = { git = "https://github.com/almadar-io/orbital-core", branch = "main" }
+orbital-core-eval = { git = "https://github.com/almadar-io/orbital-core", branch = "main" }
 serde.workspace = true
 serde_json.workspace = true
 thiserror.workspace = true
@@ -20,8 +20,8 @@ quote = "1"
 
 [dev-dependencies]
 pretty_assertions.workspace = true
-orbital-compiler = { path = "../orbital-compiler" }
-orbital-test-support = { package = "orbital-integration-tests", path = "../orbital-integration-tests" }
-orbital-core-runtime = { path = "../orbital-core/crates/runtime" }
+orbital-compiler = { git = "https://github.com/almadar-io/orbital-compiler", branch = "main" }
+orbital-test-support = { package = "orbital-integration-tests", git = "https://github.com/almadar-io/orbital-integration-tests", branch = "main" }
+orbital-core-runtime = { git = "https://github.com/almadar-io/orbital-core", branch = "main" }
 serde_json.workspace = true
 tempfile = "3.10"
