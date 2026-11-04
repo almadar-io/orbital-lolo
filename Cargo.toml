@@ -1,27 +1,27 @@
 [package]
 name = "orbital-lolo"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
+version = "19.0.0"
+edition = "2021"
+license = "MIT"
 description = "Lexer, parser, and lowering for the .lolo surface language to OrbitalSchema (.orb JSON)"
 
 [dependencies]
 orbital-core-base = { git = "https://github.com/almadar-io/orbital-core", branch = "main" }
 orbital-core-eval = { git = "https://github.com/almadar-io/orbital-core", branch = "main" }
-serde.workspace = true
-serde_json.workspace = true
-thiserror.workspace = true
+serde = { version = "1.0", features = ["derive", "rc"] }
+serde_json = { version = "1.0", features = ["float_roundtrip"] }
+thiserror = "1.0"
 sha2 = "0.10"
-tracing.workspace = true
+tracing = "0.1"
 
 [build-dependencies]
 syn = { version = "2", features = ["full"] }
 quote = "1"
 
 [dev-dependencies]
-pretty_assertions.workspace = true
+pretty_assertions = "1.4"
 orbital-compiler = { git = "https://github.com/almadar-io/orbital-compiler", branch = "main" }
 orbital-test-support = { package = "orbital-integration-tests", git = "https://github.com/almadar-io/orbital-integration-tests", branch = "main" }
 orbital-core-runtime = { git = "https://github.com/almadar-io/orbital-core", branch = "main" }
-serde_json.workspace = true
+serde_json = { version = "1.0", features = ["float_roundtrip"] }
 tempfile = "3.10"
