@@ -1618,7 +1618,8 @@ pub(crate) fn is_type_union_with(
             TypeExpr::Array(_)
             | TypeExpr::Map(..)
             | TypeExpr::Object(_)
-            | TypeExpr::OpenObject { .. } => true,
+            | TypeExpr::OpenObject { .. }
+            | TypeExpr::SExpr => true,
             _ => false,
         }
     }
@@ -1680,6 +1681,7 @@ fn struct_union_variants(
             TypeExpr::Object(_) | TypeExpr::OpenObject { .. } => {
                 ("object".to_string(), p.clone(), params.to_vec())
             }
+            TypeExpr::SExpr => ("SExpr".to_string(), TypeExpr::SExpr, Vec::new()),
             _ => return Ok(None),
         };
         let name = &variant_name;

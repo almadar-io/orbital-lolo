@@ -2643,6 +2643,43 @@ mod tests {
     }
 
     #[test]
+    fn a_union_with_an_sexpr_member_keeps_that_member() {
+        // std ItemAction's `navigatesTo : string | SExpr`: a path, or a quoted row lambda.
+        let src = r#"
+            orbital ListOrbital {
+                type Act = { label : string!, go : string | SExpr }
+                entity Row {
+                    id : string!
+                }
+                trait RowList -> Row {
+                    config {
+                        acts : [Act] = []
+                    }
+                    initial: idle
+                    state idle {
+                        INIT -> idle
+                            (render-ui main { type: typography, content: (str/concat "" (array/len @config.acts)) })
+                    }
+                }
+            }
+        "#;
+        let ast = parse_str(src).expect("parse");
+        let schema = lower_to_orb(&ast).expect("lowers");
+        let orbital_core_base::schema::TraitReference::Inline(trait_def) = &schema.orbitals[0].traits[0] else {
+            panic!("inline trait");
+        };
+        let acts = trait_def.config.as_ref().and_then(|c| c.get("acts")).expect("acts knob");
+        let go = acts
+            .items
+            .as_ref()
+            .and_then(|i| i.properties.as_ref())
+            .and_then(|p| p.get("go"))
+            .expect("go member");
+        assert_eq!(go.field_type, orbital_core_base::schema::FieldType::Union, "{go:?}");
+        assert_eq!(go.values.as_deref(), Some(&["string".to_string(), "SExpr".to_string()][..]));
+    }
+
+    #[test]
     fn set_literal_outside_declared_enum_errors() {
         // `(set @entity.status pendng)` violates the declared union — Gap
         // G-LOLO-ENUM-UNENFORCED; the closest member feeds the suggestion.

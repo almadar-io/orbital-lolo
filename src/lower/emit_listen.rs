@@ -1052,6 +1052,7 @@ pub(crate) fn union_payload_variants(
                 None => (n.clone(), type_expr_to_string(p), None),
             },
             TypeExpr::Primitive(n) => (n.clone(), type_expr_to_string(p), None),
+            TypeExpr::SExpr => ("SExpr".to_string(), "SExpr".to_string(), None),
             TypeExpr::Map(..) => ("object".to_string(), type_expr_to_string(p), None),
             TypeExpr::Object(_) | TypeExpr::OpenObject { .. } => (
                 "object".to_string(),
