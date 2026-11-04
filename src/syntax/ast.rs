@@ -1328,6 +1328,13 @@ pub struct Listen {
     pub span: Span,
 }
 
+impl Listen {
+    /// A routed listen (`Source.EVENT -> TRIGGER`, `$MOUNT -> TRIGGER`) rides the trait's `listens`; one without a trigger declares a local event's payload.
+    pub fn is_routed(&self) -> bool {
+        self.triggers.is_some()
+    }
+}
+
 /// The `inbound "name" answers ANSWER` part of a local listen.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InboundListen {

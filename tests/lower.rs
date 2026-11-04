@@ -2143,3 +2143,86 @@ fn lowering_the_same_source_from_two_paths_is_byte_identical() {
     let b = lowered_text(&source, "b/deeper/two.lolo");
     assert_eq!(a, b);
 }
+
+fn mount_listen_program(listen: &str) -> String {
+    format!(
+        r#"app MountProbe
+
+orbital Seeder {{
+  entity Mark [runtime] {{
+    id : string!
+  }}
+  trait PageSeed -> Mark {{
+    initial: idle
+    state idle {{
+      INIT -> idle
+      SEED_PAGE -> idle
+    }}
+    listens {{
+      SEED_PAGE {{ page : string!  route : string!  traits : [string]!  entities : [string]! }}
+      {listen}
+    }}
+  }}
+  page "/seed" -> PageSeed
+}}"#
+    )
+}
+
+fn mount_listens(src: &str) -> Vec<Value> {
+    let schema = parse_and_lower_str(src).unwrap_or_else(|e| panic!("{e}"));
+    let json = serde_json::to_value(&schema).expect("serialize");
+    let mut out = Vec::new();
+    fn walk(v: &Value, out: &mut Vec<Value>) {
+        match v {
+            Value::Object(m) => {
+                if m.get("event").and_then(Value::as_str) == Some("$MOUNT") && m.contains_key("triggers") {
+                    out.push(v.clone());
+                }
+                m.values().for_each(|c| walk(c, out));
+            }
+            Value::Array(a) => a.iter().for_each(|c| walk(c, out)),
+            _ => {}
+        }
+    }
+    walk(&json, &mut out);
+    out
+}
+
+#[test]
+fn a_mount_listen_lowers_to_a_sourceless_listen_on_the_route_mount() {
+    let listens = mount_listens(&mount_listen_program("$MOUNT -> SEED_PAGE"));
+    assert_eq!(listens.len(), 1, "{listens:?}");
+    assert_eq!(listens[0]["triggers"], "SEED_PAGE");
+    assert!(listens[0].get("source").is_none_or(Value::is_null), "{:?}", listens[0]);
+}
+
+#[test]
+fn a_mount_listen_keeps_its_guard_and_payload_mapping() {
+    let listens = mount_listens(&mount_listen_program(
+        "$MOUNT -> SEED_PAGE\n        when (> (array/len ?entities) 0)\n        with { page: ?page, route: ?route, traits: ?traits, entities: ?entities }",
+    ));
+    assert_eq!(listens.len(), 1, "{listens:?}");
+    assert!(listens[0].get("guard").is_some_and(|g| !g.is_null()), "{:?}", listens[0]);
+    assert!(listens[0].get("payloadMapping").is_some_and(|g| !g.is_null()), "{:?}", listens[0]);
+}
+
+#[test]
+fn control_a_lifecycle_name_no_route_mount_broadcasts_is_rejected() {
+    for name in ["$INIT", "$UNMOUNT", "$FOO"] {
+        let err = parse_and_lower_str(&mount_listen_program(&format!("{name} -> SEED_PAGE")))
+            .expect_err(name);
+        assert!(err.to_string().contains("$MOUNT"), "{name}: {err}");
+    }
+}
+
+#[test]
+fn edge_a_mount_listen_needs_a_trigger() {
+    let err = parse_and_lower_str(&mount_listen_program("$MOUNT")).expect_err("no trigger");
+    assert!(err.to_string().contains("-> TRIGGER"), "{err}");
+}
+
+#[test]
+fn edge_a_lifecycle_name_outside_a_listens_head_is_not_a_value() {
+    let src = mount_listen_program("$MOUNT -> SEED_PAGE").replace("INIT -> idle\n", "INIT -> idle\n        (set @entity.id $MOUNT)\n");
+    assert!(parse_and_lower_str(&src).is_err());
+}

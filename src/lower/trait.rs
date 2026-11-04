@@ -258,7 +258,7 @@ pub(crate) fn lower_call_site_overrides(
     // `stateMachine.events[].payload` in inline-trait lowering; dropped here
     // in trait-reference lowering since references don't declare inputs).
     let cross_orbital_listens: Vec<&Listen> =
-        listens.iter().filter(|l| l.event.contains('.')).collect();
+        listens.iter().filter(|l| l.is_routed()).collect();
     let listens = if cross_orbital_listens.is_empty() {
         None
     } else {
@@ -641,7 +641,7 @@ pub(crate) fn lower_trait(
     // `listens` array, not merged into the state-machine events list.
     let mut listen_payloads: HashMap<String, Vec<PayloadField>> = HashMap::new();
     for l in &t.listens {
-        if l.event.contains('.') {
+        if l.is_routed() {
             continue; // cross-orbital, handled by listens array below
         }
         // Ensure the local listen's event key is on the events list too,
@@ -761,7 +761,7 @@ pub(crate) fn lower_trait(
     type EventAnn = (Option<String>, Option<String>, Option<String>);
     let mut event_annotations: HashMap<String, EventAnn> = HashMap::new();
     for l in &t.listens {
-        if l.event.contains('.') {
+        if l.is_routed() {
             continue;
         }
         if l.description.is_some() || l.synonyms.is_some() || l.tier.is_some() {
@@ -840,7 +840,7 @@ pub(crate) fn lower_trait(
     let declared_inputs: HashSet<String> = t
         .listens
         .iter()
-        .filter(|l| !l.event.contains('.'))
+        .filter(|l| !l.is_routed())
         .map(|l| l.event.clone())
         .collect();
 
@@ -971,7 +971,7 @@ pub(crate) fn lower_trait(
     // `stateMachine.events[].payload` in inline-trait lowering; dropped here
     // in trait-reference lowering since references don't declare inputs).
     let cross_orbital_listens: Vec<&Listen> =
-        t.listens.iter().filter(|l| l.event.contains('.')).collect();
+        t.listens.iter().filter(|l| l.is_routed()).collect();
     let listens: Option<Vec<orbital_core_base::schema::ListenDefinition>> = if cross_orbital_listens.is_empty() {
         None
     } else {

@@ -74,6 +74,8 @@ pub enum TokenKind {
 
     // ----- Atoms -----
     Identifier(String),
+    /// `$MOUNT`: a kernel lifecycle event name, `$` included. Only a listens head takes one.
+    Lifecycle(String),
     /// `@field`, `@entity.field`, `@now`, `@state`, `@payload.x`, `@EntityName.field`.
     Sigil(String),
     /// `?field`, `?` (bare), `?field.sub`. Lexed identically to a sigil but
@@ -439,6 +441,23 @@ impl Lexer {
                 }
                 _ if is_ident_start(c) => {
                     self.lex_identifier_or_keyword(line, col);
+                }
+                '$' if self.peek_n(1).is_some_and(is_ident_start) => {
+                    self.advance();
+                    let mut buf = String::from("$");
+                    while let Some(c) = self.peek() {
+                        if c.is_alphanumeric() || c == '_' {
+                            buf.push(c);
+                            self.advance();
+                        } else {
+                            break;
+                        }
+                    }
+                    let len = buf.chars().count() as u16;
+                    self.tokens.push(Token {
+                        kind: TokenKind::Lifecycle(buf),
+                        span: Span::new(line, col, len),
+                    });
                 }
                 _ => {
                     return Err(LexError::UnexpectedChar {

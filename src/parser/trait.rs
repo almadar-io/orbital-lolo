@@ -1207,7 +1207,7 @@ impl Parser {
             }
             // A handler starts with an identifier (source), then we expect `.`, then EVENT.
             // Since the lexer emits Sigils with embedded dots, we look for an Identifier here.
-            if let TokenKind::Identifier(_) = self.peek() {
+            if let TokenKind::Identifier(_) | TokenKind::Lifecycle(_) = self.peek() {
                 out.push(self.parse_listen_handler()?);
             } else {
                 break;
@@ -1232,6 +1232,26 @@ impl Parser {
 
     pub(crate) fn parse_listen_handler(&mut self) -> Result<Listen, ParseError> {
         let span = self.peek_span();
+        if let TokenKind::Lifecycle(name) = self.peek().clone() {
+            self.advance();
+            // The route mount's announcement (EXEC-SEED-7) is the one lifecycle event a listen hears.
+            if name != "$MOUNT" {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "`$MOUNT` (the route mount's announcement is the one lifecycle event a listens head names)".to_string(),
+                    got: name,
+                    span,
+                });
+            }
+            if !matches!(self.peek(), TokenKind::Arrow | TokenKind::UnicodeArrow) {
+                return Err(ParseError::UnexpectedToken {
+                    expected: "`$MOUNT -> TRIGGER`".to_string(),
+                    got: format!("{:?}", self.peek()),
+                    span: self.peek_span(),
+                });
+            }
+            self.advance();
+            return self.parse_routed_listen_tail(span, name);
+        }
         let first = self.expect_ident()?;
 
         // Two shapes (post-Phase 10):
@@ -1435,94 +1455,7 @@ impl Parser {
                     });
                 }
                 self.advance();
-                let triggers = self.expect_ident()?;
-                // `-> Target.TRIGGER` — an orbital import's route into one of
-                // its imported traits.
-                let (target_trait, triggers) = if matches!(self.peek(), TokenKind::Dot) {
-                    self.advance();
-                    (Some(triggers), self.expect_ident()?)
-                } else {
-                    (None, triggers)
-                };
-                let triggers = self.canon_event_name(triggers);
-                if matches!(self.peek(), TokenKind::Newline) {
-                    self.advance();
-                }
-                let mut guard = None;
-                let mut key = None;
-                let mut payload_mapping = Vec::new();
-                // Optional `per <expr>`, then indented `when (...)` and `with { ... }` lines.
-                loop {
-                    self.skip_newlines();
-                    if self.check_ident("per") {
-                        if key.is_some() {
-                            return Err(ParseError::UnexpectedToken {
-                                expected: "one `per` clause on a listen".to_string(),
-                                got: "a second `per`".to_string(),
-                                span: self.peek_span(),
-                            });
-                        }
-                        self.advance();
-                        key = Some(self.parse_sexpr_or_value()?);
-                        if matches!(self.peek(), TokenKind::Newline) {
-                            self.advance();
-                        }
-                    } else if self.check_ident("when") {
-                        self.advance();
-                        guard = Some(self.parse_boolean_slot("guard")?);
-                        if matches!(self.peek(), TokenKind::Newline) {
-                            self.advance();
-                        }
-                    } else if self.check_ident("with") {
-                        self.advance();
-                        self.expect_kind(&TokenKind::LBrace, "{")?;
-                        loop {
-                            self.skip_newlines();
-                            if matches!(self.peek(), TokenKind::RBrace) {
-                                self.advance();
-                                break;
-                            }
-                            let key = self.expect_ident()?;
-                            self.expect_kind(&TokenKind::Colon, ":")?;
-                            let value = self.parse_sexpr_or_value()?;
-                            payload_mapping.push((key, value));
-                            if matches!(self.peek(), TokenKind::Comma) {
-                                self.advance();
-                            }
-                            self.skip_newlines();
-                        }
-                        if matches!(self.peek(), TokenKind::Newline) {
-                            self.advance();
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                if let TokenKind::Sigil(raw) = self.peek().clone() {
-                    let annotation = self.canon_annotation_sigil(&raw);
-                    if matches!(annotation.as_str(), "description" | "synonyms" | "tier") {
-                        return Err(ParseError::SourcedListenAnnotation {
-                            annotation,
-                            span: self.peek_span(),
-                        });
-                    }
-                }
-                Ok(Listen {
-                    event: combined,
-                    triggers: Some(triggers),
-                    guard,
-                    key,
-                    payload_mapping,
-                    payload: Vec::new(),
-                    description: None,
-                    synonyms: None,
-                    tier: None,
-                    target_trait,
-                    input: false,
-                    retired_external: None,
-                    inbound: None,
-                    span,
-                })
+                self.parse_routed_listen_tail(span, combined)
             }
             other => Err(ParseError::UnexpectedToken {
                 expected: "{ or . or newline".to_string(),
@@ -1530,6 +1463,98 @@ impl Parser {
                 span: self.peek_span(),
             }),
         }
+    }
+
+    /// What follows the `->` of a routed listen: `TRIGGER` (or `Target.TRIGGER`), then optional `per`, `when` and `with` lines.
+    fn parse_routed_listen_tail(&mut self, span: Span, event: String) -> Result<Listen, ParseError> {
+        let triggers = self.expect_ident()?;
+        // `-> Target.TRIGGER` — an orbital import's route into one of
+        // its imported traits.
+        let (target_trait, triggers) = if matches!(self.peek(), TokenKind::Dot) {
+            self.advance();
+            (Some(triggers), self.expect_ident()?)
+        } else {
+            (None, triggers)
+        };
+        let triggers = self.canon_event_name(triggers);
+        if matches!(self.peek(), TokenKind::Newline) {
+            self.advance();
+        }
+        let mut guard = None;
+        let mut key = None;
+        let mut payload_mapping = Vec::new();
+        // Optional `per <expr>`, then indented `when (...)` and `with { ... }` lines.
+        loop {
+            self.skip_newlines();
+            if self.check_ident("per") {
+                if key.is_some() {
+                    return Err(ParseError::UnexpectedToken {
+                        expected: "one `per` clause on a listen".to_string(),
+                        got: "a second `per`".to_string(),
+                        span: self.peek_span(),
+                    });
+                }
+                self.advance();
+                key = Some(self.parse_sexpr_or_value()?);
+                if matches!(self.peek(), TokenKind::Newline) {
+                    self.advance();
+                }
+            } else if self.check_ident("when") {
+                self.advance();
+                guard = Some(self.parse_boolean_slot("guard")?);
+                if matches!(self.peek(), TokenKind::Newline) {
+                    self.advance();
+                }
+            } else if self.check_ident("with") {
+                self.advance();
+                self.expect_kind(&TokenKind::LBrace, "{")?;
+                loop {
+                    self.skip_newlines();
+                    if matches!(self.peek(), TokenKind::RBrace) {
+                        self.advance();
+                        break;
+                    }
+                    let key = self.expect_ident()?;
+                    self.expect_kind(&TokenKind::Colon, ":")?;
+                    let value = self.parse_sexpr_or_value()?;
+                    payload_mapping.push((key, value));
+                    if matches!(self.peek(), TokenKind::Comma) {
+                        self.advance();
+                    }
+                    self.skip_newlines();
+                }
+                if matches!(self.peek(), TokenKind::Newline) {
+                    self.advance();
+                }
+            } else {
+                break;
+            }
+        }
+        if let TokenKind::Sigil(raw) = self.peek().clone() {
+            let annotation = self.canon_annotation_sigil(&raw);
+            if matches!(annotation.as_str(), "description" | "synonyms" | "tier") {
+                return Err(ParseError::SourcedListenAnnotation {
+                    annotation,
+                    span: self.peek_span(),
+                });
+            }
+        }
+        Ok(Listen {
+            event,
+            triggers: Some(triggers),
+            guard,
+            key,
+            payload_mapping,
+            payload: Vec::new(),
+            description: None,
+            synonyms: None,
+            tier: None,
+            target_trait,
+            input: false,
+            retired_external: None,
+            inbound: None,
+            span,
+        })
     }
 
     pub(crate) fn parse_ticks_block(&mut self) -> Result<Vec<Tick>, ParseError> {

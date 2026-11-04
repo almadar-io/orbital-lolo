@@ -1490,3 +1490,16 @@ fn a_schema_with_a_listen_key_prints_per_and_lowers_back_to_the_same_key() {
     let keys = |s: &orbital_core_base::schema::OrbitalSchema| listens_of(s).iter().map(|l| l.get("key").cloned()).collect::<Vec<_>>();
     assert_eq!(keys(&again), keys(&schema));
 }
+
+#[test]
+fn a_mount_listen_prints_back_as_written_and_unlowers_to_the_same_spelling() {
+    let source = "orbital O {\n  entity E [runtime] {\n    id : string!\n  }\n  trait T -> E {\n    initial: idle\n    state idle {\n      INIT -> idle\n        (render-ui main { type: typography, content: \"x\" })\n      SEED_PAGE -> idle\n    }\n    listens {\n      SEED_PAGE { entities : [string]! }\n      $MOUNT -> SEED_PAGE\n        when (> (array/len ?entities) 0)\n    }\n  }\n  page \"/t\" -> T\n}\n";
+    let formatted = format_program(&parse_str(source).expect("parse"));
+    assert!(formatted.contains("$MOUNT -> SEED_PAGE"), "{formatted}");
+    let again = format_program(&parse_str(&formatted).expect("the printed text parses"));
+    assert_eq!(again, formatted, "idempotent");
+    let schema = parse_and_lower_str(source).expect("lower");
+    let unlowered = schema_to_lolo(&schema).expect("unlower");
+    assert!(unlowered.contains("$MOUNT -> SEED_PAGE"), "{unlowered}");
+    assert!(parse_and_lower_str(&unlowered).is_ok(), "control: the unlowered text lowers again: {unlowered}");
+}
