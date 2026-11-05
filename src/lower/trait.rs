@@ -330,7 +330,7 @@ pub(crate) fn lower_call_site_overrides(
                 // same path atom config declarations take — so named struct
                 // aliases (e.g. `[StepCard]`) resolve to full `items`/
                 // `properties` schemas instead of the string fallback.
-                let (_, _, items, properties, _) =
+                let (lowered_type, lowered_values, items, properties, _) =
                     lower_type_expr(cf.type_expr.peel(), aliases, entity_names, &[])?;
                 SchemaConfigField {
                     nullable: Some(entity::source_nullable(&cf.type_expr, aliases)),
@@ -348,7 +348,8 @@ pub(crate) fn lower_call_site_overrides(
                     description: cf.description.clone(),
                     synonyms: cf.synonyms.clone(),
                     tier: cf.tier.clone(),
-                    values: type_expr_to_config_values(cf.type_expr.peel()),
+                    values: type_expr_to_config_values(cf.type_expr.peel())
+                        .or_else(|| lowered_values.filter(|_| matches!(lowered_type, FieldType::Union))),
                     items,
                     properties,
                     required: None,

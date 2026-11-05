@@ -408,13 +408,14 @@ pub(crate) fn lower_config_fields_to_map(
         let (field_type, items, properties, values) = if let Some(s) = sentinel {
             (s, None, None, None)
         } else {
-            let (_, _, items, properties, _) =
+            let (lowered_type, lowered_values, items, properties, _) =
                 lower_type_expr(cf.type_expr.peel(), aliases, entity_names, type_params)?;
             (
                 type_expr_to_config_string(cf.type_expr.peel()),
                 items,
                 properties,
-                type_expr_to_config_values(cf.type_expr.peel()),
+                type_expr_to_config_values(cf.type_expr.peel())
+                    .or_else(|| lowered_values.filter(|_| matches!(lowered_type, FieldType::Union))),
             )
         };
         map.insert(
