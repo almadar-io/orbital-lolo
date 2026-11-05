@@ -2246,3 +2246,20 @@ fn a_not_found_page_and_a_declared_relation_display_round_trip() {
     );
     assert_round_trips(&source);
 }
+
+fn lowered_knob(types: &str, config: &str) -> Value {
+    let schema = parse_and_lower_str_with(&config_alias_program(types, config), &LowerOptions::default()).expect("lowers");
+    let json = serde_json::to_value(&schema).expect("serializes");
+    json["orbitals"][0]["traits"][0]["config"]["wheres"].clone()
+}
+
+#[test]
+fn a_config_knob_typed_by_a_union_alias_carries_the_union_variant_names() {
+    let knob = lowered_knob("type Env = { anchor : string }\n  type HostPart = string | Env", "wheres : HostPart = \"h\"");
+    assert_eq!(knob["values"], serde_json::json!(["string", "Env"]), "{knob}");
+    assert!(knob["properties"]["Env"].is_object(), "{knob}");
+    let inline = lowered_knob("type Env = { anchor : string }", "wheres : string | Env = \"h\"");
+    assert_eq!(inline["values"], serde_json::json!(["string", "Env"]), "control: an inline union already carried them");
+    let literal = lowered_knob("type Mode = \"a\" | \"b\"", "wheres : Mode = \"a\"");
+    assert!(literal.get("properties").is_none_or(Value::is_null), "control: a literal enum alias stays an enum: {literal}");
+}
