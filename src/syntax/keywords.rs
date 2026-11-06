@@ -84,6 +84,7 @@ const KEYWORDS: &[&str] = &[
     "mem",
     "kernel",
     "ffi",
+    "gpu",
     "credentials",
     "on",
     "name",

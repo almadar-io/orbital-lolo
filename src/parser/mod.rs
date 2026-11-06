@@ -44,6 +44,7 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "mem",
     "kernel",
     "ffi",
+    "gpu",
     "credentials",
     "deployment",
     "public",

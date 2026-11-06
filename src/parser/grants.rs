@@ -4,12 +4,12 @@
 use super::*;
 use orbital_core_base::os_grants::{
     AnchoredExec, AnchoredFsGrant, AnchoredNetGrant, CredentialKind, DesktopKind, DevGrant, DevKind, FsGrant, FsMode, GrantAnchor,
-    FfiGrant, KernelGrant, KernelKind, KvMode, MemGrant, MemKind, NetGrant, NetKind, NetPart, OsGrants, StdioKind, SysKind,
-    parse_ffi_signature,
+    FfiGrant, GpuGrant, GpuKind, KernelGrant, KernelKind, KvMode, MemGrant, MemKind, NetGrant, NetKind, NetPart, OsGrants, StdioKind, SysKind,
+    gpu_target, parse_ffi_signature,
 };
 
 pub(crate) const GRANT_KEYS: &[&str] =
-    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv", "dev", "mem", "kernel", "ffi", "credentials"];
+    &["fs", "exec", "net", "env", "stdio", "sys", "desktop", "kv", "dev", "mem", "kernel", "ffi", "gpu", "credentials"];
 
 const ENTRY_INVALID: &str = "ORB_OS_GRANT_ENTRY_INVALID";
 
@@ -45,6 +45,7 @@ impl Parser {
             "mem" => self.parse_mem_grants(grants)?,
             "kernel" => self.parse_kernel_grants(grants)?,
             "ffi" => self.parse_ffi_grants(grants)?,
+            "gpu" => self.parse_gpu_grants(grants)?,
             _ => unreachable!("GRANT_KEYS covers every key"),
         }
         Ok(())
@@ -274,6 +275,55 @@ impl Parser {
             self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
             let kinds = self.parse_grant_words("mem", MemKind::ALL, |k| k.name())?;
             grants.mem.push(MemGrant { target, kinds });
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+    }
+
+    /// `gpu: { "device:<maxBytes>": [open, compute, render, readback] }`.
+    fn parse_gpu_grants(&mut self, grants: &mut OsGrants) -> Result<(), ParseError> {
+        self.expect_kind(&TokenKind::LBrace, "{")?;
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBrace) {
+                self.advance();
+                return Ok(());
+            }
+            let span = self.peek_span();
+            let TokenKind::String(target) = self.peek().clone() else {
+                return Err(ParseError::InvalidOptionValue {
+                    code: ENTRY_INVALID,
+                    key: "gpu".to_string(),
+                    message: "a gpu target is a string: `\"device:268435456\"`".to_string(),
+                    span,
+                });
+            };
+            self.advance();
+            if gpu_target(&target).is_none() {
+                return Err(ParseError::InvalidOptionValue {
+                    code: ENTRY_INVALID,
+                    key: "gpu".to_string(),
+                    message: format!("`{target}` is not a gpu target; write `\"device:<maxBytes>\"` with a positive byte count"),
+                    span,
+                });
+            }
+            if grants.gpu.iter().any(|g| g.target == target) {
+                return Err(ParseError::DuplicateOption { key: target, context: "gpu", span });
+            }
+            self.expect_kind(&TokenKind::Colon, "':' after a grant target")?;
+            let kinds_span = self.peek_span();
+            let kinds = self.parse_grant_words("gpu", GpuKind::ALL, |k| k.name())?;
+            if kinds.is_empty() {
+                return Err(ParseError::InvalidOptionValue {
+                    code: ENTRY_INVALID,
+                    key: "gpu".to_string(),
+                    message: format!("`{target}` lists no kinds; name at least one of open, compute, render, readback"),
+                    span: kinds_span,
+                });
+            }
+            grants.gpu.push(GpuGrant { target, kinds });
             self.skip_newlines();
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -515,6 +565,39 @@ mod tests {
         assert_eq!(parse_str(&formatted).unwrap().app.os_grants.mem, program.app.os_grants.mem);
         assert!(parse_str(&source.replace("[create, free]", "[create, grow]")).is_err(), "edge: an unknown kind");
         assert!(parse_str(&source.replace("\"arena:4096\": [create, free]", "\"arena:4096\": [create], \"arena:4096\": [free]")).is_err(), "edge: a target named twice");
+    }
+
+    #[test]
+    fn a_gpu_grant_lowers_into_the_typed_record_and_round_trips() {
+        use orbital_core_base::os_grants::{GpuGrant, GpuKind};
+        let source = "app x [\n  version: \"1.0.0\",\n  gpu: { \"device:4096\": [open, compute, render, readback] }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
+        let program = parse_str(source).unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(
+            program.app.os_grants.gpu,
+            [GpuGrant { target: "device:4096".into(), kinds: vec![GpuKind::Open, GpuKind::Compute, GpuKind::Render, GpuKind::Readback] }]
+        );
+        assert!(program.app.os_grants.mem.is_empty(), "control: no mem grant");
+        let formatted = format_program(&program);
+        assert!(formatted.contains(r#"gpu: { "device:4096": [open, compute, render, readback] }"#), "{formatted}");
+        assert_eq!(parse_str(&formatted).unwrap().app.os_grants.gpu, program.app.os_grants.gpu);
+    }
+
+    #[test]
+    fn a_gpu_grant_with_two_targets_keeps_both_and_rejects_a_repeat() {
+        let source = "app x [\n  version: \"1.0.0\",\n  gpu: { \"device:4096\": [open], \"device:8192\": [compute] }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
+        let program = parse_str(source).unwrap_or_else(|e| panic!("{e}"));
+        assert_eq!(program.app.os_grants.gpu.len(), 2);
+        assert!(parse_str(&source.replace("device:8192", "device:4096")).is_err(), "edge: a target named twice");
+    }
+
+    #[test]
+    fn a_malformed_gpu_grant_is_an_author_time_error() {
+        let source = "app x [\n  version: \"1.0.0\",\n  gpu: { \"device:4096\": [open] }\n]\norbital O {\n  entity E {\n    id : string!\n  }\n}\n";
+        assert!(parse_str(source).is_ok(), "control");
+        for (from, to) in [("device:4096", "buffer:4096"), ("device:4096", "device:0"), ("device:4096", "device:"), ("[open]", "[present]"), ("[open]", "[]")] {
+            assert!(parse_str(&source.replace(from, to)).is_err(), "edge: {to}");
+        }
+        assert!(parse_str(&source.replace("\"device:4096\"", "device")).is_err(), "edge: an unquoted target");
     }
 
     #[test]

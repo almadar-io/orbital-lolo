@@ -6,7 +6,7 @@
 //! line before the node that follows them (re-indented to the output).
 
 use orbital_core_base::os_grants::{
-    CredentialKind, DesktopKind, DevKind, FsMode, KernelKind, KvMode, MemKind, NetKind, NetPart, OsGrants, StdioKind, SysKind,
+    CredentialKind, DesktopKind, DevKind, FsMode, GpuKind, KernelKind, KvMode, MemKind, NetKind, NetPart, OsGrants, StdioKind, SysKind,
 };
 use orbital_core_base::schema::SExpression;
 use std::collections::HashMap;
@@ -593,6 +593,23 @@ impl Formatter {
                         f.write_quoted_string(&grant.target);
                         f.output
                             .push_str(&format!(": [{}]", names(&grant.kinds, MemKind::name)));
+                    }
+                    f.output.push_str(" }");
+                }),
+            ));
+        }
+        if !grants.gpu.is_empty() {
+            entries.push((
+                "gpu",
+                Box::new(move |f: &mut Self| {
+                    f.output.push_str("{ ");
+                    for (i, grant) in grants.gpu.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(&grant.target);
+                        f.output
+                            .push_str(&format!(": [{}]", names(&grant.kinds, GpuKind::name)));
                     }
                     f.output.push_str(" }");
                 }),
