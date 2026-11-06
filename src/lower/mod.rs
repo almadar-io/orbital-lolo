@@ -405,6 +405,7 @@ fn lower_to_orb_names_only(
         theme_definitions: None,
         themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.clone()),
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
+        messages: None,
         egress: (!ast.app.egress.is_empty()).then(|| ast.app.egress.clone()),
         inbound: (!ast.app.inbound.is_empty()).then(|| ast.app.inbound.clone()),
         public_dir: ast.app.public.clone(),
