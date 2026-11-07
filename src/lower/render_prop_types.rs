@@ -113,6 +113,10 @@ fn walk_pattern(
                         linked.unwrap_or("object").to_string(),
                         format!("a collection ({})", declared.field_type),
                     ),
+                    RecordBindingMismatch::ScalarIntoRecord => (
+                        linked.unwrap_or("object").to_string(),
+                        format!("a scalar ({})", declared.field_type),
+                    ),
                     RecordBindingMismatch::WrongEntity { expected, actual } => {
                         (expected, format!("a {actual} row"))
                     }
