@@ -26,8 +26,9 @@ pub(crate) fn patterns_json() -> &'static str {
 }
 
 fn parse_registry() -> serde_json::Value {
-    serde_json::from_str(patterns_json())
-        .unwrap_or_else(|e| panic!("installed patterns-registry.json is corrupt ({e}) — reinstall @almadar/core"))
+    serde_json::from_str(patterns_json()).unwrap_or_else(|e| {
+        panic!("installed patterns-registry.json is corrupt ({e}) — reinstall @almadar/core")
+    })
 }
 
 /// Set of object-key names that, per the registry, identify a string
@@ -92,12 +93,18 @@ pub fn event_prop_names() -> &'static HashSet<String> {
     })
 }
 
-/// Props the registry declares object-only (types carry `object`, never
-/// `array`): each takes ONE record. The value is whether the prop is
-/// `kind: "entity"` (it renders the trait's linked entity).
-static RECORD_PROPS: OnceLock<HashMap<(String, String), bool>> = OnceLock::new();
+/// A prop the registry declares single-record (types carry `object`, never
+/// `array`): `entity_kind` when it renders the trait's linked entity,
+/// `admits_scalar` when its types also accept a scalar (`string | object`).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct RecordProp {
+    pub entity_kind: bool,
+    pub admits_scalar: bool,
+}
 
-pub fn record_prop(pattern: &str, prop: &str) -> Option<bool> {
+static RECORD_PROPS: OnceLock<HashMap<(String, String), RecordProp>> = OnceLock::new();
+
+pub fn record_prop(pattern: &str, prop: &str) -> Option<RecordProp> {
     RECORD_PROPS
         .get_or_init(|| {
             let mut out = HashMap::new();
@@ -117,7 +124,12 @@ pub fn record_prop(pattern: &str, prop: &str) -> Option<bool> {
                         .unwrap_or_default();
                     if types.contains(&"object") && !types.contains(&"array") {
                         let entity_kind = prop_value.get("kind").and_then(|v| v.as_str()) == Some("entity");
-                        out.insert((pattern_name.clone(), prop_name.clone()), entity_kind);
+                        let admits_scalar =
+                            orbital_core_base::type_compat::prop_admits_scalar(&types);
+                        out.insert(
+                            (pattern_name.clone(), prop_name.clone()),
+                            RecordProp { entity_kind, admits_scalar },
+                        );
                     }
                 }
             }

@@ -59,7 +59,7 @@ fn a_prop_only_in_the_installed_json_is_visible_to_l1_and_l2() {
 
     assert!(orbital_lolo::patterns_meta::event_prop_names().contains("zzFire"));
     assert_eq!(
-        orbital_lolo::patterns_meta::record_prop("zz-widget", "zzRecord"),
+        orbital_lolo::patterns_meta::record_prop("zz-widget", "zzRecord").map(|r| r.entity_kind),
         Some(true)
     );
     assert!(orbital_compiler::embedded::patterns().contains_key("zz-widget"));

@@ -80,7 +80,7 @@ fn walk_pattern(
     };
     if let Some(SExpression::String(pattern_type)) = obj.get("type") {
         for (prop, value) in obj.iter() {
-            let Some(entity_kind) = record_prop(pattern_type, prop) else {
+            let Some(record) = record_prop(pattern_type, prop) else {
                 continue;
             };
             let SExpression::String(binding) = value else {
@@ -104,9 +104,11 @@ fn walk_pattern(
                 .linked_entity
                 .as_deref()
                 .filter(|l| entity_names.contains(*l));
-            let expected = if entity_kind { linked } else { None };
+            let expected = if record.entity_kind { linked } else { None };
             if let Some(m) =
-                record_prop_binding_mismatch(&bound, expected, |n| entity_names.contains(n))
+                record_prop_binding_mismatch(&bound, record.admits_scalar, expected, |n| {
+                    entity_names.contains(n)
+                })
             {
                 let (expected_label, actual) = match m {
                     RecordBindingMismatch::CollectionIntoRecord => (
