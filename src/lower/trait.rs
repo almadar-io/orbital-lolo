@@ -313,6 +313,7 @@ pub(crate) fn lower_call_site_overrides(
                     synonyms: None,
                     tier: None,
                     values: None,
+                    union: None,
                     items: None,
                     properties: None,
                     required: None,
@@ -348,6 +349,7 @@ pub(crate) fn lower_call_site_overrides(
                     description: cf.description.clone(),
                     synonyms: cf.synonyms.clone(),
                     tier: cf.tier.clone(),
+                    union: (matches!(lowered_type, FieldType::Union) && properties.is_some()).then_some(true),
                     values: type_expr_to_config_values(cf.type_expr.peel())
                         .or_else(|| lowered_values.filter(|_| matches!(lowered_type, FieldType::Union))),
                     items,
@@ -1074,7 +1076,7 @@ pub(crate) fn lower_trait(
         (None, None)
     };
 
-    Ok(TraitDefinition {
+    Ok(TraitDefinition { dropped_listens: None,
         name: t.name.clone(),
         entity_rebindable,
         entity_contract,

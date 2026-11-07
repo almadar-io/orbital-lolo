@@ -2669,6 +2669,10 @@ impl Formatter {
                 self.write_quoted_string(cron);
             }
         }
+        if !tick.applies_to.is_empty() {
+            self.output.push_str(" in ");
+            self.output.push_str(&tick.applies_to.join(", "));
+        }
         if tick.background {
             self.output.push_str(" [background]");
         }

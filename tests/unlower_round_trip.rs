@@ -2261,8 +2261,11 @@ fn a_config_knob_typed_by_a_union_alias_carries_the_union_variant_names() {
     };
     assert_eq!(knob["values"], serde_json::json!(["string", "Env"]), "{knob}");
     assert!(knob["properties"]["Env"].is_object(), "{knob}");
+    assert_eq!(knob["union"], serde_json::json!(true), "a union knob declares it is one (G-ORB-629): {knob}");
     let inline = lowered_knob("type Env = { anchor : string }", "wheres : string | Env = \"h\"").expect("lowers");
     assert_eq!(inline["values"], serde_json::json!(["string", "Env"]), "control: an inline union already carried them");
+    assert_eq!(inline["union"], serde_json::json!(true), "{inline}");
     let literal = lowered_knob("type Mode = \"a\" | \"b\"", "wheres : Mode = \"a\"").expect("lowers");
     assert!(literal.get("properties").is_none_or(Value::is_null), "control: a literal enum alias stays an enum: {literal}");
+    assert!(literal.get("union").is_none_or(Value::is_null), "control: a string enum is no union: {literal}");
 }

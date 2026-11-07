@@ -106,7 +106,7 @@ fn walk_pattern(
                 .filter(|l| entity_names.contains(*l));
             let expected = if record.entity_kind { linked } else { None };
             if let Some(m) =
-                record_prop_binding_mismatch(&bound, record.admits_scalar, expected, |n| {
+                record_prop_binding_mismatch(&bound, &record.types.iter().map(String::as_str).collect::<Vec<_>>(), expected, |n| {
                     entity_names.contains(n)
                 })
             {

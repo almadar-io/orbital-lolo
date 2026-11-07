@@ -405,17 +405,19 @@ pub(crate) fn lower_config_fields_to_map(
         // `field_type` to the `$V` sentinel directly — checked first since a
         // param name never resolves as a struct alias/entity.
         let sentinel = emit_listen::type_param_sentinel(cf.type_expr.peel(), type_params);
-        let (field_type, items, properties, values) = if let Some(s) = sentinel {
-            (s, None, None, None)
+        let (field_type, items, properties, values, union) = if let Some(s) = sentinel {
+            (s, None, None, None, None)
         } else {
             let (lowered_type, lowered_values, items, properties, _) =
                 lower_type_expr(cf.type_expr.peel(), aliases, entity_names, type_params)?;
+            let union = (matches!(lowered_type, FieldType::Union) && properties.is_some()).then_some(true);
             (
                 type_expr_to_config_string(cf.type_expr.peel()),
                 items,
                 properties,
                 type_expr_to_config_values(cf.type_expr.peel())
                     .or_else(|| lowered_values.filter(|_| matches!(lowered_type, FieldType::Union))),
+                union,
             )
         };
         map.insert(
@@ -438,6 +440,7 @@ pub(crate) fn lower_config_fields_to_map(
                 synonyms: cf.synonyms.clone(),
                 tier: cf.tier.clone(),
                 values,
+                union,
                 items,
                 properties,
                 required: if cf.required { Some(true) } else { None },

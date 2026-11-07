@@ -88,3 +88,17 @@ orbitala ClockOrbital {
     let tick = first_tick(&parse_and_lower_str(sl).unwrap());
     assert_eq!(tick["runsInBackground"], Value::Bool(true), "{tick}");
 }
+
+#[test]
+fn an_in_clause_lowers_to_applies_to_and_round_trips() {
+    let tick = first_tick(&parse_and_lower_str(&source(" in idle, active [background]")).unwrap());
+    assert_eq!(tick["appliesTo"], serde_json::json!(["idle", "active"]), "{tick}");
+    assert_eq!(tick["runsInBackground"], Value::Bool(true), "{tick}");
+    let program = parse_str(&source(" in idle, active [background]")).unwrap();
+    let formatted = format_program(&program);
+    assert!(formatted.contains("scan every 1h in idle, active [background] when"), "{formatted}");
+    let again = first_tick(&parse_and_lower_str(&formatted).unwrap());
+    assert_eq!(again["appliesTo"], tick["appliesTo"]);
+    let bare = first_tick(&parse_and_lower_str(&source("")).unwrap());
+    assert!(bare.get("appliesTo").is_none(), "control: no clause means every state: {bare}");
+}

@@ -1315,7 +1315,7 @@ fn lower_orbital(
     // field. For now this is the minimal change that keeps the call visible
     // to the Compose pass.
     if !orb.body.is_empty() {
-        let synth = TraitDefinition {
+        let synth = TraitDefinition { dropped_listens: None,
             name: "__Composition".to_string(),
             entity_rebindable: None,
             entity_contract: None,

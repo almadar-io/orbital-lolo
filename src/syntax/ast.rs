@@ -1359,6 +1359,8 @@ pub struct Tick {
     pub interval: TickInterval,
     pub guard: Option<SExpression>,
     pub effects: Vec<SExpression>,
+    /// `in <state>, ...`: the trait states the tick runs in; empty = every state.
+    pub applies_to: Vec<String>,
     /// `[background]`: runs with no client mounted.
     pub background: bool,
     /// `[visible]`: a browser tick that pauses while its trait's output is off screen.

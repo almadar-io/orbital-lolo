@@ -213,6 +213,7 @@ fn tick_of(t: &TickDefinition) -> Result<Tick, UnlowerError> {
         interval,
         guard: t.guard.clone(),
         effects: t.effects.clone(),
+        applies_to: t.applies_to.clone().unwrap_or_default(),
         background: t.background,
         visible: t.while_visible,
         span: Span::dummy(),

@@ -25,7 +25,7 @@ pub struct Vocabulary {
 }
 
 /// `app orbital uses expects entity type trait initial state for
-/// page as theme emits listens ticks config when with from to every
+/// page as theme emits listens ticks config when with from to every in
 /// capabilities match external internal on name fields events event
 /// emitsScope identity pages omit only roles entities extend lazy locales public input http boot
 /// access indexing title description origin icon siteName signIn authenticated
@@ -61,6 +61,7 @@ const KEYWORDS: &[&str] = &[
     "from",
     "to",
     "every",
+    "in",
     "capabilities",
     "match",
     "external",

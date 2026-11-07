@@ -1582,6 +1582,18 @@ impl Parser {
                 self.advance();
                 self.expect_keyword("every")?;
                 let interval = self.parse_tick_interval()?;
+                let mut applies_to = Vec::new();
+                if self.check_ident("in") {
+                    self.advance();
+                    loop {
+                        applies_to.push(self.expect_ident()?);
+                        if matches!(self.peek(), TokenKind::Comma) {
+                            self.advance();
+                            continue;
+                        }
+                        break;
+                    }
+                }
                 let (background, visible) = if matches!(self.peek(), TokenKind::LBracket) {
                     self.parse_tick_tags()?
                 } else {
@@ -1623,6 +1635,7 @@ impl Parser {
                     interval,
                     guard,
                     effects,
+                    applies_to,
                     background,
                     visible,
                     span,

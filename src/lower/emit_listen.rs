@@ -1549,7 +1549,7 @@ pub(crate) fn lower_tick(t: &Tick) -> Result<TickDefinition, LowerError> {
             .iter()
             .map(|e| desugar_notify(&desugar_expr_match(e)))
             .collect::<Result<Vec<_>, LowerError>>()?,
-        applies_to: None,
+        applies_to: (!t.applies_to.is_empty()).then(|| t.applies_to.clone()),
         description: None,
         background: t.background,
         while_visible: t.visible,

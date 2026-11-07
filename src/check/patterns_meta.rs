@@ -94,12 +94,12 @@ pub fn event_prop_names() -> &'static HashSet<String> {
 }
 
 /// A prop the registry declares single-record (types carry `object`, never
-/// `array`): `entity_kind` when it renders the trait's linked entity,
-/// `admits_scalar` when its types also accept a scalar (`string | object`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// `array`): `entity_kind` when it renders the trait's linked entity, and its
+/// registry `types` (a scalar of one of them fills it, as in `string | object`).
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RecordProp {
     pub entity_kind: bool,
-    pub admits_scalar: bool,
+    pub types: Vec<String>,
 }
 
 static RECORD_PROPS: OnceLock<HashMap<(String, String), RecordProp>> = OnceLock::new();
@@ -124,11 +124,12 @@ pub fn record_prop(pattern: &str, prop: &str) -> Option<RecordProp> {
                         .unwrap_or_default();
                     if types.contains(&"object") && !types.contains(&"array") {
                         let entity_kind = prop_value.get("kind").and_then(|v| v.as_str()) == Some("entity");
-                        let admits_scalar =
-                            orbital_core_base::type_compat::prop_admits_scalar(&types);
                         out.insert(
                             (pattern_name.clone(), prop_name.clone()),
-                            RecordProp { entity_kind, admits_scalar },
+                            RecordProp {
+                                entity_kind,
+                                types: types.iter().map(|t| t.to_string()).collect(),
+                            },
                         );
                     }
                 }
@@ -136,7 +137,7 @@ pub fn record_prop(pattern: &str, prop: &str) -> Option<RecordProp> {
             out
         })
         .get(&(pattern.to_string(), prop.to_string()))
-        .copied()
+        .cloned()
 }
 
 #[cfg(test)]
