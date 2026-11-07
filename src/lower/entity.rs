@@ -1292,6 +1292,28 @@ mod tests {
         }
     }
 
+    fn list_of(name: &str) -> TypeExpr {
+        TypeExpr::Array(Box::new(TypeExpr::Primitive(name.to_string())))
+    }
+
+    #[test]
+    fn a_union_of_two_list_arms_is_refused_not_collapsed_to_one() {
+        let union = TypeExpr::Union(vec![list_of("string"), list_of("number")]);
+        match lower_type_expr(&union, &BTreeMap::new(), &HashSet::new(), &[]) {
+            Err(LowerError::Type(crate::error::TypeError::UnionArmCollision { collision, .. })) => {
+                assert_eq!(collision.identifier, "Array");
+            }
+            other => panic!("ORB_T_TYPE_UNION_ARM_COLLISION, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn control_a_union_of_a_scalar_and_a_list_keeps_both_arms() {
+        let union = TypeExpr::Union(vec![TypeExpr::Primitive("string".to_string()), list_of("string")]);
+        let (_, values, ..) = lower_type_expr(&union, &BTreeMap::new(), &HashSet::new(), &[]).expect("lowers");
+        assert_eq!(values, Some(vec!["string".to_string(), "array".to_string()]));
+    }
+
     #[test]
     fn control_a_variant_reached_again_through_a_named_alias_still_lowers() {
         let aliases = predicate_aliases(TypeExpr::Named("Pred".to_string()));
@@ -1735,6 +1757,12 @@ fn struct_union_variants(
                 derived: None,
             },
         ));
+    }
+    if let Some(collision) = orbital_core_base::ir::types::union_arm_collision(out.iter().map(|(n, _)| n.as_str())) {
+        return Err(LowerError::Type(crate::error::TypeError::UnionArmCollision {
+            collision,
+            span: crate::ast::Span::default(),
+        }));
     }
     Ok(Some(out))
 }

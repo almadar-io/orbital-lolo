@@ -1281,6 +1281,12 @@ pub enum TypeError {
         trail: String,
         span: Span,
     },
+
+    #[error("{collision}")]
+    UnionArmCollision {
+        collision: orbital_core_base::ir::types::UnionArmCollision,
+        span: Span,
+    },
 }
 
 /// String label for the `TypeBody` kind — used only in error messages so we
@@ -1327,7 +1333,8 @@ impl TypeError {
             | TypeError::EventTypeWrongKind { span, .. }
             | TypeError::GenericTypeForbidden { span, .. }
             | TypeError::PayloadSiblingUnresolved { span, .. }
-            | TypeError::EventRefPosition { span, .. } => *span,
+            | TypeError::EventRefPosition { span, .. }
+            | TypeError::UnionArmCollision { span, .. } => *span,
         }
     }
 }
