@@ -16,6 +16,21 @@ pub(crate) const VALID_TYPE_PARAM_KINDS: [&str; 6] =
 /// would be locally indistinguishable from a reference to an entity named
 /// `E`. Lowercase variables (`e`, `v`) make variable-vs-concrete obvious at
 /// the use site (the Haskell convention, adopted 2026-08-18).
+/// Words `parse_type_atom` reads as built-in types before it looks for a declared alias.
+const RESERVED_TYPE_WORDS: &[&str] = &[
+    "Map",
+    "trait",
+    "orbital",
+    "behavior",
+    "entity",
+    "event",
+    "EventAddress",
+    "slot",
+    "pattern",
+    "secret",
+    "SExpr",
+];
+
 pub(crate) fn type_param_name_error(name: &str, span: crate::ast::Span) -> Option<ParseError> {
     if name
         .chars()
@@ -124,7 +139,16 @@ impl Parser {
     pub(crate) fn parse_type_alias(&mut self) -> Result<TypeAlias, ParseError> {
         let span = self.peek_span();
         self.expect_keyword("type")?;
+        let name_span = self.peek_span();
         let name = self.expect_ident()?;
+        if RESERVED_TYPE_WORDS.contains(&name.as_str()) {
+            return Err(ParseError::InvalidType {
+                span: name_span,
+                message: format!(
+                    "ORB_T_RESERVED_TYPE_NAME: type alias '{name}' is named after a built-in type word, so every reference to it reads as the built-in and never as this alias; pick another name"
+                ),
+            });
+        }
         // Optional type parameter, either form:
         //   bare:   `type Browsable T = ...`         — no kind, defaults to Entity
         //   kinded: `type Foo (E : Entity) = ...`     — parenthesized name + kind

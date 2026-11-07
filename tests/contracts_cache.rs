@@ -13,6 +13,7 @@ const LOLO: &str = "app zz-new [version: \"1.0.0\", description: \"x\"]\norbital
 fn unchanged_packages_load_once_and_a_new_lolo_is_seen() {
     let tmp = tempfile::tempdir().unwrap();
     let pkg = orbital_test_support::fake_package(tmp.path(), "@almadar/std", "almadar-std", "1.0.0", &[]);
+    orbital_test_support::link_installed_core(tmp.path(), std::path::Path::new(env!("CARGO_MANIFEST_DIR")));
     let packages = discover(tmp.path(), &tmp.path().join("store")).unwrap();
     let first = LoloContracts::load_shared(&packages).unwrap();
     let again = LoloContracts::load_shared(&packages).unwrap();

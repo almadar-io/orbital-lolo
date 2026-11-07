@@ -2797,6 +2797,16 @@ mod tests {
     }
 
     #[test]
+    fn g_orb_444_alias_named_after_a_builtin_type_word_is_refused() {
+        for word in ["SExpr", "Map", "EventAddress", "secret"] {
+            let src = format!("type {word} = {{ id : string! }}\norbital O {{\n  entity E2 {{ id : string! }}\n}}");
+            let err = parse_str(&src).expect_err("a reserved type word cannot name an alias");
+            assert!(err.to_string().contains("ORB_T_RESERVED_TYPE_NAME"), "{word}: {err:?}");
+        }
+        parse_str("type Shape = { id : string! }\norbital O {\n  entity E2 {\n    id : string!\n  }\n}").expect("control: an ordinary alias name parses");
+    }
+
+    #[test]
     fn parse_derived_field() {
         let src = "orbital O {\n  entity E [runtime] {\n    id : string!\n    count : int @derived (array/length @items)\n  }\n}";
         let prog = p(src);
