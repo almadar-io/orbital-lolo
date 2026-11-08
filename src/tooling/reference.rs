@@ -196,7 +196,16 @@ mod language_data_export {
         let mut value = serde_json::to_value(crate::keywords::vocabulary()).expect("serializes");
         let orb = &orbital_core_base::i18n::tables::english().orb;
         value["orb"] = serde_json::to_value(orb).expect("serializes");
+        value["fieldTypes"] = serde_json::json!(orbital_core_base::schema::FIELD_TYPE_NAMES);
         value
+    }
+
+    #[test]
+    fn g_std_145_the_vocabulary_publishes_cores_field_types() {
+        assert_eq!(
+            vocabulary_with_orb()["fieldTypes"],
+            serde_json::json!(orbital_core_base::schema::FIELD_TYPE_NAMES)
+        );
     }
 
     const STD_ATOMS: &str = "packages/almadar-std/behaviors/lolo/cli/atoms";

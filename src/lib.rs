@@ -134,6 +134,13 @@ pub fn parse_and_lower_str_with_prior(
     parse_and_lower_str_with_prior_at(source, prior, "<input>")
 }
 
+/// The program the `.lolo` file at `path` lowers to against the installed packages: the lowering the contract check
+/// shares ([`registry::lower_live_file`]), so a behavior one resolve both checks and inlines is lowered once.
+pub fn lower_file(path: &std::path::Path) -> Result<OrbitalSchema, LoloError> {
+    let options = lower::discovered_options().map_err(|inner| LoloError::Lower { path: path.display().to_string(), inner })?;
+    registry::lower_live_file(path, &options.packages)
+}
+
 /// [`parse_and_lower_str_with_prior`] tagging errors with `path`.
 pub fn parse_and_lower_str_with_prior_at(
     source: &str,

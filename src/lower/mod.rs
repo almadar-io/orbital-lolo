@@ -164,7 +164,7 @@ pub fn lower_to_orb_with_prior_and_map_with(
 /// zero-option entry points. A `DiscoverError` (e.g. a prefix conflict, or a
 /// declared sidecar path that doesn't exist) is a hard `LowerError` — never
 /// silently degraded to "no packages found".
-fn discovered_options() -> Result<LowerOptions, LowerError> {
+pub(crate) fn discovered_options() -> Result<LowerOptions, LowerError> {
     let cwd = std::env::current_dir().map_err(|e| LowerError::BehaviorPackages(e.to_string()))?;
     let user_store =
         orbital_core_base::behavior_packages::user_store_dir().unwrap_or_else(|| cwd.clone());

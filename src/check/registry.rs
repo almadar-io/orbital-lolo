@@ -228,60 +228,91 @@ pub struct LoloContracts {
     packages: Vec<BehaviorPackage>,
 }
 
-/// The contract a live behavior file publishes, keyed by path and content
-/// hash: an edited file is lowered again, an unchanged one never.
-fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavior>> {
-    type Cache = HashMap<PathBuf, ([u8; 32], Arc<Behavior>, orbital_core_base::read_set::ReadSet)>;
-    static CACHE: OnceLock<Mutex<Cache>> = OnceLock::new();
+/// One live behavior file, lowered: its program and the contract it publishes.
+enum LiveLowering {
+    Lowered(Arc<orbital_core_base::schema::OrbitalSchema>, Arc<Behavior>),
+    /// An import cycle reached this file while it was being lowered: neither is known yet.
+    Cycle,
+}
+
+/// A live behavior file lowered against `packages` once per content: the contract check and the loader that inlines
+/// the behavior read the same lowering, keyed by path, content hash and package set, so a file is lowered once
+/// whichever asks first and again only when it, or a file its lowering read, changes.
+fn live_lowering(path: &Path, packages: &[BehaviorPackage]) -> Result<LiveLowering, crate::LoloError> {
+    type Key = (PathBuf, Vec<(String, String, PathBuf, Option<PathBuf>)>);
+    type Entry = ([u8; 32], Arc<orbital_core_base::schema::OrbitalSchema>, Arc<Behavior>, orbital_core_base::read_set::ReadSet);
+    static CACHE: OnceLock<Mutex<HashMap<Key, Entry>>> = OnceLock::new();
     thread_local! {
         static LOWERING: std::cell::RefCell<std::collections::HashSet<PathBuf>> = Default::default();
     }
-    let source = orbital_core_base::read_set::read_to_string(path).ok()?;
+    let label = path.display().to_string();
+    let source = orbital_core_base::read_set::read_to_string(path)
+        .map_err(|e| crate::LoloError::Io { path: label.clone(), message: e.to_string() })?;
     let hash: [u8; 32] = Sha256::digest(source.as_bytes()).into();
+    let key: Key = (
+        path.to_path_buf(),
+        packages.iter().map(|p| (p.name.clone(), p.version.clone(), p.root.clone(), p.lolo_source.clone())).collect(),
+    );
     let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Some((h, hit, reads)) = cache
-        .lock()
-        .expect("live contract cache poisoned")
-        .get(path)
-    {
+    if let Some((h, schema, behavior, reads)) = cache.lock().expect("live lowering cache poisoned").get(&key) {
         if *h == hash && reads.is_current() {
             reads.replay();
-            return Some(Arc::clone(hit));
+            return Ok(LiveLowering::Lowered(Arc::clone(schema), Arc::clone(behavior)));
         }
     }
-    // An import cycle reaching this file again: its contract is not known yet,
-    // so the caller skips the parse-time check (the compiler re-verifies).
     if !LOWERING.with(|l| l.borrow_mut().insert(path.to_path_buf())) {
-        return None;
+        return Ok(LiveLowering::Cycle);
     }
     orbital_core_base::read_set::begin();
-    let lowered = crate::parse_str(&source)
-        .map_err(|e| e.to_string())
-        .and_then(|ast| {
-            crate::lower::lower_to_orb_with(
-                &ast,
-                &crate::LowerOptions {
-                    packages: packages.to_vec(),
-                    ..Default::default()
-                },
-            )
-            .map_err(|e| e.to_string())
-        });
+    let lowered = crate::traced_parse(&source, &label).and_then(|ast| {
+        tracing::debug_span!(target: orbital_core_base::logging::ns::LOLO, "lower", file = %label)
+            .in_scope(|| {
+                crate::lower::lower_to_orb_with_prior_with(
+                    &ast,
+                    None,
+                    &crate::LowerOptions { packages: packages.to_vec(), ..Default::default() },
+                )
+            })
+            .map_err(|inner| crate::LoloError::Lower { path: label.clone(), inner })
+    });
     let reads = orbital_core_base::read_set::end();
     LOWERING.with(|l| l.borrow_mut().remove(path));
-    let schema = match lowered {
-        Ok(schema) => schema,
-        Err(e) => {
-            tracing::warn!(target: orbital_core_base::logging::ns::LOLO, path = %path.display(), error = %e, "live behavior did not lower; its contract is unknown");
-            return None;
-        }
-    };
+    let schema = Arc::new(lowered?);
     let behavior = Arc::new(Behavior::from_program(&schema));
     cache
         .lock()
-        .expect("live contract cache poisoned")
-        .insert(path.to_path_buf(), (hash, Arc::clone(&behavior), reads));
-    Some(behavior)
+        .expect("live lowering cache poisoned")
+        .insert(key, (hash, Arc::clone(&schema), Arc::clone(&behavior), reads));
+    Ok(LiveLowering::Lowered(schema, behavior))
+}
+
+/// The contract a live behavior file publishes; `None` while an import cycle is lowering it, or when it does not
+/// lower (the compiler re-verifies the call site).
+fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavior>> {
+    match live_lowering(path, packages) {
+        Ok(LiveLowering::Lowered(_, behavior)) => Some(behavior),
+        Ok(LiveLowering::Cycle) => None,
+        Err(e) => {
+            tracing::warn!(target: orbital_core_base::logging::ns::LOLO, path = %path.display(), error = %e, "live behavior did not lower; its contract is unknown");
+            None
+        }
+    }
+}
+
+/// The program the `.lolo` file at `path` lowers to against `packages`: the one lowering the contract check shares
+/// ([`live_lowering`]), or, while an import cycle is lowering the file, a lowering of its own.
+pub fn lower_live_file(path: &Path, packages: &[BehaviorPackage]) -> Result<orbital_core_base::schema::OrbitalSchema, crate::LoloError> {
+    match live_lowering(path, packages)? {
+        LiveLowering::Lowered(schema, _) => Ok((*schema).clone()),
+        LiveLowering::Cycle => {
+            let label = path.display().to_string();
+            let source = orbital_core_base::read_set::read_to_string(path)
+                .map_err(|e| crate::LoloError::Io { path: label.clone(), message: e.to_string() })?;
+            let ast = crate::traced_parse(&source, &label)?;
+            crate::lower::lower_to_orb_with_prior_with(&ast, None, &crate::LowerOptions { packages: packages.to_vec(), ..Default::default() })
+                .map_err(|inner| crate::LoloError::Lower { path: label, inner })
+        }
+    }
 }
 
 impl Slice {
