@@ -113,3 +113,28 @@ fn waiving_one_operation_leaves_the_others_enforced() {
         "a waived @read must not disturb a declared @delete"
     );
 }
+
+#[test]
+fn g_std_218_read_server_records_its_reason_apart_from_an_open_read_waiver() {
+    let schema = parse_and_lower_str(&entity_source(
+        "    @read server \"looked up before any viewer exists\"",
+    ))
+    .expect("lowers");
+    let reply = ticket_reply(&schema);
+    assert!(reply.read_policy.is_none());
+    let waivers = reply.access_waivers.as_ref().expect("recorded");
+    assert_eq!(waivers.read_server.as_deref(), Some("looked up before any viewer exists"));
+    assert_eq!(waivers.read, None, "a server-only read is not the open-read waiver");
+}
+
+#[test]
+fn g_std_218_read_server_needs_a_reason_and_collides_with_another_read_directive() {
+    assert!(parse_and_lower_str(&entity_source("    @read server")).is_err());
+    assert!(parse_and_lower_str(&entity_source("    @read server \"\"")).is_err());
+    assert!(parse_and_lower_str(&entity_source("    @read server \"a\"\n    @read none \"b\"")).is_err());
+    assert!(parse_and_lower_str(&entity_source("    @read server \"a\"\n    @read (= @user.role \"agent\")")).is_err());
+    assert!(
+        parse_and_lower_str(&entity_source("    @create server \"a\"")).is_err(),
+        "control: only read has a server form"
+    );
+}

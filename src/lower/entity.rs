@@ -110,6 +110,7 @@ pub(crate) fn access_waivers_of(
     for (op, reason) in declared {
         match op.as_str() {
             "read" => waivers.read = Some(reason.clone()),
+            "read server" => waivers.read_server = Some(reason.clone()),
             "create" => waivers.create = Some(reason.clone()),
             "update" => waivers.update = Some(reason.clone()),
             "delete" => waivers.delete = Some(reason.clone()),

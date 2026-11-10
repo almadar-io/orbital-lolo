@@ -2040,11 +2040,11 @@ impl Formatter {
                 self.output.push(' ');
                 self.fmt_sexpr(expr);
                 self.write_newline();
-            } else if let Some((_, reason)) = waivers.iter().find(|(op, _)| op == sigil) {
+            } else if let Some((op, reason)) = waivers.iter().find(|(op, _)| op == sigil || (sigil == "read" && op == "read server")) {
                 self.write_indent();
                 self.output.push('@');
                 self.output.push_str(sigil);
-                self.output.push_str(" none ");
+                self.output.push_str(if op == "read server" { " server " } else { " none " });
                 self.output.push('"');
                 self.output.push_str(&reason.replace('"', "\\\""));
                 self.output.push('"');

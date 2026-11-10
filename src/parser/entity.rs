@@ -232,7 +232,7 @@ impl Parser {
         let directive_span = self.peek_span();
         self.advance();
         let duplicate = |access: &ExpectedAccess| {
-            access.access_waivers.iter().any(|(op, _)| op == name)
+            access.access_waivers.iter().any(|(op, _)| op == name || (name == "read" && op == "read server"))
                 || match name {
                     "read" => access.read_policy.is_some(),
                     "create" => access.create_policy.is_some(),
@@ -248,6 +248,27 @@ impl Parser {
         };
         // `@<op> none "<reason>"` — the omission, declared. Same runtime behaviour as leaving the directive out;
         // recorded so a lint can tell a considered omission from a forgotten one. The reason is mandatory.
+        if name == "read" && matches!(self.peek(), TokenKind::Identifier(id) if id == "server") {
+            self.advance();
+            let reason = match self.peek().clone() {
+                TokenKind::String(text) if !text.trim().is_empty() => {
+                    self.advance();
+                    text
+                }
+                _ => {
+                    return Err(ParseError::InvalidType {
+                        span: directive_span,
+                        message: "ELOLO_ACCESS_WAIVER_NEEDS_REASON: `@read server` must state why only the server program reads these rows, e.g. `@read server \"looked up to resolve a request's viewer, before any viewer exists\"`".to_string(),
+                    });
+                }
+            };
+            self.expect_newline_or_eof()?;
+            if duplicate(access) {
+                return Err(dup_error());
+            }
+            access.access_waivers.push(("read server".to_string(), reason));
+            return Ok(());
+        }
         if matches!(self.peek(), TokenKind::Identifier(id) if id == "none") {
             self.advance();
             let reason = match self.peek().clone() {
