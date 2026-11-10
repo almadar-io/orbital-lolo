@@ -197,7 +197,16 @@ mod language_data_export {
         let orb = &orbital_core_base::i18n::tables::english().orb;
         value["orb"] = serde_json::to_value(orb).expect("serializes");
         value["fieldTypes"] = serde_json::json!(orbital_core_base::schema::FIELD_TYPE_NAMES);
+        value["reservedCliWords"] = serde_json::json!(orbital_core_base::inbound::RESERVED_CLI_WORDS);
         value
+    }
+
+    #[test]
+    fn g_std_177_the_vocabulary_publishes_cores_reserved_cli_words() {
+        assert_eq!(
+            vocabulary_with_orb()["reservedCliWords"],
+            serde_json::json!(orbital_core_base::inbound::RESERVED_CLI_WORDS)
+        );
     }
 
     #[test]
