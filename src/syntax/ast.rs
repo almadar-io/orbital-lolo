@@ -74,8 +74,9 @@ pub struct AppHeader {
     /// declares its own `theme`. A full `<base>-<light|dark>` registry key,
     /// or an inline `theme { … }` token definition.
     pub theme: Option<ThemeDecl>,
-    /// `themes: ["<key>", …]` — the registry themes the program switches to inside a page.
-    pub themes: Vec<String>,
+    /// `themes: ["<key>" | { … }, …]` — the themes the program switches to, inside a page or for the
+    /// whole app (`theme/set`): a registry key, or an inline theme the app defines.
+    pub themes: Vec<ThemeDecl>,
     /// `locales [en, ar, sl]` — the locales this program ships.
     pub locales: Vec<String>,
     /// `store: Driver` — the default store-driver orbital for persistent entities that name none.

@@ -403,7 +403,7 @@ fn lower_to_orb_names_only(
         resolved: None,        types: orbital_types(&type_aliases, &file_entity_bodies),
         store: ast.app.store.clone(),
         theme_definitions: None,
-        themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.clone()),
+        themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.iter().map(lower_theme_decl).collect()),
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
         messages: None,
         egress: (!ast.app.egress.is_empty()).then(|| ast.app.egress.clone()),

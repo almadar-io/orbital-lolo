@@ -300,11 +300,11 @@ impl Formatter {
                 "themes",
                 Box::new(move |f: &mut Self| {
                     f.output.push('[');
-                    for (i, key) in app.themes.iter().enumerate() {
+                    for (i, theme) in app.themes.iter().enumerate() {
                         if i > 0 {
                             f.output.push_str(", ");
                         }
-                        f.write_quoted_string(key);
+                        f.fmt_theme_value(theme);
                     }
                     f.output.push(']');
                 }),

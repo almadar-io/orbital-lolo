@@ -144,10 +144,7 @@ const THEMES_HEADER: &str = r#"app std-home [
 #[test]
 fn the_themes_a_program_switches_to_lower_into_schema_themes() {
     let schema = parse_and_lower_str(&program(THEMES_HEADER)).expect("lower");
-    assert_eq!(
-        schema.themes,
-        Some(vec!["almadar-dark".to_string(), "clay-light".to_string()])
-    );
+    assert_eq!(theme_names(&schema), vec!["almadar-dark", "clay-light"]);
     assert!(matches!(
         schema.theme,
         Some(orbital_core_base::schema::ThemeRef::Reference(ref k)) if k == "almadar-light"
@@ -162,10 +159,77 @@ fn control_no_themes_modifier_means_no_themes() {
         .is_none());
 }
 
+/// Each entry of the lowered `themes`: a registry key as written, an inline theme as `inline:<name>`.
+fn theme_names(schema: &orbital_core_base::schema::OrbitalSchema) -> Vec<String> {
+    schema
+        .themes
+        .iter()
+        .flatten()
+        .map(|theme| match theme {
+            orbital_core_base::schema::ThemeRef::Reference(key) => key.clone(),
+            orbital_core_base::schema::ThemeRef::Inline(definition) => format!("inline:{}", definition.name),
+        })
+        .collect()
+}
+
+const OWN_THEMES_HEADER: &str = r##"app std-home [
+  version: "1.0.0",
+  theme: "almadar-light",
+  themes: ["clay-light", {
+    name: "brand-serif"
+    displayName: "Brand, serif"
+    tokens {
+      colors {
+        primary: "#111111"
+      }
+      typeScale {
+        displayFamily: "Amiri, serif"
+      }
+    }
+    variants {
+      dark {
+        colors {
+          primary: "#eeeeee"
+        }
+      }
+    }
+  }]
+]
+"##;
+
 #[test]
-fn edge_a_themes_entry_is_a_key_not_an_inline_theme() {
-    let header = "app std-home [version: \"1.0.0\", themes: [{ name: \"brand\" }]]\n";
+fn a_themes_entry_may_define_a_theme_inline_beside_a_registry_key() {
+    let schema = parse_and_lower_str(&program(OWN_THEMES_HEADER)).expect("lower");
+    assert_eq!(theme_names(&schema), vec!["clay-light", "inline:brand-serif"]);
+    let own = schema.themes.as_ref().and_then(|themes| themes[1].as_inline()).expect("the inline entry");
+    assert_eq!(own.display_name.as_deref(), Some("Brand, serif"));
+    assert_eq!(
+        own.tokens.type_scale.as_ref().and_then(|scale| scale.display_family.as_deref()),
+        Some("Amiri, serif")
+    );
+    assert!(own.variants.as_ref().is_some_and(|variants| variants.contains_key("dark")));
+}
+
+#[test]
+fn edge_an_inline_themes_entry_needs_a_name() {
+    let header = "app std-home [version: \"1.0.0\", themes: [{\n  displayName: \"Brand\"\n}]]\n";
     assert!(parse_and_lower_str(&program(header)).is_err());
+}
+
+#[test]
+fn edge_a_themes_entry_is_a_key_or_an_inline_theme_and_nothing_else() {
+    let header = "app std-home [version: \"1.0.0\", themes: [brand]]\n";
+    assert!(parse_and_lower_str(&program(header)).is_err());
+}
+
+#[test]
+fn own_themes_survive_format_and_unlower() {
+    let schema = parse_and_lower_str(&program(OWN_THEMES_HEADER)).expect("lower");
+    let wire = |schema: &orbital_core_base::schema::OrbitalSchema| serde_json::to_value(&schema.themes).unwrap();
+    let formatted = format_program(&parse_str(&program(OWN_THEMES_HEADER)).expect("parse"));
+    assert_eq!(wire(&parse_and_lower_str(&formatted).expect("reparse")), wire(&schema), "{formatted}");
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert_eq!(wire(&parse_and_lower_str(&text).expect("lower the unlowered text")), wire(&schema), "{text}");
 }
 
 #[test]
@@ -176,9 +240,9 @@ fn themes_survive_format_and_unlower() {
         formatted.contains("themes: [\"almadar-dark\", \"clay-light\"]"),
         "{formatted}"
     );
-    assert_eq!(parse_and_lower_str(&formatted).expect("reparse").themes, schema.themes);
+    assert_eq!(theme_names(&parse_and_lower_str(&formatted).expect("reparse")), theme_names(&schema));
     let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
-    assert_eq!(parse_and_lower_str(&text).expect("lower the unlowered text").themes, schema.themes);
+    assert_eq!(theme_names(&parse_and_lower_str(&text).expect("lower the unlowered text")), theme_names(&schema));
 }
 
 const ENTRIES_HEADER: &str = "app std-home [\n  version: \"1.0.0\",\n  signIn: \"/login\",\n  entries: [\"/cli-auth\", \"/invite/:code\"]\n]\n";

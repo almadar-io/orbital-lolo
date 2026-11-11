@@ -707,7 +707,7 @@ impl Parser {
                     "version" => version = Some(p.parse_option_string(key)?),
                     "description" => description = Some(p.parse_option_string(key)?),
                     "theme" => theme = Some(p.parse_theme_value()?),
-                    "themes" => themes = p.parse_string_items(key)?,
+                    "themes" => themes = p.parse_theme_items()?,
                     "locales" => locales = p.parse_locale_items()?,
                     "egress" => egress = p.parse_string_items(key)?,
                     "inbound" => inbound = p.parse_string_items(key)?,
@@ -1013,6 +1013,25 @@ impl Parser {
             message: "page metadata is a string literal or `(i18n/t \"key\")` — no entity, config or viewer bindings".to_string(),
             span,
         })
+    }
+
+    /// `themes:` value — `["<key>" | { … }, …]`, each entry a theme value.
+    fn parse_theme_items(&mut self) -> Result<Vec<ThemeDecl>, ParseError> {
+        self.expect_kind(&TokenKind::LBracket, "[")?;
+        let mut themes = Vec::new();
+        loop {
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::RBracket) {
+                self.advance();
+                break;
+            }
+            themes.push(self.parse_theme_value()?);
+            self.skip_newlines();
+            if matches!(self.peek(), TokenKind::Comma) {
+                self.advance();
+            }
+        }
+        Ok(themes)
     }
 
     /// `theme:` value — a registry key string or an inline `{ … }` block.
