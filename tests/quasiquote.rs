@@ -85,6 +85,31 @@ fn an_unquote_outside_a_quasiquote_is_a_parse_error() {
 }
 
 #[test]
+fn a_quoted_string_that_reads_as_a_binding_is_a_parse_error() {
+    for effect in [
+        r#"(set @entity.widget "@payload.widget")"#,
+        r#"(render-ui main { type: button, label: "@entity.widget", action: BUILD })"#,
+        r#"(set @entity.program (quasiquote (a (unquote "@entity.widget"))))"#,
+    ] {
+        let err = parse_str(&program(effect)).err().map(|e| e.to_string()).unwrap_or_default();
+        assert!(err.contains("ELOLO_QUOTED_BINDING"), "{effect}: {err}");
+    }
+}
+
+#[test]
+fn control_a_bare_binding_quoted_text_and_plain_text_parse() {
+    for effect in [
+        r#"(set @entity.widget @payload.widget)"#,
+        r#"(set @entity.widget (quote "@payload.widget"))"#,
+        r#"(set @entity.program (quasiquote (a "@entity.widget" (unquote @entity.widget))))"#,
+        r#"(set @entity.widget "user@example.com")"#,
+        r#"(set @entity.widget "@payload.rows[2].title")"#,
+    ] {
+        assert!(parse_str(&program(effect)).is_ok(), "{effect}: {:?}", parse_str(&program(effect)).err().map(|e| e.to_string()));
+    }
+}
+
+#[test]
 fn a_nested_quasiquote_is_a_parse_error() {
     let src = program("(set @entity.program (quasiquote (a (quasiquote (b)))))");
     let err = parse_str(&src).err().map(|e| e.to_string()).unwrap_or_default();

@@ -335,12 +335,8 @@ fn hoist_common_uses(
     } else {
         0
     };
-    for (o, ks) in orbitals.iter().zip(&keys) {
-        if o.reference.is_some() && ks.len() > count {
-            return Err(UnlowerError::new(
-                "reference orbital with imports not shared by every orbital",
-            ));
-        }
+    if orbitals.iter().zip(&keys).any(|(o, ks)| o.reference.is_some() && ks.len() > count) {
+        return hoist_shadowed_uses(orbitals, &keys);
     }
     let hoisted: Vec<crate::ast::UseDecl> = orbitals
         .first()
@@ -348,6 +344,47 @@ fn hoist_common_uses(
         .unwrap_or_default();
     for o in orbitals.iter_mut() {
         o.uses.drain(..count.min(o.uses.len()));
+    }
+    Ok(hoisted)
+}
+
+/// A reference orbital carries exactly the file-scoped imports. An orbital that re-imports one of their aliases
+/// itself lowers with that alias at its own position, so the file-scoped list is no shared prefix: each orbital's
+/// list is the file-scoped imports it does not shadow, in order, then its own.
+fn hoist_shadowed_uses(
+    orbitals: &mut [crate::ast::Orbital],
+    keys: &[Vec<String>],
+) -> Result<Vec<crate::ast::UseDecl>, UnlowerError> {
+    let unshared = || UnlowerError::new("reference orbital with imports not shared by every orbital");
+    let Some(file) = orbitals.iter().position(|o| o.reference.is_some()) else {
+        return Err(unshared());
+    };
+    let (file_keys, hoisted) = (keys[file].clone(), orbitals[file].uses.clone());
+    for (o, ks) in orbitals.iter_mut().zip(keys) {
+        if o.reference.is_some() {
+            if *ks != file_keys {
+                return Err(unshared());
+            }
+            o.uses.clear();
+            continue;
+        }
+        let mut next = 0;
+        let mut taken = 0;
+        let mut skipped: Vec<usize> = Vec::new();
+        for key in ks {
+            let Some(at) = (next..file_keys.len()).find(|&j| file_keys[j] == *key) else {
+                break;
+            };
+            skipped.extend(next..at);
+            next = at + 1;
+            taken += 1;
+        }
+        skipped.extend(next..file_keys.len());
+        let own = &o.uses[taken..];
+        if skipped.iter().any(|&j| !own.iter().any(|u| u.alias == hoisted[j].alias)) {
+            return Err(unshared());
+        }
+        o.uses.drain(..taken);
     }
     Ok(hoisted)
 }

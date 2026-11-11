@@ -33,7 +33,7 @@ orbital NoteOrbital {
 
   trait NoteAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.NoteCatalog",
+      contentTrait: @trait.NoteCatalog,
       appName: "Notes",
       navItems: [
         { label: "Notes",     href: "/notes",           icon: "file-text" },
@@ -67,13 +67,13 @@ orbital NoteOrbital {
           ]},
           { type: "divider" },
           { type: "stack", direction: "horizontal", gap: "md", align: "center", children: [
-            "@trait.NoteSearch",
-            "@trait.NoteFilter"
+            @trait.NoteSearch,
+            @trait.NoteFilter
           ]},
-          "@trait.NoteStats",
-          "@trait.NoteGraphs",
+          @trait.NoteStats,
+          @trait.NoteGraphs,
           { type: "divider" },
-          "@trait.NoteBrowseList"
+          @trait.NoteBrowseList
         ]})
       NOTE_SEARCH -> composing
       NOTE_NOTIFICATIONS_OPEN -> composing
@@ -125,8 +125,8 @@ orbital NoteOrbital {
       title: "Notes",
       metrics: [
         { aggregation: "count", label: "Total",      icon: "file-text", variant: "primary", format: "number" },
-        { aggregation: "count", label: "Favorites",  icon: "star",      variant: "warning", format: "number", filter: (fn "row" (= "@row.isFavorite" true)) },
-        { aggregation: "count", label: "Top-level",  icon: "folder",    variant: "info",    format: "number", filter: (fn "row" (= "@row.parentId" "")) }
+        { aggregation: "count", label: "Favorites",  icon: "star",      variant: "warning", format: "number", filter: (fn "row" (= @row.isFavorite true)) },
+        { aggregation: "count", label: "Top-level",  icon: "folder",    variant: "info",    format: "number", filter: (fn "row" (= @row.parentId "")) }
       ]
     }
     listens {
@@ -403,7 +403,7 @@ orbital RichEditorPanelOrbital {
 
   trait RichEditorAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.RichEditorPanel",
+      contentTrait: @trait.RichEditorPanel,
       appName: "Notes",
       navItems: [
         { label: "Notes",     href: "/notes",           icon: "file-text" },
@@ -432,7 +432,7 @@ orbital RichEditorPanelOrbital {
             { type: "typography", variant: "h2", content: "Rich Editor" }
           ]},
           { type: "divider" },
-          "@trait.RichEditorDocumentEdit"
+          @trait.RichEditorDocumentEdit
         ]})
     }
   }

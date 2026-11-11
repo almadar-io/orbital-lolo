@@ -505,6 +505,16 @@ impl Parser {
             TokenKind::LBrace => self.parse_object_literal(),
             TokenKind::LBracket => self.parse_array_literal(),
             TokenKind::String(s) => {
+                // A string that starts with `@` lowers to the same value as the bare binding, so the kernel resolves it.
+                // An indexed path (`"@config.rows[2].title"`) has no bare spelling, so it stays quoted.
+                if self.template_depth == 0 && SExpression::string(s.clone()).is_binding() && !s.contains('[') {
+                    return Err(ParseError::InvalidSExpr {
+                        message: format!(
+                            "ELOLO_QUOTED_BINDING: \"{s}\" is read as the binding {s}, not as text: write the binding bare ({s}), or hold the text with (quote \"{s}\")"
+                        ),
+                        span: self.peek_span(),
+                    });
+                }
                 self.advance();
                 Ok(SExpression::string(s))
             }
@@ -530,6 +540,20 @@ impl Parser {
                 Ok(SExpression::string(format!("@{}", lower_self_sigil(&name))))
             }
             TokenKind::PayloadSigil(name) => {
+                // `(nil? x)`: a `?` with no space after a word is not a payload reference of its own.
+                if let Some(before) = self.pos.checked_sub(1).map(|i| &self.tokens[i]) {
+                    let here = self.peek_span();
+                    if let TokenKind::Identifier(word) = &before.kind {
+                        if before.span.line == here.line && before.span.col + u32::from(before.span.len) == here.col {
+                            return Err(ParseError::InvalidSExpr {
+                                message: format!(
+                                    "ELOLO_GLUED_PAYLOAD_SIGIL: `{word}?{name}` is read as `{word}` followed by the payload reference `?{name}`; `{word}?` is no operator. Put a space before `?{name}` if the payload is meant, or call the operator by its name"
+                                ),
+                                span: here,
+                            });
+                        }
+                    }
+                }
                 self.advance();
                 if name.is_empty() {
                     Ok(SExpression::string("@payload"))

@@ -27,8 +27,8 @@ orbital ItemOrbital {
           direction: "vertical",
           gap: "md",
           children: [
-            "@trait.ItemSearch",
-            "@trait.ItemBrowse"
+            @trait.ItemSearch,
+            @trait.ItemBrowse
           ]
         })
     }

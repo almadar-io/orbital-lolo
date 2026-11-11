@@ -1900,7 +1900,7 @@ mod tests {
                 trait T -> E {
                     state s {
                         INIT -> s
-                            (render-ui main { type: \"pagination\", currentPage: \"@entity.currentPage\", totalPages: 1 })
+                            (render-ui main { type: \"pagination\", currentPage: @entity.currentPage, totalPages: 1 })
                     }
                 }
             }
@@ -1936,7 +1936,7 @@ mod tests {
                 trait Reader -> E {
                     state s {
                         INIT -> s
-                            (render-ui main { type: \"text\", value: \"@entity.count\" })
+                            (render-ui main { type: \"text\", value: @entity.count })
                     }
                 }
                 trait Writer -> E {
@@ -1971,7 +1971,7 @@ mod tests {
                 trait Reader -> E {
                     state s {
                         INIT -> s
-                            (render-ui main { type: \"text\", value: \"@entity.count\" })
+                            (render-ui main { type: \"text\", value: @entity.count })
                     }
                 }
                 trait Writer -> E {
@@ -2011,7 +2011,7 @@ mod tests {
                     state s {
                         INIT -> s
                             (set @entity.currentPage 1)
-                            (render-ui main { type: \"pagination\", currentPage: \"@entity.currentPage\", totalPages: 1 })
+                            (render-ui main { type: \"pagination\", currentPage: @entity.currentPage, totalPages: 1 })
                     }
                 }
             }
@@ -2034,7 +2034,7 @@ mod tests {
                 trait T -> E {
                     state s {
                         INIT -> s
-                            (render-ui main { type: \"text\", value: \"@entity.id\" })
+                            (render-ui main { type: \"text\", value: @entity.id })
                     }
                 }
             }
@@ -2054,7 +2054,7 @@ mod tests {
                 trait T {
                     state s {
                         INIT -> s
-                            (render-ui main { type: \"text\", value: \"@entity.x\" })
+                            (render-ui main { type: \"text\", value: @entity.x })
                     }
                 }
             }
@@ -2362,7 +2362,7 @@ mod tests {
 
     #[test]
     fn emit_with_binding_skips_type_check() {
-        // `id: "@payload.id"` is a binding — type comes from the F3
+        // `id: @payload.id` is a binding — type comes from the F3
         // resolver at L2, not from the literal. The L1 mirror skips
         // the type-compare branch for bindings.
         let src = r#"
@@ -2372,7 +2372,7 @@ mod tests {
                     initial: idle
                     state idle {
                         DELETE -> idle
-                            (emit DELETED { id: "@payload.id" })
+                            (emit DELETED { id: @payload.id })
                     }
                     listens {
                         DELETE { id : string! }

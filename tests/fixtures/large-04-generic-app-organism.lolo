@@ -21,7 +21,7 @@ orbital ContactOrbital {
 
   trait ContactAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.ContactCatalog",
+      contentTrait: @trait.ContactCatalog,
       appName: "App",
       navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
       searchEvent: "CONTACT_SEARCH",
@@ -48,11 +48,11 @@ orbital ContactOrbital {
           ]},
           { type: "divider" },
           { type: "stack", direction: "horizontal", gap: "md", align: "center", children: [
-            "@trait.ContactSearch",
-            "@trait.ContactFilter"
+            @trait.ContactSearch,
+            @trait.ContactFilter
           ]},
           { type: "divider" },
-          "@trait.ContactBrowseList"
+          @trait.ContactBrowseList
         ]})
       CONTACT_SEARCH -> composing
       CONTACT_NOTIFICATIONS_OPEN -> composing
@@ -268,7 +268,7 @@ orbital ItemOrbital {
 
   trait ItemAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.ItemCatalog",
+      contentTrait: @trait.ItemCatalog,
       appName: "App",
       navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
       searchEvent: "ITEM_SEARCH",
@@ -296,10 +296,10 @@ orbital ItemOrbital {
           ]},
           { type: "divider" },
           { type: "stack", direction: "horizontal", gap: "md", align: "center", children: [
-            "@trait.ItemSearch",
-            "@trait.ItemFilter"
+            @trait.ItemSearch,
+            @trait.ItemFilter
           ]},
-          "@trait.ItemBrowseList"
+          @trait.ItemBrowseList
         ]})
       ITEM_SEARCH -> composing
       ITEM_NOTIFICATIONS_OPEN -> composing
@@ -549,7 +549,7 @@ orbital ActivityOrbital {
 
   trait ActivityAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.ActivityCatalog",
+      contentTrait: @trait.ActivityCatalog,
       appName: "App",
       navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
       searchEvent: "ACTIVITY_SEARCH",
@@ -572,7 +572,7 @@ orbital ActivityOrbital {
             { type: "typography", content: "Activities", variant: "h2" }
           ]},
           { type: "divider" },
-          "@trait.ActivityBrowseList"
+          @trait.ActivityBrowseList
         ]})
       ACTIVITY_SEARCH -> composing
       ACTIVITY_NOTIFICATIONS_OPEN -> composing
@@ -736,7 +736,7 @@ orbital TaskOrbital {
 
   trait TaskAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.TaskCatalog",
+      contentTrait: @trait.TaskCatalog,
       appName: "App",
       navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
       searchEvent: "TASK_SEARCH",
@@ -762,9 +762,9 @@ orbital TaskOrbital {
             { type: "button", label: "New Task", action: "CREATE", variant: "primary", icon: "plus" }
           ]},
           { type: "divider" },
-          "@trait.TaskSelection",
+          @trait.TaskSelection,
           { type: "divider" },
-          "@trait.TaskBrowseList"
+          @trait.TaskBrowseList
         ]})
       TASK_SEARCH -> composing
       TASK_NOTIFICATIONS_OPEN -> composing
@@ -974,7 +974,7 @@ orbital CalendarOrbital {
 
   trait CalendarAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.CalendarCatalog",
+      contentTrait: @trait.CalendarCatalog,
       appName: "App",
       navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
       searchEvent: "CAL_SEARCH",
@@ -1000,9 +1000,9 @@ orbital CalendarOrbital {
             { type: "button", label: "New Event", action: "CREATE", variant: "primary", icon: "plus" }
           ]},
           { type: "divider" },
-          "@trait.CalendarView",
+          @trait.CalendarView,
           { type: "divider" },
-          "@trait.CalendarBrowseList"
+          @trait.CalendarBrowseList
         ]})
       CAL_SEARCH -> composing
       CAL_NOTIFICATIONS_OPEN -> composing
@@ -1190,7 +1190,7 @@ orbital WidgetOrbital {
 
   trait WidgetAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.WidgetCatalog",
+      contentTrait: @trait.WidgetCatalog,
       appName: "App",
       navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
       searchEvent: "WIDGET_SEARCH",
@@ -1213,10 +1213,10 @@ orbital WidgetOrbital {
             { type: "typography", content: "Dashboard", variant: "h2" }
           ]},
           { type: "divider" },
-          "@trait.WidgetStats",
-          "@trait.WidgetGraphs",
+          @trait.WidgetStats,
+          @trait.WidgetGraphs,
           { type: "divider" },
-          "@trait.WidgetBrowseList"
+          @trait.WidgetBrowseList
         ]})
       WIDGET_SEARCH -> composing
       WIDGET_NOTIFICATIONS_OPEN -> composing
@@ -1407,7 +1407,7 @@ orbital FeedOrbital {
 
   trait FeedAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.FeedCatalog",
+      contentTrait: @trait.FeedCatalog,
       appName: "App",
       navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
       searchEvent: "FEED_SEARCH",
@@ -1433,8 +1433,8 @@ orbital FeedOrbital {
             { type: "button", label: "New Post", action: "CREATE", variant: "primary", icon: "plus" }
           ]},
           { type: "divider" },
-          "@trait.FeedBrowseList",
-          "@trait.FeedPagination"
+          @trait.FeedBrowseList,
+          @trait.FeedPagination
         ]})
       FEED_SEARCH -> composing
       FEED_NOTIFICATIONS_OPEN -> composing
@@ -1619,7 +1619,7 @@ orbital NoteOrbital {
 
   trait NoteAppLayout = AppShell.traits.AppLayout {
     config: {
-      contentTrait: "@trait.NoteCatalog",
+      contentTrait: @trait.NoteCatalog,
       appName: "App",
       navItems: [{ label: "Contacts", href: "/contacts", icon: "users" }, { label: "Items", href: "/items", icon: "package" }, { label: "Activities", href: "/activities", icon: "activity" }, { label: "Tasks", href: "/tasks", icon: "check-square" }, { label: "Calendar", href: "/calendar", icon: "calendar" }, { label: "Dashboard", href: "/widgets", icon: "layout-dashboard" }, { label: "Feed", href: "/feed", icon: "rss" }, { label: "Notes", href: "/notes", icon: "file-text" }],
       searchEvent: "NOTE_SEARCH",
@@ -1645,9 +1645,9 @@ orbital NoteOrbital {
             { type: "button", label: "New Note", action: "CREATE", variant: "primary", icon: "plus" }
           ]},
           { type: "divider" },
-          "@trait.NoteSearch",
+          @trait.NoteSearch,
           { type: "divider" },
-          "@trait.NoteBrowseList"
+          @trait.NoteBrowseList
         ]})
       NOTE_SEARCH -> composing
       NOTE_NOTIFICATIONS_OPEN -> composing

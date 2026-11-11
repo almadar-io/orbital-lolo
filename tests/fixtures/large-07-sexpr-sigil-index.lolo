@@ -40,12 +40,12 @@ orbital FeatureDetailPageItemOrbital {
     state composing {
       INIT -> composing
         (render-ui main { type: "stack", direction: "vertical", gap: "none", children: [
-          { type: "hero-section", tag: "@config.heroTag", title: "@config.heroTitle", titleAccent: "@config.heroTitleAccent", subtitle: "@config.heroSubtitle", primaryAction: { label: "@config.heroPrimaryActionLabel", href: "@config.heroPrimaryActionHref" }, secondaryAction: { label: "@config.heroSecondaryActionLabel", href: "@config.heroSecondaryActionHref" }, background: "@config.heroBackground", align: "@config.heroAlign" },
+          { type: "hero-section", tag: @config.heroTag, title: @config.heroTitle, titleAccent: @config.heroTitleAccent, subtitle: @config.heroSubtitle, primaryAction: { label: @config.heroPrimaryActionLabel, href: @config.heroPrimaryActionHref }, secondaryAction: { label: @config.heroSecondaryActionLabel, href: @config.heroSecondaryActionHref }, background: @config.heroBackground, align: @config.heroAlign },
           { type: "split-section", title: "@config.sections[0].title", description: "@config.sections[0].description", bullets: "@config.sections[0].bullets", image: "@config.sections[0].image", imagePosition: "@config.sections[0].imagePosition" },
           { type: "split-section", title: "@config.sections[1].title", description: "@config.sections[1].description", bullets: "@config.sections[1].bullets", image: "@config.sections[1].image", imagePosition: "@config.sections[1].imagePosition" },
           { type: "split-section", title: "@config.sections[2].title", description: "@config.sections[2].description", bullets: "@config.sections[2].bullets", image: "@config.sections[2].image", imagePosition: "@config.sections[2].imagePosition" },
-          { type: "cta-banner", title: "@config.ctaTitle", primaryAction: "@config.ctaAction" },
-          { type: "marketing-footer", columns: "@config.footerColumns", copyright: "@config.footerCopyright" }
+          { type: "cta-banner", title: @config.ctaTitle, primaryAction: @config.ctaAction },
+          { type: "marketing-footer", columns: @config.footerColumns, copyright: @config.footerCopyright }
         ]})
     }
   }

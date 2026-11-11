@@ -265,3 +265,25 @@ fn an_old_form_call_in_a_fetch_filter_is_a_type_error() {
     let err = format!("{:?}", parse_str(&source).expect_err("list in a filter"));
     assert!(err.contains("ELOLO_LIST_IN_BOOLEAN_SLOT"), "{err}");
 }
+
+// G-ORB-111: `(nil? x)` read as the head `nil` plus a bare `?` payload reference and lowered to
+// `["nil", "@payload", x]`, a guard on the wrong thing that validated clean.
+#[test]
+fn a_payload_sigil_glued_to_the_word_before_it_is_a_parse_error() {
+    for effect in [
+        "(set @entity.total (if (nil? @entity.items) 0 1))",
+        "(set @entity.total (if (empty?items @entity.items) 0 1))",
+        "(set @entity.total (+ @entity.total count?))",
+    ] {
+        let err = parse_err(effect);
+        assert!(err.contains("ELOLO_GLUED_PAYLOAD_SIGIL"), "{effect}: {err}");
+    }
+}
+
+#[test]
+fn control_a_spaced_payload_sigil_and_a_sigil_after_punctuation_parse() {
+    parse_ok("(set @entity.total (if (= ?count null) 0 ?count))");
+    parse_ok("(set @entity.items (array/concat @entity.items [?item]))");
+    parse_ok("(emit DONE { total: ?count, all: ? })");
+    parse_ok("(set @entity.total (+ @entity.total ?))");
+}

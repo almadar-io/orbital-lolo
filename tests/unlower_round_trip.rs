@@ -349,6 +349,46 @@ fn corpus_print_of_parse_divergence_by_cause() {
     assert_eq!(total, 0, "print(parse(s)) must be s over the corpus");
 }
 
+const SHADOWED_IMPORT: &str = r#"app shadow [version: "1.0.0", description: "an orbital re-imports a file-scoped alias"]
+
+uses Shell from "std/behaviors/std-app-layout"
+uses Missing from "std/behaviors/std-not-found"
+
+orbital One {
+  uses Stack from "std/behaviors/ui-stack"
+  uses Shell from "std/behaviors/std-app-layout"
+
+  entity A [runtime] {
+    id : string!
+  }
+
+  trait Show -> A {
+    initial: idle
+
+    state idle {
+      INIT -> idle
+    }
+  }
+
+  page "/" as Home -> Show
+}
+
+orbital Gone = Missing.orbitals.NotFoundOrbital {
+  config { primaryHref: "/" }
+}
+"#;
+
+#[test]
+fn an_orbital_that_re_imports_a_file_scoped_alias_round_trips_beside_a_reference_orbital() {
+    let Some(options) = monorepo_options() else {
+        return;
+    };
+    round_trip(SHADOWED_IMPORT, &options).unwrap_or_else(|e| panic!("{e}"));
+    let plain = SHADOWED_IMPORT.replace("  uses Shell from \"std/behaviors/std-app-layout\"\n", "");
+    assert_ne!(plain, SHADOWED_IMPORT);
+    round_trip(&plain, &options).unwrap_or_else(|e| panic!("control, no re-import: {e}"));
+}
+
 #[test]
 fn print_of_parse_flags_a_source_the_printer_would_change() {
     let canonical = "app control [\n  version: \"1.0.0\",\n  description: \"probe\"\n]\n";

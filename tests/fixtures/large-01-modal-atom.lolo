@@ -56,7 +56,7 @@ orbital ModalRecordOrbital {
       ;; atoms validate this with @config allowed-but-unresolved.
       OPEN -> open when (or (= @config.mode "create") @payload.row)
         (set @entity.id @payload.id)
-        (render-ui @config.detailSlot { type: "@config.detailPattern", direction: "vertical", gap: "md", children: [{ type: "stack", direction: "horizontal", gap: "sm", children: [{ type: "icon", name: "@config.icon" }, { type: "typography", content: "@config.title", variant: "h3" }] }, { type: "divider" }, { type: "form-section", entity: @payload.row, mode: "@config.mode", submitEvent: "SAVE", cancelEvent: "CLOSE", fields: "@config.fields" }] })
+        (render-ui @config.detailSlot { type: @config.detailPattern, direction: "vertical", gap: "md", children: [{ type: "stack", direction: "horizontal", gap: "sm", children: [{ type: "icon", name: @config.icon }, { type: "typography", content: @config.title, variant: "h3" }] }, { type: "divider" }, { type: "form-section", entity: @payload.row, mode: @config.mode, submitEvent: "SAVE", cancelEvent: "CLOSE", fields: @config.fields }] })
     }
     state open {
       CLOSE -> closed

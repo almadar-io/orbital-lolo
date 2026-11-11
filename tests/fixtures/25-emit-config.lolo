@@ -8,7 +8,7 @@ orbital PatientOrbital {
     state idle {
       LOAD -> idle
         (fetch Patient {
-          id: "@payload.id",
+          id: @payload.id,
           emit: {
             success: "PATIENT_LOADED",
             failure: "PATIENT_LOAD_FAILED"
@@ -17,23 +17,23 @@ orbital PatientOrbital {
     }
     state loading {
       SAVE -> loading
-        (persist update Patient "@entity" {
+        (persist update Patient @entity {
           emit: {
             success: "PATIENT_SAVED",
             failure: "PATIENT_SAVE_FAILED"
           }
         })
       MARK_DONE -> loading
-        (set "@entity.status" "done" {
+        (set @entity.status "done" {
           emit: { success: "STATUS_CHANGED" }
         })
       SEND_EMAIL -> loading
-        (call-service "notify" "sendEmail" "@payload" {
+        (call-service "notify" "sendEmail" @payload {
           emit: { success: "EMAIL_SENT", failure: "EMAIL_FAILED" }
         })
       SUBSCRIBE -> loading
         (fetch Patient {
-          id: "@entity.id",
+          id: @entity.id,
           emit: { success: "PATIENT_LOADED" }
         })
     }

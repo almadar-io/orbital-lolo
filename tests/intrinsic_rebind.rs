@@ -28,7 +28,7 @@ orbital WidgetOrbital {
     state idle {
       RENDER -> idle
         (set @entity.viewState "computed")
-        (render-ui main { type: "typography", content: "@entity.viewState" })
+        (render-ui main { type: "typography", content: @entity.viewState })
     }
   }
 }"#;
@@ -256,7 +256,7 @@ orbital BadOrbital {
     initial: idle
     state idle {
       RENDER -> idle
-        (render-ui main { type: "typography", content: "@entity.headline" })
+        (render-ui main { type: "typography", content: @entity.headline })
     }
   }
 }"#;
@@ -286,7 +286,7 @@ orbital OkOrbital {
     initial: idle
     state idle {
       RENDER -> idle
-        (render-ui main { type: "typography", content: "@entity.headline" })
+        (render-ui main { type: "typography", content: @entity.headline })
     }
   }
 }"#;
