@@ -28,7 +28,7 @@ pub struct Vocabulary {
 /// page as theme emits listens ticks config when with from to every in
 /// capabilities match external internal on name fields events event
 /// emitsScope identity pages omit only roles entities extend lazy locales public input http boot
-/// access indexing title description origin icon siteName signIn authenticated
+/// access indexing title description origin icon siteName signIn entries authenticated
 /// index noindex version translationOf notFound` (app/page modifier-bracket keys and values) — every
 /// `expect_keyword`/`check_ident` literal in `parser/*.rs` (`parser/mod.rs`,
 /// `parser/entity.rs`, `parser/trait.rs`, `parser/type.rs`, `parser/page.rs`,
@@ -115,6 +115,7 @@ const KEYWORDS: &[&str] = &[
     "icon",
     "siteName",
     "signIn",
+    "entries",
     "authenticated",
     "index",
     "noindex",

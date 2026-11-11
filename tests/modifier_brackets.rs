@@ -181,6 +181,56 @@ fn themes_survive_format_and_unlower() {
     assert_eq!(parse_and_lower_str(&text).expect("lower the unlowered text").themes, schema.themes);
 }
 
+const ENTRIES_HEADER: &str = "app std-home [\n  version: \"1.0.0\",\n  signIn: \"/login\",\n  entries: [\"/cli-auth\", \"/invite/:code\"]\n]\n";
+
+#[test]
+fn outside_entry_routes_lower_into_schema_site_entries() {
+    let schema = parse_and_lower_str(&program(ENTRIES_HEADER)).expect("lower");
+    let site = schema.site.clone().expect("site");
+    assert_eq!(site.entries, vec!["/cli-auth".to_string(), "/invite/:code".to_string()]);
+    assert_eq!(site.sign_in.as_deref(), Some("/login"), "beside signIn, which it leaves alone");
+    assert_eq!(
+        serde_json::to_value(&schema).unwrap()["site"]["entries"],
+        serde_json::json!(["/cli-auth", "/invite/:code"]),
+        "the .orb key is site.entries"
+    );
+    let empty = parse_and_lower_str(&program("app std-home [version: \"1.0.0\", signIn: \"/login\", entries: []]\n")).expect("lower");
+    assert!(empty.site.expect("site").entries.is_empty(), "edge: an empty list declares no entry");
+}
+
+#[test]
+fn control_no_entries_modifier_writes_no_entries_key() {
+    let schema = parse_and_lower_str(&program("app std-home [version: \"1.0.0\", signIn: \"/login\"]\n")).expect("lower");
+    assert!(schema.site.as_ref().expect("site").entries.is_empty());
+    assert!(serde_json::to_value(&schema).unwrap()["site"].get("entries").is_none());
+    let only = parse_and_lower_str(&program("app std-home [version: \"1.0.0\", entries: [\"/cli-auth\"]]\n")).expect("lower");
+    assert_eq!(only.site.expect("entries alone make a site").entries, vec!["/cli-auth".to_string()]);
+}
+
+#[test]
+fn entries_survive_format_and_unlower() {
+    let schema = parse_and_lower_str(&program(ENTRIES_HEADER)).expect("lower");
+    let formatted = format_program(&parse_str(&program(ENTRIES_HEADER)).expect("parse"));
+    assert!(formatted.contains("entries: [\"/cli-auth\", \"/invite/:code\"]"), "{formatted}");
+    assert_eq!(parse_and_lower_str(&formatted).expect("reparse").site, schema.site);
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert_eq!(parse_and_lower_str(&text).expect("lower the unlowered text").site, schema.site);
+}
+
+#[test]
+fn an_entries_value_that_is_no_list_of_strings_is_rejected() {
+    let not_a_list = parse_and_lower_str(&program("app std-home [version: \"1.0.0\", entries: \"/cli-auth\"]\n")).unwrap_err().to_string();
+    assert!(not_a_list.contains("expected ["), "as every list modifier (`themes`, `egress`): {not_a_list}");
+    for header in [
+        "app std-home [version: \"1.0.0\", entries: [cliAuth]]\n",
+        "app std-home [version: \"1.0.0\", entries: [\"/cli-auth\", 3]]\n",
+    ] {
+        let err = parse_and_lower_str(&program(header)).unwrap_err().to_string();
+        assert!(err.contains("ORB_L_OPTION_VALUE"), "{header}: {err}");
+    }
+    assert!(parse_and_lower_str(&program("app std-home [version: \"1.0.0\", entries: [\"/cli-auth\"]]\n")).is_ok(), "control");
+}
+
 #[test]
 fn control_no_site_modifiers_means_no_site() {
     assert!(parse_and_lower_str(&program(BRACKET_HEADER))

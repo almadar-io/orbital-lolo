@@ -29,6 +29,7 @@ fn std_modal_contract_is_derived_from_its_lolo() {
         ("fieldOverrides", "[ModalFieldOverride]"),
         ("fields", "[string]"),
         ("icon", "string"),
+        ("maxRows", "number"),
         ("mode", "string"),
         ("title", "string"),
     ];

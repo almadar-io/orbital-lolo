@@ -52,6 +52,7 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "icon",
     "siteName",
     "signIn",
+    "entries",
 ];
 
 /// Keys of an `orbital Name [ … ]` modifier bracket.
@@ -720,6 +721,7 @@ impl Parser {
                     "icon" => site.icon = Some(p.parse_option_string(key)?),
                     "siteName" => site.name = Some(p.parse_option_string(key)?),
                     "signIn" => site.sign_in = Some(p.parse_option_string(key)?),
+                    "entries" => site.entries = p.parse_string_items(key)?,
                     _ => unreachable!("APP_MODIFIERS covers every key"),
                 }
                 Ok(())

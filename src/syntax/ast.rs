@@ -90,7 +90,7 @@ pub struct AppHeader {
     pub deployment: Vec<(String, Vec<String>)>,
     /// `public: "./public"` — a folder copied verbatim to the built site's root.
     pub public: Option<String>,
-    /// `origin:` / `icon:` / `siteName:` / `signIn:` site modifiers.
+    /// `origin:` / `icon:` / `siteName:` / `signIn:` / `entries:` site modifiers.
     pub site: orbital_core_base::schema::SiteMeta,
     /// The modifiers were written as loose lines after `app` (the pre-bracket
     /// form) — still parsed; lowering rejects it with `ORB_L_APP_HEADER_LEGACY`.

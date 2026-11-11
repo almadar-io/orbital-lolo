@@ -391,6 +391,21 @@ impl Formatter {
                 entries.push((key, Box::new(move |f: &mut Self| f.write_quoted_string(v))));
             }
         }
+        if !app.site.entries.is_empty() {
+            entries.push((
+                "entries",
+                Box::new(move |f: &mut Self| {
+                    f.output.push('[');
+                    for (i, route) in app.site.entries.iter().enumerate() {
+                        if i > 0 {
+                            f.output.push_str(", ");
+                        }
+                        f.write_quoted_string(route);
+                    }
+                    f.output.push(']');
+                }),
+            ));
+        }
         self.fmt_modifier_bracket(entries);
         if !app.config.is_empty() {
             self.write_newline();
