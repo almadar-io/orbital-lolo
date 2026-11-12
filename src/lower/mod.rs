@@ -1800,6 +1800,22 @@ mod tests {
             Some(30_000),
             "expected the 30s duration to survive lowering onto the state, not be discarded"
         );
+        let bound = t
+            .ticks
+            .iter()
+            .flatten()
+            .find(|tk| tk.after_entry_ms.is_some())
+            .expect("a `for Ns` state lowers to a timeout tick (EXEC-TICK-8)");
+        assert_eq!(bound.after_entry_ms, Some(30_000));
+        assert_eq!(bound.applies_to.as_deref(), Some(&["s".to_string()][..]));
+        assert_eq!(serde_json::to_value(&bound.effects).unwrap(), serde_json::json!([["emit", "TIMEOUT"]]));
+    }
+
+    #[test]
+    fn control_a_state_without_a_bound_lowers_no_timeout_tick() {
+        let s = lower("orbital O { entity E { id : string! } trait T -> E { state s { EVT -> s } } }");
+        let TraitReference::Inline(t) = &s.orbitals[0].traits[0] else { panic!() };
+        assert!(t.ticks.iter().flatten().all(|tk| tk.after_entry_ms.is_none()));
     }
 
     #[test]

@@ -456,7 +456,8 @@ pub(super) fn trait_definition(
         }
     }
 
-    for t in td.ticks.iter().flatten() {
+    // A tick with `afterEntryMs` is a state's `for Ns` (EXEC-TICK-8): the state's bound writes it, not a `ticks` line.
+    for t in td.ticks.iter().flatten().filter(|t| t.after_entry_ms.is_none()) {
         tr.ticks.push(tick_of(t)?);
     }
     tr.config = config_fields(&td.config)?;

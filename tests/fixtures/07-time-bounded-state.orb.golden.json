@@ -23,10 +23,17 @@
               "resource": "@id"
             }
           ],
+          "emits": [
+            {
+              "description": "A bounded state's time ran out (`state X for Ns`).",
+              "event": "TIMEOUT",
+              "tier": "internal"
+            }
+          ],
           "linkedEntity": "Order",
           "name": "ConfirmFlow",
           "sourceDeclaration": {
-            "fingerprint": "3d4155d081d7a84aaddfa170f74d659178008d4ef72989adf910be6167f43d83"
+            "fingerprint": "4548daabd35f944bf26cbcade3f6d65afdf6deaf39ae333692b35e2ef1d26d30"
           },
           "stateMachine": {
             "events": [
@@ -68,7 +75,25 @@
                 "to": "confirming"
               }
             ]
-          }
+          },
+          "ticks": [
+            {
+              "afterEntryMs": 30000,
+              "appliesTo": [
+                "confirming"
+              ],
+              "description": "`state confirming for 30000ms`: TIMEOUT once the row has been in it that long",
+              "effects": [
+                [
+                  "emit",
+                  "TIMEOUT"
+                ]
+              ],
+              "interval": 100.0,
+              "name": "confirmingStateTimeout",
+              "runsInBackground": true
+            }
+          ]
         }
       ]
     }

@@ -1553,6 +1553,7 @@ pub(crate) fn lower_tick(t: &Tick) -> Result<TickDefinition, LowerError> {
         description: None,
         background: t.background,
         while_visible: t.visible,
+        after_entry_ms: None,
     })
 }
 

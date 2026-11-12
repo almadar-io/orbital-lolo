@@ -1,5 +1,8 @@
 use super::*;
 use std::sync::Arc;
+
+/// How often a bounded state checks whether its row has been in it long enough: the cadence of its timeout tick.
+const STATE_BOUND_CHECK_MS: u64 = 100;
 use orbital_core_base::collections::IndexMap;
 
 /// Expand a transition's term-match sugar (Phase 2, pattern-matching doc
@@ -787,7 +790,7 @@ pub(crate) fn lower_trait(
     // source an event's payload from its outbound `emits { }` declaration when
     // nothing else supplies one. Reused below for the trait's `emits` array —
     // one lowering, one source of truth (event payload === emit payload).
-    let lowered_emits: Vec<EmitDefinition> = t
+    let mut lowered_emits: Vec<EmitDefinition> = t
         .emits
         .iter()
         .map(|e| lower_emit(e, aliases, entities, event_aliases, &trait_type_params))
@@ -964,7 +967,18 @@ pub(crate) fn lower_trait(
 
     // Reuse the emits lowered up front (see the `stateMachine.events[]`
     // payload-precedence block above). `lower_emit` already ran per entry.
-    let emits = if lowered_emits.is_empty() {
+    // A bounded state's timeout tick emits TIMEOUT to its own trait (EXEC-TICK-8): declared here as internal.
+    if t.states.iter().any(|state| state.time_bound.is_some()) && !lowered_emits.iter().any(|e| e.event == "TIMEOUT") {
+        lowered_emits.push(
+            serde_json::from_value(serde_json::json!({
+                "event": "TIMEOUT",
+                "tier": "internal",
+                "description": "A bounded state's time ran out (`state X for Ns`).",
+            }))
+            .expect("an emit declaration"),
+        );
+    }
+        let emits = if lowered_emits.is_empty() {
         None
     } else {
         Some(lowered_emits)
@@ -1009,6 +1023,33 @@ pub(crate) fn lower_trait(
                 })
                 .collect::<Result<Vec<_>, LowerError>>()?,
         )
+    };
+    // `state X for Ns`: a tick in X that emits TIMEOUT once the row has been in X that long (EXEC-TICK-8); the TIMEOUT
+    // arm the state has (written, or the self-targeted one added above) takes it.
+    let bounded: Vec<TickDefinition> = t
+        .states
+        .iter()
+        .filter_map(|state| state.time_bound.map(|ms| (state, ms)))
+        .map(|(state, ms)| TickDefinition {
+            name: format!("{}StateTimeout", state.name),
+            interval: StringOrNumber::Number(STATE_BOUND_CHECK_MS as f64),
+            guard: None,
+            effects: vec![serde_json::from_value(serde_json::json!(["emit", "TIMEOUT"])).expect("an emit form")],
+            applies_to: Some(vec![state.name.clone()]),
+            description: Some(format!("`state {} for {ms}ms`: TIMEOUT once the row has been in it that long", state.name)),
+            // Where the trait runs: a server trait's timeout runs on the server, a `[client]`/`[optimistic]` one in the client.
+            background: matches!(t.dispatch, None | Some(TraitDispatch::Server)),
+            while_visible: false,
+            after_entry_ms: Some(ms),
+        })
+        .collect();
+    let ticks = match (ticks, bounded.is_empty()) {
+        (ticks, true) => ticks,
+        (None, false) => Some(bounded),
+        (Some(mut ticks), false) => {
+            ticks.extend(bounded);
+            Some(ticks)
+        }
     };
 
     // Lower the trait's declared `config { ... }` block into the schema's
