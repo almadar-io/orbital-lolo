@@ -134,6 +134,22 @@ impl Parser {
             }
         }
 
+        for nearest in indexes.iter().filter_map(|index| index.nearest.as_ref()) {
+            let vector = fields.iter().find(|f| f.name == nearest.field).is_some_and(|f| {
+                matches!(&f.type_expr, TypeExpr::Array(inner)
+                    if matches!(inner.as_ref(), TypeExpr::Primitive(p) if matches!(p.as_str(), "number" | "int" | "float")))
+            });
+            if !vector {
+                return Err(ParseError::InvalidType {
+                    span,
+                    message: format!(
+                        "ELOLO_INDEX_NEAREST_NOT_A_VECTOR: `@index` ranks `nearest` over `{}`, which is not a `[number]` field of entity '{}'",
+                        nearest.field, name
+                    ),
+                });
+            }
+        }
+
         Ok(Entity {
             name,
             type_annotation,
@@ -158,7 +174,8 @@ impl Parser {
         })
     }
 
-    /// One `@index { fields: [..], orderBy?: ".." }` access path, in `fetch`'s own record keys.
+    /// One `@index { fields: [..], orderBy?: "..", nearest?: { field, dimension } }` access path, in `fetch`'s own
+    /// record keys. A `nearest` path's `fields` are its equality pre-filters and may be empty.
     fn parse_index_directive(
         &mut self,
     ) -> Result<orbital_core_base::schema::EntityIndex, ParseError> {
@@ -176,10 +193,40 @@ impl Parser {
                 "`@index` takes one record, e.g. `@index { fields: [\"graphId\"], orderBy: \"weight:desc\" }`",
             ));
         };
-        if let Some(key) = record.keys().find(|k| !matches!(k.as_str(), "fields" | "orderBy")) {
+        if let Some(key) = record.keys().find(|k| !matches!(k.as_str(), "fields" | "orderBy" | "nearest")) {
             return Err(invalid(
                 "ELOLO_INDEX_UNKNOWN_KEY",
-                &format!("`@index` has no key `{key}`; its keys are `fields` and `orderBy`"),
+                &format!("`@index` has no key `{key}`; its keys are `fields`, `orderBy` and `nearest`"),
+            ));
+        }
+        let nearest_invalid = || {
+            invalid(
+                "ELOLO_INDEX_NEAREST_INVALID",
+                "`nearest` is `{ field: \"<a [number] field>\", dimension: <a whole number above 0> }`",
+            )
+        };
+        let nearest = match record.get("nearest") {
+            None => None,
+            Some(SExpression::Object(spec)) => {
+                if spec.keys().any(|k| !matches!(k.as_str(), "field" | "dimension")) {
+                    return Err(nearest_invalid());
+                }
+                let field = match spec.get("field") {
+                    Some(SExpression::String(name)) if !name.is_empty() => name.to_string(),
+                    _ => return Err(nearest_invalid()),
+                };
+                let dimension = match spec.get("dimension") {
+                    Some(SExpression::Number(n)) if n.fract() == 0.0 && *n >= 1.0 && *n <= u32::MAX as f64 => *n as u32,
+                    _ => return Err(nearest_invalid()),
+                };
+                Some(orbital_core_base::schema::IndexNearest { field, dimension })
+            }
+            Some(_) => return Err(nearest_invalid()),
+        };
+        if nearest.is_some() && record.get("orderBy").is_some() {
+            return Err(invalid(
+                "ELOLO_INDEX_NEAREST_ORDERED",
+                "a `nearest` index path is ranked by its vector; it takes no `orderBy`",
             ));
         }
         let fields_invalid = || {
@@ -198,7 +245,7 @@ impl Parser {
                 _ => None,
             })
             .collect::<Option<Vec<String>>>()
-            .filter(|names| !names.is_empty())
+            .filter(|names| !names.is_empty() || nearest.is_some())
             .ok_or_else(fields_invalid)?;
         let order_by = match record.get("orderBy") {
             None => None,
@@ -210,7 +257,7 @@ impl Parser {
                 ))
             }
         };
-        Ok(orbital_core_base::schema::EntityIndex { fields, order_by: order_by.map(|v| v.into_inner()) })
+        Ok(orbital_core_base::schema::EntityIndex { fields, order_by: order_by.map(|v| v.into_inner()), nearest })
     }
 
     /// The `read|create|update|delete` op at a `@<op>` directive, if the cursor is on one.

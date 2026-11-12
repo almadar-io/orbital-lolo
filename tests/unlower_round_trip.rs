@@ -1423,10 +1423,12 @@ orbital EdgeOrbital {
   entity Edge [persistent: edges] {
     @index { fields: ["graphId"] }
     @index { fields: ["graphId", "relation"], orderBy: "weight:desc" }
+    @index { fields: ["graphId"], nearest: { field: "embedding", dimension: 3 } }
     id : string!
     graphId : string!
     relation : string
     weight : number
+    embedding : [number]
   }
 }
 "#;
@@ -1438,7 +1440,8 @@ fn entity_indexes_unlower_to_index_directives_and_round_trip() {
     };
     let schema = parse_and_lower_str_with(INDEX_PROGRAM, &options).unwrap();
     let printed = schema_to_lolo(&schema).unwrap();
-    assert_eq!(printed.matches("@index").count(), 2, "{printed}");
+    assert_eq!(printed.matches("@index").count(), 3, "{printed}");
+    assert!(printed.contains("nearest: { field: \"embedding\", dimension: 3 }"), "{printed}");
     round_trip(INDEX_PROGRAM, &options).unwrap();
 }
 

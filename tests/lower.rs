@@ -1928,6 +1928,7 @@ orbital EdgeOrbital {{
     graphId : string!
     relation : string
     weight : number
+    embedding : [number]
   }}
   entity Plain [persistent: plains] {{
     id : string!
@@ -2008,6 +2009,45 @@ fn index_directive_errors_name_their_code_and_valid_forms_lower() {
     // Controls: the same shapes, valid, lower.
     lower(r#"{ fields: ["graphId"] }"#).expect("one field");
     lower(r#"{ fields: ["graphId", "relation"], orderBy: "weight:desc" }"#).expect("two fields and order");
+}
+
+#[test]
+fn a_nearest_index_lowers_its_vector_field_and_dimension_beside_its_prefilter_fields() {
+    let schema = parse_and_lower_str(&index_program(
+        "    @index { fields: [\"graphId\"], nearest: { field: \"embedding\", dimension: 3 } }\n    @index { fields: [], nearest: { field: \"embedding\", dimension: 3 } }",
+    ))
+    .expect("lowers");
+    assert_eq!(
+        entity_json(&schema, "Edge")["indexes"],
+        serde_json::json!([
+            { "fields": ["graphId"], "nearest": { "field": "embedding", "dimension": 3 } },
+            { "fields": [], "nearest": { "field": "embedding", "dimension": 3 } }
+        ])
+    );
+}
+
+#[test]
+fn nearest_index_errors_name_their_code() {
+    let lower = |directive: &str| {
+        parse_and_lower_str(&index_program(&format!("    @index {directive}")))
+            .map(|_| ())
+            .map_err(|e| format!("{e}"))
+    };
+    for (directive, code) in [
+        (r#"{ fields: [], nearest: "embedding" }"#, "ELOLO_INDEX_NEAREST_INVALID"),
+        (r#"{ fields: [], nearest: { field: "embedding" } }"#, "ELOLO_INDEX_NEAREST_INVALID"),
+        (r#"{ fields: [], nearest: { field: "embedding", dimension: 0 } }"#, "ELOLO_INDEX_NEAREST_INVALID"),
+        (r#"{ fields: [], nearest: { field: "embedding", dimension: 1.5 } }"#, "ELOLO_INDEX_NEAREST_INVALID"),
+        (r#"{ fields: [], nearest: { field: "embedding", dimension: 3, metric: "dot" } }"#, "ELOLO_INDEX_NEAREST_INVALID"),
+        (r#"{ fields: [], orderBy: "weight", nearest: { field: "embedding", dimension: 3 } }"#, "ELOLO_INDEX_NEAREST_ORDERED"),
+        (r#"{ fields: [], nearest: { field: "weight", dimension: 3 } }"#, "ELOLO_INDEX_NEAREST_NOT_A_VECTOR"),
+        (r#"{ fields: [], nearest: { field: "nope", dimension: 3 } }"#, "ELOLO_INDEX_NEAREST_NOT_A_VECTOR"),
+        (r#"{ fields: [] }"#, "ELOLO_INDEX_FIELDS_INVALID"),
+    ] {
+        let err = lower(directive).expect_err(directive);
+        assert!(err.contains(code), "{directive}: expected {code}, got {err}");
+    }
+    lower(r#"{ fields: ["graphId", "relation"], nearest: { field: "embedding", dimension: 1536 } }"#).expect("control: two prefilter fields");
 }
 
 #[test]

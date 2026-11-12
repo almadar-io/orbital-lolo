@@ -2150,6 +2150,11 @@ impl Formatter {
                     self.output.push_str(", orderBy: ");
                     self.write_quoted_string(order);
                 }
+                if let Some(nearest) = &index.nearest {
+                    self.output.push_str(", nearest: { field: ");
+                    self.write_quoted_string(&nearest.field);
+                    self.output.push_str(&format!(", dimension: {} }}", nearest.dimension));
+                }
                 self.output.push_str(" }");
                 self.write_newline();
             }
