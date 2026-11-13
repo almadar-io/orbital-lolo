@@ -51,23 +51,10 @@ pub struct CompletionResult {
 fn pattern_props() -> &'static BTreeMap<String, Vec<String>> {
     static PROPS: OnceLock<BTreeMap<String, Vec<String>>> = OnceLock::new();
     PROPS.get_or_init(|| {
-        let mut out = BTreeMap::new();
-        let parsed: serde_json::Value = serde_json::from_str(crate::patterns_meta::patterns_json())
-            .unwrap_or_else(|e| {
-                panic!("installed patterns-registry.json is corrupt ({e}) — reinstall @almadar/core")
-            });
-        let Some(patterns) = parsed.get("patterns").and_then(|v| v.as_object()) else {
-            panic!("installed patterns-registry.json has no `patterns` object — reinstall @almadar/core");
-        };
-        for (name, def) in patterns {
-            let props = def
-                .get("propsSchema")
-                .and_then(|p| p.as_object())
-                .map(|p| p.keys().cloned().collect())
-                .unwrap_or_default();
-            out.insert(name.clone(), props);
-        }
-        out
+        orbital_core_base::language::registry::patterns()
+            .iter()
+            .map(|(name, def)| (name.clone(), def.props_schema.keys().cloned().collect()))
+            .collect()
     })
 }
 

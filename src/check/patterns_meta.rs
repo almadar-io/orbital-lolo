@@ -16,20 +16,7 @@
 use std::collections::{HashMap, HashSet};
 use std::sync::OnceLock;
 
-/// The installed patterns registry. Lowering preflights
-/// `language_data()` and returns a structured error before any accessor here
-/// runs; see `orbital_core::language_data::language_data_after_preflight`.
-pub(crate) fn patterns_json() -> &'static str {
-    orbital_core_base::language_data::language_data_after_preflight()
-        .patterns
-        .as_str()
-}
-
-fn parse_registry() -> serde_json::Value {
-    serde_json::from_str(patterns_json()).unwrap_or_else(|e| {
-        panic!("installed patterns-registry.json is corrupt ({e}) — reinstall @almadar/core")
-    })
-}
+use orbital_core_base::language::registry::patterns;
 
 /// Set of object-key names that, per the registry, identify a string
 /// value as a bus event-name reference. Two sources contribute:
@@ -59,29 +46,14 @@ static EVENT_PROP_NAMES: OnceLock<HashSet<String>> = OnceLock::new();
 pub fn event_prop_names() -> &'static HashSet<String> {
     EVENT_PROP_NAMES.get_or_init(|| {
         let mut names: HashSet<String> = HashSet::new();
-
-        let parsed = parse_registry();
-        let Some(patterns) = parsed.get("patterns").and_then(|v| v.as_object()) else {
-            panic!("installed patterns-registry.json has no `patterns` object — reinstall @almadar/core");
-        };
-        for (_pattern_name, pattern_value) in patterns {
-            let Some(props_schema) = pattern_value.get("propsSchema").and_then(|v| v.as_object())
-            else {
-                continue;
-            };
-            for (prop_name, prop_value) in props_schema {
-                let Some(kind) = prop_value.get("kind").and_then(|v| v.as_str()) else {
-                    continue;
-                };
-                match kind {
-                    "event" | "event-ref" | "event-listen" | "callback" => {
+        for pattern in patterns().values() {
+            for (prop_name, prop) in &pattern.props_schema {
+                match prop.kind.as_deref() {
+                    Some("event" | "event-ref" | "event-listen" | "callback") => {
                         names.insert(prop_name.clone());
                     }
-                    "event-list" => {
-                        // Descriptor-array prop. The event-name lives on
-                        // an inner field of each item; pattern-sync
-                        // records the field name in `eventField`.
-                        if let Some(field) = prop_value.get("eventField").and_then(|v| v.as_str()) {
+                    Some("event-list") => {
+                        if let Some(field) = prop.event_field.as_deref() {
                             names.insert(field.to_string());
                         }
                     }
@@ -108,27 +80,15 @@ pub fn record_prop(pattern: &str, prop: &str) -> Option<RecordProp> {
     RECORD_PROPS
         .get_or_init(|| {
             let mut out = HashMap::new();
-            let parsed = parse_registry();
-            let Some(patterns) = parsed.get("patterns").and_then(|v| v.as_object()) else {
-                panic!("installed patterns-registry.json has no `patterns` object — reinstall @almadar/core");
-            };
-            for (pattern_name, pattern_value) in patterns {
-                let Some(props) = pattern_value.get("propsSchema").and_then(|v| v.as_object()) else {
-                    continue;
-                };
-                for (prop_name, prop_value) in props {
-                    let types: Vec<&str> = prop_value
-                        .get("types")
-                        .and_then(|v| v.as_array())
-                        .map(|a| a.iter().filter_map(|t| t.as_str()).collect())
-                        .unwrap_or_default();
-                    if types.contains(&"object") && !types.contains(&"array") {
-                        let entity_kind = prop_value.get("kind").and_then(|v| v.as_str()) == Some("entity");
+            for (pattern_name, pattern_value) in patterns() {
+                for (prop_name, prop_value) in &pattern_value.props_schema {
+                    let types = &prop_value.types;
+                    if types.iter().any(|t| t == "object") && !types.iter().any(|t| t == "array") {
                         out.insert(
                             (pattern_name.clone(), prop_name.clone()),
                             RecordProp {
-                                entity_kind,
-                                types: types.iter().map(|t| t.to_string()).collect(),
+                                entity_kind: prop_value.kind.as_deref() == Some("entity"),
+                                types: types.clone(),
                             },
                         );
                     }

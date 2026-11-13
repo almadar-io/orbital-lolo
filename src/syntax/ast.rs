@@ -1432,6 +1432,7 @@ pub struct EventField {
     pub name: String,
     pub type_expr: TypeExpr,
     pub required: bool,
+    pub description: Option<String>,
     pub span: Span,
 }
 

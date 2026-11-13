@@ -508,6 +508,7 @@ pub(super) fn event_fields(fields: &[PayloadField]) -> Result<Vec<EventField>, U
                 name: f.name.clone(),
                 type_expr: payload_type(f)?,
                 required: f.required == Some(true),
+                description: f.description.clone(),
                 span: Span::dummy(),
             })
         })

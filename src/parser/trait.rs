@@ -1159,6 +1159,25 @@ impl Parser {
             } else {
                 false
             };
+            let mut description = None;
+            if let TokenKind::Sigil(raw) = self.peek().clone() {
+                if self.canon_annotation_sigil(&raw) == "description" {
+                    self.advance();
+                    match self.peek().clone() {
+                        TokenKind::String(text) => {
+                            self.advance();
+                            description = Some(text);
+                        }
+                        other => {
+                            return Err(ParseError::UnexpectedToken {
+                                expected: "string value after @description".to_string(),
+                                got: format!("{other:?}"),
+                                span: self.peek_span(),
+                            });
+                        }
+                    }
+                }
+            }
             // `match` is legal here as the field's WHOLE type only — a
             // nested occurrence (`[match ...]`, a union member, an object
             // field) is the same forbidden-position class as config/alias
@@ -1178,6 +1197,7 @@ impl Parser {
                 name,
                 type_expr,
                 required,
+                description,
                 span,
             });
             if matches!(self.peek(), TokenKind::Comma) {

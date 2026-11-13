@@ -2799,6 +2799,10 @@ impl Formatter {
             if field.required {
                 self.output.push('!');
             }
+            if let Some(description) = &field.description {
+                self.output.push_str(" @description ");
+                self.write_quoted_string(description);
+            }
             self.write_newline();
         }
         self.dedent();

@@ -265,3 +265,69 @@ fn control_an_inbound_listen_without_verifies_declares_none_and_a_half_clause_is
         assert!(parse_and_lower_str(&inbound_program("", bad)).is_err(), "{bad}");
     }
 }
+
+fn schema_field<'a>(event: &'a Value, name: &str) -> &'a Value {
+    event["payloadSchema"]
+        .as_array()
+        .expect("payload schema")
+        .iter()
+        .find(|f| f["name"] == name)
+        .unwrap_or_else(|| panic!("payload field {name} missing"))
+}
+
+#[test]
+fn a_listen_payload_field_description_lowers_onto_the_payload_field() {
+    let src = program(
+        "      DO_CREATE -> input { name : string! @description \"Display name of the record\"\n        purpose : string }",
+        "",
+    );
+    let ev = event(&src, "DO_CREATE");
+    assert_eq!(
+        schema_field(&ev, "name")["description"],
+        Value::String("Display name of the record".into())
+    );
+    assert!(schema_field(&ev, "purpose").get("description").is_none());
+}
+
+#[test]
+fn an_emit_payload_field_description_lowers_onto_the_payload_field() {
+    let src = program(
+        "",
+        "      DO_CREATE -> internal { name : string! @description \"Display name\"\n        purpose : string }",
+    );
+    let schema = parse_and_lower_str(&src).expect("program lowers");
+    let json = serde_json::to_value(&schema).expect("schema serializes");
+    let emit = json["orbitals"][0]["traits"][0]["emits"]
+        .as_array()
+        .expect("emits")
+        .iter()
+        .find(|e| e["event"] == "DO_CREATE")
+        .cloned()
+        .expect("emit");
+    let fields = emit["payloadSchema"].as_array().expect("payload schema");
+    assert_eq!(fields[0]["description"], Value::String("Display name".into()));
+    assert!(fields[1].get("description").is_none());
+}
+
+#[test]
+fn a_payload_field_description_survives_unlower() {
+    let src = program(
+        "      DO_CREATE -> input { name : string! @description \"Display name of the record\" }",
+        "",
+    );
+    let schema = parse_and_lower_str(&src).expect("program lowers");
+    let printed = schema_to_lolo(&schema).expect("unlowers");
+    let again = parse_and_lower_str(&printed).expect("printed program lowers");
+    let json = serde_json::to_value(&again).expect("schema serializes");
+    let ev = json["orbitals"][0]["traits"][0]["stateMachine"]["events"]
+        .as_array()
+        .expect("events")
+        .iter()
+        .find(|e| e["key"] == "DO_CREATE")
+        .cloned()
+        .expect("event");
+    assert_eq!(
+        schema_field(&ev, "name")["description"],
+        Value::String("Display name of the record".into())
+    );
+}

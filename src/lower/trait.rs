@@ -733,7 +733,7 @@ pub(crate) fn lower_trait(
                         name: f.name.clone(),
                         field_type,
                         required: if f.required { Some(true) } else { None },
-                        description: None,
+                        description: f.description.clone(),
                         properties,
                         type_when,
                         entity,

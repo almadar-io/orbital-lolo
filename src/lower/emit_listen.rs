@@ -424,6 +424,7 @@ pub(crate) fn lower_emit(
     for field in &mut fields {
         if let Some(source) = e.payload.iter().find(|source| source.name == field.name) {
             decorate_source_payload(field, &source.type_expr, aliases, trait_type_params);
+            field.description = source.description.clone();
         }
     }
     // Alias-consistency check (syntax revision 2026-08-18): when the same
@@ -1786,6 +1787,7 @@ mod recursive_struct_payload_tests {
                 name: "containers".to_string(),
                 type_expr: TypeExpr::Array(Box::new(TypeExpr::Named("ContainerItem".to_string()))),
                 required: true,
+                description: None,
                 span: Span::dummy(),
             }],
             description: None,
@@ -1960,6 +1962,7 @@ mod recursive_struct_payload_tests {
                 name: "data".to_string(),
                 type_expr: TypeExpr::Array(Box::new(TypeExpr::Named("E".to_string()))),
                 required: true,
+                description: None,
                 span: Span::dummy(),
             }],
             description: None,
@@ -2012,6 +2015,7 @@ mod recursive_struct_payload_tests {
                 name: "data".to_string(),
                 type_expr: TypeExpr::Array(Box::new(TypeExpr::Object(wrong_e_fields))),
                 required: true,
+                description: None,
                 span: Span::dummy(),
             }],
             description: None,
@@ -2076,6 +2080,7 @@ mod recursive_struct_payload_tests {
                 name: "job".to_string(),
                 type_expr: TypeExpr::Named("QueueJob".to_string()),
                 required: true,
+                description: None,
                 span: Span::dummy(),
             }],
             description: None,
@@ -2159,12 +2164,14 @@ mod entity_payload_marker_tests {
                     name: "id".to_string(),
                     type_expr: TypeExpr::Primitive("string".to_string()),
                     required: true,
+                description: None,
                     span: Span::dummy(),
                 },
                 EventField {
                     name: "row".to_string(),
                     type_expr: TypeExpr::Named("Note".to_string()),
                     required: false,
+                description: None,
                     span: Span::dummy(),
                 },
             ],
@@ -2208,6 +2215,7 @@ mod entity_payload_marker_tests {
                 name: "rows".to_string(),
                 type_expr: TypeExpr::Array(Box::new(TypeExpr::Named("Note".to_string()))),
                 required: true,
+                description: None,
                 span: Span::dummy(),
             }],
             description: None,
@@ -2260,6 +2268,7 @@ mod entity_payload_marker_tests {
                 name: field.to_string(),
                 type_expr: ty,
                 required: true,
+                description: None,
                 span: Span::dummy(),
             }],
             description: None,
