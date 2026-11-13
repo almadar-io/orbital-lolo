@@ -112,6 +112,7 @@ pub(crate) fn access_waivers_of(
             "read" => waivers.read = Some(reason.clone()),
             "read server" => waivers.read_server = Some(reason.clone()),
             "create" => waivers.create = Some(reason.clone()),
+            "create server" => waivers.create_server = Some(reason.clone()),
             "update" => waivers.update = Some(reason.clone()),
             "delete" => waivers.delete = Some(reason.clone()),
             _ => {}

@@ -1190,6 +1190,30 @@ orbital PersonOrbital {
 }
 
 #[test]
+fn an_entity_create_server_directive_formats_and_round_trips() {
+    let source = r#"app test-create-server [version: "1.0.0", description: "Create server round-trip."]
+orbital InviteOrbital {
+  entity Invite [persistent: invites] {
+    @create server "created by the invite flow"
+    id : string!
+  }
+}
+"#;
+    let formatted = format_program(&parse_str(source).expect("parse"));
+    assert!(formatted.contains("    @create server \"created by the invite flow\"\n"), "{formatted}");
+    assert!(!formatted.contains("@create none"), "{formatted}");
+    let again = format_program(&parse_str(&formatted).expect("reparse"));
+    assert_eq!(again, formatted, "format is stable");
+    let v1 = serde_json::to_value(parse_and_lower_str(source).unwrap()).unwrap();
+    let v2 = serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap();
+    assert_eq!(v1, v2, "lowering is stable across a reformat");
+    assert_eq!(v1["orbitals"][0]["entity"]["access_waivers"]["create_server"], "created by the invite flow");
+    let unlowered = schema_to_lolo(&parse_and_lower_str(source).unwrap()).expect("unlowers");
+    let back = serde_json::to_value(parse_and_lower_str(&unlowered).unwrap()).unwrap();
+    assert_eq!(back, v1, "unlower round trip:\n{unlowered}");
+}
+
+#[test]
 fn a_field_update_server_without_a_reason_or_declared_twice_is_refused() {
     let wrap = |field: &str| format!("app t [version: \"1.0.0\", description: \"x\"]\norbital O {{\n  entity E [persistent: es] {{\n    id : string!\n    {field}\n  }}\n}}\n");
     let no_reason = parse_str(&wrap("a : string @update server")).expect_err("a reason is required");

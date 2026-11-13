@@ -133,8 +133,39 @@ fn g_std_218_read_server_needs_a_reason_and_collides_with_another_read_directive
     assert!(parse_and_lower_str(&entity_source("    @read server \"\"")).is_err());
     assert!(parse_and_lower_str(&entity_source("    @read server \"a\"\n    @read none \"b\"")).is_err());
     assert!(parse_and_lower_str(&entity_source("    @read server \"a\"\n    @read (= @user.role \"agent\")")).is_err());
-    assert!(
-        parse_and_lower_str(&entity_source("    @create server \"a\"")).is_err(),
-        "control: only read has a server form"
-    );
+}
+
+#[test]
+fn create_server_records_its_reason_apart_from_a_create_waiver() {
+    let schema = parse_and_lower_str(&entity_source("    @create server \"created by the invite flow\""))
+        .expect("lowers");
+    let reply = ticket_reply(&schema);
+    assert!(reply.create_policy.is_none());
+    let waivers = reply.access_waivers.as_ref().expect("recorded");
+    assert_eq!(waivers.create_server.as_deref(), Some("created by the invite flow"));
+    assert_eq!(waivers.create, None, "a server-created entity is not the open-create waiver");
+}
+
+#[test]
+fn create_server_needs_a_reason_and_collides_with_another_create_directive() {
+    let message = |directives: &str| match parse_and_lower_str(&entity_source(directives)) {
+        Ok(_) => panic!("expected a parse error for {directives:?}"),
+        Err(err) => err.to_string(),
+    };
+    assert!(message("    @create server").contains("ELOLO_ACCESS_WAIVER_NEEDS_REASON"));
+    assert!(message("    @create server \"\"").contains("ELOLO_ACCESS_WAIVER_NEEDS_REASON"));
+    assert!(message("    @create server \"r\"\n    @create (= 1 1)").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
+    assert!(message("    @create none \"x\"\n    @create server \"r\"").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
+    assert!(message("    @create server \"r\"\n    @create none \"x\"").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
+    parse_and_lower_str(&entity_source("    @create server \"r\"\n    @read (= @user.role \"agent\")"))
+        .expect("control: another operation's directive stands beside it");
+}
+
+#[test]
+fn control_read_server_is_unchanged_by_the_create_form() {
+    let schema = parse_and_lower_str(&entity_source("    @read server \"looked up before any viewer exists\""))
+        .expect("lowers");
+    let waivers = ticket_reply(&schema).access_waivers.as_ref().expect("recorded");
+    assert_eq!(waivers.read_server.as_deref(), Some("looked up before any viewer exists"));
+    assert_eq!(waivers.create_server, None);
 }

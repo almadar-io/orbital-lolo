@@ -93,6 +93,7 @@ fn waiver_pairs(w: Option<&orbital_core_base::schema::AccessWaivers>) -> Vec<(St
         ("read", &w.read),
         ("read server", &w.read_server),
         ("create", &w.create),
+        ("create server", &w.create_server),
         ("update", &w.update),
         ("delete", &w.delete),
     ]
