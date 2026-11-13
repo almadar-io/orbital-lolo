@@ -300,6 +300,7 @@ const TYPES: &[&str] = &[
     "file",
     "bytes",
     "CallKey",
+    "MessageKey",
     "field",
     "email",
     "url",

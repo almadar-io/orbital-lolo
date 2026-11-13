@@ -44,10 +44,52 @@ fn a_literal_key_is_qualified_with_the_app_name() {
 }
 
 #[test]
-fn a_computed_key_is_rejected() {
+fn a_computed_key_lowers_unqualified_for_the_type_checker() {
     let source = HOME.replace(r#"(i18n/t "hero.title")"#, r#"(i18n/t (str/concat "hero." "title"))"#);
-    let err = parse_and_lower_str(&source).expect_err("dynamic key");
-    assert!(err.to_string().contains("ORB_I18N_KEY_DYNAMIC"), "{err}");
+    let json = serde_json::to_string(&parse_and_lower_str(&source).expect("lower")).unwrap();
+    assert!(json.contains(r#"["i18n/t",["str/concat","hero.","title"]]"#), "{json}");
+}
+
+const KNOB: &str = r#"app std-almadar-home [version: "1.0.0", description: "Home", locales: [en, ar, sl]]
+
+orbital Home {
+  entity HomeState [runtime] {
+    id : string!
+  }
+
+  trait HomeView -> HomeState {
+    initial: idle
+
+    state idle {
+      INIT -> idle
+        (render-ui main { type: typography, content: (i18n/t @config.label), title: @config.plain, items: (array/map @config.seasons (fn s (i18n/t @s))) })
+    }
+
+    config {
+      label : MessageKey = "hero.title"
+      seasons : [MessageKey] = ["spring", "summer"]
+      plain : string = "hero.title"
+    }
+  }
+
+  page "/" as HomePage -> HomeView
+}
+"#;
+
+#[test]
+fn a_message_key_knob_literal_is_qualified_and_a_binding_key_is_not() {
+    let json = serde_json::to_string(&parse_and_lower_str(KNOB).expect("lower")).unwrap();
+    assert!(json.contains(r#""default":"std-almadar-home:hero.title""#), "{json}");
+    assert!(json.contains(r#"["std-almadar-home:spring","std-almadar-home:summer"]"#), "{json}");
+    assert!(json.contains(r#"["i18n/t","@config.label"]"#), "{json}");
+    assert!(json.contains(r#""default":"hero.title""#), "control: a string knob is not a key: {json}");
+}
+
+#[test]
+fn edge_a_message_key_knob_with_the_reserved_separator_is_rejected() {
+    let source = KNOB.replace(r#"label : MessageKey = "hero.title""#, r#"label : MessageKey = "x:hero.title""#);
+    let err = parse_and_lower_str(&source).expect_err("reserved separator");
+    assert!(err.to_string().contains("ORB_I18N_KEY_INVALID"), "{err}");
 }
 
 #[test]

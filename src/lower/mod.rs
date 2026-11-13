@@ -397,6 +397,7 @@ fn lower_to_orb_names_only(
     check_button_transitions(&orbitals)?;
     check_emit_payload_literals(&orbitals, &orbital_entity_names)?;
     check_behavior_contracts(&orbitals, contracts)?;
+    checks::type_call_site_message_keys(&mut orbitals, contracts);
 
     let mut schema = OrbitalSchema {
         type_contract_version: Some(1),
@@ -443,22 +444,19 @@ fn lower_to_orb_names_only(
     qualify_message_keys(schema)
 }
 
-/// Qualifies every `(i18n/t "key")` with this program's name — see
+/// Qualifies every `(i18n/t "key")` literal and every `MessageKey` knob literal with this program's name — see
 /// `orbital_core::messages`.
-fn qualify_message_keys(schema: OrbitalSchema) -> Result<OrbitalSchema, LowerError> {
-    use orbital_core_base::messages::{qualify_message_keys, MessageKeyIssue};
+fn qualify_message_keys(mut schema: OrbitalSchema) -> Result<OrbitalSchema, LowerError> {
+    use orbital_core_base::messages::{qualify_config_message_keys, qualify_message_keys, MessageKeyIssue};
+    let namespace = schema.name.clone();
+    let knob_issues = qualify_config_message_keys(&mut schema, &namespace);
     let mut value = serde_json::to_value(&schema).map_err(|e| LowerError::MessageKeys {
         detail: e.to_string(),
     })?;
-    let namespace = schema.name.clone();
-    if let Some(issue) = qualify_message_keys(&mut value, &namespace)
-        .into_iter()
-        .next()
+    if let Some(MessageKeyIssue::Invalid { path, key }) =
+        knob_issues.into_iter().chain(qualify_message_keys(&mut value, &namespace)).next()
     {
-        return Err(match issue {
-            MessageKeyIssue::Dynamic { path } => LowerError::MessageKeyDynamic { path },
-            MessageKeyIssue::Invalid { path, key } => LowerError::MessageKeyInvalid { path, key },
-        });
+        return Err(LowerError::MessageKeyInvalid { path, key });
     }
     serde_json::from_value(value).map_err(|e| LowerError::MessageKeys {
         detail: e.to_string(),

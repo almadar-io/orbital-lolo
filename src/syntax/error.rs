@@ -581,10 +581,7 @@ pub enum LowerError {
     )]
     NotifyInvalidLevel { level: String },
 
-    #[error("ORB_I18N_KEY_DYNAMIC: `i18n/t` at {path} needs a string-literal key so every catalog can be checked")]
-    MessageKeyDynamic { path: String },
-
-    #[error("ORB_I18N_KEY_INVALID: `i18n/t` key {key:?} at {path} is empty or uses the reserved `:` separator")]
+    #[error("ORB_I18N_KEY_INVALID: message key {key:?} at {path} is empty or uses the reserved `:` separator")]
     MessageKeyInvalid { path: String, key: String },
 
     #[error("message keys: {detail}")]

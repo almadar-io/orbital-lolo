@@ -236,3 +236,55 @@ fn a_package_declaring_no_source_has_no_contracts_and_is_an_error() {
         "{err}"
     );
 }
+
+/// A std atom whose `label` knob holds a catalog key and whose `id` knob is plain text.
+fn labelled_atom() -> &'static str {
+    r#"app fake-labelled [version: "1.0.0", description: "fixture"]
+orbital FixtureOrbital {
+  entity FixtureView [runtime] {
+    id : string!
+  }
+  trait Labelled -> @rebindable FixtureView {
+    initial: idle
+    state idle {
+      INIT -> idle
+        (render-ui main { type: typography, content: (i18n/t @config.label), title: @config.id })
+    }
+    config {
+      label : MessageKey = "fallback"
+      id : string = "x"
+    }
+  }
+  page "/l" as LabelledPage -> Labelled
+}
+"#
+}
+
+#[test]
+fn a_call_site_message_key_wiring_is_typed_from_the_atom_and_qualified_with_the_caller() {
+    let tmp = TempDir::new().unwrap();
+    let std = package(tmp.path(), "@almadar/std", "almadar-std", "0.0.1", &[], true);
+    fs::write(std.lolo_source.as_ref().unwrap().join("fake-labelled.lolo"), labelled_atom()).unwrap();
+    let options = LowerOptions { packages: vec![std], ..Default::default() };
+    let source = r#"app site [version: "1.0.0", description: "site", locales: [en]]
+
+uses Atom from "std/behaviors/fake-labelled"
+
+orbital FixtureOrbital {
+  entity Item [runtime] {
+    id : string!
+  }
+
+  trait Begin = Atom.traits.Labelled -> Item {
+    config {
+      label: "begin"
+      id: "begin"
+    }
+  }
+}
+"#;
+    let schema = parse_and_lower_str_with(source, &options).expect("lower");
+    let json = serde_json::to_string(&schema).unwrap();
+    assert!(json.contains(r#""label":{"type":"MessageKey","default":"site:begin""#), "{json}");
+    assert!(json.contains(r#""id":{"type":"unknown","default":"begin""#), "control: a string knob stays as written: {json}");
+}

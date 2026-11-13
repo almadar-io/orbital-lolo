@@ -2165,6 +2165,45 @@ fn check_one_emit_literal(
 /// lookup (local `.orb` import or behavior absent from every loaded package)
 /// skips silently, and the compiler re-verifies post-inline as a backstop. A
 /// name found in two non-std packages is a hard `AmbiguousBehavior` error.
+/// A call-site wiring of an atom's `MessageKey` / `[MessageKey]` knob takes the atom's declared type, so the lowering
+/// qualifies its literal with this program's name (`orbital_core::messages::qualify_config_message_keys`).
+pub(crate) fn type_call_site_message_keys(
+    orbitals: &mut [CoreOrbital],
+    contracts: &crate::registry::LoloContracts,
+) {
+    for orbital in orbitals {
+        let alias_key: HashMap<String, String> = orbital
+            .uses
+            .iter()
+            .flatten()
+            .map(|u| (u.alias.clone(), crate::registry::behavior_key_from_path(&u.from).to_string()))
+            .collect();
+        for tref in &mut orbital.traits {
+            let TraitReference::Reference { reference: Some(ref_str), config: Some(config), .. } = tref else {
+                continue;
+            };
+            let parts: Vec<&str> = ref_str.split('.').collect();
+            let [alias, "traits", member] = parts.as_slice() else {
+                continue;
+            };
+            let Some(beh) = alias_key.get(*alias).and_then(|key| contracts.get_behavior(key).ok().flatten()) else {
+                continue;
+            };
+            let Some(tc) = beh.trait_contract(member) else {
+                continue;
+            };
+            for (knob, field) in config.iter_mut() {
+                if field.field_type != "unknown" {
+                    continue;
+                }
+                if let Some(declared) = tc.config.get(knob).filter(|t| *t == "MessageKey" || *t == "[MessageKey]") {
+                    field.field_type = declared.clone();
+                }
+            }
+        }
+    }
+}
+
 pub(crate) fn check_behavior_contracts(
     orbitals: &[CoreOrbital],
     contracts: &crate::registry::LoloContracts,
