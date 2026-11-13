@@ -240,6 +240,7 @@ fn a_package_declaring_no_source_has_no_contracts_and_is_an_error() {
 /// A std atom whose `label` knob holds a catalog key and whose `id` knob is plain text.
 fn labelled_atom() -> &'static str {
     r#"app fake-labelled [version: "1.0.0", description: "fixture"]
+type Opt = { value : string!, label : MessageKey! }
 orbital FixtureOrbital {
   entity FixtureView [runtime] {
     id : string!
@@ -248,11 +249,12 @@ orbital FixtureOrbital {
     initial: idle
     state idle {
       INIT -> idle
-        (render-ui main { type: typography, content: (i18n/t @config.label), title: @config.id })
+        (render-ui main { type: typography, content: (i18n/t @config.label), title: @config.id, items: (array/map @config.options (fn o (i18n/t @o.label))) })
     }
     config {
       label : MessageKey = "fallback"
       id : string = "x"
+      options : [Opt] = []
     }
   }
   page "/l" as LabelledPage -> Labelled
@@ -279,6 +281,7 @@ orbital FixtureOrbital {
     config {
       label: "begin"
       id: "begin"
+      options: [{ value: "spring", label: "season.spring" }]
     }
   }
 }
@@ -287,4 +290,5 @@ orbital FixtureOrbital {
     let json = serde_json::to_string(&schema).unwrap();
     assert!(json.contains(r#""label":{"type":"MessageKey","default":"site:begin""#), "{json}");
     assert!(json.contains(r#""id":{"type":"unknown","default":"begin""#), "control: a string knob stays as written: {json}");
+    assert!(json.contains(r#"{"value":"spring","label":"site:season.spring"}"#), "a key inside a record list takes the caller's name: {json}");
 }

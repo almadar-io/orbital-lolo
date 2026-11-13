@@ -2196,8 +2196,10 @@ pub(crate) fn type_call_site_message_keys(
                 if field.field_type != "unknown" {
                     continue;
                 }
-                if let Some(declared) = tc.config.get(knob).filter(|t| *t == "MessageKey" || *t == "[MessageKey]") {
-                    field.field_type = declared.clone();
+                if let Some(declared) = tc.message_keys.get(knob) {
+                    field.field_type = declared.field_type.clone();
+                    field.items = declared.items.clone();
+                    field.properties = declared.properties.clone();
                 }
             }
         }

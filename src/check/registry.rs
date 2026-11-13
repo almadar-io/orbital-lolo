@@ -59,6 +59,10 @@ pub struct TraitContract {
     /// checks.
     #[serde(default)]
     pub config: HashMap<String, String>,
+    /// The declared shape of each knob that holds catalog keys (`MessageKey`, or one inside a list or record), so a
+    /// caller's literal is qualified at the same positions.
+    #[serde(default)]
+    pub message_keys: HashMap<String, orbital_core_base::schema::ConfigField>,
 }
 
 /// A single orbital's parse-time-checkable contract (orbital-import Stage B):
@@ -558,6 +562,13 @@ impl Behavior {
                                 .map(|c| c.requires.clone())
                                 .unwrap_or_default(),
                             config: config_types(def.config.as_ref()),
+                            message_keys: def
+                                .config
+                                .iter()
+                                .flatten()
+                                .filter(|(_, f)| !orbital_core_base::messages::message_key_paths(f).is_empty())
+                                .map(|(k, f)| (k.clone(), f.clone()))
+                                .collect(),
                         },
                     ),
                     TraitReference::Reference {
@@ -578,6 +589,7 @@ impl Behavior {
                             name,
                             TraitContract {
                                 requires: Vec::new(),
+                                message_keys: HashMap::new(),
                                 config: wired_config_types(
                                     config.as_ref(),
                                     orbital.config.as_ref(),

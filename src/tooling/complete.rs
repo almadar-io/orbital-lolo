@@ -569,6 +569,7 @@ mod tests {
                     "AppLayout".to_string(),
                     TraitContract {
                         requires: vec![],
+                        message_keys: HashMap::new(),
                         config: HashMap::from([
                             ("navItems".to_string(), "[NavItem]".to_string()),
                             ("appName".to_string(), "string".to_string()),
