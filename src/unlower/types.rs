@@ -239,6 +239,7 @@ pub(super) fn entity_field(fd: &FieldDefinition) -> Result<EntityField, UnlowerE
         mock: fd.mock.clone(),
         default: fd.default.clone(),
         derived: fd.derived.clone(),
+        update: fd.update.clone(),
         display: fd.relation.as_ref().and_then(|r| r.display.clone()),
         span: Span::dummy(),
     })

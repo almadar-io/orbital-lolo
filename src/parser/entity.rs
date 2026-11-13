@@ -536,6 +536,7 @@ impl Parser {
         let mut synonyms = None;
         let mut mock = None;
         let mut derived = None;
+        let mut update = None;
         let mut display = None;
         while let TokenKind::Sigil(raw) = self.peek().clone() {
             let name = self.canon_annotation_sigil(&raw);
@@ -555,6 +556,33 @@ impl Parser {
                 "derived" => {
                     self.advance();
                     derived = Some(self.parse_sexpr_or_value()?);
+                }
+                "update" => {
+                    let update_span = self.peek_span();
+                    self.advance();
+                    if update.is_some() {
+                        return Err(ParseError::InvalidType {
+                            span: update_span,
+                            message: format!("ELOLO_DUPLICATE_FIELD_UPDATE: field '{name}' declares `@update` more than once"),
+                        });
+                    }
+                    update = Some(if matches!(self.peek(), TokenKind::Identifier(id) if id == "server") {
+                        self.advance();
+                        match self.peek().clone() {
+                            TokenKind::String(reason) if !reason.trim().is_empty() => {
+                                self.advance();
+                                orbital_core_base::schema::FieldUpdate::Server(reason)
+                            }
+                            _ => {
+                                return Err(ParseError::InvalidType {
+                                    span: update_span,
+                                    message: format!("ELOLO_FIELD_UPDATE_SERVER_NEEDS_REASON: `@update server` on field '{name}' must state why only a program-session step writes it, e.g. `@update server \"set by the membership flow\"`"),
+                                });
+                            }
+                        }
+                    } else {
+                        orbital_core_base::schema::FieldUpdate::Policy(self.parse_boolean_slot("field update policy")?)
+                    });
                 }
                 "display" => {
                     self.advance();
@@ -617,6 +645,7 @@ impl Parser {
             mock,
             default,
             derived,
+            update,
             display,
             span,
         })

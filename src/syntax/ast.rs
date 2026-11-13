@@ -736,6 +736,8 @@ pub struct EntityField {
     pub default: Option<SExpression>,
     /// `derived` field flag with the derivation expression.
     pub derived: Option<SExpression>,
+    /// Trailing `@update <expr>` or `@update server "<reason>"` annotation: the field's own write rule.
+    pub update: Option<orbital_core_base::schema::FieldUpdate>,
     /// Trailing `@display <field>` annotation on a relation field: the target field a related record is shown by.
     pub display: Option<String>,
     pub span: Span,

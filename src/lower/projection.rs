@@ -236,6 +236,9 @@ fn visit_entity_fields(
         for expr in field.default.iter_mut().chain(field.derived.iter_mut()) {
             visit_expression(expr, visit)?;
         }
+        if let Some(orbital_core_base::schema::FieldUpdate::Policy(expr)) = field.update.as_mut() {
+            visit_expression(expr, visit)?;
+        }
     }
     Ok(())
 }

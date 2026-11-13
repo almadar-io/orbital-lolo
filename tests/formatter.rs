@@ -1160,6 +1160,45 @@ orbital PersonOrbital {
     );
 }
 
+#[test]
+fn field_update_annotations_lower_unlower_and_survive_reformat() {
+    let source = r#"app test-field-update [version: "1.0.0", description: "Field update round-trip."]
+orbital PersonOrbital {
+  entity Person [persistent: people] {
+    id : string!
+    note : string @update (= @user.role "admin") = ""
+    teamId : string @update server "set by the membership flow" = ""
+    plain : string = ""
+  }
+}
+"#;
+    let schema = parse_and_lower_str(source).expect("lowers");
+    let json = serde_json::to_value(&schema).unwrap();
+    let fields = &json["orbitals"][0]["entity"]["fields"];
+    let field = |name: &str| fields.as_array().unwrap().iter().find(|f| f["name"] == name).unwrap().clone();
+    assert_eq!(field("note")["update"]["policy"][0], "=", "{}", field("note"));
+    assert_eq!(field("teamId")["update"]["server"], "set by the membership flow");
+    assert!(field("plain").get("update").is_none(), "control: a field with no annotation carries none");
+    let formatted = format_program(&parse_str(source).expect("parse"));
+    assert!(formatted.contains("@update server \"set by the membership flow\""), "{formatted}");
+    assert!(formatted.contains("@update (= @user.role admin)"), "{formatted}");
+    let again = serde_json::to_value(parse_and_lower_str(&formatted).unwrap()).unwrap();
+    assert_eq!(again["orbitals"][0]["entity"]["fields"], json["orbitals"][0]["entity"]["fields"], "format round trip");
+    let unlowered = schema_to_lolo(&schema).expect("unlowers");
+    let back = serde_json::to_value(parse_and_lower_str(&unlowered).unwrap()).unwrap();
+    assert_eq!(back["orbitals"][0]["entity"]["fields"], json["orbitals"][0]["entity"]["fields"], "unlower round trip:\n{unlowered}");
+}
+
+#[test]
+fn a_field_update_server_without_a_reason_or_declared_twice_is_refused() {
+    let wrap = |field: &str| format!("app t [version: \"1.0.0\", description: \"x\"]\norbital O {{\n  entity E [persistent: es] {{\n    id : string!\n    {field}\n  }}\n}}\n");
+    let no_reason = parse_str(&wrap("a : string @update server")).expect_err("a reason is required");
+    assert!(no_reason.to_string().contains("ELOLO_FIELD_UPDATE_SERVER_NEEDS_REASON"), "{no_reason}");
+    let twice = parse_str(&wrap("a : string @update false @update server \"r\"")).expect_err("one @update per field");
+    assert!(twice.to_string().contains("ELOLO_DUPLICATE_FIELD_UPDATE"), "{twice}");
+    parse_str(&wrap("a : string @update false")).expect("control: one policy parses");
+}
+
 fn corpus_collect(dir: &Path, out: &mut Vec<PathBuf>) {
     let Ok(rd) = fs::read_dir(dir) else { return };
     let mut entries: Vec<_> = rd.flatten().map(|e| e.path()).collect();

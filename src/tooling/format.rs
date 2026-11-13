@@ -1283,6 +1283,17 @@ impl Formatter {
             self.output.push_str(" @derived ");
             self.fmt_sexpr(derived);
         }
+        match &field.update {
+            Some(orbital_core_base::schema::FieldUpdate::Policy(expr)) => {
+                self.output.push_str(" @update ");
+                self.fmt_sexpr(expr);
+            }
+            Some(orbital_core_base::schema::FieldUpdate::Server(reason)) => {
+                self.output.push_str(" @update server ");
+                self.write_quoted_string(reason);
+            }
+            None => {}
+        }
         if let Some(display) = &field.display {
             self.output.push_str(" @display ");
             self.output.push_str(display);
