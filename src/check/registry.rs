@@ -234,18 +234,62 @@ pub struct LoloContracts {
 
 /// One live behavior file, lowered: its program and the contract it publishes.
 enum LiveLowering {
-    Lowered(Arc<orbital_core_base::schema::OrbitalSchema>, Arc<Behavior>),
+    /// The program (none when only the contract was asked for and the program was pushed out) and the contract.
+    Lowered(Option<Arc<orbital_core_base::schema::OrbitalSchema>>, Arc<Behavior>),
     /// An import cycle reached this file while it was being lowered: neither is known yet.
     Cycle,
 }
 
+/// How many lowered programs the live lowering keeps; a file's contract is kept whatever this is.
+const LOWERED_PROGRAMS_KEPT: usize = 64;
+
+type LiveKey = (PathBuf, Vec<(String, String, PathBuf, Option<PathBuf>)>);
+
+/// One file's lowering: its content hash, its program while it is among the most recently used, its contract and the reads it took.
+struct LiveEntry {
+    hash: [u8; 32],
+    schema: Option<Arc<orbital_core_base::schema::OrbitalSchema>>,
+    behavior: Arc<Behavior>,
+    reads: orbital_core_base::read_set::ReadSet,
+}
+
+/// Every lowered file's contract, and the programs of the [`LOWERED_PROGRAMS_KEPT`] most recently used ones (`recent`,
+/// oldest first): a process that reads the whole catalog keeps every contract, never every program.
+#[derive(Default)]
+struct LiveCache {
+    entries: HashMap<LiveKey, LiveEntry>,
+    recent: std::collections::VecDeque<LiveKey>,
+}
+
+impl LiveCache {
+    fn touch(&mut self, key: &LiveKey) {
+        self.recent.retain(|k| k != key);
+        self.recent.push_back(key.clone());
+        while self.recent.len() > LOWERED_PROGRAMS_KEPT {
+            if let Some(oldest) = self.recent.pop_front() {
+                if let Some(entry) = self.entries.get_mut(&oldest) {
+                    entry.schema = None;
+                }
+            }
+        }
+    }
+}
+
+fn live_cache() -> &'static Mutex<LiveCache> {
+    static CACHE: OnceLock<Mutex<LiveCache>> = OnceLock::new();
+    CACHE.get_or_init(|| Mutex::new(LiveCache::default()))
+}
+
+#[cfg(test)]
+fn kept_programs() -> usize {
+    live_cache().lock().expect("live lowering cache poisoned").entries.values().filter(|e| e.schema.is_some()).count()
+}
+
 /// A live behavior file lowered against `packages` once per content: the contract check and the loader that inlines
 /// the behavior read the same lowering, keyed by path, content hash and package set, so a file is lowered once
-/// whichever asks first and again only when it, or a file its lowering read, changes.
-fn live_lowering(path: &Path, packages: &[BehaviorPackage]) -> Result<LiveLowering, crate::LoloError> {
-    type Key = (PathBuf, Vec<(String, String, PathBuf, Option<PathBuf>)>);
-    type Entry = ([u8; 32], Arc<orbital_core_base::schema::OrbitalSchema>, Arc<Behavior>, orbital_core_base::read_set::ReadSet);
-    static CACHE: OnceLock<Mutex<HashMap<Key, Entry>>> = OnceLock::new();
+/// whichever asks first and again only when it, or a file its lowering read, changes, or when its program was pushed
+/// out of the [`LOWERED_PROGRAMS_KEPT`] most recent and `want_program` asks for it again.
+fn live_lowering(path: &Path, packages: &[BehaviorPackage], want_program: bool) -> Result<LiveLowering, crate::LoloError> {
     thread_local! {
         static LOWERING: std::cell::RefCell<std::collections::HashSet<PathBuf>> = Default::default();
     }
@@ -253,15 +297,21 @@ fn live_lowering(path: &Path, packages: &[BehaviorPackage]) -> Result<LiveLoweri
     let source = orbital_core_base::read_set::read_to_string(path)
         .map_err(|e| crate::LoloError::Io { path: label.clone(), message: e.to_string() })?;
     let hash: [u8; 32] = Sha256::digest(source.as_bytes()).into();
-    let key: Key = (
+    let key: LiveKey = (
         path.to_path_buf(),
         packages.iter().map(|p| (p.name.clone(), p.version.clone(), p.root.clone(), p.lolo_source.clone())).collect(),
     );
-    let cache = CACHE.get_or_init(|| Mutex::new(HashMap::new()));
-    if let Some((h, schema, behavior, reads)) = cache.lock().expect("live lowering cache poisoned").get(&key) {
-        if *h == hash && reads.is_current() {
-            reads.replay();
-            return Ok(LiveLowering::Lowered(Arc::clone(schema), Arc::clone(behavior)));
+    {
+        let mut cache = live_cache().lock().expect("live lowering cache poisoned");
+        let hit = cache.entries.get(&key).filter(|e| e.hash == hash && e.reads.is_current()).map(|e| (e.schema.clone(), Arc::clone(&e.behavior), e.reads.clone()));
+        if let Some((schema, behavior, reads)) = hit {
+            if !want_program || schema.is_some() {
+                reads.replay();
+                if schema.is_some() {
+                    cache.touch(&key);
+                }
+                return Ok(LiveLowering::Lowered(schema, behavior));
+            }
         }
     }
     if !LOWERING.with(|l| l.borrow_mut().insert(path.to_path_buf())) {
@@ -283,17 +333,16 @@ fn live_lowering(path: &Path, packages: &[BehaviorPackage]) -> Result<LiveLoweri
     LOWERING.with(|l| l.borrow_mut().remove(path));
     let schema = Arc::new(lowered?);
     let behavior = Arc::new(Behavior::from_program(&schema));
-    cache
-        .lock()
-        .expect("live lowering cache poisoned")
-        .insert(key, (hash, Arc::clone(&schema), Arc::clone(&behavior), reads));
-    Ok(LiveLowering::Lowered(schema, behavior))
+    let mut cache = live_cache().lock().expect("live lowering cache poisoned");
+    cache.entries.insert(key.clone(), LiveEntry { hash, schema: Some(Arc::clone(&schema)), behavior: Arc::clone(&behavior), reads });
+    cache.touch(&key);
+    Ok(LiveLowering::Lowered(Some(schema), behavior))
 }
 
 /// The contract a live behavior file publishes; `None` while an import cycle is lowering it, or when it does not
 /// lower (the compiler re-verifies the call site).
 fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavior>> {
-    match live_lowering(path, packages) {
+    match live_lowering(path, packages, false) {
         Ok(LiveLowering::Lowered(_, behavior)) => Some(behavior),
         Ok(LiveLowering::Cycle) => None,
         Err(e) => {
@@ -306,9 +355,9 @@ fn live_contract(path: &Path, packages: &[BehaviorPackage]) -> Option<Arc<Behavi
 /// The program the `.lolo` file at `path` lowers to against `packages`: the one lowering the contract check shares
 /// ([`live_lowering`]), or, while an import cycle is lowering the file, a lowering of its own.
 pub fn lower_live_file(path: &Path, packages: &[BehaviorPackage]) -> Result<orbital_core_base::schema::OrbitalSchema, crate::LoloError> {
-    match live_lowering(path, packages)? {
-        LiveLowering::Lowered(schema, _) => Ok((*schema).clone()),
-        LiveLowering::Cycle => {
+    match live_lowering(path, packages, true)? {
+        LiveLowering::Lowered(Some(schema), _) => Ok((*schema).clone()),
+        LiveLowering::Lowered(None, _) | LiveLowering::Cycle => {
             let label = path.display().to_string();
             let source = orbital_core_base::read_set::read_to_string(path)
                 .map_err(|e| crate::LoloError::Io { path: label.clone(), message: e.to_string() })?;
@@ -684,6 +733,67 @@ mod tests {
         let _ = std::fs::remove_dir_all(&root);
     }
 
+
+    /// A minimal installed `@almadar/std` with no behaviors: every lowering needs some std.
+    fn minimal_std(dir: &std::path::Path) -> Vec<BehaviorPackage> {
+        let root = dir.join("almadar-std");
+        let registry = root.join("behaviors/registry");
+        let source = root.join("behaviors/lolo");
+        std::fs::create_dir_all(&registry).expect("registry");
+        std::fs::create_dir_all(&source).expect("source");
+        std::fs::write(root.join("package.json"), r#"{"name":"@almadar/std","version":"0.0.1","orb":{"prefix":"almadar-std","registry":"behaviors/registry","language":">=0.0.0"}}"#).expect("package.json");
+        vec![BehaviorPackage {
+            name: "@almadar/std".to_string(),
+            version: "0.0.1".to_string(),
+            prefix: "almadar-std".to_string(),
+            root,
+            registry: RegistrySource::Materialized(registry),
+            files: Vec::new(),
+            lolo_source: Some(source),
+            vectors: None,
+            sidecars: Vec::new(),
+            language_range: ">=0.0.0".to_string(),
+            std_peer_range: None,
+            core_range: None,
+            is_link: false,
+        }]
+    }
+
+    fn tiny(dir: &std::path::Path, name: &str) -> PathBuf {
+        let path = dir.join(format!("{name}.lolo"));
+        std::fs::write(&path, format!("app {name} [\n  version: \"1.0.0\",\n]\n\norbital O{} {{\n  entity E [runtime] {{\n    id : string!\n  }}\n\n  trait T -> E {{\n    initial: idle\n\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n}}\n", name.replace('-', "_"))).expect("write");
+        path
+    }
+
+    #[test]
+    fn lowered_programs_kept_never_pass_the_bound() {
+        let dir = std::env::temp_dir().join(format!("orb-live-bound-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        let std = minimal_std(&dir);
+        for i in 0..LOWERED_PROGRAMS_KEPT + 5 {
+            lower_live_file(&tiny(&dir, &format!("bound-{i}")), &std).expect("lowers");
+        }
+        assert!(kept_programs() <= LOWERED_PROGRAMS_KEPT, "{} programs kept", kept_programs());
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn a_program_pushed_out_lowers_again_to_the_same_program_and_keeps_its_contract() {
+        let dir = std::env::temp_dir().join(format!("orb-live-evict-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        std::fs::create_dir_all(&dir).expect("dir");
+        let std = minimal_std(&dir);
+        let first = tiny(&dir, "evicted-first");
+        let before = serde_json::to_value(lower_live_file(&first, &std).expect("lowers")).expect("json");
+        for i in 0..LOWERED_PROGRAMS_KEPT + 2 {
+            lower_live_file(&tiny(&dir, &format!("evict-{i}")), &std).expect("lowers");
+        }
+        assert!(live_contract(&first, &std).is_some(), "the contract is still known after its program was pushed out");
+        let after = serde_json::to_value(lower_live_file(&first, &std).expect("lowers again")).expect("json");
+        assert_eq!(before, after, "lowered again, the program is the same");
+        let _ = std::fs::remove_dir_all(&dir);
+    }
 
     #[test]
     fn behavior_key_from_canonical_and_browse_paths() {
