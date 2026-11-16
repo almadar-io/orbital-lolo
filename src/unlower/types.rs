@@ -144,7 +144,7 @@ fn field_def_type_inner(fd: &FieldDefinition) -> Result<TypeExpr, UnlowerError> 
         FieldType::Object if fd.additional_properties.is_some() => TypeExpr::OpenObject {
             fields: fd
                 .properties
-                .as_ref()
+                .as_deref()
                 .map(object_members)
                 .transpose()?
                 .unwrap_or_default(),
@@ -329,7 +329,7 @@ pub(super) fn parse_type_string(raw: &str) -> Result<TypeExpr, UnlowerError> {
 /// since an inline body would let a re-lower expand it one level deeper.
 fn struct_or_alias(props: &[PayloadField]) -> Result<TypeExpr, UnlowerError> {
     for p in props {
-        if p.properties.as_ref().is_some_and(Vec::is_empty) && p.projected_from.is_none() {
+        if p.properties.as_deref().is_some_and(Vec::is_empty) && p.projected_from.is_none() {
             match parse_type_string(&p.field_type)? {
                 TypeExpr::Named(n) => return Ok(TypeExpr::Named(n)),
                 TypeExpr::Array(inner) => {
@@ -368,7 +368,7 @@ fn payload_type_inner(pf: &PayloadField) -> Result<TypeExpr, UnlowerError> {
         TypeExpr::OpenObject {
             fields: pf
                 .properties
-                .as_deref()
+                .as_deref().map(Vec::as_slice)
                 .map(payload_members)
                 .transpose()?
                 .unwrap_or_default(),
@@ -540,7 +540,7 @@ pub(super) fn config_field(
         TypeExpr::OpenObject {
             fields: cf
                 .properties
-                .as_ref()
+                .as_deref()
                 .map(object_members)
                 .transpose()?
                 .unwrap_or_default(),
@@ -777,10 +777,10 @@ pub(super) fn collect_trait_hints(
     out: &mut AliasShapes,
 ) {
     for e in td.emits.iter().flatten() {
-        collect_payload_hints(e.payload_schema.as_deref().unwrap_or(&[]), out);
+        collect_payload_hints(e.payload_schema.as_deref().map(Vec::as_slice).unwrap_or(&[]), out);
     }
     for ev in td.state_machine.events.iter().flatten() {
-        collect_payload_hints(ev.payload_schema.as_deref().unwrap_or(&[]), out);
+        collect_payload_hints(ev.payload_schema.as_deref().map(Vec::as_slice).unwrap_or(&[]), out);
     }
 }
 

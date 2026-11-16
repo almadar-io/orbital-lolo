@@ -136,7 +136,7 @@ pub(crate) fn lower_emit(
                 synonyms: e.synonyms.clone(),
                 tier: e.tier.clone(),
                 scope,
-                payload_schema: payload,
+                payload_schema: payload.map(Into::into),
                 event_id: None,
                 definer_knob: definer_knob_of(&e.event),
                 scope_overridden: None,
@@ -255,7 +255,7 @@ pub(crate) fn lower_emit(
                 field_type: "object".to_string(),
                 required: if f.required { Some(true) } else { None },
                 description: None,
-                properties: Some(props),
+                properties: Some(props.into()),
                 type_when: None,
                 entity: None,
                 projected_from: projected.clone(),
@@ -280,7 +280,7 @@ pub(crate) fn lower_emit(
                 field_type: "union".to_string(),
                 required: if f.required { Some(true) } else { None },
                 description: None,
-                properties: Some(variants),
+                properties: Some(variants.into()),
                 type_when: None,
                 entity: None,
                 projected_from: projected.clone(),
@@ -315,7 +315,7 @@ pub(crate) fn lower_emit(
                 field_type: "object".to_string(),
                 required: if f.required { Some(true) } else { None },
                 description: None,
-                properties: Some(nested),
+                properties: Some(nested.into()),
                 type_when: None,
                 entity: Some(type_name.clone()),
                 projected_from: projected.clone(),
@@ -345,7 +345,7 @@ pub(crate) fn lower_emit(
                         field_type: "[object]".to_string(),
                         required: if f.required { Some(true) } else { None },
                         description: None,
-                        properties: Some(nested),
+                        properties: Some(nested.into()),
                         type_when: None,
                         entity: Some(type_name.clone()),
                         projected_from: projected.clone(),
@@ -371,7 +371,7 @@ pub(crate) fn lower_emit(
                     field_type: "[object]".to_string(),
                     required: if f.required { Some(true) } else { None },
                     description: None,
-                    properties: Some(elem),
+                    properties: Some(elem.into()),
                     type_when: None,
                     entity: None,
                     projected_from: projected.clone(),
@@ -472,7 +472,7 @@ pub(crate) fn lower_emit(
             "external" => Some(EventScope::External),
             _ => None,
         }),
-        payload_schema: Some(fields),
+        payload_schema: Some(fields.into()),
         definer_knob: definer_knob_of(&e.event),
         event_id: None,
         scope_overridden: None,
@@ -596,7 +596,7 @@ pub(crate) fn payload_fields_mismatch_norm(
                         },
                         required: f.required,
                         description: None,
-                        properties: Some(props),
+                        properties: Some(props.into()),
                         type_when: None,
                         // Comparison-only reconstruction (never emitted) —
                         // `base` may be an entity OR a struct alias name
@@ -738,7 +738,7 @@ pub(crate) fn decorate_source_payload(
     field.projected_from = ty.projection();
     field.nullable = Some(entity::source_nullable(ty, aliases));
     field.additional_properties = entity::source_additional_type(ty, aliases)
-        .map(|ty| Box::new(source_payload_field("", ty, aliases, type_params)));
+        .map(|ty| orbital_core_base::value::Shared::new(source_payload_field("", ty, aliases, type_params)));
     let mut inner = ty;
     let mut seen = HashSet::new();
     loop {
@@ -757,7 +757,7 @@ pub(crate) fn decorate_source_payload(
     }
     match inner {
         TypeExpr::Array(item) | TypeExpr::Map(_, item) if field.items.is_none() => {
-            field.items = Some(Box::new(source_payload_field(
+            field.items = Some(orbital_core_base::value::Shared::new(source_payload_field(
                 "",
                 item,
                 aliases,
@@ -890,7 +890,7 @@ pub(crate) fn type_expr_to_payload_fields(
                     field_type,
                     required: if *freq { Some(true) } else { None },
                     description: None,
-                    properties,
+                    properties: properties.map(Into::into),
                     type_when: None,
                     entity,
                     projected_from: None,
@@ -1070,7 +1070,7 @@ pub(crate) fn union_payload_variants(
             field_type,
             required: None,
             description: None,
-            properties,
+            properties: properties.map(Into::into),
             type_when: None,
             entity: None,
             projected_from: None,
@@ -1092,7 +1092,7 @@ pub(crate) fn union_container(
     ty: &TypeExpr,
     aliases: &BTreeMap<String, TypeAliasResolved>,
     type_params: &[&str],
-) -> Option<(String, Box<PayloadField>)> {
+) -> Option<(String, orbital_core_base::value::Shared<PayloadField>)> {
     let body = match ty.peel() {
         TypeExpr::Named(n) => match aliases.get(n) {
             Some(TypeAliasResolved::Type(t, _)) => t,
@@ -1111,7 +1111,7 @@ pub(crate) fn union_container(
     let variants = union_payload_variants(inline, aliases, type_params)?;
     Some((
         tag.to_string(),
-        Box::new(PayloadField {
+        orbital_core_base::value::Shared::new(PayloadField {
             nullable: Some(false),
             additional_properties: None,
             values: None,
@@ -1119,7 +1119,7 @@ pub(crate) fn union_container(
             field_type: "union".to_string(),
             required: None,
             description: None,
-            properties: Some(variants),
+            properties: Some(variants.into()),
             type_when: None,
             entity: None,
             projected_from: None,
@@ -1175,7 +1175,7 @@ pub(crate) fn tuple_payload_field(
         TypeExpr::Array(inner) => (
             "array".to_string(),
             None,
-            Some(Box::new(tuple_payload_field(inner, aliases, type_params)?)),
+            Some(orbital_core_base::value::Shared::new(tuple_payload_field(inner, aliases, type_params)?)),
         ),
         _ => return None,
     };
@@ -1187,7 +1187,7 @@ pub(crate) fn tuple_payload_field(
         field_type,
         required: None,
         description: None,
-        properties,
+        properties: properties.map(Into::into),
         type_when: None,
         entity: None,
         projected_from: None,
@@ -1282,7 +1282,7 @@ pub(crate) fn struct_payload_properties(
             field_type,
             required: if *req { Some(true) } else { None },
             description: None,
-            properties,
+            properties: properties.map(Into::into),
             type_when: None,
             entity: None,
             projected_from: projected,
@@ -1829,7 +1829,7 @@ mod recursive_struct_payload_tests {
             field_type: "[object]".to_string(),
             required: Some(true),
             description: None,
-            properties: Some(vec![
+            properties: Some((vec![
                 PayloadField {
                     nullable: Some(false),
                     additional_properties: None,
@@ -1860,7 +1860,7 @@ mod recursive_struct_payload_tests {
                     items: None,
                     relation: None,
                 },
-            ]),
+            ]).into()),
             type_when: None,
             entity: None,
             relation: None,

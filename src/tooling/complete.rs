@@ -297,14 +297,13 @@ pub fn complete(
             && words[2] == "from"
         {
             let prefix = &line[quote + 1..];
-            let Some(contracts) = contracts else {
+            let Some(paths) = contracts.and_then(|c| c.import_paths().ok()) else {
                 return none(prefix);
             };
             return filtered(
                 prefix,
                 "import-path",
-                contracts
-                    .import_paths()
+                paths
                     .into_iter()
                     .map(|(path, key)| Completion {
                         label: path,

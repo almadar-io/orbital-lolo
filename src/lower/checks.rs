@@ -1954,7 +1954,7 @@ pub(crate) fn check_emit_payload_literals(
                 .as_deref().map(Vec::as_slice)
                 .unwrap_or(&[])
                 .iter()
-                .map(|e| (e.event.as_str(), e.payload_schema.as_deref().unwrap_or(&[])))
+                .map(|e| (e.event.as_str(), e.payload_schema.as_deref().map(Vec::as_slice).unwrap_or(&[])))
                 .collect();
 
             if emit_schemas.is_empty() {
@@ -2262,13 +2262,7 @@ pub(crate) fn check_behavior_contracts(
             let beh = match contracts.get_behavior(key) {
                 Ok(Some(beh)) => beh,
                 Ok(None) => continue, // local/unknown import — not loaded; skip.
-                Err(amb) => {
-                    return Err(LowerError::AmbiguousBehavior {
-                        name: amb.name,
-                        package_a: amb.package_a,
-                        package_b: amb.package_b,
-                    })
-                }
+                Err(e) => return Err(contract_error(e)),
             };
 
             match kind {
@@ -2372,13 +2366,7 @@ pub(crate) fn check_behavior_contracts(
                         let beh = match contracts.get_behavior(key) {
                             Ok(Some(beh)) => Some(beh),
                             Ok(None) => None,
-                            Err(amb) => {
-                                return Err(LowerError::AmbiguousBehavior {
-                                    name: amb.name,
-                                    package_a: amb.package_a,
-                                    package_b: amb.package_b,
-                                })
-                            }
+                            Err(e) => return Err(contract_error(e)),
                         };
                         if let Some(beh) = beh {
                             let Some(oc) = beh.orbital_contract(member) else {
@@ -3036,5 +3024,15 @@ mod set_program_type_literal_tests {
         lower_set_with(shadow, "", r#"{ id: "anonymous" }"#)
             .expect("Viewer is the local entity here, not the program type");
         assert!(lower_set("", r#"{ id: "anonymous" }"#).is_err());
+    }
+}
+
+/// A contract lookup that could not answer, as the lowering error it is.
+fn contract_error(error: crate::registry::ContractError) -> LowerError {
+    match error {
+        crate::registry::ContractError::Ambiguous(amb) => {
+            LowerError::AmbiguousBehavior { name: amb.name, package_a: amb.package_a, package_b: amb.package_b }
+        }
+        crate::registry::ContractError::Unreadable { root, reason } => LowerError::BehaviorSourceUnreadable { root, reason },
     }
 }

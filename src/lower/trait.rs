@@ -340,7 +340,7 @@ pub(crate) fn lower_call_site_overrides(
                     nullable: Some(entity::source_nullable(&cf.type_expr, aliases)),
                     additional_properties: entity::source_additional_type(&cf.type_expr, aliases)
                         .map(|ty| {
-                            entity::lower_source_field(ty, aliases, entity_names, &[]).map(Box::new)
+                            entity::lower_source_field(ty, aliases, entity_names, &[]).map(orbital_core_base::value::Shared::new)
                         })
                         .transpose()?,
                     field_type: type_expr_to_config_string(cf.type_expr.peel()),
@@ -356,7 +356,7 @@ pub(crate) fn lower_call_site_overrides(
                     values: type_expr_to_config_values(cf.type_expr.peel())
                         .or_else(|| lowered_values.filter(|_| matches!(lowered_type, FieldType::Union))),
                     items,
-                    properties,
+                    properties: properties.map(Into::into),
                     required: None,
                     ref_id: None,
                     forwarded_from: None,
@@ -734,7 +734,7 @@ pub(crate) fn lower_trait(
                         field_type,
                         required: if f.required { Some(true) } else { None },
                         description: f.description.clone(),
-                        properties,
+                        properties: properties.map(Into::into),
                         type_when,
                         entity,
                         projected_from: projected,
@@ -808,7 +808,7 @@ pub(crate) fn lower_trait(
             if !p.is_empty() {
                 emit_payloads
                     .entry(def.event.clone())
-                    .or_insert_with(|| p.clone());
+                    .or_insert_with(|| p.to_vec());
                 emit_payload_entities
                     .entry(def.event.clone())
                     .or_insert_with(|| def.payload_entity.clone());
@@ -953,7 +953,7 @@ pub(crate) fn lower_trait(
                         description,
                         synonyms,
                         tier,
-                        payload_schema: payload,
+                        payload_schema: payload.map(Into::into),
                         payload_entity,
                         input: is_input.then_some(true),
                         listened: is_listened.then_some(true),

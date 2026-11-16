@@ -156,7 +156,7 @@ fn emit_of(
         (Some(d), Some(own)) if own.as_ref() != Some(d) => Some(d.clone()),
         _ => None,
     };
-    let empty_payload = e.payload_schema.as_ref().is_some_and(Vec::is_empty);
+    let empty_payload = e.payload_schema.as_deref().is_some_and(Vec::is_empty);
     let alias = if e.payload_entity.is_some() || alias_description.is_some() || empty_payload {
         let payload = match (&e.payload_entity, &e.payload_schema) {
             (Some(entity), _) => TypeExpr::Named(entity.clone()),
@@ -371,9 +371,9 @@ pub(super) fn trait_definition(
     for ev in sm.events.iter().flatten() {
         let emit = emits.iter().find(|e| e.event == ev.key);
         let in_transitions = transition_events.contains(ev.key.as_str());
-        let emit_payload: Option<&Vec<PayloadField>> = emit.and_then(|e| e.payload_schema.as_ref());
+        let emit_payload: Option<&Vec<PayloadField>> = emit.and_then(|e| e.payload_schema.as_deref());
         let payload_differs = match (&ev.payload_schema, emit_payload) {
-            (Some(own), Some(from_emit)) => own != from_emit,
+            (Some(own), Some(from_emit)) => **own != *from_emit,
             (Some(_), None) => true,
             (None, _) => false,
         };
@@ -409,7 +409,7 @@ pub(super) fn trait_definition(
             });
             continue;
         }
-        if emit.is_none() && ev.payload_schema.as_ref().is_some_and(Vec::is_empty) {
+        if emit.is_none() && ev.payload_schema.as_deref().is_some_and(Vec::is_empty) {
             aliases.push(EventAlias {
                 event: ev.key.clone(),
                 payload: TypeExpr::Object(Vec::new()),

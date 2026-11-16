@@ -21,7 +21,6 @@ use sha2::{Digest, Sha256};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, OnceLock};
-use std::time::SystemTime;
 use thiserror::Error;
 
 /// The prefix `@almadar/std`'s `orb` block declares — the std source on the
@@ -132,91 +131,51 @@ enum Slice {
     Live(LiveSlice),
 }
 
-/// A live package's `.lolo` tree: behavior key → file, indexed on first use. A miss re-indexes only when the tree
-/// changed since: a file added or removed changes its directory's modified time, so a miss re-reads the directories'
-/// times instead of walking every file.
+/// A live package's `.lolo` tree, read through the one process-wide behavior index orbital-core keeps for it
+/// (`indexed_registry`): walked on first use and again only once a folder it listed changed. A name two files claim is
+/// refused there, never resolved to whichever was found last.
 struct LiveSlice {
     root: PathBuf,
-    index: Mutex<Option<LiveIndex>>,
 }
 
-struct LiveIndex {
-    files: HashMap<String, PathBuf>,
-    /// Every directory walked, with its modified time when it was read.
-    dirs: Vec<(PathBuf, Option<SystemTime>)>,
-    scanned_at: SystemTime,
+/// Why a live package's contract could not be looked up.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum ContractError {
+    /// The name is declared twice: in two packages, or by two files of one package.
+    Ambiguous(Ambiguity),
+    /// The package's `.lolo` tree could not be read.
+    Unreadable { root: String, reason: String },
 }
 
-impl LiveIndex {
-    /// The directories this index answers from count as read by whoever asks, cached or not.
-    fn note_read(&self) {
-        for (dir, _) in &self.dirs {
-            orbital_core_base::read_set::note(dir);
-        }
-    }
-
-    /// A directory changed since the scan, or was modified too close to it for its time to tell (a filesystem with
-    /// coarse timestamps can stamp a later addition with the same time).
-    fn stale(&self) -> bool {
-        self.dirs.iter().any(|(dir, seen)| {
-            let now = std::fs::metadata(dir).and_then(|m| m.modified()).ok();
-            now != *seen || now.is_some_and(|t| self.scanned_at.duration_since(t).map_or(true, |age| age < RACY_WINDOW))
-        })
+impl From<Ambiguity> for ContractError {
+    fn from(ambiguity: Ambiguity) -> Self {
+        ContractError::Ambiguous(ambiguity)
     }
 }
-
-/// How close to a scan a directory's modified time must be for the time not to prove the directory unchanged.
-const RACY_WINDOW: std::time::Duration = std::time::Duration::from_secs(2);
 
 impl LiveSlice {
     fn new(root: PathBuf) -> Self {
-        Self {
-            root,
-            index: Mutex::new(None),
-        }
+        Self { root }
     }
 
-    fn scan(&self) -> LiveIndex {
-        let scanned_at = SystemTime::now();
-        let mut files = HashMap::new();
-        let mut dirs = Vec::new();
-        let mut stack = vec![self.root.clone()];
-        while let Some(dir) = stack.pop() {
-            dirs.push((dir.clone(), std::fs::metadata(&dir).and_then(|m| m.modified()).ok()));
-            for entry in std::fs::read_dir(&dir).into_iter().flatten().flatten() {
-                let path = entry.path();
-                if path.is_dir() {
-                    stack.push(path);
-                } else if path.extension().is_some_and(|e| e == "lolo") {
-                    if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                        files.insert(stem.to_string(), path);
-                    }
-                }
-            }
-        }
-        LiveIndex { files, dirs, scanned_at }
+    fn index(&self) -> Result<Arc<HashMap<String, PathBuf>>, ContractError> {
+        use orbital_core_base::behavior_packages::DiscoverError;
+        orbital_core_base::behavior_packages::indexed_registry(&RegistrySource::Live(self.root.clone())).map_err(|e| match e {
+            DiscoverError::DuplicateBehaviorName { name, path_a, path_b } => ContractError::Ambiguous(Ambiguity {
+                name,
+                package_a: path_a.display().to_string(),
+                package_b: path_b.display().to_string(),
+            }),
+            other => ContractError::Unreadable { root: self.root.display().to_string(), reason: other.to_string() },
+        })
     }
 
-    fn file(&self, key: &str) -> Option<PathBuf> {
-        let mut index = self.index.lock().expect("live contract index poisoned");
-        let current = index.get_or_insert_with(|| self.scan());
-        current.note_read();
-        if let Some(path) = current.files.get(key) {
-            return Some(path.clone());
-        }
-        if !current.stale() {
-            return None;
-        }
-        let rescanned = index.insert(self.scan());
-        rescanned.note_read();
-        rescanned.files.get(key).cloned()
+    fn file(&self, key: &str) -> Result<Option<PathBuf>, ContractError> {
+        Ok(self.index()?.get(key).cloned())
     }
 
-    fn keys(&self) -> Vec<String> {
-        let mut index = self.index.lock().expect("live contract index poisoned");
-        let current = index.get_or_insert_with(|| self.scan());
-        current.note_read();
-        current.files.keys().cloned().collect()
+    fn keys(&self) -> Result<Vec<String>, ContractError> {
+        Ok(self.index()?.keys().cloned().collect())
     }
 }
 
@@ -382,16 +341,16 @@ impl Slice {
         Ok(Slice::Live(LiveSlice::new(root)))
     }
 
-    fn get(&self, key: &str, packages: &[BehaviorPackage]) -> Option<Arc<Behavior>> {
+    fn get(&self, key: &str, packages: &[BehaviorPackage]) -> Result<Option<Arc<Behavior>>, ContractError> {
         match self {
-            Slice::Declared(map) => map.get(key).cloned(),
-            Slice::Live(live) => live_contract(&live.file(key)?, packages),
+            Slice::Declared(map) => Ok(map.get(key).cloned()),
+            Slice::Live(live) => Ok(live.file(key)?.and_then(|file| live_contract(&file, packages))),
         }
     }
 
-    fn keys(&self) -> Vec<String> {
+    fn keys(&self) -> Result<Vec<String>, ContractError> {
         match self {
-            Slice::Declared(map) => map.keys().cloned().collect(),
+            Slice::Declared(map) => Ok(map.keys().cloned().collect()),
             Slice::Live(live) => live.keys(),
         }
     }
@@ -458,14 +417,14 @@ impl LoloContracts {
     /// through to the other packages' std-named entries, since there are
     /// none by construction); on a std miss, search every other package: one
     /// hit resolves it, two is an [`Ambiguity`], none is `Ok(None)`.
-    pub fn get_behavior(&self, key: &str) -> Result<Option<Arc<Behavior>>, Ambiguity> {
-        if let Some(behavior) = self.std.get(key, &self.packages) {
+    pub fn get_behavior(&self, key: &str) -> Result<Option<Arc<Behavior>>, ContractError> {
+        if let Some(behavior) = self.std.get(key, &self.packages)? {
             return Ok(Some(behavior));
         }
 
         let mut found: Option<(&str, Arc<Behavior>)> = None;
         for (name_version, _, slice) in &self.others {
-            if let Some(behavior) = slice.get(key, &self.packages) {
+            if let Some(behavior) = slice.get(key, &self.packages)? {
                 match found {
                     None => found = Some((name_version.as_str(), behavior)),
                     Some((first, _)) => {
@@ -473,7 +432,8 @@ impl LoloContracts {
                             name: key.to_string(),
                             package_a: first.to_string(),
                             package_b: name_version.clone(),
-                        });
+                        }
+                        .into());
                     }
                 }
             }
@@ -502,23 +462,23 @@ impl LoloContracts {
     /// Every installed behavior as `(import path, key)`: std's as
     /// `std/behaviors/<key>`, another package's as `<orb.prefix>/<key>` —
     /// the spellings `uses … from "…"` resolves (see [`behavior_key_from_path`]).
-    pub fn import_paths(&self) -> Vec<(String, String)> {
+    pub fn import_paths(&self) -> Result<Vec<(String, String)>, ContractError> {
         let mut out: Vec<(String, String)> = self
             .std
-            .keys()
+            .keys()?
             .into_iter()
             .map(|k| (format!("std/behaviors/{k}"), k))
             .collect();
         for (_, prefix, slice) in &self.others {
             out.extend(
                 slice
-                    .keys()
+                    .keys()?
                     .into_iter()
                     .map(|k| (format!("{prefix}/{k}"), k)),
             );
         }
         out.sort();
-        out
+        Ok(out)
     }
 }
 
@@ -702,24 +662,52 @@ mod tests {
         root
     }
 
+    #[test]
+    fn a_name_two_files_of_one_package_claim_is_refused_naming_both() {
+        let root = live_tree("duplicate");
+        std::fs::create_dir_all(root.join("organisms")).expect("dir");
+        std::fs::write(root.join("organisms").join("std-a.lolo"), "").expect("file");
+        let Err(ContractError::Ambiguous(amb)) = LiveSlice::new(root.clone()).file("std-a") else { panic!("the duplicate is refused") };
+        assert_eq!(amb.name, "std-a");
+        assert!(amb.package_a.ends_with("std-a.lolo") && amb.package_b.ends_with("std-a.lolo") && amb.package_a != amb.package_b);
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn control_distinct_names_in_one_package_are_both_found() {
+        let root = live_tree("distinct");
+        std::fs::create_dir_all(root.join("organisms")).expect("dir");
+        std::fs::write(root.join("organisms").join("std-b.lolo"), "").expect("file");
+        let slice = LiveSlice::new(root.clone());
+        assert!(slice.file("std-a").unwrap().is_some() && slice.file("std-b").unwrap().is_some());
+        let _ = std::fs::remove_dir_all(&root);
+    }
+
+    #[test]
+    fn edge_an_unreadable_package_tree_is_an_error_not_an_empty_package() {
+        let root = std::env::temp_dir().join(format!("orb-live-slice-missing-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&root);
+        assert!(matches!(LiveSlice::new(root).file("std-a"), Err(ContractError::Unreadable { .. })));
+    }
+
     fn age(dir: &std::path::Path) {
-        let past = SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
+        let past = std::time::SystemTime::UNIX_EPOCH + std::time::Duration::from_secs(1_700_000_000);
         std::fs::File::open(dir).and_then(|f| f.set_modified(past)).expect("set dir time");
     }
 
     #[test]
-    fn a_miss_in_an_unchanged_tree_does_not_walk_it_again() {
+    fn a_file_added_to_a_folder_whose_time_is_set_back_is_still_found() {
         let root = live_tree("unchanged");
         age(&root);
         age(&root.join("atoms"));
         let slice = LiveSlice::new(root.clone());
-        assert!(slice.file("std-a").is_some(), "an indexed key is found");
-        assert!(slice.file("std-b").is_none(), "a key no file names is a miss");
+        assert!(slice.file("std-a").unwrap().is_some(), "an indexed key is found");
+        assert!(slice.file("std-b").unwrap().is_none(), "a key no file names is a miss");
         std::fs::write(root.join("atoms").join("std-b.lolo"), "").expect("file");
         age(&root.join("atoms"));
-        assert!(slice.file("std-b").is_none(), "a directory whose time did not move is not walked again");
+        assert!(slice.file("std-b").unwrap().is_some(), "the folder's size moved, so the index reads it again");
         std::fs::write(root.join("atoms").join("std-c.lolo"), "").expect("file");
-        assert!(slice.file("std-c").is_some(), "control: a file added since the scan is found");
+        assert!(slice.file("std-c").unwrap().is_some(), "control: a file added since the scan is found");
         let _ = std::fs::remove_dir_all(&root);
     }
 
@@ -727,9 +715,9 @@ mod tests {
     fn a_directory_stamped_close_to_the_scan_is_read_again_on_a_miss() {
         let root = live_tree("racy");
         let slice = LiveSlice::new(root.clone());
-        assert!(slice.file("std-a").is_some());
+        assert!(slice.file("std-a").unwrap().is_some());
         std::fs::write(root.join("atoms").join("std-d.lolo"), "").expect("file");
-        assert!(slice.file("std-d").is_some(), "a recently stamped directory cannot prove itself unchanged");
+        assert!(slice.file("std-d").unwrap().is_some(), "a recently stamped directory cannot prove itself unchanged");
         let _ = std::fs::remove_dir_all(&root);
     }
 

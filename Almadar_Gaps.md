@@ -7,7 +7,9 @@ Every open gap this repo owns lives here. This file is the source of truth; the 
 - **Codes:** new gaps use this repo's prefix `G-ORBITAL-LOLO-`. Take the "Next code" below, then bump it in the same edit. Codes are never reused or renamed.
 - **Close by deleting.** Remove the entry in the same commit as the fix.
 
-Next code: `G-ORBITAL-LOLO-007`
+Next code: `G-ORBITAL-LOLO-008`
+
+- **G-ORBITAL-LOLO-007** [mechanical] — `live_std_equivalence::std_agent_assistant_contract_is_derived_from_its_lolo` is red: std-agent-assistant's derived contract now lists the page `AssistantAgentSignInStart` beside `AssistantPage` and `AssistantRunsPage`, and the test still pins the two. std changed, the test did not. Seen 2026-11-15 running the lolo suite for P-034 memory round 2 (unrelated to it). Reproduce: `cargo test -p orbital-lolo --test live_std_equivalence`. Prevention rung: (3) the verifiers (std edits run this target). Severity: low. Root cause: one-off.
 
 - **G-ORBITAL-LOLO-006** [mechanical] — A named string-union alias is refused as a field type inside an `emits` payload: with `type ProcessVerdictKind = "expected" | "unwanted"`, `FLAG_VERDICT -> external { verdict : ProcessVerdictKind! }` fails `ORB_T_TYPE_KIND_MISMATCH: expected Entity, got Alias`, while the same alias is accepted in a `listens` input payload, an entity field and a record alias, and the inlined union `"expected" | "unwanted"` is accepted in the emit. Seen 2026-11-11 in `almadar-std/ops/atoms/std-process-watch.lolo` (trait `ProcessFlags`), which inlines the union as a workaround. orbital-lolo. Reproduce: put the alias back on that field and validate. Prevention rung: (1) the `.lolo` type system (one resolution of a named type in every payload position).
   Severity: low. Root cause: one-off.

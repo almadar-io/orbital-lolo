@@ -991,14 +991,17 @@ pub enum LowerError {
     #[error("{0}")]
     LanguageData(orbital_core_base::language_data::LanguageDataError),
 
-    /// The same behavior name was found in two different installed (non-std)
-    /// packages on the walk — never a precedence rule (ruling 3).
+    /// The same behavior name was found in two installed (non-std) packages, or two files of one package, on the
+    /// walk — never a precedence rule (ruling 3).
     #[error("behavior {name:?} is declared by both {package_a} and {package_b}")]
     AmbiguousBehavior {
         name: String,
         package_a: String,
         package_b: String,
     },
+    /// A live package's `.lolo` tree could not be read, so its behaviors cannot be looked up.
+    #[error("the behaviors under {root} cannot be read: {reason}")]
+    BehaviorSourceUnreadable { root: String, reason: String },
 
     /// Increment 3-II: a trait reference's `::` annotation, once reinterpreted
     /// as call-site type-parameter arguments (`[type_name] ++ type_args`

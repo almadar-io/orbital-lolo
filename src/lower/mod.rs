@@ -806,6 +806,7 @@ pub(crate) fn lower_expects_decl(
                 emit_listen::lower_emit(&emit, aliases, entities, &BTreeMap::new(), &[])
                     .located(decl.span)?
                     .payload_schema
+                    .map(orbital_core_base::value::Shared::into_inner)
             };
             ExpectDeclaration::Event {
                 trait_name: trait_name.clone(),
@@ -1068,7 +1069,7 @@ fn orbital_types(
                             field_type: "union".to_string(),
                             required: None,
                             description: None,
-                            properties: Some(variants),
+                            properties: Some(variants.into()),
                             type_when: None,
                             entity: None,
                             projected_from: None,
@@ -1116,7 +1117,7 @@ fn spec_placeholder_entity(name: &str) -> EntityDefinition {
         name: name.to_string(),
         collection: None,
         persistence: None,
-        fields: Vec::new(),
+        fields: Vec::new().into(),
         instances: None,
         id: None,
         invariants: None,

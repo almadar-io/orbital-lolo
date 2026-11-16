@@ -427,7 +427,7 @@ pub(crate) fn lower_config_fields_to_map(
                 additional_properties: entity::source_additional_type(&cf.type_expr, aliases)
                     .map(|ty| {
                         entity::lower_source_field(ty, aliases, entity_names, type_params)
-                            .map(Box::new)
+                            .map(orbital_core_base::value::Shared::new)
                     })
                     .transpose()?,
                 field_type,
@@ -442,7 +442,7 @@ pub(crate) fn lower_config_fields_to_map(
                 values,
                 union,
                 items,
-                properties,
+                properties: properties.map(Into::into),
                 required: if cf.required { Some(true) } else { None },
                 ref_id: None,
                 forwarded_from: None,

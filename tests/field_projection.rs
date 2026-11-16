@@ -79,7 +79,7 @@ fn note_view(schema: &OrbitalSchema) -> TraitDefinition {
         .expect("NoteView")
 }
 
-fn payload_of(schema: &OrbitalSchema, event: &str) -> Vec<PayloadField> {
+fn payload_of(schema: &OrbitalSchema, event: &str) -> orbital_core_base::value::Shared<Vec<PayloadField>> {
     let view = note_view(schema);
     let events = view.state_machine.events.clone().unwrap_or_default();
     let declared = events.iter().find(|e| e.key == event).expect(event);

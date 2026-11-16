@@ -48,7 +48,7 @@ pub(crate) fn lower_entity(
         name: entity.name.clone(),
         collection: entity.collection.clone(),
         persistence,
-        fields,
+        fields: fields.into(),
         instances: (!entity.instances.is_empty()).then(|| entity.instances.clone()),
         shared: entity.shared,
         identity: entity.identity,
@@ -224,7 +224,7 @@ pub(crate) fn lower_source_field(
     let additional_properties = if field_type == FieldType::Object {
         source_additional_type(ty, aliases)
             .map(|additional| {
-                lower_source_field(additional, aliases, entity_names, params).map(Box::new)
+                lower_source_field(additional, aliases, entity_names, params).map(orbital_core_base::value::Shared::new)
             })
             .transpose()?
     } else {
@@ -243,7 +243,7 @@ pub(crate) fn lower_source_field(
         values,
         relation,
         items,
-        properties,
+        properties: properties.map(Into::into),
         intrinsic: None,
         description: None,
         synonyms: None,
@@ -380,7 +380,7 @@ fn field_ref_value(
 type LoweredType = (
     FieldType,
     Option<Vec<String>>,
-    Option<Box<FieldDefinition>>,
+    Option<orbital_core_base::value::Shared<FieldDefinition>>,
     Option<orbital_core_base::collections::IndexMap<String, FieldDefinition>>,
     Option<RelationDefinition>,
 );
@@ -439,7 +439,7 @@ pub(crate) fn lower_type_expr(
                 None,
                 value
                     .as_deref()
-                    .map(|ty| field_ref_value(ty, aliases, entity_names, params).map(Box::new))
+                    .map(|ty| field_ref_value(ty, aliases, entity_names, params).map(orbital_core_base::value::Shared::new))
                     .transpose()?,
                 properties,
                 None,
@@ -517,7 +517,7 @@ pub(crate) fn lower_type_expr(
                     def.field_type.clone(),
                     def.values.clone(),
                     def.items.clone(),
-                    def.properties.clone(),
+                    def.properties.as_deref().cloned(),
                     def.relation.clone(),
                 )
             } else if orbital_core_base::sealed::is_sealed_type(name) {
@@ -579,7 +579,7 @@ pub(crate) fn lower_type_expr(
             let item = FieldDefinition {
                 nullable: Some(source_nullable(inner, aliases)),
                 additional_properties: source_additional_type(inner, aliases)
-                    .map(|ty| lower_source_field(ty, aliases, entity_names, params).map(Box::new))
+                    .map(|ty| lower_source_field(ty, aliases, entity_names, params).map(orbital_core_base::value::Shared::new))
                     .transpose()?,
                 mock: None,
                 merged_from: None,
@@ -592,7 +592,7 @@ pub(crate) fn lower_type_expr(
                 values: inner_values,
                 relation: inner_rel,
                 items: inner_items,
-                properties: inner_props,
+                properties: inner_props.map(Into::into),
                 intrinsic: None,
                 description: None,
                 synonyms: None,
@@ -601,7 +601,7 @@ pub(crate) fn lower_type_expr(
                 derived: None,
                 update: None,
             };
-            (FieldType::Array, None, Some(Box::new(item)), None, None)
+            (FieldType::Array, None, Some(orbital_core_base::value::Shared::new(item)), None, None)
         }
         // `[T1, T2, …]` — each slot's resolved shape rides `properties`, keyed by index.
         TypeExpr::Tuple(slots) => {
@@ -615,7 +615,7 @@ pub(crate) fn lower_type_expr(
                         nullable: Some(source_nullable(slot, aliases)),
                         additional_properties: source_additional_type(slot, aliases)
                             .map(|ty| {
-                                lower_source_field(ty, aliases, entity_names, params).map(Box::new)
+                                lower_source_field(ty, aliases, entity_names, params).map(orbital_core_base::value::Shared::new)
                             })
                             .transpose()?,
                         mock: None,
@@ -629,7 +629,7 @@ pub(crate) fn lower_type_expr(
                         values,
                         relation,
                         items,
-                        properties,
+                        properties: properties.map(Into::into),
                         intrinsic: None,
                         description: None,
                         synonyms: None,
@@ -657,7 +657,7 @@ pub(crate) fn lower_type_expr(
             let value_field = FieldDefinition {
                 nullable: Some(source_nullable(value, aliases)),
                 additional_properties: source_additional_type(value, aliases)
-                    .map(|ty| lower_source_field(ty, aliases, entity_names, params).map(Box::new))
+                    .map(|ty| lower_source_field(ty, aliases, entity_names, params).map(orbital_core_base::value::Shared::new))
                     .transpose()?,
                 mock: None,
                 merged_from: None,
@@ -670,7 +670,7 @@ pub(crate) fn lower_type_expr(
                 values: v_values,
                 relation: v_rel,
                 items: v_items,
-                properties: v_props,
+                properties: v_props.map(Into::into),
                 intrinsic: v_intrinsic,
                 description: None,
                 synonyms: None,
@@ -682,7 +682,7 @@ pub(crate) fn lower_type_expr(
             (
                 FieldType::Object,
                 None,
-                Some(Box::new(value_field)),
+                Some(orbital_core_base::value::Shared::new(value_field)),
                 None,
                 None,
             )
@@ -698,7 +698,7 @@ pub(crate) fn lower_type_expr(
                         nullable: Some(source_nullable(v, aliases)),
                         additional_properties: source_additional_type(v, aliases)
                             .map(|ty| {
-                                lower_source_field(ty, aliases, entity_names, params).map(Box::new)
+                                lower_source_field(ty, aliases, entity_names, params).map(orbital_core_base::value::Shared::new)
                             })
                             .transpose()?,
                         mock: None,
@@ -716,7 +716,7 @@ pub(crate) fn lower_type_expr(
                         values,
                         relation,
                         items,
-                        properties,
+                        properties: properties.map(Into::into),
                         intrinsic: None,
                         description: None,
                         synonyms: None,
@@ -1007,7 +1007,7 @@ mod tests {
         .expect("Page");
         let mut page: FieldDefinition =
             serde_json::from_value(serde_json::json!({ "type": "object" })).expect("object");
-        page.properties = props;
+        page.properties = props.map(Into::into);
         let items = &page.properties.as_ref().expect("members")["items"];
         assert_eq!(
             items.items.as_ref().expect("elem").field_type,
@@ -1034,7 +1034,7 @@ mod tests {
             .clone()
             .expect("elem");
         assert!(matches!(elem.field_type, FieldType::Relation));
-        assert_eq!(elem.relation.expect("rel").entity, "Order");
+        assert_eq!(elem.relation.clone().expect("rel").entity, "Order");
         let (pft, _, _, pprops, _) = lower_type_expr(
             &TypeExpr::Named("Plain".to_string()),
             &aliases,
@@ -1087,7 +1087,7 @@ mod tests {
             "got {:?}",
             item.field_type
         );
-        let variants = item.properties.expect("variants");
+        let variants = item.properties.clone().expect("variants");
         assert!(matches!(variants["string"].field_type, FieldType::String));
         assert!(matches!(
             variants["AnchoredEnv"].field_type,
@@ -1743,7 +1743,7 @@ fn struct_union_variants(
             FieldDefinition {
                 nullable: Some(source_nullable(p, aliases)),
                 additional_properties: source_additional_type(p, aliases)
-                    .map(|ty| lower_source_field(ty, aliases, entity_names, &scope).map(Box::new))
+                    .map(|ty| lower_source_field(ty, aliases, entity_names, &scope).map(orbital_core_base::value::Shared::new))
                     .transpose()?,
                 mock: None,
                 merged_from: None,
@@ -1756,7 +1756,7 @@ fn struct_union_variants(
                 values,
                 relation,
                 items,
-                properties: props,
+                properties: props.map(Into::into),
                 intrinsic: None,
                 description: None,
                 synonyms: None,

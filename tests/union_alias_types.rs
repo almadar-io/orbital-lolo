@@ -109,7 +109,7 @@ fn a_recursive_union_alias_in_field_position_keeps_its_by_name_reference() {
     let types = types_of(PRED);
     let of = field(&types["Not"], "of");
     assert_eq!(of.field_type, "Pred");
-    assert_eq!(of.properties.as_deref(), Some(&[][..]), "the by-name marker, not an expansion");
+    assert_eq!(of.properties.as_deref().map(Vec::as_slice), Some(&[][..]), "the by-name marker, not an expansion");
     assert_eq!(field(&types["All"], "of").items.as_ref().unwrap().field_type, "Pred");
     let pred = &types["Pred"][0];
     assert_eq!(pred.field_type, "union", "the alias itself still defines its variants");
