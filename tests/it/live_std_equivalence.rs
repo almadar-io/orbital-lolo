@@ -42,7 +42,14 @@ fn std_agent_assistant_contract_is_derived_from_its_lolo() {
     let a = std_contracts().get_behavior("std-agent-assistant").unwrap().expect("assistant");
     let mut pages = a.pages.clone();
     pages.sort();
-    assert_eq!(pages, vec!["AssistantPage".to_string(), "AssistantRunsPage".to_string()]);
+    assert_eq!(
+        pages,
+        vec![
+            "AssistantAgentSignInStart".to_string(),
+            "AssistantPage".to_string(),
+            "AssistantRunsPage".to_string(),
+        ]
+    );
     assert!(a.has_orbital("AgentAssistantOrbital") && a.has_orbital("AgentRecordsOrbital"));
     for name in [
         "AgentRunHistory", "AssistantChatKeeper", "AssistantContext", "AssistantConversation",
