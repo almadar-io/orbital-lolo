@@ -598,7 +598,12 @@ impl Behavior {
                             name,
                             TraitContract {
                                 requires: Vec::new(),
-                                message_keys: HashMap::new(),
+                                message_keys: config
+                                    .iter()
+                                    .flatten()
+                                    .filter(|(_, f)| !orbital_core_base::messages::message_key_paths(f).is_empty())
+                                    .map(|(k, f)| (k.clone(), f.clone()))
+                                    .collect(),
                                 config: wired_config_types(
                                     config.as_ref(),
                                     orbital.config.as_ref(),

@@ -24,7 +24,7 @@
 //! `effects::emit_contract` owns it, so L1 and L2 answer "what does this
 //! operator emit?" from one place (they are sibling crates; L1 cannot reach
 //! the operator registry L2 uses). A test in `orbital-compiler`
-//! (`tests/emit_contract_drift.rs`) asserts that table still agrees with
+//! (`tests/it/emit_contract_drift.rs`) asserts that table still agrees with
 //! `canonical-operators.json`.
 
 use orbital_core_base::emit_contract::{

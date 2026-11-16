@@ -292,3 +292,45 @@ orbital FixtureOrbital {
     assert!(json.contains(r#""id":{"type":"unknown","default":"begin""#), "control: a string knob stays as written: {json}");
     assert!(json.contains(r#"{"value":"spring","label":"site:season.spring"}"#), "a key inside a record list takes the caller's name: {json}");
 }
+
+fn labelled_organism() -> &'static str {
+    r#"app fake-landing [version: "1.0.0", description: "fixture"]
+uses Atom from "std/behaviors/fake-labelled"
+orbital LandingOrbital {
+  entity LandingView [runtime] {
+    id : string!
+  }
+  trait Title = Atom.traits.Labelled -> LandingView {
+    config {
+      label: "title"
+      id: "title"
+    }
+  }
+  page "/landing" as LandingPage -> Title
+}
+"#
+}
+
+#[test]
+fn an_imported_orbitals_trait_override_types_a_message_key_from_the_atom_and_qualifies_it_with_the_caller() {
+    let tmp = TempDir::new().unwrap();
+    let std = package(tmp.path(), "@almadar/std", "almadar-std", "0.0.1", &[], true);
+    let src = std.lolo_source.as_ref().unwrap();
+    fs::write(src.join("fake-labelled.lolo"), labelled_atom()).unwrap();
+    fs::write(src.join("fake-landing.lolo"), labelled_organism()).unwrap();
+    let options = LowerOptions { packages: vec![std], ..Default::default() };
+    let source = r#"app site [version: "1.0.0", description: "site", locales: [en]]
+
+uses Landing from "std/behaviors/fake-landing"
+
+orbital Page = Landing.orbitals.LandingOrbital {
+  traits {
+    Title { config { label: "headline" id: "headline" } }
+  }
+}
+"#;
+    let schema = parse_and_lower_str_with(source, &options).expect("lower");
+    let json = serde_json::to_string(&schema).unwrap();
+    assert!(json.contains(r#""label":{"type":"MessageKey","default":"site:headline""#), "{json}");
+    assert!(json.contains(r#""id":{"type":"unknown","default":"headline""#), "control: a string knob stays as written: {json}");
+}

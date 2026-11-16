@@ -2192,16 +2192,40 @@ pub(crate) fn type_call_site_message_keys(
             let Some(tc) = beh.trait_contract(member) else {
                 continue;
             };
-            for (knob, field) in config.iter_mut() {
-                if field.field_type != "unknown" {
-                    continue;
-                }
-                if let Some(declared) = tc.message_keys.get(knob) {
-                    field.field_type = declared.field_type.clone();
-                    field.items = declared.items.clone();
-                    field.properties = declared.properties.clone();
-                }
-            }
+            type_message_key_knobs(config, &tc.message_keys);
+        }
+        let Some(import) = orbital.reference.as_mut() else {
+            continue;
+        };
+        let parts: Vec<&str> = import.reference.split('.').collect();
+        let [alias, "orbitals", _] = parts.as_slice() else {
+            continue;
+        };
+        let Some(beh) = alias_key.get(*alias).and_then(|key| contracts.get_behavior(key).ok().flatten()) else {
+            continue;
+        };
+        for (upstream, over) in import.traits.iter_mut().flatten() {
+            let (Some(tc), Some(config)) = (beh.trait_contract(upstream), over.config.as_mut()) else {
+                continue;
+            };
+            type_message_key_knobs(config, &tc.message_keys);
+        }
+    }
+}
+
+/// Gives each still-untyped knob of a call-site config the `MessageKey` type its atom declares for it.
+fn type_message_key_knobs(
+    config: &mut orbital_core_base::collections::IndexMap<String, orbital_core_base::schema::ConfigField>,
+    declared: &HashMap<String, orbital_core_base::schema::ConfigField>,
+) {
+    for (knob, field) in config.iter_mut() {
+        if field.field_type != "unknown" {
+            continue;
+        }
+        if let Some(declared) = declared.get(knob) {
+            field.field_type = declared.field_type.clone();
+            field.items = declared.items.clone();
+            field.properties = declared.properties.clone();
         }
     }
 }
