@@ -1935,9 +1935,8 @@ pub(crate) fn check_button_transitions(orbitals: &[CoreOrbital]) -> Result<(), L
 /// catches literal-vs-declared mismatches that don't need cross-IR
 /// resolution.
 ///
-/// Emits with no literal payload object (e.g. `(emit DONE)` / `(emit
-/// DONE @some.binding)`) skip the extra-field and type-mismatch
-/// branches but still get the missing-required check.
+/// An emit with no payload (`(emit DONE)`) still gets the missing-required check; a computed payload
+/// (`(emit DONE @some.binding)`, `(object/merge …)`) is typed only after resolution, so L2 checks it.
 pub(crate) fn check_emit_payload_literals(
     orbitals: &[CoreOrbital],
     entity_names: &[HashSet<String>],
@@ -2062,7 +2061,9 @@ fn check_one_emit_literal(
 ) -> Result<(), LowerError> {
     let payload_obj = match payload {
         Some(SExpression::Object(o)) => Some(&**o),
-        _ => None,
+        // A computed payload (`(object/merge …)`, a binding) has a type only after resolution; L2 checks it.
+        Some(_) => return Ok(()),
+        None => None,
     };
 
     // Missing required fields.

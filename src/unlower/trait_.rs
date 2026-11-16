@@ -1,6 +1,6 @@
 //! Trait definitions and trait references back to the AST.
 
-use super::types::{config_fields, event_fields};
+use super::types::{config_fields, event_fields, spread_event_fields};
 use super::UnlowerError;
 use crate::ast::{
     Emit, InboundListen, InboundVerifies, Listen, Span, State, Tick, TickInterval, Trait,
@@ -156,7 +156,7 @@ fn emit_of(
         (Some(d), Some(own)) if own.as_ref() != Some(d) => Some(d.clone()),
         _ => None,
     };
-    let empty_payload = e.payload_schema.as_deref().is_some_and(Vec::is_empty);
+    let empty_payload = e.payload_schema.as_deref().is_some_and(Vec::is_empty) && e.payload_spread.is_none();
     let alias = if e.payload_entity.is_some() || alias_description.is_some() || empty_payload {
         let payload = match (&e.payload_entity, &e.payload_schema) {
             (Some(entity), _) => TypeExpr::Named(entity.clone()),
@@ -183,7 +183,7 @@ fn emit_of(
     };
     let payload = match (&alias, &e.payload_schema) {
         (Some(_), _) | (None, None) => Vec::new(),
-        (None, Some(fields)) => event_fields(fields)?,
+        (None, Some(fields)) => spread_event_fields(e.payload_spread.as_deref(), fields)?,
     };
     Ok((
         Emit {
@@ -387,6 +387,7 @@ pub(super) fn trait_definition(
         };
         let alias_only = emit.is_none()
             && in_transitions
+            && ev.payload_spread.is_none()
             && ev.listened != Some(true)
             && ev.input != Some(true)
             && ev.inbound.is_none()
@@ -409,7 +410,7 @@ pub(super) fn trait_definition(
             });
             continue;
         }
-        if emit.is_none() && ev.payload_schema.as_deref().is_some_and(Vec::is_empty) {
+        if emit.is_none() && ev.payload_spread.is_none() && ev.payload_schema.as_deref().is_some_and(Vec::is_empty) {
             aliases.push(EventAlias {
                 event: ev.key.clone(),
                 payload: TypeExpr::Object(Vec::new()),
@@ -427,7 +428,7 @@ pub(super) fn trait_definition(
             || annotations_differ
         {
             let payload = match (&ev.payload_schema, aliased) {
-                (Some(fields), false) => event_fields(fields)?,
+                (Some(fields), false) => spread_event_fields(ev.payload_spread.as_deref(), fields)?,
                 _ => Vec::new(),
             };
             tr.listens.push(Listen {

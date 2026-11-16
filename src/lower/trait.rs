@@ -502,6 +502,7 @@ pub(crate) fn lower_trait(
     // Increment 3-II: this trait's own declared type-parameter names, usable
     // directly in its `emits`/`listens`/`config` type positions.
     let trait_type_params: Vec<&str> = t.type_params.iter().map(|p| p.name.as_str()).collect();
+    let trait_params: Vec<(&str, bool)> = t.type_params.iter().map(|p| (p.name.as_str(), p.default.is_some())).collect();
     source_map.insert(base.to_string(), t.span);
 
     // Build the state machine: states (with isInitial), events (collected
@@ -647,6 +648,7 @@ pub(crate) fn lower_trait(
     // dotted `Source.EVENT` key) are skipped here — they're carried on the
     // `listens` array, not merged into the state-machine events list.
     let mut listen_payloads: HashMap<String, Vec<PayloadField>> = HashMap::new();
+    let mut payload_spreads: HashMap<String, String> = HashMap::new();
     for l in &t.listens {
         if l.is_routed() {
             continue; // cross-orbital, handled by listens array below
@@ -656,8 +658,12 @@ pub(crate) fn lower_trait(
         if event_seen.insert(l.event.clone()) {
             event_keys.push(l.event.clone());
         }
+        let (own_payload, spread) = emit_listen::split_payload_spread(&l.event, &l.payload, aliases, &trait_params)?;
+        if let Some(spread) = spread {
+            payload_spreads.insert(l.event.clone(), spread);
+        }
         let fields = if !l.payload.is_empty() {
-            l.payload
+            own_payload
                 .iter()
                 .map(|f| {
                     let projected = f.type_expr.payload_projection();
@@ -794,7 +800,7 @@ pub(crate) fn lower_trait(
     let mut lowered_emits: Vec<EmitDefinition> = t
         .emits
         .iter()
-        .map(|e| lower_emit(e, aliases, entities, event_aliases, &trait_type_params))
+        .map(|e| lower_emit(e, aliases, entities, event_aliases, &trait_type_params, &trait_params))
         .collect::<Result<Vec<_>, _>>()?;
     let mut emit_payloads: HashMap<String, Vec<PayloadField>> = HashMap::new();
     // G4 (`Almadar_Compiler_Gaps.md` §82): the emit-payload fallback below
@@ -805,8 +811,11 @@ pub(crate) fn lower_trait(
     // renames or extends it.
     let mut emit_payload_entities: HashMap<String, Option<String>> = HashMap::new();
     for def in &lowered_emits {
+        if let Some(spread) = &def.payload_spread {
+            payload_spreads.entry(def.event.clone()).or_insert_with(|| spread.clone());
+        }
         if let Some(p) = &def.payload_schema {
-            if !p.is_empty() {
+            if !p.is_empty() || def.payload_spread.is_some() {
                 emit_payloads
                     .entry(def.event.clone())
                     .or_insert_with(|| p.to_vec());
@@ -947,6 +956,7 @@ pub(crate) fn lower_trait(
                     } else {
                         payload
                     };
+                    let payload_spread = payload_spreads.remove(&k);
                     Ok(EventDefinition {
                         key: k,
                         id: None,
@@ -956,6 +966,7 @@ pub(crate) fn lower_trait(
                         tier,
                         payload_schema: payload.map(Into::into),
                         payload_entity,
+                        payload_spread,
                         input: is_input.then_some(true),
                         listened: is_listened.then_some(true),
                         inbound,

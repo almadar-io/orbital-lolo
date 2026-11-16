@@ -2804,6 +2804,12 @@ impl Formatter {
         self.indent();
         for field in payload {
             self.write_indent();
+            if field.spread {
+                self.output.push_str("...");
+                self.output.push_str(&field.name);
+                self.write_newline();
+                continue;
+            }
             self.output.push_str(&field.name);
             self.output.push_str(" : ");
             self.fmt_type_expr(&field.type_expr);

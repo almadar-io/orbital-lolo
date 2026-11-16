@@ -1137,6 +1137,27 @@ impl Parser {
                 break;
             }
             let span = self.peek_span();
+            if matches!(self.peek(), TokenKind::Dot)
+                && matches!(self.peek_n(1), TokenKind::Dot)
+                && matches!(self.peek_n(2), TokenKind::Dot)
+            {
+                self.advance();
+                self.advance();
+                self.advance();
+                let name = self.expect_ident()?;
+                fields.push(EventField {
+                    type_expr: TypeExpr::Named(name.clone()),
+                    name,
+                    required: false,
+                    description: None,
+                    span,
+                    spread: true,
+                });
+                if matches!(self.peek(), TokenKind::Comma) {
+                    self.advance();
+                }
+                continue;
+            }
             let name = self.expect_ident()?;
             // Two field forms:
             //   `name : primitive`   — existing syntax, produces TypeExpr::Primitive or
@@ -1199,6 +1220,7 @@ impl Parser {
                 required,
                 description,
                 span,
+                spread: false,
             });
             if matches!(self.peek(), TokenKind::Comma) {
                 self.advance();
@@ -1891,7 +1913,8 @@ impl Parser {
     /// rather than a plain wiring value (`key : value`).
     ///
     /// This is a pure-lookahead operation — it does NOT advance the cursor.
-    fn has_equals_before_entry_end(&self) -> bool {
+    fn has_equals_before_entry_end(&mut self) -> bool {
+        self.fill_all();
         // Only a top-level `=` marks a declaration; one nested in a value
         // (`(if (= a b) …)`) is the equality operator.
         let mut depth: u32 = 0;

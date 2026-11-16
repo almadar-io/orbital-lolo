@@ -103,13 +103,25 @@ pub fn parse_str(source: &str) -> Result<Program, ParseError> {
     Ok(program)
 }
 
-/// Parse only the `app` header of a `.lolo` source, leaving the body unread.
+/// Parse only the `app` header of a `.lolo` source, leaving the body unread: the source is lexed only as far as the
+/// header parse reads it, so a body that does not lex does not refuse its header (G-ORBITAL-CLI-005).
 pub fn parse_app_header(source: &str) -> Result<AppHeader, ParseError> {
-    let (tokens, _) = tokenize_with_comments(source)?;
+    let mut lazy = crate::lexer::LazyTokens::new(source);
+    let mut tokens = Vec::new();
+    while !lazy.done() && !tokens.iter().any(|t: &Token| matches!(t.kind, TokenKind::Identifier(_))) {
+        let want = tokens.len() + 1;
+        lazy.fill(&mut tokens, want)?;
+    }
     let language = detect_lang(&tokens);
     let mut parser = Parser::new(tokens, language);
+    parser.lazy = Some(lazy);
+    parser.fill_ahead();
     parser.skip_newlines();
-    parser.parse_app_header()
+    let header = parser.parse_app_header();
+    match parser.lex_error.take() {
+        Some(error) if header.is_err() || parser.pos + 1 >= parser.tokens.len() => Err(error.into()),
+        _ => header,
+    }
 }
 
 /// Alias matching the public lib name `parse`.
@@ -142,6 +154,10 @@ fn detect_lang(tokens: &[Token]) -> &'static Lang {
 struct Parser {
     tokens: Vec<Token>,
     pos: usize,
+    /// The rest of the source, lexed as the parse reads it (a header read); `None` once fully lexed.
+    lazy: Option<crate::lexer::LazyTokens>,
+    /// The lex error a lazy read stopped at; the token after the last good one is then `Eof`.
+    lex_error: Option<crate::error::LexError>,
     /// Inline `@(Alias.traits.Upstream { … })` references collected during
     /// expression parsing. Flushed into the current orbital's `traits[]` (and
     /// onto each inline page's trait list) at the end of `parse_orbital`.
@@ -226,6 +242,8 @@ impl Parser {
         Self {
             tokens,
             pos: 0,
+            lazy: None,
+            lex_error: None,
             pending_inline_traits: Vec::new(),
             pending_inline_producers: Vec::new(),
             current_hoist_producer: None,
@@ -457,11 +475,37 @@ impl Parser {
     }
 
     pub(crate) fn advance(&mut self) -> &Token {
-        let tok = &self.tokens[self.pos];
-        if !matches!(tok.kind, TokenKind::Eof) {
+        let at = self.pos;
+        if !matches!(self.tokens[at].kind, TokenKind::Eof) {
             self.pos += 1;
+            if self.lazy.is_some() {
+                self.fill_ahead();
+            }
         }
-        tok
+        &self.tokens[at]
+    }
+
+    /// A lazy read keeps this many tokens lexed past the cursor: every fixed lookahead (`peek_n`) reads within it.
+    const LOOKAHEAD: usize = 64;
+
+    pub(crate) fn fill_ahead(&mut self) {
+        self.fill_to(self.pos + Self::LOOKAHEAD);
+    }
+
+    /// Lex the whole rest of the source, for a scan that reads up to the end.
+    pub(crate) fn fill_all(&mut self) {
+        self.fill_to(usize::MAX);
+    }
+
+    fn fill_to(&mut self, len: usize) {
+        let Some(lazy) = self.lazy.as_mut() else { return };
+        if let Err(error) = lazy.fill(&mut self.tokens, len) {
+            self.tokens.push(Token { kind: TokenKind::Eof, span: lazy.here() });
+            self.lex_error = Some(error);
+            self.lazy = None;
+        } else if lazy.done() {
+            self.lazy = None;
+        }
     }
 
     pub(crate) fn at_eof(&self) -> bool {
@@ -2331,6 +2375,38 @@ mod tests {
         assert_eq!(ent.name, "Bar");
         assert_eq!(ent.fields.len(), 1);
         assert!(ent.fields[0].required);
+    }
+
+    // G-ORBITAL-CLI-005: a catalog listing reads every behavior's header; the body is never lexed for it.
+    const BODY_THAT_DOES_NOT_LEX: &str = "orbital Foo {\n  entity Bar {\n    id : string! ¤\n  }\n}";
+
+    #[test]
+    fn a_header_read_lexes_only_the_header() {
+        let source = format!("app MyApp [version: \"1.0.0\", description: \"d\"]\n{BODY_THAT_DOES_NOT_LEX}");
+        let header = super::parse_app_header(&source).expect("the header reads though the body does not lex");
+        assert_eq!(header.name, "MyApp");
+        assert_eq!(header.description.as_deref(), Some("d"));
+        assert!(parse_str(&source).is_err(), "control: the whole program still refuses the body");
+    }
+
+    #[test]
+    fn a_header_read_still_takes_the_app_config_block() {
+        let source = format!("app MyApp [version: \"1.0.0\"]\nconfig {{\n  limit : number = 3\n}}\n{BODY_THAT_DOES_NOT_LEX}");
+        let header = super::parse_app_header(&source).expect("the header and its config block read");
+        assert_eq!(header.config.len(), 1);
+    }
+
+    #[test]
+    fn control_a_header_that_does_not_lex_is_refused() {
+        assert!(super::parse_app_header("app MyApp [version: \"1.0.0\" ¤]\norbital Foo {}\n").is_err());
+    }
+
+    #[test]
+    fn control_a_header_read_answers_what_the_whole_parse_answers() {
+        let source = "app MyApp [version: \"1.0.0\", description: \"d\", theme: \"terminal-dark\"]\nconfig {\n  limit : number = 3\n}\norbital Foo {\n  entity Bar {\n    id : string!\n  }\n}";
+        let header = super::parse_app_header(source).unwrap();
+        let whole = p(source).app;
+        assert_eq!((header.name, header.description, header.theme, header.config.len()), (whole.name, whole.description, whole.theme, whole.config.len()));
     }
 
     #[test]

@@ -804,7 +804,7 @@ pub(crate) fn lower_expects_decl(
                     tier: None,
                     span: decl.span,
                 };
-                emit_listen::lower_emit(&emit, aliases, entities, &BTreeMap::new(), &[])
+                emit_listen::lower_emit(&emit, aliases, entities, &BTreeMap::new(), &[], &[])
                     .located(decl.span)?
                     .payload_schema
                     .map(orbital_core_base::value::Shared::into_inner)
@@ -1344,6 +1344,7 @@ fn lower_orbital(
                     tier: None,
                     payload_schema: None,
                     payload_entity: None,
+                    payload_spread: None,
                     input: None,
                     listened: None,
                     inbound: None,

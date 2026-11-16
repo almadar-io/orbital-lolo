@@ -600,6 +600,18 @@ pub enum LowerError {
     #[error("emit {event:?} has duplicate payload field {field:?}")]
     PayloadFieldCollision { event: String, field: String },
 
+    /// `...T` names a type parameter of the trait that declares no default, so the atom cannot validate alone.
+    #[error("ELOLO_PAYLOAD_SPREAD_NO_DEFAULT: event {event:?} spreads type parameter {param:?}, which declares no default; give it one (`({param} : Type = SomeStruct)`)")]
+    PayloadSpreadNoDefault { event: String, param: String },
+
+    /// `...T` names neither a struct alias of the file nor a type parameter of the trait.
+    #[error("ELOLO_PAYLOAD_SPREAD_UNKNOWN: event {event:?} spreads {name:?}, which is neither a struct type of this file nor a type parameter of the trait")]
+    PayloadSpreadUnknown { event: String, name: String },
+
+    /// A payload carries more than one `...T`.
+    #[error("ELOLO_PAYLOAD_SPREAD_TWICE: event {event:?} spreads more than one type; a payload takes one `...T`")]
+    PayloadSpreadTwice { event: String },
+
     /// `T.f` names a type no entity or struct type in the program declares,
     /// a field `T` does not have, or a type two declarations share.
     #[error("ELOLO_FIELD_PROJECTION: `{projection}` — {reason}")]

@@ -1440,6 +1440,8 @@ pub struct EventField {
     pub required: bool,
     pub description: Option<String>,
     pub span: Span,
+    /// `...T` (P-040): `name` is the struct alias or type parameter whose fields join the payload flat.
+    pub spread: bool,
 }
 
 /// `page /path [:: TypeAnnotation] -> Trait [, Trait...] [options]` or

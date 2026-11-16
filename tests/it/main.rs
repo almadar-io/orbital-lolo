@@ -44,6 +44,7 @@ mod notify_desugar;
 mod orbital_ref_overrides;
 mod orbital_ref_parses;
 mod page_trait_syntax_hint;
+mod payload_spread;
 mod payload_union_alias;
 mod persist_upsert;
 mod print_trait;

@@ -1,8 +1,6 @@
 //! Streaming tokenizer for the .lolo surface language.
 //!
-//! Tokens are produced eagerly into a `Vec<Token>` for simplicity. The token
-//! stream is small (a few thousand tokens for a real-world `.lolo` file), so
-//! the cost is irrelevant compared to a streaming approach. Every token
+//! Tokens are produced into a `Vec<Token>`, all at once (`tokenize`) or as a reader asks (`LazyTokens`). Every token
 //! carries a `Span` so the parser and lower passes can produce
 //! `file:line:col` precise errors.
 
@@ -102,44 +100,85 @@ pub fn tokenize(source: &str) -> Result<Vec<Token>, LexError> {
 /// Like `tokenize`, but also returns the source comments (in source order) as
 /// trivia so the formatter can re-emit them.
 pub fn tokenize_with_comments(source: &str) -> Result<(Vec<Token>, Vec<Comment>), LexError> {
-    let mut lexer = Lexer::new(source);
+    let mut lexer = Lexer::new(std::borrow::Cow::Borrowed(source));
     lexer.run()?;
     Ok((lexer.tokens, lexer.comments))
 }
 
-struct Lexer {
-    chars: Vec<(usize, char)>,
+/// A source lexed only as far as its reader asks (G-ORBITAL-CLI-005: a header read never lexes the body).
+pub(crate) struct LazyTokens {
+    lexer: Lexer<'static>,
+}
+
+impl LazyTokens {
+    pub(crate) fn new(source: &str) -> Self {
+        Self { lexer: Lexer::new(std::borrow::Cow::Owned(source.to_owned())) }
+    }
+
+    /// Lex into `tokens` until it holds `len` tokens or the source has ended (its `Eof` pushed).
+    pub(crate) fn fill(&mut self, tokens: &mut Vec<Token>, len: usize) -> Result<(), LexError> {
+        while tokens.len() < len && !self.lexer.done {
+            self.lexer.step()?;
+            if let Some(last) = self.lexer.tokens.last() {
+                self.lexer.drained_newline = matches!(last.kind, TokenKind::Newline);
+            }
+            tokens.append(&mut self.lexer.tokens);
+        }
+        Ok(())
+    }
+
+    pub(crate) fn done(&self) -> bool {
+        self.lexer.done
+    }
+
+    /// Where lexing stopped, as a zero-length span.
+    pub(crate) fn here(&self) -> Span {
+        Span::new(self.lexer.line, self.lexer.col, 0)
+    }
+}
+
+struct Lexer<'a> {
+    src: std::borrow::Cow<'a, str>,
+    /// Byte offset into `src`.
     pos: usize,
+    /// Characters consumed so far.
+    read: usize,
     line: u32,
     col: u32,
     tokens: Vec<Token>,
     comments: Vec<Comment>,
+    done: bool,
+    /// Whether the last token handed out of `tokens` was a `Newline` (newline runs collapse across a hand-off).
+    drained_newline: bool,
 }
 
-impl Lexer {
-    fn new(src: &str) -> Self {
-        let chars: Vec<(usize, char)> = src.char_indices().collect();
+impl<'a> Lexer<'a> {
+    fn new(src: std::borrow::Cow<'a, str>) -> Self {
         Self {
-            chars,
+            src,
             pos: 0,
+            read: 0,
             line: 1,
             col: 1,
             tokens: Vec::new(),
             comments: Vec::new(),
+            done: false,
+            drained_newline: false,
         }
     }
 
     fn peek(&self) -> Option<char> {
-        self.chars.get(self.pos).map(|&(_, c)| c)
+        self.src[self.pos..].chars().next()
     }
 
     fn peek_n(&self, n: usize) -> Option<char> {
-        self.chars.get(self.pos + n).map(|&(_, c)| c)
+        self.src[self.pos..].chars().nth(n)
     }
 
     fn advance(&mut self) -> Option<char> {
-        let &(_, c) = self.chars.get(self.pos)?;
-        self.pos += 1;
+        let c = self.peek()?;
+        self.pos += c.len_utf8();
+        self.read += 1;
         if c == '\n' {
             self.line += 1;
             self.col = 1;
@@ -150,7 +189,13 @@ impl Lexer {
     }
 
     fn run(&mut self) -> Result<(), LexError> {
-        while let Some(c) = self.peek() {
+        while self.step()? {}
+        Ok(())
+    }
+
+    /// One lexeme: whitespace, a comment or a token; false once the source has ended and `Eof` is pushed.
+    fn step(&mut self) -> Result<bool, LexError> {
+        if let Some(c) = self.peek() {
             let line = self.line;
             let col = self.col;
             match c {
@@ -161,10 +206,11 @@ impl Lexer {
                     self.advance();
                     // Collapse runs of newlines into a single Newline token —
                     // the parser uses newlines as statement separators.
-                    if !matches!(
-                        self.tokens.last().map(|t| &t.kind),
-                        Some(TokenKind::Newline)
-                    ) {
+                    let after_newline = match self.tokens.last() {
+                        Some(t) => matches!(t.kind, TokenKind::Newline),
+                        None => self.drained_newline,
+                    };
+                    if !after_newline {
                         self.tokens.push(Token {
                             kind: TokenKind::Newline,
                             span: Span::new(line, col, 1),
@@ -286,7 +332,7 @@ impl Lexer {
                                 kind: TokenKind::PayloadSigil(name.clone()),
                                 span: Span::new(line, col, name.chars().count() as u16 + 1),
                             });
-                            continue;
+                            return Ok(true);
                         }
                     }
                     self.tokens.push(Token {
@@ -304,7 +350,7 @@ impl Lexer {
                             kind: TokenKind::AtParen,
                             span: Span::new(line, col, 2),
                         });
-                        continue;
+                        return Ok(true);
                     }
                     let name = self.read_dotted_ident();
                     self.tokens.push(Token {
@@ -313,9 +359,9 @@ impl Lexer {
                     });
                 }
                 '"' => {
-                    let start = self.pos;
+                    let start = self.read;
                     let s = self.lex_string()?;
-                    let len = (self.pos - start) as u16;
+                    let len = (self.read - start) as u16;
                     self.tokens.push(Token {
                         kind: TokenKind::String(s),
                         span: Span::new(line, col, len),
@@ -343,7 +389,7 @@ impl Lexer {
                         if d.is_ascii_digit() {
                             self.advance();
                             self.lex_number(line, col, true)?;
-                            continue;
+                            return Ok(true);
                         }
                         self.advance();
                         self.tokens.push(Token {
@@ -467,12 +513,17 @@ impl Lexer {
                     });
                 }
             }
+        } else {
+            if !self.done {
+                self.done = true;
+                self.tokens.push(Token {
+                    kind: TokenKind::Eof,
+                    span: Span::new(self.line, self.col, 0),
+                });
+            }
+            return Ok(false);
         }
-        self.tokens.push(Token {
-            kind: TokenKind::Eof,
-            span: Span::new(self.line, self.col, 0),
-        });
-        Ok(())
+        Ok(true)
     }
 
     fn skip_line_comment(&mut self) {

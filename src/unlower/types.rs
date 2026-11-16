@@ -502,6 +502,23 @@ fn payload_type_without_items(pf: &PayloadField) -> Result<TypeExpr, UnlowerErro
     })
 }
 
+/// A lowered payload's fields with its `payloadSpread` (P-040) restored as the leading `...T` entry.
+pub(super) fn spread_event_fields(spread: Option<&str>, fields: &[PayloadField]) -> Result<Vec<EventField>, UnlowerError> {
+    let own = event_fields(fields)?;
+    let Some(param) = spread.and_then(|s| s.strip_prefix('$')) else {
+        return Ok(own);
+    };
+    let entry = EventField {
+        name: param.to_string(),
+        type_expr: TypeExpr::Named(param.to_string()),
+        required: false,
+        description: None,
+        span: Span::dummy(),
+        spread: true,
+    };
+    Ok(std::iter::once(entry).chain(own).collect())
+}
+
 pub(super) fn event_fields(fields: &[PayloadField]) -> Result<Vec<EventField>, UnlowerError> {
     fields
         .iter()
@@ -512,6 +529,7 @@ pub(super) fn event_fields(fields: &[PayloadField]) -> Result<Vec<EventField>, U
                 required: f.required == Some(true),
                 description: f.description.clone(),
                 span: Span::dummy(),
+                spread: false,
             })
         })
         .collect()

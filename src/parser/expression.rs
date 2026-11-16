@@ -317,10 +317,11 @@ impl Parser {
 
     /// The parameter count of a parenthesized parameter list `(fn (a b) body)`: only identifiers inside the parens,
     /// and a body after them (a lone `(…)` before the closing paren is the body of a lambda with no parameters).
-    fn paren_param_count(&self) -> Option<usize> {
+    fn paren_param_count(&mut self) -> Option<usize> {
         if !matches!(self.peek(), TokenKind::LParen) {
             return None;
         }
+        self.fill_all();
         let mut at = self.pos + 1;
         let mut count = 0usize;
         loop {

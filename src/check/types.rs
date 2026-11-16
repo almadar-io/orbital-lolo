@@ -891,6 +891,14 @@ pub fn check_emit_payload_types(
     trait_type_params: &BTreeSet<String>,
 ) -> Result<(), TypeError> {
     for f in &emit.payload {
+        if f.spread {
+            // `...T` names a struct or a type parameter, which lowering checks (`split_payload_spread`); only an
+            // unknown name is a type error here.
+            if !trait_type_params.contains(&f.name) && ctx.lookup(&f.name).is_none() {
+                resolve_named(&f.name, &[], ctx, f.span)?;
+            }
+            continue;
+        }
         if let TypeExpr::Named(name) = &f.type_expr {
             check_named_payload_ref(
                 name.as_str(),

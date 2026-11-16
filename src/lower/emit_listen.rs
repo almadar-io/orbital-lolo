@@ -65,6 +65,47 @@ pub(crate) fn lower_match_field_type(
     (base, (!conditions.is_empty()).then_some(conditions))
 }
 
+/// A payload's `...T` entry (P-040). A struct alias of the file is replaced in place by its fields; a type parameter of
+/// the trait is taken out as the spread marker `$T`, which the inline phase fills from the call site (or the
+/// parameter's default, which a spread parameter must declare). Returns the fields left to lower and the marker.
+pub(crate) fn split_payload_spread(
+    event: &str,
+    payload: &[EventField],
+    aliases: &BTreeMap<String, TypeAliasResolved>,
+    trait_params: &[(&str, bool)],
+) -> Result<(Vec<EventField>, Option<String>), LowerError> {
+    if payload.iter().filter(|f| f.spread).count() > 1 {
+        return Err(LowerError::PayloadSpreadTwice { event: event.to_string() });
+    }
+    let mut fields = Vec::with_capacity(payload.len());
+    let mut marker = None;
+    for f in payload {
+        if !f.spread {
+            fields.push(f.clone());
+            continue;
+        }
+        if let Some((_, has_default)) = trait_params.iter().find(|(name, _)| *name == f.name) {
+            if !has_default {
+                return Err(LowerError::PayloadSpreadNoDefault { event: event.to_string(), param: f.name.clone() });
+            }
+            marker = Some(format!("${}", f.name));
+            continue;
+        }
+        let Some(TypeAliasResolved::Type(TypeExpr::Object(members), _)) = aliases.get(&f.name) else {
+            return Err(LowerError::PayloadSpreadUnknown { event: event.to_string(), name: f.name.clone() });
+        };
+        fields.extend(members.iter().map(|(name, type_expr, required)| EventField {
+            name: name.clone(),
+            type_expr: type_expr.clone(),
+            required: *required,
+            description: None,
+            span: f.span,
+            spread: false,
+        }));
+    }
+    Ok((fields, marker))
+}
+
 pub(crate) fn lower_emit(
     e: &Emit,
     aliases: &BTreeMap<String, TypeAliasResolved>,
@@ -88,6 +129,7 @@ pub(crate) fn lower_emit(
     // string on this path while the inline restatement correctly produced
     // the "$tpayload" sentinel via `trait_type_params` directly).
     trait_type_params: &[&str],
+    trait_params: &[(&str, bool)],
 ) -> Result<EmitDefinition, LowerError> {
     // Bare-name path: when the entry has no inline payload, look up
     // `type EVENT_NAME = Event { ... }` in the orbital-scope alias registry.
@@ -141,6 +183,7 @@ pub(crate) fn lower_emit(
                 definer_knob: definer_knob_of(&e.event),
                 scope_overridden: None,
                 payload_entity,
+                payload_spread: None,
             });
         }
         // No alias and no inline payload → payloadless emit.
@@ -159,14 +202,16 @@ pub(crate) fn lower_emit(
             definer_knob: definer_knob_of(&e.event),
             scope_overridden: None,
             payload_entity: None,
+            payload_spread: None,
         });
     }
     // Inline payload path: each field whose type_expr is `TypeExpr::Named`
     // is resolved against the type registry and flattened into prefixed
     // `name.subname` entries; primitive fields stay flat.
+    let (payload, payload_spread) = split_payload_spread(&e.event, &e.payload, aliases, trait_params)?;
     let mut fields: Vec<PayloadField> = Vec::new();
     let mut seen: HashSet<String> = HashSet::new();
-    for f in &e.payload {
+    for f in &payload {
         let projected = f.type_expr.payload_projection();
         let ty = f.type_expr.peel();
         if let Some(mut tuple) = tuple_payload_field(ty, aliases, trait_type_params) {
@@ -480,6 +525,7 @@ pub(crate) fn lower_emit(
         // explicitly) — never the bare-entity form, even when an
         // alias-consistency check above found it matches one.
         payload_entity: None,
+        payload_spread,
     })
 }
 
@@ -1789,6 +1835,7 @@ mod recursive_struct_payload_tests {
                 required: true,
                 description: None,
                 span: Span::dummy(),
+                spread: false,
             }],
             description: None,
             synonyms: None,
@@ -1800,7 +1847,7 @@ mod recursive_struct_payload_tests {
         // depth-2 `ports` field false-mismatched even though both sides
         // name the same real type. After the fix: the honest restatement
         // lowers cleanly.
-        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[]).expect(
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[], &[]).expect(
             "an honest inline restatement of the alias must lower, not PayloadAliasMismatch",
         );
         let payload = def.payload_schema.expect("payload present");
@@ -1964,6 +2011,7 @@ mod recursive_struct_payload_tests {
                 required: true,
                 description: None,
                 span: Span::dummy(),
+                spread: false,
             }],
             description: None,
             synonyms: None,
@@ -1971,7 +2019,7 @@ mod recursive_struct_payload_tests {
             span: Span::dummy(),
         };
 
-        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[])
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[], &[])
             .expect("an honest restatement of a direct self-referential struct member must lower, not PayloadAliasMismatch");
         let data = def
             .payload_schema
@@ -2017,6 +2065,7 @@ mod recursive_struct_payload_tests {
                 required: true,
                 description: None,
                 span: Span::dummy(),
+                spread: false,
             }],
             description: None,
             synonyms: None,
@@ -2024,7 +2073,7 @@ mod recursive_struct_payload_tests {
             span: Span::dummy(),
         };
 
-        let result = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[]);
+        let result = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[], &[]);
         assert!(
             matches!(result, Err(LowerError::PayloadAliasMismatch { .. })),
             "a genuinely different nested field type must still be rejected, got {result:?}"
@@ -2082,6 +2131,7 @@ mod recursive_struct_payload_tests {
                 required: true,
                 description: None,
                 span: Span::dummy(),
+                spread: false,
             }],
             description: None,
             synonyms: None,
@@ -2099,6 +2149,7 @@ mod recursive_struct_payload_tests {
             &entities_by_name,
             &event_aliases,
             &trait_type_params,
+            &[],
         )
         .expect("an honest restatement of a trait-type-param-shaped struct member must lower, not PayloadAliasMismatch");
         let job = def
@@ -2166,6 +2217,7 @@ mod entity_payload_marker_tests {
                     required: true,
                 description: None,
                     span: Span::dummy(),
+                    spread: false,
                 },
                 EventField {
                     name: "row".to_string(),
@@ -2173,6 +2225,7 @@ mod entity_payload_marker_tests {
                     required: false,
                 description: None,
                     span: Span::dummy(),
+                    spread: false,
                 },
             ],
             description: None,
@@ -2180,7 +2233,7 @@ mod entity_payload_marker_tests {
             tier: None,
             span: Span::dummy(),
         };
-        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[])
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[], &[])
             .expect("DELETE lowers");
         let payload = def.payload_schema.expect("payload present");
         let id = payload.iter().find(|f| f.name == "id").expect("id field");
@@ -2217,13 +2270,14 @@ mod entity_payload_marker_tests {
                 required: true,
                 description: None,
                 span: Span::dummy(),
+                spread: false,
             }],
             description: None,
             synonyms: None,
             tier: None,
             span: Span::dummy(),
         };
-        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[])
+        let def = lower_emit(&emit, &aliases, &entities_by_name, &event_aliases, &[], &[])
             .expect("BULK_DELETE lowers");
         let payload = def.payload_schema.expect("payload present");
         let rows = payload
@@ -2270,6 +2324,7 @@ mod entity_payload_marker_tests {
                 required: true,
                 description: None,
                 span: Span::dummy(),
+                spread: false,
             }],
             description: None,
             synonyms: None,
@@ -2283,7 +2338,7 @@ mod entity_payload_marker_tests {
         let entities_by_name = note_entities();
         let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
         let event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
-        let def = lower_emit(&emit_with("credential", TypeExpr::Named("Verified".to_string())), &aliases, &entities_by_name, &event_aliases, &[])
+        let def = lower_emit(&emit_with("credential", TypeExpr::Named("Verified".to_string())), &aliases, &entities_by_name, &event_aliases, &[], &[])
             .expect("a sealed type is a known payload type");
         let field = &def.payload_schema.expect("payload present")[0];
         assert_eq!(field.field_type, "Verified");
@@ -2295,7 +2350,7 @@ mod entity_payload_marker_tests {
         let entities_by_name = note_entities();
         let aliases: BTreeMap<String, TypeAliasResolved> = BTreeMap::new();
         let event_aliases: BTreeMap<String, EventTypeResolved> = BTreeMap::new();
-        let lower = |e: &Emit| lower_emit(e, &aliases, &entities_by_name, &event_aliases, &[]);
+        let lower = |e: &Emit| lower_emit(e, &aliases, &entities_by_name, &event_aliases, &[], &[]);
 
         let def = lower(&emit_with("viewer", TypeExpr::Named("Viewer".to_string())))
             .expect("a language program type is a known payload type");
