@@ -2,6 +2,7 @@
 // Canvas lighting's `position : [number, number, number]` needed it: as `[number]` the
 // compiled config type was `number[]`, not the component's tuple.
 
+use orbital_core_base::json_value::{from_json_str, from_json_value};
 use orbital_lolo::parse_and_lower_str;
 use serde_json::Value;
 
@@ -94,7 +95,7 @@ fn parse_with_shape(
     shape: &orbital_core_base::ir::types::DeclaredShape,
     value: Value,
 ) -> orbital_core_base::value::Value {
-    let expr = serde_json::from_value(serde_json::json!([
+    let expr = from_json_value(&serde_json::json!([
         "json/parse",
         value.to_string(),
         serde_json::to_string(shape).unwrap()
@@ -174,7 +175,7 @@ fn tuple_record_paths_are_inferred_without_accepting_missing_fields() {
         let mut bad = serde_json::to_string(&schema).unwrap();
         bad = bad.replace("1.repo", "1.missing");
         let verdict = orbital_compiler::validate_comprehensive_without_services(
-            &serde_json::from_str(&bad).unwrap(),
+            &from_json_str(&bad).unwrap(),
         );
         assert!(
             verdict.all_issues().any(|i| i.code

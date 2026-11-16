@@ -1,3 +1,4 @@
+use orbital_core_base::json_value::{from_json_value};
 use super::*;
 use std::sync::Arc;
 
@@ -970,7 +971,7 @@ pub(crate) fn lower_trait(
     // A bounded state's timeout tick emits TIMEOUT to its own trait (EXEC-TICK-8): declared here as internal.
     if t.states.iter().any(|state| state.time_bound.is_some()) && !lowered_emits.iter().any(|e| e.event == "TIMEOUT") {
         lowered_emits.push(
-            serde_json::from_value(serde_json::json!({
+            from_json_value(&serde_json::json!({
                 "event": "TIMEOUT",
                 "tier": "internal",
                 "description": "A bounded state's time ran out (`state X for Ns`).",
@@ -1034,7 +1035,7 @@ pub(crate) fn lower_trait(
             name: format!("{}StateTimeout", state.name),
             interval: StringOrNumber::Number(STATE_BOUND_CHECK_MS as f64),
             guard: None,
-            effects: vec![serde_json::from_value(serde_json::json!(["emit", "TIMEOUT"])).expect("an emit form")],
+            effects: vec![from_json_value(&serde_json::json!(["emit", "TIMEOUT"])).expect("an emit form")],
             applies_to: Some(vec![state.name.clone()]),
             description: Some(format!("`state {} for {ms}ms`: TIMEOUT once the row has been in it that long", state.name)),
             // Where the trait runs: a server trait's timeout runs on the server, a `[client]`/`[optimistic]` one in the client.

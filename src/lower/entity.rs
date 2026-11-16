@@ -792,6 +792,7 @@ pub(crate) fn primitive_to_field_type(name: &str) -> FieldType {
 
 #[cfg(test)]
 mod tests {
+    use orbital_core_base::json_value::{from_json_value};
     use super::*;
 
     #[test]
@@ -1006,7 +1007,7 @@ mod tests {
         )
         .expect("Page");
         let mut page: FieldDefinition =
-            serde_json::from_value(serde_json::json!({ "type": "object" })).expect("object");
+            from_json_value(&serde_json::json!({ "type": "object" })).expect("object");
         page.properties = props.map(Into::into);
         let items = &page.properties.as_ref().expect("members")["items"];
         assert_eq!(
@@ -1025,7 +1026,7 @@ mod tests {
         )
         .expect("Order");
         let mut order: FieldDefinition =
-            serde_json::from_value(serde_json::json!({ "type": "object" })).expect("object");
+            from_json_value(&serde_json::json!({ "type": "object" })).expect("object");
         order.field_type = oft;
         order.relation = orel;
         page.substitute_type_vars(&orbital_core_base::collections::IndexMap::from([("t".to_string(), order)]));

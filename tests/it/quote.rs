@@ -3,6 +3,7 @@
 //! inliner or binding interpolator ever sees inside it, and the formatter
 //! prints it back as `(quote x)`.
 
+use orbital_core_base::json_value::{from_json_str};
 use orbital_core_base::schema::quote::{decode_quote_body, encode_quote_body, quote_body_of};
 use orbital_core_base::schema::SExpression;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
@@ -59,7 +60,7 @@ fn lowered(src: &str) -> Value {
 }
 
 fn sexpr(json: &str) -> SExpression {
-    serde_json::from_str(json).unwrap()
+    from_json_str(json).unwrap()
 }
 
 #[test]

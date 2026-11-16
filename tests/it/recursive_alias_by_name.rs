@@ -3,6 +3,7 @@
 //! to the alias, never a shapeless carrier. The std draw-item vocabulary (`DrawGroupItem.items : [DrawItem]`
 //! where `DrawItem` includes `DrawGroupItem`) is the case this pins.
 
+use orbital_core_base::json_value::{from_json_value};
 use orbital_core_base::schema::FieldDefinition;
 use orbital_lolo::parse_and_lower_str;
 use serde_json::Value;
@@ -42,7 +43,7 @@ fn field_at(value: &Value, pointer: &str) -> FieldDefinition {
     let found = value
         .pointer(pointer)
         .unwrap_or_else(|| panic!("no {pointer} in {value}"));
-    serde_json::from_value(found.clone()).unwrap_or_else(|e| panic!("{pointer}: {e}"))
+    from_json_value(&found).unwrap_or_else(|e| panic!("{pointer}: {e}"))
 }
 
 #[test]

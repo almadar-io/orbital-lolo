@@ -3,6 +3,7 @@
 //! keeps the by-name form `{type: union, values: [Shape]}` the kernel reads child positions from
 //! (`orbital_core_eval` `operators::tree`). The orbital `types` section cannot serve: it expands one level.
 
+use orbital_core_base::json_value::{from_json_value};
 use super::TypeAliasResolved;
 use crate::ast::{Span, TypeExpr};
 use crate::error::{LowerError, TypeError};
@@ -284,7 +285,7 @@ fn bake(
                             continue;
                         };
                         if parts.len() == 3 && parts[2].is_object() {
-                            let ty = serde_json::from_value::<TypeExpr>(parts[2].clone()).map_err(
+                            let ty = from_json_value::<TypeExpr>(&parts[2]).map_err(
                                 |error| {
                                     LowerError::Internal(format!(
                                         "invalid source type descriptor: {error}"
@@ -354,18 +355,19 @@ pub(crate) fn bake_tree_fold_definitions(
         let params = names.iter().map(String::as_str).collect::<Vec<_>>();
         let mut tree = serde_json::to_value(&*trait_def).expect("a trait serializes to JSON");
         if bake(&mut tree, aliases, entity_names, span, &params)? {
-            *trait_def = serde_json::from_value(tree).expect("a baked trait reads back");
+            *trait_def = from_json_value(&tree).expect("a baked trait reads back");
         }
     }
     let mut tree = serde_json::to_value(&*orbital).expect("an orbital serializes to JSON");
     if bake(&mut tree, aliases, entity_names, span, &[])? {
-        *orbital = serde_json::from_value(tree).expect("a baked orbital reads back");
+        *orbital = from_json_value(&tree).expect("a baked orbital reads back");
     }
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
+    use orbital_core_base::json_value::{from_json_str};
     use crate::error::{LoloError, LowerError, TypeError};
     use orbital_core_base::schema::{FieldDefinition, FieldType};
     use serde_json::Value as J;
@@ -390,7 +392,7 @@ mod tests {
         let call = fold_call(source);
         let items = call.as_array().expect("the fold is a call");
         assert_eq!(items.len(), 5, "the definition is appended: {call}");
-        serde_json::from_str(items[4].as_str().expect("the definition is JSON text")).unwrap()
+        from_json_str(items[4].as_str().expect("the definition is JSON text")).unwrap()
     }
 
     #[test]
@@ -608,7 +610,7 @@ orbital O {
         let effects =
             &lowered["orbitals"][0]["traits"][0]["stateMachine"]["transitions"][0]["effects"];
         let call = |i: usize| {
-            serde_json::from_value(effects[i][2].clone()).expect("the fold is an S-expression")
+            orbital_core_base::json_value::from_json_value(&effects[i][2]).expect("the fold is an S-expression")
         };
         (call(0), call(1))
     }
@@ -628,7 +630,7 @@ orbital O {
     }
 
     fn value(json: J) -> orbital_core_base::value::Value {
-        serde_json::from_value(json).unwrap()
+        orbital_core_base::json_value::from_json_value(&json).unwrap()
     }
 
     #[test]
@@ -672,7 +674,7 @@ orbital O {
         ];
         for case in cases {
             let rust: orbital_core_base::schema::sexpr::SExpression =
-                serde_json::from_value(case.clone()).unwrap();
+                orbital_core_base::json_value::from_json_value(&case).unwrap();
             let verdict =
                 run_fold(&dead, value(case.clone())).unwrap_or_else(|e| panic!("{case}: {e}"));
             let orbital_core_base::value::Value::Object(verdict) = verdict else {

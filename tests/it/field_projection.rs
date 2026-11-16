@@ -1,6 +1,7 @@
 //! `T.f` in any type position is `T`'s declared type of field `f`, lowered as if written there,
 //! with its provenance kept (`projectedFrom`) so a value can be drawn from `T`'s own `f`.
 
+use orbital_core_base::json_value::{from_json_value};
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use orbital_core_base::schema::TraitReference;
 use orbital_core_base::schema::types::{EntityRef, FieldProjection, FieldType, OrbitalSchema, PayloadField, TraitDefinition};
@@ -158,12 +159,12 @@ fn the_formatter_round_trips_a_projection() {
 
 #[test]
 fn named_source_type_reference_is_distinct_from_an_actual_field_projection() {
-    let named: FieldProjection = serde_json::from_value(serde_json::json!({"type":"Tag"})).unwrap();
+    let named: FieldProjection = from_json_value(&serde_json::json!({"type":"Tag"})).unwrap();
     assert_eq!(named.field, None);
     assert_eq!(serde_json::to_value(&named).unwrap(), serde_json::json!({"type":"Tag"}));
-    let field: FieldProjection = serde_json::from_value(serde_json::json!({"type":"Tag","field":"id"})).unwrap();
+    let field: FieldProjection = from_json_value(&serde_json::json!({"type":"Tag","field":"id"})).unwrap();
     assert_eq!(field.field.as_deref(), Some("id"));
     for malformed in [serde_json::json!({"type":"Tag","field":""}), serde_json::json!({"type":"Tag","field":null})] {
-        assert!(serde_json::from_value::<FieldProjection>(malformed).is_err());
+        assert!(from_json_value::<FieldProjection>(&malformed).is_err());
     }
 }

@@ -4,6 +4,7 @@
 //! identical to a hand-authored `.orb`. See `Lolo_Language_Spec_v3.md`
 //! "Lowering to .orb" table for the rules.
 
+use orbital_core_base::json_value::{from_json_value};
 use crate::ast::*;
 use std::sync::Arc;
 use crate::error::{Located, LowerError};
@@ -458,7 +459,7 @@ fn qualify_message_keys(mut schema: OrbitalSchema) -> Result<OrbitalSchema, Lowe
     {
         return Err(LowerError::MessageKeyInvalid { path, key });
     }
-    serde_json::from_value(value).map_err(|e| LowerError::MessageKeys {
+    from_json_value(&value).map_err(|e| LowerError::MessageKeys {
         detail: e.to_string(),
     })
 }
@@ -506,7 +507,7 @@ fn typed_theme_axis<T: serde::de::DeserializeOwned>(entries: &[(String, String)]
         .iter()
         .map(|(k, v)| (k.clone(), serde_json::Value::String(v.clone())))
         .collect();
-    serde_json::from_value(serde_json::Value::Object(obj)).ok()
+    from_json_value(&serde_json::Value::Object(obj)).ok()
 }
 
 /// The `.lolo` `motion { … }` category carries only motion-shape keys; they

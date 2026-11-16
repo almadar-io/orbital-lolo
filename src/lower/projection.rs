@@ -1,6 +1,7 @@
 //! `T.f` resolution: every `TypeExpr::FieldOf` in the program gets `T`'s declared type of
 //! field `f` (an entity's field or a struct type's member), before any lowering reads a type.
 
+use orbital_core_base::json_value::{from_json_value};
 use crate::ast::{
     ConfigField, Emit, Entity, EntityField, EventField, ExpectsKind, Listen, Orbital, Program,
     Trait, TypeAlias, TypeBody, TypeExpr,
@@ -195,9 +196,7 @@ fn visit_expression(
                     let SExpression::Array(parts) = binding else {
                         unreachable!()
                     };
-                    parts[2] = serde_json::from_value(
-                        serde_json::to_value(ty).expect("type expression serializes"),
-                    )
+                    parts[2] = from_json_value(&serde_json::to_value(ty).expect("type expression serializes"))
                     .expect("type expression is an s-expression");
                 }
             }

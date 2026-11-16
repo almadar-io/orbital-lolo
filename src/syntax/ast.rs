@@ -4,6 +4,7 @@
 //! mirrors the v3 spec in `docs/Lolo_Language_Spec_v3.md` Section "Top-level
 //! structure" and the EBNF grammar at the bottom of that document.
 
+use orbital_core_base::json_value::{from_json_value};
 use orbital_core_base::schema::SExpression;
 use serde::{Deserialize, Serialize};
 
@@ -1493,5 +1494,5 @@ pub(crate) fn binding_annotation_type(binding: &SExpression) -> Option<TypeExpr>
     let [_, _, declaration @ SExpression::Object(_)] = parts.as_slice() else {
         return None;
     };
-    serde_json::from_value(serde_json::to_value(declaration).ok()?).ok()
+    from_json_value(&serde_json::to_value(declaration).ok()?).ok()
 }

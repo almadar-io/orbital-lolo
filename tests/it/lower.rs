@@ -6,6 +6,7 @@
 //! key ordering (because `HashMap` is unordered), and compares against the
 //! golden after the same normalization.
 
+use orbital_core_base::json_value::{from_json_str, from_json_value};
 use orbital_lolo::parse_and_lower_str;
 use serde_json::Value;
 use std::fs;
@@ -93,7 +94,7 @@ fn assert_lowering_matches(name: &str) {
     }
 
     let golden = fs::read_to_string(&golden_path).expect("read golden");
-    let expected: Value = serde_json::from_str(&golden).expect("parse golden");
+    let expected: Value = from_json_str(&golden).expect("parse golden");
     let expected_n = canonicalize(strip_nulls(expected));
 
     if actual_n != expected_n {
@@ -1812,7 +1813,7 @@ type RowWriteBatch = { ops : [FieldValue]!, onFailure : RowWriteFailureMode! }
     }
     #[test]
     fn native_record_contracts_legacy_print_spells_nullable_fields_without_losing_presence() {
-        let legacy: orbital_core_base::schema::OrbitalSchema = serde_json::from_value(json!({
+        let legacy: orbital_core_base::schema::OrbitalSchema = orbital_core_base::json_value::from_json_value(&json!({
             "name":"Legacy", "orbitals":[{"name":"Legacy", "entity":{"name":"Row", "fields":[
                 {"name":"required", "type":"string", "required":true},
                 {"name":"optional", "type":"string", "required":false}

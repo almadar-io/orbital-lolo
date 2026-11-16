@@ -12,6 +12,7 @@ pub fn canonical_orb_json(schema: &OrbitalSchema) -> Result<String, serde_json::
 
 #[cfg(test)]
 mod tests {
+    use orbital_core_base::json_value::{from_json_str};
     use super::*;
 
     #[test]
@@ -21,7 +22,7 @@ mod tests {
                 .unwrap();
         let text = canonical_orb_json(&schema).unwrap();
         assert_eq!(text, canonical_orb_json(&schema).unwrap());
-        let value: serde_json::Value = serde_json::from_str(&text).unwrap();
+        let value: serde_json::Value = from_json_str(&text).unwrap();
         let keys: Vec<&String> = value.as_object().unwrap().keys().collect();
         let mut sorted = keys.clone();
         sorted.sort();

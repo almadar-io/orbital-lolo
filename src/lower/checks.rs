@@ -2700,6 +2700,7 @@ mod config_type_compatible_tests {
 
 #[cfg(test)]
 mod button_transition_embed_tests {
+    use orbital_core_base::json_value::{from_json_value};
     use super::*;
 
     fn trait_json(
@@ -2737,7 +2738,7 @@ mod button_transition_embed_tests {
     }
 
     fn check(traits: Vec<serde_json::Value>) -> Result<(), LowerError> {
-        let orbital: CoreOrbital = serde_json::from_value(serde_json::json!({
+        let orbital: CoreOrbital = from_json_value(&serde_json::json!({
             "name": "O",
             "entity": { "name": "Row", "persistence": "persistent",
                 "fields": [{ "name": "id", "type": "string", "required": true }] },

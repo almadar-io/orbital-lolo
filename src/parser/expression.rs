@@ -1,6 +1,7 @@
 //! S-expression / object-literal / array-literal / duration parsing for the
 //! .lolo parser.
 
+use orbital_core_base::json_value::{from_json_value};
 use super::*;
 
 impl Parser {
@@ -480,9 +481,7 @@ impl Parser {
             let mut binding = vec![name, value];
             if let Some(ty) = annotation {
                 binding.push(
-                    serde_json::from_value(
-                        serde_json::to_value(ty).expect("a type expression serializes"),
-                    )
+                    from_json_value(&serde_json::to_value(ty).expect("a type expression serializes"))
                     .expect("a serialized type expression is an s-expression"),
                 );
             }

@@ -1,11 +1,12 @@
 //! `print_trait`: one trait as orb prints it, with the lines each of its IR transitions occupies,
 //! so a page can show the code of the transition a running machine just took.
 
+use orbital_core_base::json_value::{from_json_value};
 use orbital_core_base::schema::TraitDefinition;
 use orbital_lolo::unlower::print_trait;
 
 fn door() -> TraitDefinition {
-    serde_json::from_value(serde_json::json!({
+    from_json_value(&serde_json::json!({
         "name": "DoorLife",
         "linkedEntity": "Door",
         "stateMachine": {

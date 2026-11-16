@@ -8,6 +8,7 @@ mod theme;
 mod trait_;
 mod types;
 
+use orbital_core_base::json_value::{from_json_str, from_json_value};
 use crate::ast::{AppHeader, Program, Span};
 use orbital_core_base::schema::OrbitalSchema;
 
@@ -117,7 +118,7 @@ fn baked_fold_definitions(
             if let [op, _, _, _, serde_json::Value::String(text)] = items.as_slice() {
                 if op.as_str() == Some("tree/fold") {
                     out.push(
-                        serde_json::from_str(text).map_err(|e| UnlowerError::new(e.to_string()))?,
+                        from_json_str(text).map_err(|e| UnlowerError::new(e.to_string()))?,
                     );
                 }
             }
@@ -147,7 +148,7 @@ fn without_namespace(schema: &OrbitalSchema) -> Result<OrbitalSchema, UnlowerErr
     strip_namespace(&mut value, &prefix);
     strip_baked_list_paths(&mut value);
     restore_local_annotations(&mut value)?;
-    serde_json::from_value(value).map_err(|e| UnlowerError::new(e.to_string()))
+    from_json_value(&value).map_err(|e| UnlowerError::new(e.to_string()))
 }
 
 /// Rebuild the surface AST for `schema`.

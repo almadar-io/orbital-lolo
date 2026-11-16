@@ -1,5 +1,6 @@
 //! `random-bytes`, `credential-status` and `credential-forget` lower to the contract form and survive the formatter.
 
+use orbital_core_base::json_value::{from_json_value};
 use orbital_core_base::schema::TraitReference;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
 use serde_json::{json, Value};
@@ -243,7 +244,7 @@ mod supervisor {
             ("periodMs", json!(60000)),
         ] {
             knobs.get_mut(knob).unwrap_or_else(|| panic!("config knob {knob}")).default =
-                Some(serde_json::from_value::<SExpression>(value).expect("knob value"));
+                Some(orbital_core_base::json_value::from_json_value::<SExpression>(&value).expect("knob value"));
         }
         schema
     }
@@ -337,7 +338,7 @@ mod supervisor {
     }
 
     fn send(rig: &Rig, event: &str, payload: Json) {
-        let payload: Value = serde_json::from_value(payload).expect("payload");
+        let payload: Value = orbital_core_base::json_value::from_json_value(&payload).expect("payload");
         let progress = rig.kernel.start_dispatch("Supervisor", None, event, payload, None, None).expect(event);
         let outcomes = rig.sink.drive(progress).expect("the request drives to its end");
         lock(&rig.events).extend(emits(&outcomes));

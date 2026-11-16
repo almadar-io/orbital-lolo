@@ -1,5 +1,6 @@
 //! Byte spans of the top-level nodes of `.orb` JSON text, and Source Map v3 text pointing generated code at one.
 
+use orbital_core_base::json_value::{from_json_str};
 use std::collections::BTreeMap;
 use std::ops::Range;
 
@@ -69,7 +70,7 @@ impl OrbSpans {
         let mut name = None;
         each_member(source, range.clone(), &mut |key, value| {
             if key == id {
-                name = serde_json::from_str::<String>(&source[value]).ok();
+                name = from_json_str::<String>(&source[value]).ok();
             }
         });
         let Some(name) = name else { return };
@@ -150,7 +151,7 @@ fn each_member(source: &str, object: Range<usize>, f: &mut dyn FnMut(String, Ran
         let Some(key_end) = string_end(b, i) else {
             return;
         };
-        let Ok(key) = serde_json::from_str::<String>(&source[i..key_end]) else {
+        let Ok(key) = from_json_str::<String>(&source[i..key_end]) else {
             return;
         };
         i = skip_ws(b, key_end);
@@ -322,7 +323,7 @@ mod tests {
     #[test]
     fn source_map_points_every_generated_line_at_the_node_start() {
         let map: serde_json::Value =
-            serde_json::from_str(&source_map_v3("a\nb\nc\n", "x\ny\n  z", "p.orb", &(6..7)))
+            from_json_str(&source_map_v3("a\nb\nc\n", "x\ny\n  z", "p.orb", &(6..7)))
                 .unwrap();
         assert_eq!(map["version"], 3);
         assert_eq!(map["sources"][0], "p.orb");
@@ -332,7 +333,7 @@ mod tests {
             "line 2 col 2 once, then zero deltas"
         );
         let one: serde_json::Value =
-            serde_json::from_str(&source_map_v3("", "x", "p.orb", &(0..1))).unwrap();
+            from_json_str(&source_map_v3("", "x", "p.orb", &(0..1))).unwrap();
         assert_eq!(
             one["mappings"], "AAAA",
             "control: empty output still maps one line"

@@ -14,6 +14,7 @@
 //! `SExpression::String`, so an `.orb`-level check could not distinguish
 //! `(fn hero … hero)` from the legitimate literal `{ unitId: "hero" }`.
 
+use orbital_core_base::json_value::{from_json_value};
 use orbital_lolo::{format_program, parse_str};
 
 fn program(effect: &str) -> String {
@@ -232,7 +233,7 @@ fn lowered_set_value(value: &str) -> serde_json::Value {
 #[test]
 fn a_bracket_headed_by_an_operator_word_is_data() {
     let value = lowered_set_value(r#"(array/includes ["path", "size"] "size")"#);
-    let sexpr: orbital_core_base::schema::SExpression = serde_json::from_value(value.clone()).unwrap();
+    let sexpr: orbital_core_base::schema::SExpression = from_json_value(&value).unwrap();
     let got = orbital_core_eval::evaluator::operators::eval_expr(&sexpr, &orbital_core_eval::evaluator::BindingContext::new());
     assert!(matches!(got, Ok(orbital_core_base::value::Value::Bool(true))), "lowered: {value}, got: {got:?}");
 }

@@ -3,6 +3,7 @@
 //! argument, so binding interpolation and renames still reach the holes. A
 //! stray `(unquote e)` is a parse error; the formatter prints the template back.
 
+use orbital_core_base::json_value::{from_json_str, from_json_value};
 use orbital_core_base::schema::quote::{decode_quote_body, quasiquote_of};
 use orbital_core_base::schema::SExpression;
 use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
@@ -51,7 +52,7 @@ fn quasiquote_calls(v: &SExpression, out: &mut Vec<SExpression>) {
 
 fn lowered_calls(src: &str) -> Vec<SExpression> {
     let schema = parse_and_lower_str(src).unwrap_or_else(|e| panic!("lowering failed: {e}"));
-    let json: SExpression = serde_json::from_value(serde_json::to_value(&schema).unwrap()).unwrap();
+    let json: SExpression = from_json_value(&serde_json::to_value(&schema).unwrap()).unwrap();
     let mut out = Vec::new();
     quasiquote_calls(&json, &mut out);
     out
@@ -64,7 +65,7 @@ fn the_template_is_encoded_and_the_hole_stays_live() {
     let (body, holes) = quasiquote_of(&calls[0]).unwrap();
     assert!(!body.contains('@'), "{body}");
     assert_eq!(holes, &[SExpression::String("@entity.widget".into())]);
-    let template: SExpression = serde_json::from_str(
+    let template: SExpression = from_json_str(
         r#"["orbital", "Page", {"pages": {"/dash": ["unquote", 0]}}]"#,
     )
     .unwrap();
