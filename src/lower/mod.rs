@@ -963,7 +963,7 @@ fn vocabulary_entry(values: Vec<String>) -> PayloadField {
     }
 }
 
-fn orbital_types(
+pub(super) fn orbital_types(
     aliases: &BTreeMap<String, TypeAliasResolved>,
     shapes: &BTreeMap<String, Vec<(String, TypeExpr, bool)>>,
 ) -> Option<BTreeMap<String, Vec<PayloadField>>> {

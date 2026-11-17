@@ -12,8 +12,8 @@
 //! those are locally owned, never prefixed, and lower now.
 
 use super::*;
-use orbital_core_base::collections::IndexMap;
 use crate::error::Located;
+use orbital_core_base::collections::IndexMap;
 
 /// `Vec<(String, String, Span)>` → `Option<IndexMap<String, String>>`, `None`
 /// when empty — the same "absent beats empty" convention every other
@@ -210,8 +210,9 @@ pub(crate) fn lower_orbital_reference(
             let mut map = IndexMap::new();
             for t in &orb.trait_overrides {
                 if let Some(word) = t.retired_words.first() {
-                    return Err(crate::error::trait_header_word_error(&word.word)
-                        .located_exact(word.span));
+                    return Err(
+                        crate::error::trait_header_word_error(&word.word).located_exact(word.span)
+                    );
                 }
                 let ref_data = TraitRefData {
                     reference: t.trait_name.clone(),
@@ -361,6 +362,8 @@ pub(crate) fn lower_orbital_reference(
         domain_context: None,
         os_grants: (!orb.os_grants.is_empty()).then(|| orb.os_grants.clone()),
         design: None,
-        types: None,
+        // Sibling traits in this body read the file's aliases; carried so a further import of this orbital
+        // still knows them, as an inline orbital's table does.
+        types: super::orbital_types(aliases, entities),
     })
 }

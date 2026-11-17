@@ -272,3 +272,25 @@ fn traits_block_dispatch_refuses_two_modes_and_retired_words() {
 fn control_an_import_without_traits_lowers_none() {
     assert!(reference(&import("  entity Note\n")).traits.is_none());
 }
+
+#[test]
+fn a_reference_orbital_carries_the_file_struct_aliases_its_sibling_traits_read() {
+    let source = format!(
+        "{HEAD}type RateRow = {{ id : string!, rate : number! }}\n\norbital NoteImport = Notes.orbitals.NoteOrbital {{\n}}\n"
+    );
+    let orbital = parse_and_lower_str(&source).expect("lower").orbitals.remove(0);
+    let types = orbital.types.expect("the reference orbital declares the file's struct aliases");
+    let fields: Vec<String> = types
+        .get("RateRow")
+        .expect("RateRow is carried")
+        .iter()
+        .map(|f| f.name.clone())
+        .collect();
+    assert_eq!(fields, vec!["id".to_string(), "rate".to_string()]);
+}
+
+#[test]
+fn control_a_reference_orbital_in_a_file_without_aliases_declares_no_types() {
+    let orbital = parse_and_lower_str(&import("")).expect("lower").orbitals.remove(0);
+    assert!(orbital.types.as_ref().is_none_or(|t| t.is_empty()), "no aliases, no types: {:?}", orbital.types);
+}
