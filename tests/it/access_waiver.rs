@@ -154,8 +154,9 @@ fn create_server_needs_a_reason_and_collides_with_another_create_directive() {
     };
     assert!(message("    @create server").contains("ELOLO_ACCESS_WAIVER_NEEDS_REASON"));
     assert!(message("    @create server \"\"").contains("ELOLO_ACCESS_WAIVER_NEEDS_REASON"));
-    assert!(message("    @create server \"r\"\n    @create (= 1 1)").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
     assert!(message("    @create none \"x\"\n    @create server \"r\"").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
+    assert!(message("    @create server \"r\"\n    @create server \"s\"").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
+    assert!(message("    @create (= 1 1)\n    @create (= 2 2)").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
     assert!(message("    @create server \"r\"\n    @create none \"x\"").contains("ELOLO_DUPLICATE_ACCESS_DIRECTIVE"));
     parse_and_lower_str(&entity_source("    @create server \"r\"\n    @read (= @user.role \"agent\")"))
         .expect("control: another operation's directive stands beside it");
@@ -168,4 +169,21 @@ fn control_read_server_is_unchanged_by_the_create_form() {
     let waivers = ticket_reply(&schema).access_waivers.as_ref().expect("recorded");
     assert_eq!(waivers.read_server.as_deref(), Some("looked up before any viewer exists"));
     assert_eq!(waivers.create_server, None);
+}
+
+#[test]
+fn create_server_stands_beside_a_create_predicate_that_governs_viewer_steps() {
+    for directives in [
+        "    @create server \"the sign-in binder writes a first row\"\n    @create (= @user.role \"owner\")",
+        "    @create (= @user.role \"owner\")\n    @create server \"the sign-in binder writes a first row\"",
+    ] {
+        let schema = parse_and_lower_str(&entity_source(directives)).expect("lowers");
+        let reply = ticket_reply(&schema);
+        assert!(reply.create_policy.is_some(), "{directives:?}");
+        assert_eq!(
+            reply.access_waivers.as_ref().and_then(|w| w.create_server.as_deref()),
+            Some("the sign-in binder writes a first row"),
+            "{directives:?}"
+        );
+    }
 }

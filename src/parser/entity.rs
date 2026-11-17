@@ -278,14 +278,22 @@ impl Parser {
     ) -> Result<(), ParseError> {
         let directive_span = self.peek_span();
         self.advance();
-        let duplicate = |access: &ExpectedAccess| {
-            access.access_waivers.iter().any(|(op, _)| op == name || ((name == "read" || name == "create") && *op == format!("{name} server")))
-                || match name {
+        // `@create server` names who else may create (a program-session step); a `@create` predicate beside it
+        // still governs every viewer step, so those two never collide.
+        let duplicate_of = |access: &ExpectedAccess, adding_server: bool, adding_predicate: bool| {
+            let server_pairs_with_predicate = name == "create" && (adding_server || adding_predicate);
+            access.access_waivers.iter().any(|(op, _)| {
+                op == name
+                    || ((name == "read" || name == "create")
+                        && *op == format!("{name} server")
+                        && !(server_pairs_with_predicate && adding_predicate))
+            }) || (!(server_pairs_with_predicate && adding_server)
+                && match name {
                     "read" => access.read_policy.is_some(),
                     "create" => access.create_policy.is_some(),
                     "update" => access.update_policy.is_some(),
                     _ => access.delete_policy.is_some(),
-                }
+                })
         };
         let dup_error = || ParseError::InvalidType {
             span: directive_span,
@@ -312,7 +320,7 @@ impl Parser {
                 }
             };
             self.expect_newline_or_eof()?;
-            if duplicate(access) {
+            if duplicate_of(access, true, false) {
                 return Err(dup_error());
             }
             access.access_waivers.push((format!("{name} server"), reason));
@@ -343,7 +351,7 @@ impl Parser {
                 });
             }
             self.expect_newline_or_eof()?;
-            if duplicate(access) {
+            if duplicate_of(access, false, false) {
                 return Err(dup_error());
             }
             access.access_waivers.push((name.to_string(), reason));
@@ -351,7 +359,7 @@ impl Parser {
         }
         let expr = self.parse_boolean_slot("access policy")?;
         self.expect_newline_or_eof()?;
-        if duplicate(access) {
+        if duplicate_of(access, false, true) {
             return Err(dup_error());
         }
         let slot = match name {
