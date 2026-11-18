@@ -132,6 +132,7 @@ pub(crate) fn lower_page(p: &Page) -> Result<PageRef, LowerError> {
     Ok(PageRef::Inline(PageDefinition {
         protocol: p.protocol.clone(),
         address: p.address.clone(),
+        address_forwarded_from: Vec::new(),
         translation_of: p.translation_of.clone(),
         source_page: None,
         name,
