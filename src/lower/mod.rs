@@ -430,6 +430,7 @@ fn lower_to_orb_names_only(
         orbitals,
         metadata: None,
         ledger: None,
+        dispatch_kernel: None,
         schema_version: None,
         config: app_config,
     };
