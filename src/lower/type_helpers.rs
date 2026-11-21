@@ -447,6 +447,7 @@ pub(crate) fn lower_config_fields_to_map(
                 ref_id: None,
                 forwarded_from: None,
                 nested_forwarded_from: Vec::new(),
+                forward_source: None,
                 wired: false,
                 payload_for: None,
                 projected_from: cf.type_expr.projection(),
