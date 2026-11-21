@@ -7,6 +7,9 @@
 use crate::ast::{Comment, Span};
 use crate::error::LexError;
 
+/// The largest integer magnitude every host holds exactly (2^53 - 1, a JavaScript host's `Number.MAX_SAFE_INTEGER`).
+const MAX_EXACT_INTEGER: u64 = 9_007_199_254_740_991;
+
 pub fn is_ident_start(c: char) -> bool {
     c.is_alphabetic() || c == '_'
 }
@@ -707,6 +710,9 @@ impl<'a> Lexer<'a> {
                 line,
                 col,
             })?;
+            if value.unsigned_abs() > MAX_EXACT_INTEGER {
+                return Err(LexError::InexactInteger { value: buf, line, col });
+            }
             self.tokens.push(Token {
                 kind: TokenKind::Integer(value),
                 span: Span::new(line, col, buf.len() as u16),

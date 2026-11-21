@@ -246,7 +246,7 @@ fn asset_row() -> OirType {
 
 #[test]
 fn map_of_entity_rows_validates_compiles_and_types_its_reads() {
-    let read = r#"when (!= (object/get (object/get @entity.byKey "k") url) "")"#;
+    let read = r#"when (and (validate/required (object/get @entity.byKey "k")) (!= (object/get (object/get @entity.byKey "k") url) ""))"#;
     let errors = keyed_rows_errors(read);
     assert!(
         errors.is_empty(),
@@ -290,16 +290,16 @@ fn map_of_entity_rows_validates_compiles_and_types_its_reads() {
 #[test]
 fn a_read_of_a_field_the_entity_lacks_is_refused_through_the_map() {
     let errors =
-        keyed_rows_errors(r#"when (!= (object/get (object/get @entity.byKey "k") nope) "")"#);
+        keyed_rows_errors(r#"when (and (validate/required (object/get @entity.byKey "k")) (!= (object/get (object/get @entity.byKey "k") nope) ""))"#);
     assert!(errors.iter().any(|e| e.contains("nope")), "got {errors:?}");
 
     let nested =
-        r#"when (!= (object/get (object/get (object/get @entity.nested "a") "b") nope) "")"#;
+        r#"when (and (validate/required (object/get @entity.nested "a")) (validate/required (object/get (object/get @entity.nested "a") "b")) (!= (object/get (object/get (object/get @entity.nested "a") "b") nope) ""))"#;
     let errors = keyed_rows_errors(nested);
     assert!(errors.iter().any(|e| e.contains("nope")), "got {errors:?}");
 
     let control =
-        r#"when (!= (object/get (object/get (object/get @entity.nested "a") "b") url) "")"#;
+        r#"when (and (validate/required (object/get @entity.nested "a")) (validate/required (object/get (object/get @entity.nested "a") "b")) (!= (object/get (object/get (object/get @entity.nested "a") "b") url) ""))"#;
     let errors = keyed_rows_errors(control);
     assert!(
         errors.is_empty(),

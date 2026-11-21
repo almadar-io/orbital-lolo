@@ -86,6 +86,10 @@ fn restore_local_annotations(value: &mut serde_json::Value) -> Result<(), Unlowe
                         if let [_, _, annotation @ serde_json::Value::String(_)] =
                             parts.as_mut_slice()
                         {
+                            // A unit type (`SExpr`) has no shape: the lowerer keeps its serialized name.
+                            if from_json_value::<crate::ast::TypeExpr>(annotation).is_ok() {
+                                continue;
+                            }
                             let text = annotation.as_str().unwrap_or_default().to_string();
                             *annotation = serde_json::to_value(types::declared_shape_type(&text)?)
                                 .map_err(|e| UnlowerError::new(e.to_string()))?;
@@ -139,7 +143,10 @@ fn baked_fold_definitions(
 /// The lowerer qualifies every `(i18n/t "key")` with the program name; the
 /// source spelling is the bare key.
 fn without_namespace(schema: &OrbitalSchema) -> Result<OrbitalSchema, UnlowerError> {
-    let mut value = serde_json::to_value(schema).map_err(|e| UnlowerError::new(e.to_string()))?;
+    let mut schema = schema.clone();
+    let name = schema.name.clone();
+    orbital_core_base::messages::unqualify_config_message_keys(&mut schema, &name);
+    let mut value = serde_json::to_value(&schema).map_err(|e| UnlowerError::new(e.to_string()))?;
     let prefix = format!(
         "{}{}",
         schema.name,

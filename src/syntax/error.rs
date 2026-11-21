@@ -21,6 +21,9 @@ pub enum LexError {
     #[error("invalid number {value:?} at {line}:{col}")]
     InvalidNumber { value: String, line: u32, col: u32 },
 
+    #[error("ELOLO_INTEGER_INEXACT: the integer {value} at {line}:{col} is beyond ±9007199254740991, so no host holds it exactly and a JavaScript host cannot read it; write it as a decimal ({value}.0) if an approximate number is meant")]
+    InexactInteger { value: String, line: u32, col: u32 },
+
     #[error("unterminated block comment starting at {line}:{col}")]
     UnterminatedBlockComment { line: u32, col: u32 },
 }
@@ -33,6 +36,7 @@ impl LexError {
             | LexError::InvalidEscape { line, col, .. }
             | LexError::InvalidUnicodeEscape { line, col, .. }
             | LexError::InvalidNumber { line, col, .. }
+            | LexError::InexactInteger { line, col, .. }
             | LexError::UnterminatedBlockComment { line, col } => Span::new(*line, *col, 1),
         }
     }

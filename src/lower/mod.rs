@@ -36,6 +36,7 @@ mod payload_contract;
 mod projection;
 mod render_prop_types;
 mod r#trait;
+pub(crate) use r#trait::bounded_state_timeout_emit;
 mod tree_fold;
 mod type_helpers;
 

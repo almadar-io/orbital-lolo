@@ -1496,7 +1496,8 @@ pub(crate) fn binding_annotation_type(binding: &SExpression) -> Option<TypeExpr>
     let SExpression::Array(parts) = binding else {
         return None;
     };
-    let [_, _, declaration @ SExpression::Object(_)] = parts.as_slice() else {
+    // A unit type (`SExpr`) serializes as a bare string, every other type as an object.
+    let [_, _, declaration @ (SExpression::Object(_) | SExpression::String(_))] = parts.as_slice() else {
         return None;
     };
     from_json_value(&serde_json::to_value(declaration).ok()?).ok()

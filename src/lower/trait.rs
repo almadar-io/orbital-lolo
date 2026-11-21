@@ -394,6 +394,17 @@ pub(crate) fn lower_call_site_overrides(
     })
 }
 
+/// The internal emit a bounded state (`state X for Ns`) declares for its timeout tick (EXEC-TICK-8); the printer omits
+/// it, since lowering the bound declares it again.
+pub(crate) fn bounded_state_timeout_emit() -> orbital_core_base::schema::EmitDefinition {
+    from_json_value(&serde_json::json!({
+        "event": "TIMEOUT",
+        "tier": "internal",
+        "description": "A bounded state's time ran out (`state X for Ns`).",
+    }))
+    .expect("an emit declaration")
+}
+
 pub(crate) fn lower_dispatch(mode: crate::ast::TraitDispatch) -> orbital_core_base::schema::DispatchMode {
     match mode {
         crate::ast::TraitDispatch::Client => orbital_core_base::schema::DispatchMode::Client,
@@ -981,14 +992,7 @@ pub(crate) fn lower_trait(
     // payload-precedence block above). `lower_emit` already ran per entry.
     // A bounded state's timeout tick emits TIMEOUT to its own trait (EXEC-TICK-8): declared here as internal.
     if t.states.iter().any(|state| state.time_bound.is_some()) && !lowered_emits.iter().any(|e| e.event == "TIMEOUT") {
-        lowered_emits.push(
-            from_json_value(&serde_json::json!({
-                "event": "TIMEOUT",
-                "tier": "internal",
-                "description": "A bounded state's time ran out (`state X for Ns`).",
-            }))
-            .expect("an emit declaration"),
-        );
+        lowered_emits.push(bounded_state_timeout_emit());
     }
         let emits = if lowered_emits.is_empty() {
         None

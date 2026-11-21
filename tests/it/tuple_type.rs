@@ -75,7 +75,7 @@ orbital Probe {{
   initial: ready
   state ready {{
    CHECK -> ready
-    (set @entity.result (object/get (array/first (object/get (json/parse "{{\"entries\":[[\"entry\",{{\"repo\":\"active/core\"}}]]}}" Baseline) "entries")) "1.repo"))
+    (set @entity.result (object/get (default (array/first (object/get (default (json/parse "{{\"entries\":[[\"entry\",{{\"repo\":\"active/core\"}}]]}}" Baseline) {{ entries: [] }}) "entries")) ["", {{ repo: "" }}]) "1.repo"))
   }}
  }}
 }}"#)).expect("tuple JSON program lowers")
@@ -168,7 +168,11 @@ fn tuple_record_paths_are_inferred_without_accepting_missing_fields() {
         let issues: Vec<_> = verdict
             .all_issues()
             .filter(|i| {
-                i.code == orbital_compiler::phases::validation::ErrorCode::OperatorArgTypeMismatch
+                matches!(
+                    i.code,
+                    orbital_compiler::phases::validation::ErrorCode::OperatorArgTypeMismatch
+                        | orbital_compiler::phases::validation::ErrorCode::ObjectPathUndeclared
+                )
             })
             .collect();
         assert!(issues.is_empty(), "supported tuple field: {issues:?}");
@@ -178,9 +182,13 @@ fn tuple_record_paths_are_inferred_without_accepting_missing_fields() {
             &from_json_str(&bad).unwrap(),
         );
         assert!(
-            verdict.all_issues().any(|i| i.code
-                == orbital_compiler::phases::validation::ErrorCode::OperatorArgTypeMismatch),
-            "unknown tuple member still rejected"
+            verdict.all_issues().any(|i| matches!(
+                i.code,
+                orbital_compiler::phases::validation::ErrorCode::OperatorArgTypeMismatch
+                    | orbital_compiler::phases::validation::ErrorCode::ObjectPathUndeclared
+            )),
+            "unknown tuple member still rejected: {:?}",
+            verdict.all_issues().map(|i| format!("{:?}: {}", i.code, i.message)).collect::<Vec<_>>()
         );
     }
 }

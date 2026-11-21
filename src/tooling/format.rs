@@ -2059,14 +2059,9 @@ impl Formatter {
             ("update", update),
             ("delete", delete),
         ] {
-            if let Some(expr) = expr {
-                self.write_indent();
-                self.output.push('@');
-                self.output.push_str(sigil);
-                self.output.push(' ');
-                self.fmt_sexpr(expr);
-                self.write_newline();
-            } else if let Some((op, reason)) = waivers.iter().find(|(op, _)| op == sigil || ((sigil == "read" || sigil == "create") && *op == format!("{sigil} server"))) {
+            // A `server` waiver stands beside a policy (`@create server "…"` with `@create <predicate>`); `none` replaces it.
+            let server = format!("{sigil} server");
+            for (op, reason) in waivers.iter().filter(|(op, _)| *op == server || (expr.is_none() && op == sigil)) {
                 self.write_indent();
                 self.output.push('@');
                 self.output.push_str(sigil);
@@ -2074,6 +2069,14 @@ impl Formatter {
                 self.output.push('"');
                 self.output.push_str(&reason.replace('"', "\\\""));
                 self.output.push('"');
+                self.write_newline();
+            }
+            if let Some(expr) = expr {
+                self.write_indent();
+                self.output.push('@');
+                self.output.push_str(sigil);
+                self.output.push(' ');
+                self.fmt_sexpr(expr);
                 self.write_newline();
             }
         }

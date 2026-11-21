@@ -24,6 +24,7 @@ fn std_modal_contract_is_derived_from_its_lolo() {
     let t = modal.trait_contract("ModalRecordModal").expect("trait");
     assert!(t.requires.is_empty());
     let expect = [
+        ("awaitSave", "boolean"),
         ("detailPattern", "pattern"),
         ("detailSlot", "slot"),
         ("fieldOverrides", "[ModalFieldOverride]"),
@@ -31,6 +32,7 @@ fn std_modal_contract_is_derived_from_its_lolo() {
         ("icon", "string"),
         ("maxRows", "number"),
         ("mode", "string"),
+        ("savedMessage", "string"),
         ("title", "string"),
     ];
     let expect: Vec<(String, String)> = expect.iter().map(|(a, b)| (a.to_string(), b.to_string())).collect();

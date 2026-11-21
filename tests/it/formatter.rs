@@ -100,6 +100,59 @@ fn assert_round_trip(name: &str) {
 // version quoting) on production-sized inputs. NOTE: these verify *semantic*
 // preservation (lowered .orb equality); `;;` comments are dropped at the lexer and
 // are out of scope for the round-trip.
+fn let_annotation_program(ty: &str) -> String {
+    format!("app a [\n  version: \"1.0.0\",\n  description: \"x\"\n]\norbital O {{\n  entity E [runtime] {{\n    id : string!\n    out : string\n  }}\n  trait T -> E {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n        (set @entity.out (let ((v : {ty} @payload.v)) \"x\"))\n    }}\n  }}\n  page \"/\" -> T\n}}\n")
+}
+
+#[test]
+fn a_let_binding_typed_sexpr_prints_its_annotation_and_round_trips() {
+    for ty in ["SExpr", "string"] {
+        let source = let_annotation_program(ty);
+        let formatted = format_program(&parse_str(&source).expect("parse"));
+        assert!(formatted.contains(&format!("(v : {ty} ?v)")), "{ty}: {formatted}");
+        let again = format_program(&parse_str(&formatted).expect("the printed text parses"));
+        assert_eq!(again, formatted, "{ty}: idempotent");
+        let schema = parse_and_lower_str(&source).expect("lowers");
+        let lolo = schema_to_lolo(&schema).expect("unlowers");
+        assert!(lolo.contains(&format!("(v : {ty} ?v)")), "{ty}: {lolo}");
+    }
+}
+
+#[test]
+fn a_create_server_waiver_beside_a_create_policy_survives_print_and_unlower() {
+    for policy in ["\n    @create (= @user.role \"owner\")", ""] {
+        let source = format!("app a [\n  version: \"1.0.0\",\n  description: \"x\"\n]\norbital O {{\n  entity E [persistent: es] {{\n    @read none \"public\"\n    @create server \"the program writes it before sign-in\"{policy}\n    id : string!\n  }}\n  trait T -> E {{\n    initial: idle\n    state idle {{\n      INIT -> idle\n    }}\n  }}\n  page \"/\" -> T\n}}\n");
+        let schema = parse_and_lower_str(&source).unwrap_or_else(|e| panic!("{policy:?}: lowers: {e}"));
+        let formatted = format_program(&parse_str(&source).expect("parse"));
+        assert!(formatted.contains("@create server \"the program writes it before sign-in\""), "{policy:?}: {formatted}");
+        let lolo = schema_to_lolo(&schema).expect("unlowers");
+        let again = parse_and_lower_str(&lolo).unwrap_or_else(|e| panic!("{policy:?}: relowers: {e}\n{lolo}"));
+        assert_eq!(
+            canonicalize(serde_json::to_value(&again).unwrap()),
+            canonicalize(serde_json::to_value(&schema).unwrap()),
+            "{policy:?}: {lolo}"
+        );
+    }
+}
+
+fn bounded_state_program(bound: &str) -> String {
+    format!("app a [\n  version: \"1.0.0\",\n  description: \"x\"\n]\norbital O {{\n  entity E [runtime] {{\n    id : string!\n  }}\n  trait T -> E {{\n    initial: idle\n    state idle {{\n      GO -> waiting\n    }}\n    state waiting{bound} {{\n      DONE -> idle\n      TIMEOUT -> idle\n    }}\n  }}\n  page \"/\" -> T\n}}\n")
+}
+
+#[test]
+fn a_bounded_state_unlowers_without_its_synthetic_timeout_emit_and_relowers_the_same() {
+    for bound in [" for 5s", ""] {
+        let schema = parse_and_lower_str(&bounded_state_program(bound)).expect("lowers");
+        let lolo = schema_to_lolo(&schema).unwrap_or_else(|e| panic!("{bound:?}: unlowers: {e}"));
+        let again = parse_and_lower_str(&lolo).unwrap_or_else(|e| panic!("{bound:?}: relowers: {e}\n{lolo}"));
+        assert_eq!(
+            canonicalize(serde_json::to_value(&again).unwrap()),
+            canonicalize(serde_json::to_value(&schema).unwrap()),
+            "{bound:?}: {lolo}"
+        );
+    }
+}
+
 #[test]
 fn an_optional_field_prints_one_question_mark_and_parses_back() {
     let source = "orbital O {\n  entity E [runtime] {\n    id : string!\n    low : float? = null\n    count : number = 0\n  }\n}\n";

@@ -69,3 +69,4 @@ mod type_param_sentinel;
 mod unclosed_delimiters;
 mod union_alias_types;
 mod unlower_round_trip;
+mod unsafe_integer_literal;

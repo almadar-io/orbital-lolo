@@ -351,7 +351,12 @@ pub(super) fn trait_definition(
 
     let emits: &[EmitDefinition] = td.emits.as_deref().map(Vec::as_slice).unwrap_or(&[]);
     let mut aliases = Vec::new();
+    let bounded = sm.states.iter().any(|s| s.time_bound_ms.is_some());
+    let timeout = crate::lower::bounded_state_timeout_emit();
     for e in emits {
+        if bounded && e.event == timeout.event && e.tier == timeout.tier && e.description == timeout.description && e.payload_schema.is_none() && e.scope.is_none() {
+            continue;
+        }
         let own = sm
             .events
             .iter()
