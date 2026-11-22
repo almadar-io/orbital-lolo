@@ -1323,6 +1323,47 @@ mod tests {
         assert_eq!(values, Some(vec!["string".to_string(), "array".to_string()]));
     }
 
+    fn anchor_union() -> TypeExpr {
+        TypeExpr::Union(vec![
+            TypeExpr::StringLiteral("cwd".to_string()),
+            TypeExpr::StringLiteral("exe-dir".to_string()),
+            TypeExpr::Object(vec![("env".to_string(), TypeExpr::Primitive("string".to_string()), true)]),
+        ])
+    }
+
+    #[test]
+    fn a_union_of_literals_and_an_object_keeps_the_literals_as_one_arm_and_the_object_as_another() {
+        let (ft, values, _, props, _) = lower(&anchor_union());
+        assert!(matches!(ft, FieldType::Union), "got {ft:?}");
+        assert_eq!(values, Some(vec!["string".to_string(), "object".to_string()]));
+        let props = props.expect("arms");
+        let words = props.get("string").expect("literal arm");
+        assert!(matches!(words.field_type, FieldType::String));
+        assert_eq!(words.values, Some(vec!["cwd".to_string(), "exe-dir".to_string()]));
+        let object = props.get("object").expect("object arm");
+        assert!(object.properties.as_ref().is_some_and(|p| p.contains_key("env")));
+    }
+
+    #[test]
+    fn control_a_union_of_literals_only_stays_a_string_vocabulary() {
+        let (ft, values, _, props, _) = lower(&TypeExpr::Union(vec![
+            TypeExpr::StringLiteral("cwd".to_string()),
+            TypeExpr::StringLiteral("exe-dir".to_string()),
+        ]));
+        assert!(matches!(ft, FieldType::String));
+        assert_eq!(values, Some(vec!["cwd".to_string(), "exe-dir".to_string()]));
+        assert!(props.is_none());
+    }
+
+    #[test]
+    fn control_a_union_of_bare_words_and_a_literal_stays_a_vocabulary() {
+        let (ft, ..) = lower(&TypeExpr::Union(vec![
+            TypeExpr::Named("fast".to_string()),
+            TypeExpr::StringLiteral("slow".to_string()),
+        ]));
+        assert!(matches!(ft, FieldType::String));
+    }
+
     #[test]
     fn control_a_variant_reached_again_through_a_named_alias_still_lowers() {
         let aliases = predicate_aliases(TypeExpr::Named("Pred".to_string()));
@@ -1654,7 +1695,10 @@ pub(crate) fn is_type_union_with(
             _ => false,
         }
     }
-    parts.len() >= 2 && parts.iter().all(|part| variant(part, &named_is_struct))
+    let literal = |ty: &TypeExpr| matches!(ty.peel(), TypeExpr::StringLiteral(_));
+    parts.len() >= 2
+        && parts.iter().any(|part| !literal(part))
+        && parts.iter().all(|part| literal(part) || variant(part, &named_is_struct))
 }
 
 /// The variants of a TYPE union, as `(variant name, variant shape)` in
@@ -1680,12 +1724,20 @@ fn struct_union_variants(
         return Ok(None);
     }
     let mut out = Vec::with_capacity(parts.len());
+    let words: Vec<TypeExpr> = parts.iter().filter(|p| matches!(p.peel(), TypeExpr::StringLiteral(_))).cloned().collect();
+    let mut words_placed = false;
     for p in parts {
         let mut candidate = p;
         while let TypeExpr::Optional(inner) = candidate {
             candidate = inner;
         }
         let (variant_name, inner, scope): (String, TypeExpr, Vec<&str>) = match candidate {
+            // The union's string literals are one vocabulary arm, placed where the first one stands.
+            TypeExpr::StringLiteral(_) if words_placed => continue,
+            TypeExpr::StringLiteral(_) => {
+                words_placed = true;
+                ("string".to_string(), TypeExpr::Union(words.clone()), Vec::new())
+            }
             TypeExpr::Named(name) => match aliases.get(name) {
                 Some(TypeAliasResolved::Type(inner, own_param)) => (
                     name.clone(),
