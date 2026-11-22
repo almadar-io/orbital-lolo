@@ -134,6 +134,7 @@ pub(crate) fn lower_page(p: &Page) -> Result<PageRef, LowerError> {
         address: p.address.clone(),
         address_forwarded_from: Vec::new(),
         translation_of: p.translation_of.clone(),
+        head: None,
         source_page: None,
         name,
         path: p.path.clone(),
