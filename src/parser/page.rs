@@ -132,6 +132,7 @@ impl Parser {
             label: _,
             icon: _,
             roles: _,
+            image,
         } = head;
         // Trailing `@icon "..."` / `@label "..."` annotations (one or more
         // indented lines below the page declaration). Mirrors the config-knob
@@ -208,6 +209,7 @@ impl Parser {
             title,
             description,
             translation_of,
+            image,
         })
     }
 }

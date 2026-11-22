@@ -1485,6 +1485,8 @@ pub struct Page {
     pub description: Option<orbital_core_base::schema::PageMeta>,
     /// `translationOf:` — the translation group this page belongs to.
     pub translation_of: Option<String>,
+    /// `image:` — the page's share image.
+    pub image: Option<String>,
 }
 
 /// Top-level AST returned by the parser. The compiler-facing entry point is

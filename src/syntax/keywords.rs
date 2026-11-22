@@ -116,6 +116,7 @@ const KEYWORDS: &[&str] = &[
     "siteName",
     "signIn",
     "entries",
+    "image",
     "authenticated",
     "index",
     "noindex",

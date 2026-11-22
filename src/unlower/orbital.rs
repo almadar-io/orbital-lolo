@@ -306,6 +306,7 @@ fn page(p: &PageRef) -> Result<Page, UnlowerError> {
                 title: d.title.clone(),
                 description: d.description.clone(),
                 translation_of: d.translation_of.clone(),
+                image: d.image.clone(),
             })
         }
         PageRef::Object(o) => Ok(Page {
@@ -334,6 +335,7 @@ fn page(p: &PageRef) -> Result<Page, UnlowerError> {
             title: o.title.clone(),
             description: o.description.clone(),
             translation_of: o.translation_of.clone(),
+            image: o.image.clone(),
         }),
         PageRef::Reference(_) => Err(UnlowerError::new("bare string page reference")),
     }

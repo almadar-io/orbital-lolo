@@ -919,3 +919,42 @@ fn trait_dispatch_round_trips_through_format_and_unlower() {
     let plain = format_program(&parse_str(&trait_with_header("")).unwrap());
     assert!(plain.contains("trait T -> E {"), "control: no brackets when no words\n{plain}");
 }
+
+// The share image a page shows in a link preview: an app default in the site bracket, a page's own in its bracket.
+const IMAGE_HEADER: &str = "app std-home [\n  version: \"1.0.0\",\n  origin: \"https://orb.almadar.io\",\n  image: \"/img/share.jpg\"\n]\n";
+
+#[test]
+fn the_site_share_image_lowers_into_schema_site() {
+    let site = parse_and_lower_str(&program(IMAGE_HEADER)).unwrap().site.expect("site");
+    assert_eq!(site.image.as_deref(), Some("/img/share.jpg"));
+}
+
+#[test]
+fn a_page_share_image_lowers_onto_the_page() {
+    let page = inline_page(&with_page("[\n  access: public,\n  image: \"/img/home.jpg\"\n]"));
+    assert_eq!(page.image.as_deref(), Some("/img/home.jpg"));
+}
+
+#[test]
+fn control_no_image_modifier_means_no_image() {
+    assert_eq!(parse_and_lower_str(&program(BRACKET_HEADER)).unwrap().site.and_then(|s| s.image), None);
+    assert_eq!(inline_page(&with_page("[\n  access: public\n]")).image, None);
+}
+
+#[test]
+fn share_images_survive_format_and_unlower() {
+    let source = program(IMAGE_HEADER).replace(r#"page "/" as HomePage -> HomeView"#, "page \"/\" as HomePage -> HomeView [\n  image: \"/img/home.jpg\"\n]");
+    let schema = parse_and_lower_str(&source).expect("lower");
+    let images = |s: &orbital_core_base::schema::OrbitalSchema| {
+        let page = match &s.orbitals[0].pages.as_ref().expect("pages")[0] {
+            PageRef::Inline(p) => p.image.clone(),
+            _ => None,
+        };
+        (s.site.as_ref().and_then(|x| x.image.clone()), page)
+    };
+    let formatted = format_program(&parse_str(&source).expect("parse"));
+    assert_eq!(images(&parse_and_lower_str(&formatted).expect("reparse")), images(&schema), "{formatted}");
+    let text = orbital_lolo::schema_to_lolo(&schema).expect("schema_to_lolo");
+    assert_eq!(images(&parse_and_lower_str(&text).expect("lower the unlowered text")), images(&schema), "{text}");
+    assert_eq!(images(&schema), (Some("/img/share.jpg".to_string()), Some("/img/home.jpg".to_string())));
+}

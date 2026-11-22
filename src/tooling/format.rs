@@ -386,6 +386,7 @@ impl Formatter {
             ("icon", &app.site.icon),
             ("siteName", &app.site.name),
             ("signIn", &app.site.sign_in),
+            ("image", &app.site.image),
         ] {
             if let Some(v) = value {
                 entries.push((key, Box::new(move |f: &mut Self| f.write_quoted_string(v))));
@@ -2899,13 +2900,15 @@ impl Formatter {
                 label: None,
                 icon: None,
                 roles: None,
+                image: page.image.clone(),
             },
         ));
         let multiline = page.access.is_some()
             || page.indexing.is_some()
             || page.title.is_some()
             || page.description.is_some()
-            || page.translation_of.is_some();
+            || page.translation_of.is_some()
+            || page.image.is_some();
         if multiline {
             self.output.push_str(" [");
             self.write_newline();
@@ -4237,6 +4240,9 @@ fn head_modifier_sources(mods: &orbital_core_base::schema::PageModifiers) -> Vec
     }
     if let Some(group) = &mods.translation_of {
         out.push(format!("translationOf: {}", quote_lolo(group)));
+    }
+    if let Some(image) = &mods.image {
+        out.push(format!("image: {}", quote_lolo(image)));
     }
     if let Some(label) = &mods.label {
         out.push(format!("label: {}", quote_lolo(label)));

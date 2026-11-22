@@ -53,6 +53,7 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "siteName",
     "signIn",
     "entries",
+    "image",
 ];
 
 /// Keys of an `orbital Name [ … ]` modifier bracket.
@@ -69,6 +70,7 @@ pub(crate) const PAGE_MODIFIERS: &[&str] = &[
     "title",
     "description",
     "translationOf",
+    "image",
 ];
 
 /// Keys a `pages {} remap entry's bracket takes — the page head modifiers plus
@@ -82,6 +84,7 @@ pub(crate) const REMAP_PAGE_MODIFIERS: &[&str] = &[
     "label",
     "icon",
     "roles",
+    "image",
 ];
 
 mod entity;
@@ -764,6 +767,7 @@ impl Parser {
                     "origin" => site.origin = Some(p.parse_option_string(key)?),
                     "icon" => site.icon = Some(p.parse_option_string(key)?),
                     "siteName" => site.name = Some(p.parse_option_string(key)?),
+                    "image" => site.image = Some(p.parse_option_string(key)?),
                     "signIn" => site.sign_in = Some(p.parse_option_string(key)?),
                     "entries" => site.entries = p.parse_string_items(key)?,
                     _ => unreachable!("APP_MODIFIERS covers every key"),
@@ -965,6 +969,7 @@ impl Parser {
             "label" => mods.label = Some(self.parse_option_string(key)?),
             "icon" => mods.icon = Some(self.parse_option_string(key)?),
             "roles" => mods.roles = Some(self.parse_role_list(key)?),
+            "image" => mods.image = Some(self.parse_option_string(key)?),
             _ => unreachable!("REMAP_PAGE_MODIFIERS covers every head key"),
         }
         Ok(())
