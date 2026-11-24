@@ -408,6 +408,7 @@ fn lower_to_orb_names_only(
         theme_definitions: None,
         themes: (!ast.app.themes.is_empty()).then(|| ast.app.themes.iter().map(lower_theme_decl).collect()),
         locales: (!ast.app.locales.is_empty()).then(|| ast.app.locales.clone()),
+        format_locale: ast.app.format_locale.clone(),
         messages: None,
         egress: (!ast.app.egress.is_empty()).then(|| ast.app.egress.clone()),
         inbound: (!ast.app.inbound.is_empty()).then(|| ast.app.inbound.clone()),

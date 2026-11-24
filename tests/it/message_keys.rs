@@ -125,3 +125,48 @@ fn the_public_header_lowers_to_public_dir() {
 fn control_no_public_header_means_no_public_dir() {
     assert_eq!(parse_and_lower_str(HOME).expect("lower").public_dir, None);
 }
+
+/// `formatLocale: "sl-SI"` names the region whose rules the app's dates, times and numbers follow (owner ruling
+/// 2026-11-24: Project Friday shows a 24-hour clock); `locales` stays the message catalogs the app ships.
+mod format_locale {
+    use super::HOME;
+    use orbital_lolo::{format_program, parse_and_lower_str, parse_str};
+
+    fn with(value: &str) -> String {
+        HOME.replace("locales: [en, ar, sl]]", &format!("locales: [en, ar, sl], formatLocale: \"{value}\"]"))
+    }
+
+    #[test]
+    fn the_format_locale_lowers_beside_the_locales() {
+        let schema = parse_and_lower_str(&with("sl-SI")).expect("lower");
+        assert_eq!(schema.format_locale.as_deref(), Some("sl-SI"));
+        let json = serde_json::to_string(&schema).unwrap();
+        assert!(json.contains(r#""formatLocale":"sl-SI""#), "{json}");
+    }
+
+    #[test]
+    fn control_a_program_without_one_has_none() {
+        let schema = parse_and_lower_str(HOME).expect("lower");
+        assert_eq!(schema.format_locale, None);
+        assert!(!serde_json::to_string(&schema).unwrap().contains("formatLocale"));
+    }
+
+    #[test]
+    fn a_format_locale_without_a_region_is_refused() {
+        let err = parse_and_lower_str(&with("sl")).expect_err("a bare language names no region's rules");
+        assert!(err.to_string().contains("formatLocale"), "{err}");
+    }
+
+    #[test]
+    fn control_a_script_and_region_tag_is_accepted() {
+        assert_eq!(parse_and_lower_str(&with("sr-Latn-RS")).expect("lower").format_locale.as_deref(), Some("sr-Latn-RS"));
+    }
+
+    #[test]
+    fn the_formatter_keeps_it() {
+        let program = parse_str(&with("en-GB")).expect("parse");
+        let printed = format_program(&program);
+        assert!(printed.contains(r#"formatLocale: "en-GB""#), "{printed}");
+        assert_eq!(parse_and_lower_str(&printed).expect("lower").format_locale.as_deref(), Some("en-GB"));
+    }
+}

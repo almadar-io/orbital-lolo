@@ -29,6 +29,7 @@ pub(crate) const APP_MODIFIERS: &[&str] = &[
     "theme",
     "themes",
     "locales",
+    "formatLocale",
     "egress",
     "inbound",
     "store",
@@ -660,6 +661,7 @@ impl Parser {
                 theme: None,
                 themes: Vec::new(),
                 locales: Vec::new(),
+                format_locale: None,
                 store: None,
                 egress: Vec::new(),
                 inbound: Vec::new(),
@@ -739,6 +741,7 @@ impl Parser {
         let mut theme = None;
         let mut themes = Vec::new();
         let mut locales = Vec::new();
+        let mut format_locale = None;
         let mut store = None;
         let mut egress = Vec::new();
         let mut inbound = Vec::new();
@@ -756,6 +759,7 @@ impl Parser {
                     "theme" => theme = Some(p.parse_theme_value()?),
                     "themes" => themes = p.parse_theme_items()?,
                     "locales" => locales = p.parse_locale_items()?,
+                    "formatLocale" => format_locale = Some(p.parse_format_locale()?),
                     "egress" => egress = p.parse_string_items(key)?,
                     "inbound" => inbound = p.parse_string_items(key)?,
                     "store" => store = Some(p.expect_ident()?),
@@ -832,6 +836,7 @@ impl Parser {
             theme,
             themes,
             locales,
+            format_locale,
             store,
             egress,
             inbound,
@@ -862,6 +867,32 @@ impl Parser {
             }
         }
         Ok(origins)
+    }
+
+    /// `"sl-SI"` — the `formatLocale` value: a BCP 47 language, an optional script, and a region, which is what
+    /// names the date, time and number rules.
+    fn parse_format_locale(&mut self) -> Result<String, ParseError> {
+        let span = self.peek_span();
+        let tag = self.parse_option_string("formatLocale")?;
+        let parts: Vec<&str> = tag.split('-').collect();
+        let language = |s: &str| (2..=3).contains(&s.len()) && s.chars().all(|c| c.is_ascii_lowercase());
+        let script = |s: &str| s.len() == 4 && s.starts_with(|c: char| c.is_ascii_uppercase()) && s[1..].chars().all(|c| c.is_ascii_lowercase());
+        let region = |s: &str| (s.len() == 2 && s.chars().all(|c| c.is_ascii_uppercase())) || (s.len() == 3 && s.chars().all(|c| c.is_ascii_digit()));
+        let well_formed = match parts.as_slice() {
+            [l, r] => language(l) && region(r),
+            [l, s, r] => language(l) && script(s) && region(r),
+            _ => false,
+        };
+        if well_formed {
+            Ok(tag)
+        } else {
+            Err(ParseError::InvalidOptionValue {
+                code: "ORB_L_OPTION_VALUE",
+                key: "formatLocale".to_string(),
+                message: format!("`{tag}` is not a language-region tag such as \"sl-SI\" or \"sr-Latn-RS\": the region names the date, time and number rules"),
+                span,
+            })
+        }
     }
 
     /// `[en, ar, sl]` — the `locales` value.

@@ -80,6 +80,8 @@ pub struct AppHeader {
     pub themes: Vec<ThemeDecl>,
     /// `locales [en, ar, sl]` — the locales this program ships.
     pub locales: Vec<String>,
+    /// `formatLocale: "sl-SI"` — the region whose date, time and number rules the app follows.
+    pub format_locale: Option<String>,
     /// `store: Driver` — the default store-driver orbital for persistent entities that name none.
     pub store: Option<String>,
     /// `egress: ["https://host", …]` — the origins `http` may reach.

@@ -320,6 +320,12 @@ impl Formatter {
                 }),
             ));
         }
+        if let Some(tag) = &app.format_locale {
+            entries.push((
+                "formatLocale",
+                Box::new(move |f: &mut Self| f.write_quoted_string(tag)),
+            ));
+        }
         if !app.egress.is_empty() {
             entries.push((
                 "egress",
