@@ -241,14 +241,14 @@ pub(crate) fn lower_source_field(
         unique: None,
         default: None,
         values,
-        relation,
+        relation: relation.map(Box::new),
         items,
         properties: properties.map(Into::into),
         intrinsic: None,
         description: None,
         synonyms: None,
         mock: None,
-        projected_from: ty.projection(),
+        projected_from: ty.projection().map(Box::new),
         record: field_ref_record(ty, aliases, entity_names, params)?,
         derived: None,
         update: None,
@@ -297,7 +297,7 @@ pub(crate) fn lower_field(
         description: f.description.clone(),
         synonyms: f.synonyms.clone(),
         mock: f.mock.clone(),
-        projected_from: f.type_expr.projection(),
+        projected_from: f.type_expr.projection().map(Box::new),
         record: None,
         derived: f.derived.clone(),
         update: f.update.clone(),
@@ -366,13 +366,13 @@ fn field_ref_value(
     let mut field = lower_source_field(ty, aliases, entity_names, params)?;
     if let TypeExpr::NamedEntityRow(knob) = ty.peel() {
         field.field_type = FieldType::Relation;
-        field.relation = Some(RelationDefinition {
+        field.relation = Some(Box::new(RelationDefinition {
             entity: format!("@entity({knob})"),
             entity_id: None,
             cardinality: None,
             on_delete: None,
             display: None,
-        });
+        }));
     }
     Ok(field)
 }
@@ -518,7 +518,7 @@ pub(crate) fn lower_type_expr(
                     def.values.clone(),
                     def.items.clone(),
                     def.properties.as_deref().cloned(),
-                    def.relation.clone(),
+                    def.relation.as_deref().cloned(),
                 )
             } else if orbital_core_base::sealed::is_sealed_type(name) {
                 // Nominal and kernel-made: carried by name (the by-name union form `field_shape` reads as a `TypeRef`).
@@ -590,13 +590,13 @@ pub(crate) fn lower_type_expr(
                 unique: None,
                 default: None,
                 values: inner_values,
-                relation: inner_rel,
+                relation: inner_rel.map(Box::new),
                 items: inner_items,
                 properties: inner_props.map(Into::into),
                 intrinsic: None,
                 description: None,
                 synonyms: None,
-                projected_from: inner.projection(),
+                projected_from: inner.projection().map(Box::new),
                 record: field_ref_record(inner, aliases, entity_names, params)?,
                 derived: None,
                 update: None,
@@ -627,13 +627,13 @@ pub(crate) fn lower_type_expr(
                         unique: None,
                         default: None,
                         values,
-                        relation,
+                        relation: relation.map(Box::new),
                         items,
                         properties: properties.map(Into::into),
                         intrinsic: None,
                         description: None,
                         synonyms: None,
-                        projected_from: slot.projection(),
+                        projected_from: slot.projection().map(Box::new),
                         record: field_ref_record(slot, aliases, entity_names, params)?,
                         derived: None,
                         update: None,
@@ -668,13 +668,13 @@ pub(crate) fn lower_type_expr(
                 unique: None,
                 default: None,
                 values: v_values,
-                relation: v_rel,
+                relation: v_rel.map(Box::new),
                 items: v_items,
                 properties: v_props.map(Into::into),
                 intrinsic: v_intrinsic,
                 description: None,
                 synonyms: None,
-                projected_from: value.projection(),
+                projected_from: value.projection().map(Box::new),
                 record: field_ref_record(value, aliases, entity_names, params)?,
                 derived: None,
                 update: None,
@@ -714,13 +714,13 @@ pub(crate) fn lower_type_expr(
                         unique: None,
                         default: None,
                         values,
-                        relation,
+                        relation: relation.map(Box::new),
                         items,
                         properties: properties.map(Into::into),
                         intrinsic: None,
                         description: None,
                         synonyms: None,
-                        projected_from: v.projection(),
+                        projected_from: v.projection().map(Box::new),
                         record: field_ref_record(v, aliases, entity_names, params)?,
                         derived: None,
                         update: None,
@@ -1028,7 +1028,7 @@ mod tests {
         let mut order: FieldDefinition =
             from_json_value(&serde_json::json!({ "type": "object" })).expect("object");
         order.field_type = oft;
-        order.relation = orel;
+        order.relation = orel.map(Box::new);
         page.substitute_type_vars(&orbital_core_base::collections::IndexMap::from([("t".to_string(), order)]));
         let elem = page.properties.as_ref().expect("members")["items"]
             .items
@@ -1807,7 +1807,7 @@ fn struct_union_variants(
                 unique: None,
                 default: None,
                 values,
-                relation,
+                relation: relation.map(Box::new),
                 items,
                 properties: props.map(Into::into),
                 intrinsic: None,

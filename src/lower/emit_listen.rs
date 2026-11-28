@@ -223,7 +223,7 @@ pub(crate) fn lower_emit(
             }
             tuple.name = f.name.clone();
             tuple.required = if f.required { Some(true) } else { None };
-            tuple.projected_from = projected;
+            tuple.projected_from = projected.map(Box::new);
             fields.push(tuple);
             continue;
         }
@@ -249,7 +249,7 @@ pub(crate) fn lower_emit(
                 properties: None,
                 type_when: None,
                 entity: None,
-                projected_from: projected.clone(),
+                projected_from: projected.clone().map(Box::new),
                 items: None,
                 relation: None,
             });
@@ -281,7 +281,7 @@ pub(crate) fn lower_emit(
                 properties: None,
                 type_when: None,
                 entity: None,
-                projected_from: projected.clone(),
+                projected_from: projected.clone().map(Box::new),
                 items: Some(items),
                 relation: None,
             });
@@ -303,7 +303,7 @@ pub(crate) fn lower_emit(
                 properties: Some(props.into()),
                 type_when: None,
                 entity: None,
-                projected_from: projected.clone(),
+                projected_from: projected.clone().map(Box::new),
                 items: None,
                 relation: None,
             });
@@ -328,7 +328,7 @@ pub(crate) fn lower_emit(
                 properties: Some(variants.into()),
                 type_when: None,
                 entity: None,
-                projected_from: projected.clone(),
+                projected_from: projected.clone().map(Box::new),
                 items: None,
                 relation: None,
             });
@@ -363,7 +363,7 @@ pub(crate) fn lower_emit(
                 properties: Some(nested.into()),
                 type_when: None,
                 entity: Some(type_name.clone()),
-                projected_from: projected.clone(),
+                projected_from: projected.clone().map(Box::new),
                 items: None,
                 relation: None,
             });
@@ -393,7 +393,7 @@ pub(crate) fn lower_emit(
                         properties: Some(nested.into()),
                         type_when: None,
                         entity: Some(type_name.clone()),
-                        projected_from: projected.clone(),
+                        projected_from: projected.clone().map(Box::new),
                         items: None,
                         relation: None,
                     });
@@ -419,7 +419,7 @@ pub(crate) fn lower_emit(
                     properties: Some(elem.into()),
                     type_when: None,
                     entity: None,
-                    projected_from: projected.clone(),
+                    projected_from: projected.clone().map(Box::new),
                     items: None,
                     relation: None,
                 });
@@ -437,7 +437,7 @@ pub(crate) fn lower_emit(
                 properties: None,
                 type_when,
                 entity: None,
-                projected_from: projected.clone(),
+                projected_from: projected.clone().map(Box::new),
                 items: None,
                 relation: None,
             });
@@ -460,7 +460,7 @@ pub(crate) fn lower_emit(
                 properties: None,
                 type_when,
                 entity: None,
-                projected_from: projected.clone(),
+                projected_from: projected.clone().map(Box::new),
                 items: None,
                 relation: None,
             });
@@ -755,7 +755,7 @@ pub(crate) fn source_payload_field(
                 properties: None,
                 type_when: None,
                 entity: None,
-                projected_from: ty.projection(),
+                projected_from: ty.projection().map(Box::new),
                 items: None,
                 relation: None,
             };
@@ -781,7 +781,7 @@ pub(crate) fn decorate_source_payload(
     aliases: &BTreeMap<String, TypeAliasResolved>,
     type_params: &[&str],
 ) {
-    field.projected_from = ty.projection();
+    field.projected_from = ty.projection().map(Box::new);
     field.nullable = Some(entity::source_nullable(ty, aliases));
     field.additional_properties = entity::source_additional_type(ty, aliases)
         .map(|ty| orbital_core_base::value::Shared::new(source_payload_field("", ty, aliases, type_params)));
@@ -1276,7 +1276,7 @@ pub(crate) fn struct_payload_properties(
         if let Some(mut tuple) = tuple_payload_field(ty, aliases, type_params) {
             tuple.name = name.clone();
             tuple.required = if *req { Some(true) } else { None };
-            tuple.projected_from = projected;
+            tuple.projected_from = projected.map(Box::new);
             props.push(tuple);
             continue;
         }
@@ -1331,7 +1331,7 @@ pub(crate) fn struct_payload_properties(
             properties: properties.map(Into::into),
             type_when: None,
             entity: None,
-            projected_from: projected,
+            projected_from: projected.map(Box::new),
             items: union_items.map(|(_, items)| items),
             relation: None,
         });

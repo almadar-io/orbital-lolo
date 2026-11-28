@@ -91,14 +91,14 @@ fn payload_of(schema: &OrbitalSchema, event: &str) -> orbital_core_base::value::
 fn an_entity_field_typed_tag_id_is_a_string_projected_from_tag_id() {
     let field = note_field(&lowered(), "tagRef");
     assert_eq!(field.field_type, FieldType::String);
-    assert_eq!(field.projected_from, projection("Tag", "id"));
+    assert_eq!(field.projected_from.as_deref().cloned(), projection("Tag", "id"));
 }
 
 #[test]
 fn a_projected_closed_vocabulary_keeps_its_values() {
     let field = note_field(&lowered(), "tagKind");
     assert_eq!(field.values, Some(vec!["topic".to_string(), "person".to_string()]));
-    assert_eq!(field.projected_from, projection("Tag", "kind"));
+    assert_eq!(field.projected_from.as_deref().cloned(), projection("Tag", "kind"));
 }
 
 #[test]
@@ -108,7 +108,7 @@ fn a_payload_field_typed_tag_id_is_a_required_string_projected_from_tag_id() {
     assert_eq!(tag_id.field_type, "string");
     assert_eq!(tag_id.required, Some(true));
     assert_eq!(tag_id.entity, None);
-    assert_eq!(tag_id.projected_from, projection("Tag", "id"));
+    assert_eq!(tag_id.projected_from.as_deref().cloned(), projection("Tag", "id"));
 }
 
 #[test]
@@ -117,7 +117,7 @@ fn control_a_payload_field_typed_as_the_entity_stays_its_row() {
     let row = payload.iter().find(|f| f.name == "row").expect("row");
     assert_eq!(row.field_type, "object");
     assert_eq!(row.entity.as_deref(), Some("Tag"));
-    assert_eq!(row.projected_from, Some(FieldProjection { type_name: "Tag".into(), field: None }));
+    assert_eq!(row.projected_from.as_deref().cloned(), Some(FieldProjection { type_name: "Tag".into(), field: None }));
 }
 
 #[test]
@@ -125,7 +125,7 @@ fn a_config_knob_typed_tag_name_is_a_string_projected_from_tag_name() {
     let view = note_view(&lowered());
     let knob = view.config.as_ref().and_then(|c| c.get("defaultTag")).cloned().expect("defaultTag");
     assert_eq!(knob.field_type, "string");
-    assert_eq!(knob.projected_from, projection("Tag", "name"));
+    assert_eq!(knob.projected_from.as_deref().cloned(), projection("Tag", "name"));
 }
 
 #[test]
@@ -134,7 +134,7 @@ fn a_struct_type_member_typed_tag_id_is_projected_too() {
     let pick = payload.iter().find(|f| f.name == "pick").expect("pick");
     let tag = pick.properties.as_ref().and_then(|p| p.iter().find(|f| f.name == "tag")).expect("tag");
     assert_eq!(tag.field_type, "string");
-    assert_eq!(tag.projected_from, projection("Tag", "id"));
+    assert_eq!(tag.projected_from.as_deref().cloned(), projection("Tag", "id"));
 }
 
 #[test]

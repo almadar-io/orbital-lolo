@@ -366,7 +366,7 @@ pub(crate) fn lower_call_site_overrides(
                     forward_source: None,
                     wired: false,
                     payload_for: None,
-                    projected_from: cf.type_expr.projection(),
+                    projected_from: cf.type_expr.projection().map(Box::new),
                     record: entity::field_ref_record(cf.type_expr.peel(), aliases, entity_names, &[])?,
                 }
             };
@@ -757,7 +757,7 @@ pub(crate) fn lower_trait(
                         properties: properties.map(Into::into),
                         type_when,
                         entity,
-                        projected_from: projected,
+                        projected_from: projected.map(Box::new),
                         items: union_items.map(|(_, items)| items),
                         relation: None,
                     };

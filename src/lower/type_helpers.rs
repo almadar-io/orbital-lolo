@@ -450,7 +450,7 @@ pub(crate) fn lower_config_fields_to_map(
                 forward_source: None,
                 wired: false,
                 payload_for: None,
-                projected_from: cf.type_expr.projection(),
+                projected_from: cf.type_expr.projection().map(Box::new),
                 record: entity::field_ref_record(cf.type_expr.peel(), aliases, entity_names, type_params)?,
             },
         );
