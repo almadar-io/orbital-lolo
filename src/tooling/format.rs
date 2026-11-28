@@ -2701,13 +2701,18 @@ impl Formatter {
 
     fn fmt_tick(&mut self, tick: &Tick) {
         self.output.push_str(&tick.name);
-        self.output.push_str(" every ");
         match &tick.interval {
             TickInterval::Millis(ms) => {
+                self.output.push_str(" every ");
                 self.output.push_str(&fmt_duration(*ms));
             }
             TickInterval::Cron(cron) => {
+                self.output.push_str(" every ");
                 self.write_quoted_string(cron);
+            }
+            TickInterval::At(at) => {
+                self.output.push_str(" at ");
+                self.fmt_sexpr(at);
             }
         }
         if !tick.applies_to.is_empty() {

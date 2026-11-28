@@ -1050,7 +1050,8 @@ pub(crate) fn lower_trait(
         .filter_map(|state| state.time_bound.map(|ms| (state, ms)))
         .map(|(state, ms)| TickDefinition {
             name: format!("{}StateTimeout", state.name),
-            interval: StringOrNumber::Number(STATE_BOUND_CHECK_MS as f64),
+            interval: Some(StringOrNumber::Number(STATE_BOUND_CHECK_MS as f64)),
+            at: None,
             guard: None,
             effects: vec![from_json_value(&serde_json::json!(["emit", "TIMEOUT"])).expect("an emit form")],
             applies_to: Some(vec![state.name.clone()]),

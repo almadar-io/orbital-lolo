@@ -1389,6 +1389,8 @@ pub enum TickInterval {
     Millis(u64),
     /// A quoted cron expression (`every "0 9 * * *"`).
     Cron(String),
+    /// A deadline (`at <instant>`): due per row at the instant the expression reads (EXEC-TICK-9).
+    At(SExpression),
 }
 
 /// One entry in a `config { }` block.

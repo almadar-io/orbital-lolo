@@ -1622,8 +1622,13 @@ impl Parser {
                 }
                 let span = self.peek_span();
                 self.advance();
-                self.expect_keyword("every")?;
-                let interval = self.parse_tick_interval()?;
+                let interval = if self.check_ident("at") {
+                    self.advance();
+                    TickInterval::At(self.parse_sexpr_or_value()?)
+                } else {
+                    self.expect_keyword("every")?;
+                    self.parse_tick_interval()?
+                };
                 let mut applies_to = Vec::new();
                 if self.check_ident("in") {
                     self.advance();

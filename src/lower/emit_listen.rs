@@ -1583,13 +1583,15 @@ pub(crate) fn split_listen_source(
 }
 
 pub(crate) fn lower_tick(t: &Tick) -> Result<TickDefinition, LowerError> {
-    let interval = match &t.interval {
-        TickInterval::Millis(n) => StringOrNumber::Number(*n as f64),
-        TickInterval::Cron(s) => StringOrNumber::String(s.clone()),
+    let (interval, at) = match &t.interval {
+        TickInterval::Millis(n) => (Some(StringOrNumber::Number(*n as f64)), None),
+        TickInterval::Cron(s) => (Some(StringOrNumber::String(s.clone())), None),
+        TickInterval::At(at) => (None, Some(desugar_expr_match(at))),
     };
     Ok(TickDefinition {
         name: t.name.clone(),
         interval,
+        at,
         guard: t.guard.as_ref().map(desugar_expr_match),
         effects: t
             .effects

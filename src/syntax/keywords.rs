@@ -61,6 +61,7 @@ const KEYWORDS: &[&str] = &[
     "from",
     "to",
     "every",
+    "at",
     "in",
     "capabilities",
     "match",

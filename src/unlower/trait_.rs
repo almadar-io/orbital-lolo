@@ -204,9 +204,11 @@ fn emit_of(
 }
 
 fn tick_of(t: &TickDefinition) -> Result<Tick, UnlowerError> {
-    let interval = match &t.interval {
-        StringOrNumber::Number(n) => TickInterval::Millis(*n as u64),
-        StringOrNumber::String(s) => TickInterval::Cron(s.clone()),
+    let interval = match (&t.interval, &t.at) {
+        (_, Some(at)) => TickInterval::At(at.clone()),
+        (Some(StringOrNumber::Number(n)), None) => TickInterval::Millis(*n as u64),
+        (Some(StringOrNumber::String(s)), None) => TickInterval::Cron(s.clone()),
+        (None, None) => return Err(UnlowerError::new(format!("tick '{}' has neither an interval nor an at", t.name))),
     };
     Ok(Tick {
         name: t.name.clone(),
